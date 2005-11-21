@@ -20,6 +20,8 @@ include $(top_srcdir)/m4/pathconfig.am
 
 initrd_SCRIPTS = vservers
 
+nobase_pkgdata_DATA = examples/context.conf
+
 install-data-hook: install-pkgconfdir install-vdirbase-link
 
 install-pkgconfdir:
