@@ -1,0 +1,69 @@
+# Copyright 2005 The util-vserver Developers
+# See AUTHORS for details
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+# package information
+PACKAGE='@PACKAGE@'
+PACKAGE_BUGREPORT='@PACKAGE_BUGREPORT@'
+PACKAGE_NAME='@PACKAGE_NAME@'
+PACKAGE_STRING='@PACKAGE_STRING@'
+PACKAGE_TARNAME='@PACKAGE_TARNAME@'
+PACKAGE_VERSION='@PACKAGE_VERSION@'
+
+# default system paths
+__SBINDIR='@SBINDIR@'
+
+# package paths
+__PKGDATADIR='@PKGDATADIR@'
+__PKGLOCKDIR='@PKGLOCKDIR@'
+__PKGCONFDIR='@PKGCONFDIR@'
+__VDIRBASE='@VDIRBASE@'
+__CONFDEFAULTSDIR="${__PKGCONFDIR}/.defaults"
+
+# package data paths
+__PKGDATACOMMANDSDIR="${__PKGDATADIR}/commands"
+__PKGDATADEFAULTSDIR="${__PKGDATADIR}/defaults"
+__PKGDATALIBDIR="${__PKGDATADIR}/lib"
+
+# package data libraries
+_LIB_FS="${__PKGDATALIBDIR}/fs.sh"
+_LIB_UTIL="${__PKGDATALIBDIR}/util.sh"
+_LIB_VPS="${__PKGDATALIBDIR}/vps.sh"
+_LIB_VS="${__PKGDATALIBDIR}/vs.sh"
+
+# command line tools
+_NIDOF="${__SBINDIR}/nidof"
+_VATTR="${__SBINDIR}/vattr"
+_VCONTEXT="${__SBINDIR}/vcontext"
+_VDLIMIT="${__SBINDIR}/vdlimit"
+_VEXEC="${__SBINDIR}/vexec"
+_VFLAGS="${__SBINDIR}/vflags"
+_VINFO="${__SBINDIR}/vinfo"
+_VKILL="${__SBINDIR}/vkill"
+_VLIMIT="${__SBINDIR}/vlimit"
+_VMOUNT="${__SBINDIR}/vmount"
+_VNAMESPACE="${__SBINDIR}/vnamespace"
+_VSCHED="${__SBINDIR}/vsched"
+_VSERVER="${__SBINDIR}/vserver"
+_VUNAME="${__SBINDIR}/vuname"
+_VWAIT="${__SBINDIR}/vwait"
+_XIDOF="${__SBINDIR}/xidof"
+
+_HAVE_PATHCONFIG=1
+
+# generic debug handler to be used through env
+[ -n "${UVDEBUG}" ] && set -x

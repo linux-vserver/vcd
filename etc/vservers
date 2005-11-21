@@ -1,0 +1,126 @@
+#!/bin/bash
+# Copyright 2005 The util-vserver Developers
+# See AUTHORS for details
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by  *
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+checkconfig() {
+	: ${UTIL_VSERVER_VARS:=/usr/lib/util-vserver/util-vserver-vars}
+	if [[ ! -e ${UTIL_VSERVER_VARS} ]]; then
+		echo "Cannot find util-vserver installation" >&2
+		echo "The file '${UTIL_VSERVER_VARS}' would be expected" >&2
+		exit 1
+	fi
+	
+	source ${UTIL_VSERVER_VARS}
+	
+	: ${MARKS:=default}
+	: ${NUMPARALLEL:=1}
+	: ${LOCKDIR:=/var/lock/vservers}
+}
+
+begin() {
+	echo -n "$@"
+	echo -n " ... "
+}
+
+end() {
+	local rc=$1
+	
+	case "${rc}" in
+		(0) echo "OK";;
+		(2) echo "OK";;
+		(*) echo "FAILED";;
+	esac
+}
+
+start() {
+	checkconfig
+	
+	${_VATTR} -S -cr -f HIDE /proc
+	
+	begin "Unhiding /proc entries"
+	${_VPROCUNHIDE}
+	end $?
+	
+	for MARK in ${MARKS}; do
+		begin "Starting vservers of type '${MARK}'"
+		${_START_VSERVERS} -m ${MARK} -j ${NUMPARALLEL} --all --start
+		local rc=$?
+		[[ $rc -eq 0 ]] && touch ${LOCKDIR}/${MARK}
+		end $rc
+	done
+	
+	for VSERVER in ${START_VSERVERS}; do
+		begin "Starting single vserver '${VSERVER}'"
+		${_VSERVER} ${VSERVER} start
+		end $?
+	done
+}
+
+stop() {
+	checkconfig
+	
+	begin "Stopping all types of vservers"
+	${_START_VSERVERS} -j ${NUMPARALLEL} --all --stop
+	end $?
+	
+	rm -f ${LOCKDIR}/*
+	
+	echo "Checking for vservers still running ..."
+	
+	for i in $(vs_running_name 1); do
+		begin "  Stopping single vserver: ${i}"
+		/usr/sbin/vserver ${i} stop &> /dev/null
+		end $?
+	done
+	
+	begin "Hiding /proc entries"
+	${_VATTR} -S -cr -f HIDE /proc
+	end 0
+}
+
+status() {
+	checkconfig
+	
+	local running="false"
+	
+	echo "${LOCKDIR} shows the following types of vservers running:"
+	
+	for i in $( ls ${LOCKDIR} | sort ); do
+		echo "  ${i}"
+		running="true"
+	done
+	
+	if [[ "${running}" != "true" ]]; then
+		echo "  none"
+	fi
+}
+
+restart() {
+	stop
+	start
+}
+
+case "$1" in
+	start|stop|restart|status)
+		$1
+		;;
+	*)
+		echo "Usage: $0 start|stop|restart|status"
+		exit 2
+		;;
+esac
