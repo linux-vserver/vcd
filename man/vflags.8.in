@@ -10,15 +10,23 @@ DESCRIPTION
   See AVAILABLE FLAGS below
 OPTIONS
   Commands  
-    -S       Set capabilities/flags
     -G       Get capabilities/flags
     -L       List available capabilities/flags
+    -S       Set capabilities/flags
 
   Options  
-    -x xid   Context ID
     -b list  System capabilities
     -c list  Context capabilities
     -f list  Context flags
+    -x xid   Context ID
+LIST FORMAT STRING
+  All options accepting the parameter list expect it to be in the following form:
+
+    list = [~]<flag>,[~]<flag>,...
+
+  A list is a comma seperated string of values available for the choosen
+  listtype. To clear an already enabled flag, the value should be prefixed with
+  the tilde character '~'.
 AVAILABLE FLAGS
   System Capabilities  
     1. CHOWN  
