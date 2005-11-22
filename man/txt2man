@@ -243,8 +243,10 @@ section == "SYNOPSIS" {			# Identify arguments of fcts and cmds
 		}
 		for (i = 2; i <= NF; i++) {
 			a = $i
-			gsub(/[\[\]\|]/, "", a)
-			if (a ~ /^[^\-]/) subwords["\\<" a "\\>"] = "\\fI" a "\\fP"
+			if (a ~ /\]$/) {
+				gsub(/[\[\]\|]/, "", a)
+				if (a ~ /^[^\-]/) subwords["\\<" a "\\>"] = "\\fI" a "\\fP"
+			}
 		}
 	} else {			# Line is a C function definition
 		if ($1 == "typedef") subwords["\\<" $2 "\\>"] = "\\fI" $2 "\\fP"
