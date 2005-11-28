@@ -1,0 +1,35 @@
+NAME
+  vdlimit - manage context disk limits
+SYNOPSIS
+  vdlimit [-AGRS] [-l lim] [-x xid] [mountpoint]
+DESCRIPTION
+  vdlimit is used to set disk space limits for the given context id.
+OPTIONS
+  Commands  
+    -A       Add disk limit entry for mountpoint
+    -G       Get disk limit for mountpoint
+    -R       Remove disk limit entry for mountpoint
+    -S       Set disk limit entry for mountpoint
+
+  Options  
+    -l lim   Set limit described in lim (see DISK LIMIT FORMAT STRING)
+    -x xid   Context ID
+DISK LIMIT FORMAT STRING
+    lim = <SU>,<SM>,<IU>,<IM>,<RR> where
+        SU  is the used space in kbytes,
+        SM  is the maximum space in kbytes,
+        IU  is the used inode count,
+        IM  is the maximum inode count, and
+        RR  is reserved for root in percent.
+EXAMPLE
+  Add a disk limit entry to /vserver/myvps for context '123':
+
+      $ vdlimit -A -x 123 /vservers/myvps
+
+  Set max space to 500M on the entry created above:
+
+      $ vdlimit -S -l ,512000,,,, -x 123 /vservers/myvps
+SEE ALSO
+  vserver(8)
+AUTHOR
+  Benedikt Boehm <hollow@gentoo.org>

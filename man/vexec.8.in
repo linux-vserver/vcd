@@ -1,0 +1,20 @@
+NAME
+  vexec - execute command inside a context
+SYNOPSIS
+  vexec [-cfi] [-x xid] -- [cmd] [args]
+DESCRIPTION
+  vexec is used to execute the command cmd passing it args as arguments in an
+  already existing context and its namespace.
+OPTIONS
+    -c       chroot to current directory
+    -f       Fork into background before executing cmd
+    -i       Make cmd the general process reaper for the context (aka initpid)
+    -x xid   Context ID
+EXAMPLE
+  Execute bash in context '123' (this is what 'vserver enter [name]' does)
+
+      $ vexec -x 123 -- /bin/bash
+SEE ALSO
+  vserver(8)
+AUTHOR
+  Benedikt Boehm <hollow@gentoo.org>

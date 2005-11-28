@@ -1,7 +1,7 @@
 NAME
   vflags - set context capabilities and/or flags
 SYNOPSIS
-  vflags [-SGL] [-x xid] [-b list] [-f list] [-f list] 
+  vflags [-GLS] [-b list] [-c list] [-f list] [-x xid] 
 DESCRIPTION
   vflags is used to set system capabilities, context capabilities and/or
   context flags for the given context id.
@@ -187,7 +187,7 @@ AVAILABLE FLAGS
     7. INFO_ULIMIT  
     8. INFO_NSPACE  
     9. SCHED_HARD  
-    0. SCHED_PRIO  
+    10. SCHED_PRIO  
     11. SCHED_PAUSE  
     12. VIRT_MEM  
     13. VIRT_UPTIME  

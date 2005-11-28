@@ -20,7 +20,7 @@ for manin in *.in; do
 	man=${manin%.*}
 	if [ ${manin} -nt ${man} ]; then
 		echo "Rebuilding ${man} from ${manin}"
-		./txt2man -s 8 -t vflags -v "VServer Administrator's Manual" < ${manin} > ${man}
+		./txt2man -s ${man/*.} -t ${man%.*} -v "VServer Administrator's Manual" < ${manin} > ${man}
 	fi
 done
 
