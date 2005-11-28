@@ -27,24 +27,31 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <string.h>
+#include <arpa/inet.h>
 #include <vserver.h>
+
+#include <linux/vserver/network.h>
 
 #include "tools.h"
 
 #define NAME  "vncontext"
 #define DESCR "Network Context Manager"
 
-#define SHORT_OPTS "CIMn:f:"
+#define SHORT_OPTS "ACIMRa:f:n:"
 
 struct commands {
+	bool add;
 	bool create;
 	bool info;
 	bool migrate;
+	bool remove;
 };
 
 struct options {
-	nid_t nid;
+	char *addr;
 	list_t *flags;
+	nid_t nid;
 };
 
 static inline
@@ -53,13 +60,16 @@ void cmd_help()
 	printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
+	       "    -A            Add adress to network context\n"
 	       "    -C            Create a new network context\n"
 	       "    -I            Get information about a network context\n"
 	       "    -M            Migrate to an existing network context\n"
+	       "    -R            Remove adress from network context\n"
 	       "\n"
 	       "Available options:\n"
-	       "    -x <xid>      Context ID\n"
+	       "    -a <addr>     IP adress (a.b.c.d/e)\n"
 	       "    -f <list>     Set flags described in <list>\n"
+	       "    -n <nid>      Context ID\n"
 	       "\n"
 	       "Flag list format string:\n"
 	       "    <list> = [~]<flag>,[~]<flag>,...\n"
@@ -70,18 +80,49 @@ void cmd_help()
 	exit(EXIT_SUCCESS);
 }
 
+static inline
+int parse_addr(char *addr, uint32_t *ip, uint32_t *mask)
+{
+		struct in_addr ib;
+		char *addr_ip, *addr_mask;
+		
+		*ip   = 0;
+		*mask = 0x80000000;
+		
+		addr_ip   = strtok(addr, "/");
+		addr_mask = strtok(NULL, "/");
+		
+		if (addr_ip == 0 || addr_mask == 0)
+			return -1;
+		
+		if (inet_aton(addr_ip, &ib) == -1)
+			return -1;
+		
+		*ip     = ib.s_addr;
+		*mask >>= atoi(addr_mask) - 1;
+		*mask   = htonl(*mask);
+		
+		if (*ip == 0 || *mask == 0)
+			return -1;
+		
+		return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct commands cmds = {
+		.add      = false,
 		.create   = false,
 		.info     = false,
 		.migrate  = false,
+		.remove   = false,
 	};
 	
 	struct options opts = {
-		.nid   = 0,
+		.addr  = 0,
 		.flags = 0,
+		.nid   = 0,
 	};
 	
 	/* init syscall data */
@@ -89,6 +130,7 @@ int main(int argc, char *argv[])
 		.flags = 0,
 	};
 	
+	struct nx_addr addr;
 	struct nx_info info;
 	
 	/* init flags list */
@@ -106,6 +148,10 @@ int main(int argc, char *argv[])
 		switch (c) {
 			GLOBAL_CMDS_GETOPT
 			
+			case 'A':
+				cmds.add = true;
+				break;
+			
 			case 'C':
 				cmds.create = true;
 				break;
@@ -118,16 +164,41 @@ int main(int argc, char *argv[])
 				cmds.migrate = true;
 				break;
 			
-			case 'n':
-				opts.nid = (nid_t) atoi(optarg);
+			case 'R':
+				cmds.remove = true;
+				break;
+			
+			case 'a':
+				opts.addr = optarg;
 				break;
 			
 			case 'f':
 				opts.flags = list_parse_list(optarg, delim);
 				break;
 			
+			case 'n':
+				opts.nid = (nid_t) atoi(optarg);
+				break;
+			
 			DEFAULT_GETOPT
 		}
+	}
+	
+	if (cmds.add) {
+		if (opts.addr == 0)
+			EXIT("No IP given", EXIT_USAGE);
+		
+		addr.type  = NXA_TYPE_IPV4;
+		addr.count = 1;
+		
+		if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
+			EXIT("Invalid IP given", EXIT_USAGE);
+		
+		/* syscall */
+		if (nx_add_addr(opts.nid, &addr) == -1)
+			PEXIT("Failed to create networkcontext", EXIT_COMMAND);
+		
+		goto out;
 	}
 	
 	if (cmds.create) {
@@ -172,6 +243,23 @@ create:
 			PEXIT("Failed to get network context information", EXIT_COMMAND);
 		
 		printf("Network context ID: %d\n", info.nid);
+		
+		goto out;
+	}
+	
+	if (cmds.remove) {
+		if (opts.addr == 0)
+			EXIT("No IP given", EXIT_USAGE);
+		
+		addr.type  = NXA_TYPE_IPV4;
+		addr.count = 1;
+		
+		if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
+			EXIT("Invalid IP given", EXIT_USAGE);
+		
+		/* syscall */
+		if (nx_rem_addr(opts.nid, &addr) == -1)
+			PEXIT("Failed to create networkcontext", EXIT_COMMAND);
 		
 		goto out;
 	}
