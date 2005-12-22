@@ -1,4 +1,4 @@
-# Copyright 2005 The util-vserver Developers
+# Copyright 2005 The vserver-utils Developers
 # See AUTHORS for details
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,18 +16,18 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_UV_VDIRBASE],
+AC_DEFUN([AC_VU_VDIRBASE],
 [
 	AC_MSG_CHECKING([for vserver base directory])
 	AC_ARG_WITH([vdirbase],
 		    [AC_HELP_STRING([--with-vdirbase=DIR],
 				    [default vserver vase directory (default: /vservers)])],
-	            [ac_uv_vdirbase=$withval],
-		    [ac_uv_vdirbase=/vservers])
-	AC_MSG_RESULT([$ac_uv_vdirbase])
+	            [ac_vu_vdirbase=$withval],
+		    [ac_vu_vdirbase=/vservers])
+	AC_MSG_RESULT([$ac_vu_vdirbase])
 
 	if test -n "$1"; then
-		$1=$ac_uv_vdirbase
+		$1=$ac_vu_vdirbase
 		AC_SUBST($1)
 	fi
 ])

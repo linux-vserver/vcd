@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2005 The util-vserver Developers
+# Copyright 2005 The vserver-utils Developers
 # See AUTHORS for details
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,14 +18,14 @@
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 checkconfig() {
-	: ${UTIL_VSERVER_VARS:=/usr/lib/util-vserver/util-vserver-vars}
-	if [[ ! -e ${UTIL_VSERVER_VARS} ]]; then
-		echo "Cannot find util-vserver installation" >&2
-		echo "The file '${UTIL_VSERVER_VARS}' would be expected" >&2
+	: ${VSERVER_UTILS_VARS:=/usr/lib/vserver-utils/vserver-utils-vars}
+	if [[ ! -e ${VSERVER_UTILS_VARS} ]]; then
+		echo "Cannot find vserver-utils installation" >&2
+		echo "The file '${VSERVER_UTILS_VARS}' would be expected" >&2
 		exit 1
 	fi
 	
-	source ${UTIL_VSERVER_VARS}
+	source ${VSERVER_UTILS_VARS}
 	
 	: ${MARKS:=default}
 	: ${NUMPARALLEL:=1}

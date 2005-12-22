@@ -1,4 +1,4 @@
-## Copyright 2005 The util-vserver Developers
+## Copyright 2005 The vserver-utils Developers
 ## See AUTHORS for details
 ##
 ## This program is free software; you can redistribute it and/or modify
@@ -32,6 +32,6 @@ pathconfig_RULES = -e 's:@PACKAGE\@:$(PACKAGE):g' \
                    -e 's:@PKGLOCKDIR\@:$(pkglockdir):g' \
                    -e 's:@PKGCONFDIR\@:$(pkgconfdir):g' \
                    -e 's:@VDIRBASE\@:$(vdirbase):g' \
-                   $(UV_PATHPROG_REGEX)
+                   $(VU_PATHPROG_REGEX)
 
 pathconfig_SED = $(SED) $(pathconfig_RULES)

@@ -1,4 +1,4 @@
-# Copyright 2005 The util-vserver Developers
+# Copyright 2005 The vserver-utils Developers
 # See AUTHORS for details
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,30 +16,24 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_UV_PATHPROG_SEARCHPATH],
+AC_DEFUN([AC_VU_PATHPROG_INIT],
 [
-	ac_uv_pathprog_searchpath="$1"
+	VU_PATHPROG_REGEX=
+	AC_SUBST([VU_PATHPROG_REGEX])
 ])
 
-AC_DEFUN([AC_UV_PATHPROG_INIT],
+AC_DEFUN([AC_VU_PATHPROG],
 [
-	UV_PATHPROG_REGEX=
-	AC_SUBST([UV_PATHPROG_REGEX])
-])
-
-AC_DEFUN([AC_UV_PATHPROG],
-[
-	AC_REQUIRE([AC_UV_PATHPROG_SEARCHPATH])
-	AC_REQUIRE([AC_UV_PATHPROG_INIT])
+	AC_REQUIRE([AC_VU_PATHPROG_INIT])
 
 	AC_PATH_PROG($1, [$2])
 
 	if test -z "${$1}"; then
-		AC_MSG_ERROR([Cannot find '$2' within '${ac_uv_pathprog_searchpath:-$PATH}'])
+		AC_MSG_ERROR([Cannot find '$2' within '${PATH}'])
 	fi
 
 	if test -n "${$1}"; then
-		UV_PATHPROG_REGEX="${UV_PATHPROG_REGEX} -e 's:@$1\@:${$1}:g'"
+		VU_PATHPROG_REGEX="${VU_PATHPROG_REGEX} -e 's:@$1\@:${$1}:g'"
 	fi
 	
 	test -n "${$1}"

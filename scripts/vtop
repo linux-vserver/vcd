@@ -1,5 +1,5 @@
 #!/bin/bash
-# Copyright 2005 The util-vserver Developers
+# Copyright 2005 The vserver-utils Developers
 # See AUTHORS for details
 #
 # This program is free software; you can redistribute it and/or modify
@@ -17,14 +17,14 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-: ${UV_PATHCONFIG:=/usr/share/util-vserver/pathconfig}
+: ${VU_PATHCONFIG:=/usr/share/vserver-utils/pathconfig}
 
-if [ ! -e "${UV_PATHCONFIG}" ]; then
-	echo "Cannot find util-vserver installation!" >&2
-	echo "The file '${UV_PATHCONFIG}' would be expected" >&2
+if [ ! -e "${VU_PATHCONFIG}" ]; then
+	echo "Cannot find vserver-utils installation!" >&2
+	echo "The file '${VU_PATHCONFIG}' would be expected" >&2
 	exit 1
 fi
 
-source ${UV_PATHCONFIG}
+source ${VU_PATHCONFIG}
 
 ${_VEXEC} -x 1 -- top "$@"

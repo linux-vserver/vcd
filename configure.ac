@@ -1,4 +1,4 @@
-# Copyright 2005 The util-vserver Developers
+# Copyright 2005 The vserver-utils Developers
 # See AUTHORS for details
 #
 # This program is free software; you can redistribute it and/or modify
@@ -18,7 +18,7 @@
 
 # Generic configuration
 AC_PREREQ(2.59)
-AC_INIT(util-vserver, 1.0_pre20051118, hollow@gentoo.org)
+AC_INIT(vserver-utils, 1.0_pre20051118, hollow@gentoo.org)
 AC_CONFIG_HEADER([config.h])
 AC_GNU_SOURCE
 
@@ -33,9 +33,9 @@ AC_PROG_INSTALL
 AC_PROG_LIBTOOL
 AC_PROG_LN_S
 
-AC_UV_PATHPROG_SEARCHPATH([$PATH:/sbin:/usr/sbin:/usr/local/sbin])
-AC_UV_PATHPROG(CP,  cp)
-AC_UV_PATHPROG(SED, sed)
+AC_VU_PATHPROG_SEARCHPATH([$PATH:/sbin:/usr/sbin:/usr/local/sbin])
+AC_VU_PATHPROG(CP,  cp)
+AC_VU_PATHPROG(SED, sed)
 
 # Checks for libraries.
 
@@ -49,8 +49,8 @@ AC_UV_PATHPROG(SED, sed)
 CFLAGS="${CFLAGS} -W -Wall -std=gnu99 -pedantic"
 
 # Site settings
-AC_UV_INITRDDIR(initrddir)
-AC_UV_VDIRBASE(vdirbase)
+AC_VU_INITRDDIR(initrddir)
+AC_VU_VDIRBASE(vdirbase)
 
 # Output
 AC_CONFIG_FILES([Makefile

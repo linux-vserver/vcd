@@ -1,4 +1,4 @@
-# Copyright 2005 The util-vserver Developers
+# Copyright 2005 The vserver-utils Developers
 # See AUTHORS for details
 #
 # This program is free software; you can redistribute it and/or modify
@@ -16,19 +16,19 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_UV_INITRDDIR],
+AC_DEFUN([AC_VU_INITRDDIR],
 [
 	AC_MSG_CHECKING([for initrddir])
 	AC_ARG_WITH([initrddir],
 		    [AC_HELP_STRING([--with-initrddir <DIR>],
 				    [use <DIR> as directory for SysV init-files (default: $sysconfdir/init.d)])],
-	            [ac_uv_initrddir=$withval],
-		    [ac_uv_initrddir='$(sysconfdir)/init.d'])
+	            [ac_vu_initrddir=$withval],
+		    [ac_vu_initrddir='$(sysconfdir)/init.d'])
 
 	if test -n "$1"; then
-		$1=$ac_uv_initrddir
+		$1=$ac_vu_initrddir
 		AC_SUBST($1)
 	fi
 
-	AC_MSG_RESULT($ac_uv_initrddir)
+	AC_MSG_RESULT($ac_vu_initrddir)
 ])
