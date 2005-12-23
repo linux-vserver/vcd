@@ -55,7 +55,7 @@ stop() {
 	checkconfig
 	
 	begin "Hiding /proc entries"
-	${_VATTR} -S -cr -f HIDE /proc
+	${_VSERVER} procfs hide
 	end 0
 }
 
