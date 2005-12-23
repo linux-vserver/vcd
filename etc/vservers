@@ -46,8 +46,6 @@ end() {
 start() {
 	checkconfig
 	
-	${_VATTR} -S -cr -f HIDE /proc
-	
 	begin "Unhiding /proc entries"
 	${_VSERVER} procfs unhide
 	end $?
