@@ -22,6 +22,10 @@ initrd_SCRIPTS = vservers
 
 nobase_pkgdata_DATA = examples/context.conf
 
+EXTRA_DIST = $(initrd_SCRIPTS) \
+             $(nobase_pkgdata_DATA)
+
+
 install-data-hook: install-pkgconfdir install-vdirbase-link
 
 install-pkgconfdir:

@@ -23,7 +23,7 @@ AC_CONFIG_HEADER([config.h])
 AC_GNU_SOURCE
 
 # Automake
-AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2])
+AM_INIT_AUTOMAKE([1.9 gnu dist-bzip2])
 AM_MAINTAINER_MODE
 
 # Checks for programs.

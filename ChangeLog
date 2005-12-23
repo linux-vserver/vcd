@@ -1,0 +1,16 @@
+# ChangeLog for vserver-utils
+
+  23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> configure.ac,
+  scripts/Makefile.am, etc/Makefile.am:
+  Fix 'make dist' target
+
+  23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> README:
+  Add project homepage
+
+  23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> ChangeLog:
+  Initial ChangeLog
+
+*vserver-utils-1.0 (22 Dec 2005)
+
+  22 Dec 2005; Benedikt Böhm <hollow@gentoo.org>
+  Initial release of the development series (1.x)

@@ -42,5 +42,10 @@ include $(top_srcdir)/m4/pathconfig.am
 BUILT_SOURCES = pathconfig
 CLEANFILES    = pathconfig
 
+EXTRA_DIST = $(nobase_pkgdata_DATA) \
+             $(sbin_SCRIPTS) \
+             pathconfig.in
+
+
 pathconfig: pathconfig.in
 	$(pathconfig_SED) $(srcdir)/pathconfig.in > pathconfig
