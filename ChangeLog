@@ -1,5 +1,11 @@
 # ChangeLog for vserver-utils
 
+  23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> etc/vservers:
+  Remove handling of guests on start/stop
+
+  23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> etc/vservers:
+  Fix location of pathconfig
+
   23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> configure.ac,
   scripts/Makefile.am, etc/Makefile.am:
   Fix 'make dist' target
