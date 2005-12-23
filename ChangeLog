@@ -1,5 +1,7 @@
 # ChangeLog for vserver-utils
 
+*vserver-utils-1.0.1 (23 Dec 2005)
+
   23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> scripts/command/status.sh:
   Fix output of status command
 
