@@ -1,5 +1,8 @@
 # ChangeLog for vserver-utils
 
+  23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> scripts/command/status.sh:
+  Fix output of status command
+
   23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> etc/vservers:
   Remove handling of guests on start/stop
 
