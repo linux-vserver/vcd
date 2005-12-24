@@ -32,14 +32,6 @@ vps.loadconfig() {
 		util.error "vps.loadconfig: cannot find configuration for '${VNAME}'"
 	fi
 	
-	if [ -e ${VCONFDIR}/vdir -a -L ${VCONFDIR}/vdir ]; then
-		VDIR=$(readlink ${VCONFDIR}/vdir)
-	elif [ -d ${VDIRBASE}/${VNAME} ]; then
-		VDIR=${VDIRBASE}/${VNAME}
-	else
-		util.error "vps.loadconfig: cannot find installation for '${VNAME}'"
-	fi
-	
 	source ${VCONFDIR}/context.conf
 	
 	# sanity checks
@@ -52,8 +44,13 @@ vps.loadconfig() {
 	done
 	
 	# defaults
+	: ${VDIR:=${VDIRBASE}/${VNAME}}
 	: ${VX_TIMEOUT_KILL:=30}
 	: ${VX_SHELL:=/bin/bash}
+	
+	if [ ! -d ${VDIR} ]; then
+		util.error "vps.loadconfig: cannot find installation for '${VNAME}'"
+	fi
 }
 
 vps.lock() {

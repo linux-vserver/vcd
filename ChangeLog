@@ -1,5 +1,8 @@
 # ChangeLog for vserver-utils
 
+  24 Dec 2005; Benedikt Böhm <hollow@gentoo.org> scripts/lib/vps.sh:
+  Remove antiquated vdir and vdirbase symlinks
+
 *vserver-utils-1.0.1 (23 Dec 2005)
 
   23 Dec 2005; Benedikt Böhm <hollow@gentoo.org> scripts/command/status.sh:

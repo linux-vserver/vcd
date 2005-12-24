@@ -26,12 +26,8 @@ EXTRA_DIST = $(initrd_SCRIPTS) \
              $(nobase_pkgdata_DATA)
 
 
-install-data-hook: install-pkgconfdir install-vdirbase-link
+install-data-hook: install-pkgconfdir
 
 install-pkgconfdir:
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(pkgconfdir)
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(pkgconfdir)/.defaults
-
-install-vdirbase-link:
-	f=$(DESTDIR)$(pkgconfdir)/.defaults/vdirbase; \
-	test -e "$$f" || ln -s $(vdirbase) "$$f"
