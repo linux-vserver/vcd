@@ -91,6 +91,7 @@ start.main() {
 	
 	STATETRACK=setup
 	vps.context setup
+	vps.network setup
 	vps.namespace new
 	
 	STATETRACK=mount

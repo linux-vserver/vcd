@@ -1,5 +1,12 @@
 # ChangeLog for vserver-utils
 
+  09 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vncontext.c:
+  Fix netmask handling
+
+  09 Jan 2006; Benedikt Böhm <hollow@gentoo.org> scripts/lib/vps.sh,
+  scripts/command/start.sh:
+  Add network handling
+
   24 Dec 2005; Benedikt Böhm <hollow@gentoo.org> scripts/lib/vps.sh:
   Remove antiquated vdir and vdirbase symlinks
 

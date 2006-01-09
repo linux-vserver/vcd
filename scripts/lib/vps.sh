@@ -86,6 +86,7 @@ vps.context() {
 	
 	case ${subcmd} in
 		setup)
+			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTANT,INIT_SET -- \
 			${_VCONTEXT} -C -x ${VX_XID} -f PERSISTANT,INIT_SET
 			;;
 		
@@ -95,6 +96,25 @@ vps.context() {
 		
 		*)
 			util.error "vps.context: unknown subcommand '${subcmd}'"
+	esac
+}
+
+vps.network() {
+# $1 - subcommand
+	local subcmd=$1
+	
+	[ -z "${subcmd}" ] && util.error "vps.network: missing argument <subcmd>"
+	[ -z "${VX_XID}" ] && util.error "vps.network: VX_XID missing"
+	
+	case ${subcmd} in
+		setup)
+			for i in ${NX_ADDR[@]}; do
+				${_VNCONTEXT} -A -n ${VX_XID} -a ${i}
+			done
+			;;
+		
+		*)
+			util.error "vps.network: unknown subcommand '${subcmd}'"
 	esac
 }
 
@@ -224,12 +244,12 @@ vps.init() {
 	case ${VX_INIT} in
 		plain)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
-			${_VEXEC} -cfi -x ${VX_XID} -- /sbin/init
+			${_VEXEC} -cfi -n ${VX_XID} -x ${VX_XID} -- /sbin/init
 			;;
 		
 		gentoo)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
-			${_VEXEC} -c -x ${VX_XID} -- /sbin/rc default
+			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc default
 			;;
 	esac
 	
@@ -250,12 +270,12 @@ vps.halt() {
 			${_VFLAGS} -S -f REBOOT_KILL -x ${VX_XID}
 			
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
-			${_VEXEC} -c -x ${VX_XID} -- /sbin/shutdown -h now
+			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/shutdown -h now
 			;;
 		
 		gentoo)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
-			${_VEXEC} -c -x ${VX_XID} -- /sbin/rc shutdown
+			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc shutdown
 			;;
 	esac
 	
@@ -268,7 +288,7 @@ vps.exec() {
 	
 	pushd ${VDIR} >/dev/null
 	${_VNAMESPACE} -E -x ${VX_XID} -- \
-	${_VEXEC} -c -x ${VX_XID} -- "$@"
+	${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- "$@"
 	popd >/dev/null
 }
 

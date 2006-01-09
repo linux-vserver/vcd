@@ -39,12 +39,13 @@
 #define NAME  "vexec"
 #define DESCR "Execute in vserver context"
 
-#define SHORT_OPTS "cfix:"
+#define SHORT_OPTS "cfin:x:"
 
 struct options {
 	bool chroot;
 	bool fork;
 	bool init;
+	nid_t nid;
 	xid_t xid;
 };
 
@@ -57,6 +58,7 @@ void cmd_help()
 	       "    -c            chroot to current working directory\n"
 	       "    -f            Fork into background\n"
 	       "    -i            Set init PID\n"
+	       "    -n <nid>      Network Context ID\n"
 	       "    -x <xid>      Context ID\n"
 	       "\n",
 	       NAME);
@@ -70,6 +72,7 @@ int main(int argc, char *argv[])
 		.chroot = false,
 		.fork   = false,
 		.init   = false,
+		.nid    = 0,
 		.xid    = 0,
 	};
 	
@@ -77,6 +80,11 @@ int main(int argc, char *argv[])
 	struct vx_flags flags = {
 		.flags = 0,
 		.mask  = VXF_PERSISTANT|VXF_STATE_SETUP,
+	};
+	
+	struct nx_flags nflags = {
+		.flags = 0,
+		.mask  = NXF_PERSISTANT|NXF_STATE_SETUP,
 	};
 	
 	int c;
@@ -103,6 +111,10 @@ int main(int argc, char *argv[])
 				flags.flags |= VXF_INFO_INIT;
 				flags.mask  |= VXF_INFO_INIT;
 				flags.mask  |= VXF_STATE_INIT;
+				break;
+			
+			case 'n':
+				opts.nid = (nid_t) atoi(optarg);
 				break;
 			
 			case 'x':
@@ -136,17 +148,31 @@ int main(int argc, char *argv[])
 				goto migrate;
 			
 			/* syscall */
-			if (!opts.init)
+			if (!opts.init) {
 				if (vx_set_flags(opts.xid, &flags) == -1)
 					PEXIT("Failed to set context flags", EXIT_COMMAND);
+				
+				if (opts.nid > 1)
+					if (nx_set_flags(opts.nid, &nflags) == -1)
+						PEXIT("Failed to set network context flags", EXIT_COMMAND);
+			}
 			
 migrate:
 			if (vx_migrate(opts.xid) == -1)
 				PEXIT("Failed to migrate to context", EXIT_COMMAND);
 			
-			if (opts.init)
+			if (opts.nid > 1)
+				if (nx_migrate(opts.nid) == -1)
+					PEXIT("Failed to migrate to network context", EXIT_COMMAND);
+			
+			if (opts.init) {
 				if (vx_set_flags(opts.xid, &flags) == -1)
 					PEXIT("Failed to set context flags", EXIT_COMMAND);
+				
+				if (opts.nid > 1)
+					if (nx_set_flags(opts.nid, &nflags) == -1)
+						PEXIT("Failed to set network context flags", EXIT_COMMAND);
+			}
 			
 			/* chroot to cwd */
 			if (opts.chroot) {
