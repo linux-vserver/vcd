@@ -87,24 +87,41 @@ int parse_addr(char *addr, uint32_t *ip, uint32_t *mask)
 		char *addr_ip, *addr_mask;
 		
 		*ip   = 0;
-		*mask = 0x80000000;
+		*mask = 0;
 		
 		addr_ip   = strtok(addr, "/");
 		addr_mask = strtok(NULL, "/");
 		
-		if (addr_ip == 0 || addr_mask == 0)
+		if (addr_ip == 0)
 			return -1;
 		
 		if (inet_aton(addr_ip, &ib) == -1)
 			return -1;
 		
-		*ip     = ib.s_addr;
-		*mask >>= atoi(addr_mask) - 1;
-		*mask   = htonl(*mask);
+		*ip = ib.s_addr;
 		
-		if (*ip == 0 || *mask == 0)
-			return -1;
-		
+		if (addr_mask == 0) {
+			/* default to /24 */
+			*mask = ntohl(0xffffff00);
+		} else {
+			if (strchr(addr_mask, '.') == 0) {
+				/* We have CIDR notation */
+				int sz = atoi(addr_mask);
+				
+				for (*mask = 0; sz > 0; --sz) {
+					*mask >>= 1;
+					*mask  |= 0x80000000;
+				}
+				
+				*mask = ntohl(*mask);
+			} else {
+				/* Standard netmask notation */
+				if (inet_aton(addr_mask, &ib) == -1)
+					return -1;
+				
+				*mask = ib.s_addr;
+			}
+		}
 		return 0;
 }
 
