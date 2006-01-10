@@ -96,67 +96,61 @@ void cmd_help()
 static inline
 void restore_root(void)
 {
-	if (fchdir(root_fd) == -1)
-		PEXIT("Failed to chdir to root", EXIT_COMMAND);
-	
-	if (chroot(".") == -1)
-		PEXIT("Failed to chroot to root", EXIT_COMMAND);
+	fchdir(root_fd);
+	chroot(".");
 }
 
-static inline
+static
 int secure_chdir(char *target)
 {
 	int target_fd;
 	
 	if (fchdir(cwd_fd) == -1)
-		PEXIT("Failed to chdir to cwd", EXIT_COMMAND);
+		goto error;
 	
 	if (chroot(".") == -1)
-		PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
+		goto error;
 	
-	if (chdir(target) == -1) {
-		restore_root();
-		PEXIT("Failed to chdir to target", EXIT_COMMAND);
-	}
+	if (chdir(target) == -1)
+		goto error;
 	
-	if ((target_fd = open(".", O_RDONLY|O_DIRECTORY)) == -1) {
-		restore_root();
-		PEXIT("Failed to open target directory", EXIT_COMMAND);
-	}
+	target_fd = open(".", O_RDONLY|O_DIRECTORY);
+	
+	if (target_fd == -1)
+		goto error;
 	
 	restore_root();
 	
 	if (fchdir(target_fd) == -1)
-		PEXIT("Failed to fchdir to target_fd", EXIT_COMMAND);
+		goto error;
 	
 	close(target_fd);
-	
 	return 0;
+	
+error:
+	close(target_fd);
+	return -1;
 }
 
-static inline
+static
 int update_mtab(struct mntspec *fsent, struct options *opts)
 {
-	int mtab_fd;
-	int rc = -1;
+	int mtab_fd, rc;
+	char *line, *buf;
 	
 	if (fchdir(cwd_fd) == -1)
-		PEXIT("Failed to chdir to cwd", EXIT_COMMAND);
+		goto error;
 	
 	if (chroot(".") == -1)
-		PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
+		goto error;
 	
 	mtab_fd = open(opts->mtab, O_CREAT|O_APPEND|O_WRONLY, 0644);
 	
-	if (mtab_fd == -1) {
-		perror("Failed to open mtab");
-		goto out;
-	}
+	if (mtab_fd == -1)
+		goto error;
 	
-	if (flock(mtab_fd, LOCK_EX) == -1) {
-		perror("Failed to lock mtab");
-		goto close;
-	}
+	if (flock(mtab_fd, LOCK_EX) == -1)
+		goto error;
 	
 	if (fsent->vfstype == 0)
 		fsent->vfstype = "none";
@@ -164,29 +158,25 @@ int update_mtab(struct mntspec *fsent, struct options *opts)
 	if (fsent->data == 0)
 		fsent->data = "defaults";
 	
-	char *line;
+	asprintf(&buf, "%s %s %s %s 0 0\n", fsent->source, fsent->target, fsent->vfstype, fsent->data);
 	
-	asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target,
-	         fsent->vfstype, fsent->data);
+	line = strdup(buf);
+	free(buf);
 	
-	if (write(mtab_fd, line, strlen(line)) == -1) {
-		free(line);
-		perror("Failed to update mtab");
-		goto close;
-	}
+	if (write(mtab_fd, line, strlen(line)) == -1)
+		goto error;
 	
-	free(line);
-	rc = 0;
-	
-close:
 	close(mtab_fd);
-	
-out:
 	restore_root();
-	return rc;
+	return 0;
+	
+error:
+	close(mtab_fd);
+	restore_root();
+	return -1;
 }
 
-static inline
+static
 int parse_fsent(struct mntspec *fsent, char *fstab_line)
 {
 	/* ignore leading whitespace characters */
@@ -221,12 +211,12 @@ int parse_fsent(struct mntspec *fsent, char *fstab_line)
 	
 	/* check data */
 	char *data = strdup(fsent->data);
-	char *buf  = malloc(strlen(fsent->data) + 1);
+	char *buf;
 
 #define CHECK_DATA(DATA,FLAGS) \
 	if (strcasecmp(buf, DATA) == 0) fsent->flags |= FLAGS;
 	
-	while ((buf = strsep(&data, ",")) != NULL) {
+	while ((buf = strsep(&data, ",")) != 0) {
 		CHECK_DATA("bind",       MS_BIND)
 		CHECK_DATA("rbind",      MS_BIND|MS_REC)
 		CHECK_DATA("noatime",    MS_NOATIME)
@@ -240,56 +230,63 @@ int parse_fsent(struct mntspec *fsent, char *fstab_line)
 	
 #undef CHECK_DATA
 	
-	free(buf);
-	
 	return 0;
 }
 
-static inline
+static
 int mount_fsent(struct mntspec *fsent, struct options *opts)
 {
 	char *cwd;
 	cwd = getcwd(0, 0);
 	
 	if (secure_chdir(fsent->target) == -1)
-		return 1;
+		goto skip;
 	
-	if (mount(fsent->source, ".", fsent->vfstype,
-	          fsent->flags, fsent->data) == -1)
-		PEXIT("Failed to mount filesystem entry", EXIT_COMMAND);
+	if (mount(fsent->source, ".", fsent->vfstype, fsent->flags, fsent->data) == -1)
+		goto error;
 	
 	chdir(cwd);
 	free(cwd);
 	
 	if (!opts->nomtab && update_mtab(fsent, opts) == -1)
-		printf("Failed to update mtab\n");
+		perror("Failed to update mtab");
 	
 	return 0;
+	
+error:
+	return -1;
+	
+skip:
+	return -2;
 }
 
-static inline
+static
 int umount_fsent(struct mntspec *fsent)
 {
 	char *cwd;
 	
 	/* skip the root filesystem */
 	if (strncmp(fsent->target, "/", 1) == 0)
-		return 0;
+		goto skip;
 	
 	cwd = getcwd(0, 0);
 	
 	if (secure_chdir(fsent->target) == -1)
-		return 1;
+		goto skip;
 	
 	if (umount2(".", MNT_FORCE|MNT_DETACH) == -1)
-		PEXIT("Failed to umount filesystem entry", EXIT_COMMAND);
+		goto error;
 	
 	chdir(cwd);
 	free(cwd);
 	
-	/* TODO: remove mtab entries */
-	
 	return 0;
+	
+error:
+	return -1;
+	
+skip:
+	return -2;
 }
 
 int main(int argc, char *argv[])
@@ -307,6 +304,7 @@ int main(int argc, char *argv[])
 		.nomtab = false,
 	};
 	
+	bool ok = true, passed = false;
 	int c;
 	
 	/* parse command line */
@@ -391,11 +389,14 @@ int main(int argc, char *argv[])
 			
 			switch (parse_fsent(&fsent, fstab_line)) {
 				case -1:
-					PEXIT("Failed to parse fstab line", EXIT_COMMAND);
+					printf("Failed to parse fstab line:\n%s\n", fstab_line);
+					break;
 				
 				case 0:
 					if (mount_fsent(&fsent, &opts) == -1)
-						PEXIT("Failed to mount fstab entry", EXIT_COMMAND);
+						ok = false;
+					else
+						passed = true;
 					break;
 				
 				default:
@@ -419,7 +420,9 @@ rbind:
 		};
 		
 		if (mount_fsent(&rbindent, &opts) == -1)
-			PEXIT("Failed to remount <path> to /", EXIT_COMMAND);
+			ok = false;
+		else
+			passed = true;
 		
 		goto out;
 	}
@@ -463,11 +466,14 @@ rbind:
 			
 			switch (parse_fsent(&fsent, mtab_line)) {
 				case -1:
-					PEXIT("Failed to parse mtab line", EXIT_COMMAND);
+					printf("Failed to parse mtab line:\n%s\n", mtab_line);
+					break;
 				
 				case 0:
 					if (umount_fsent(&fsent) == -1)
-						PEXIT("Failed to umount mtab entry", EXIT_COMMAND);
+						ok = false;
+					else
+						passed = true;
 					break;
 				
 				default:
@@ -476,10 +482,7 @@ rbind:
 		}
 		
 		free(mtab_buf);
-		
-		/* truncate mtab */
-		if (truncate(opts.mtab, 0) == -1)
-			PEXIT("Failed to truncate mtab", EXIT_COMMAND);
+		truncate(opts.mtab, 0);
 		
 		goto out;
 	}
@@ -488,5 +491,11 @@ rbind:
 	goto out;
 	
 out:
-	exit(EXIT_SUCCESS);
+	if (ok)
+		exit(EXIT_SUCCESS);
+	
+	if (passed)
+		exit(EXIT_COMMAND + 1);
+	
+	exit(EXIT_COMMAND + 2);
 }
