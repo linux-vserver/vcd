@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/mount.h>
 #include <sys/file.h>
 #include <vserver.h>
@@ -103,7 +104,7 @@ void restore_root(void)
 static
 int secure_chdir(char *target)
 {
-	int target_fd;
+	int target_fd = 0;
 	
 	if (fchdir(cwd_fd) == -1)
 		goto error;
@@ -135,8 +136,8 @@ error:
 static
 int update_mtab(struct mntspec *fsent, struct options *opts)
 {
-	int mtab_fd, rc;
-	char *line, *buf;
+	int mtab_fd = 0;
+	char *line;
 	
 	if (fchdir(cwd_fd) == -1)
 		goto error;
@@ -158,19 +159,18 @@ int update_mtab(struct mntspec *fsent, struct options *opts)
 	if (fsent->data == 0)
 		fsent->data = "defaults";
 	
-	asprintf(&buf, "%s %s %s %s 0 0\n", fsent->source, fsent->target, fsent->vfstype, fsent->data);
-	
-	line = strdup(buf);
-	free(buf);
+	asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target, fsent->vfstype, fsent->data);
 	
 	if (write(mtab_fd, line, strlen(line)) == -1)
 		goto error;
 	
+	free(line);
 	close(mtab_fd);
 	restore_root();
 	return 0;
 	
 error:
+	free(line);
 	close(mtab_fd);
 	restore_root();
 	return -1;
@@ -266,7 +266,7 @@ int umount_fsent(struct mntspec *fsent)
 	char *cwd;
 	
 	/* skip the root filesystem */
-	if (strncmp(fsent->target, "/", 1) == 0)
+	if (strcmp(fsent->target, "/") == 0)
 		goto skip;
 	
 	cwd = getcwd(0, 0);
@@ -274,8 +274,12 @@ int umount_fsent(struct mntspec *fsent)
 	if (secure_chdir(fsent->target) == -1)
 		goto skip;
 	
-	if (umount2(".", MNT_FORCE|MNT_DETACH) == -1)
-		goto error;
+	if (umount2(".", MNT_FORCE|MNT_DETACH) == -1) {
+		if (errno == ENOENT)
+			goto skip;
+		else
+			goto error;
+	}
 	
 	chdir(cwd);
 	free(cwd);
