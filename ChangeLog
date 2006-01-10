@@ -4,7 +4,7 @@
   Fix netmask handling
 
   09 Jan 2006; Benedikt Böhm <hollow@gentoo.org> scripts/lib/vps.sh,
-  scripts/command/start.sh:
+  scripts/command/start.sh, scripts/pathconfig.in:
   Add network handling
 
   24 Dec 2005; Benedikt Böhm <hollow@gentoo.org> scripts/lib/vps.sh:

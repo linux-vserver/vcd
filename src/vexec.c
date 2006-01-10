@@ -33,6 +33,7 @@
 #include <vserver.h>
 
 #include <linux/vserver/context.h>
+#include <linux/vserver/network.h>
 
 #include "tools.h"
 
@@ -149,29 +150,29 @@ int main(int argc, char *argv[])
 			
 			/* syscall */
 			if (!opts.init) {
-				if (vx_set_flags(opts.xid, &flags) == -1)
-					PEXIT("Failed to set context flags", EXIT_COMMAND);
-				
 				if (opts.nid > 1)
 					if (nx_set_flags(opts.nid, &nflags) == -1)
 						PEXIT("Failed to set network context flags", EXIT_COMMAND);
+				
+				if (vx_set_flags(opts.xid, &flags) == -1)
+					PEXIT("Failed to set context flags", EXIT_COMMAND);
 			}
 			
 migrate:
-			if (vx_migrate(opts.xid) == -1)
-				PEXIT("Failed to migrate to context", EXIT_COMMAND);
-			
 			if (opts.nid > 1)
 				if (nx_migrate(opts.nid) == -1)
 					PEXIT("Failed to migrate to network context", EXIT_COMMAND);
 			
+			if (vx_migrate(opts.xid) == -1)
+				PEXIT("Failed to migrate to context", EXIT_COMMAND);
+			
 			if (opts.init) {
-				if (vx_set_flags(opts.xid, &flags) == -1)
-					PEXIT("Failed to set context flags", EXIT_COMMAND);
-				
 				if (opts.nid > 1)
 					if (nx_set_flags(opts.nid, &nflags) == -1)
 						PEXIT("Failed to set network context flags", EXIT_COMMAND);
+				
+				if (vx_set_flags(opts.xid, &flags) == -1)
+					PEXIT("Failed to set context flags", EXIT_COMMAND);
 			}
 			
 			/* chroot to cwd */
