@@ -86,12 +86,13 @@ vps.context() {
 	
 	case ${subcmd} in
 		setup)
-			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTANT,INIT_SET -- \
-			${_VCONTEXT} -C -x ${VX_XID} -f PERSISTANT,INIT_SET
+			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTANT,INIT_SET
+			${_VCONTEXT}  -C -x ${VX_XID} -f PERSISTANT,INIT_SET
 			;;
 		
 		release)
-			${_VFLAGS} -S -x ${VX_XID} -f ~PERSISTANT
+			${_VNFLAGS} -S -n ${VX_XID} -f ~PERSISTANT
+			${_VFLAGS}  -S -x ${VX_XID} -f ~PERSISTANT
 			;;
 		
 		*)

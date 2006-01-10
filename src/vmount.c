@@ -209,13 +209,24 @@ int parse_fsent(struct mntspec *fsent, char *fstab_line)
 	
 #undef GET_STRING
 	
-	/* set save mount flags */
+	/* set safe mount flags */
 	fsent->flags = MS_NODEV;
 	
 	/* perform sanity checks */
 	if (strcmp(fsent->vfstype, "swap")   == 0) return 1;
-	if (strcmp(fsent->vfstype, "none")   == 0) fsent->vfstype = 0;
 	if (strcmp(fsent->vfstype, "devpts") == 0) fsent->flags |= MS_NODEV;
+	if (strcmp(fsent->vfstype, "none")   == 0) fsent->vfstype = 0;
+	
+	/* bind mount? */
+	char *data = strdup(fsent->data);
+	char *buf  = malloc(strlen(fsent->data) + 1);
+	
+	while ((buf = strsep(&data, ",")) != NULL) {
+		if (strcasecmp(buf, "bind") == 0) {
+			fsent->flags |= MS_BIND;
+			fsent->flags |= MS_REC;
+		}
+	}
 	
 	return 0;
 }
