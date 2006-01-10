@@ -170,10 +170,12 @@ int update_mtab(struct mntspec *fsent, struct options *opts)
 	         fsent->vfstype, fsent->data);
 	
 	if (write(mtab_fd, line, strlen(line)) == -1) {
+		free(line);
 		perror("Failed to update mtab");
 		goto close;
 	}
 	
+	free(line);
 	rc = 0;
 	
 close:
@@ -217,16 +219,28 @@ int parse_fsent(struct mntspec *fsent, char *fstab_line)
 	if (strcmp(fsent->vfstype, "devpts") == 0) fsent->flags |= MS_NODEV;
 	if (strcmp(fsent->vfstype, "none")   == 0) fsent->vfstype = 0;
 	
-	/* bind mount? */
+	/* check data */
 	char *data = strdup(fsent->data);
 	char *buf  = malloc(strlen(fsent->data) + 1);
+
+#define CHECK_DATA(DATA,FLAGS) \
+	if (strcasecmp(buf, DATA) == 0) fsent->flags |= FLAGS;
 	
 	while ((buf = strsep(&data, ",")) != NULL) {
-		if (strcasecmp(buf, "bind") == 0) {
-			fsent->flags |= MS_BIND;
-			fsent->flags |= MS_REC;
-		}
+		CHECK_DATA("bind",       MS_BIND)
+		CHECK_DATA("rbind",      MS_BIND|MS_REC)
+		CHECK_DATA("noatime",    MS_NOATIME)
+		CHECK_DATA("nodev",      MS_NODEV)
+		CHECK_DATA("noexec",     MS_NOEXEC)
+		CHECK_DATA("nodiratime", MS_NODIRATIME)
+		CHECK_DATA("nosuid",     MS_NOSUID)
+		CHECK_DATA("ro",         MS_RDONLY)
+		CHECK_DATA("sync",       MS_SYNCHRONOUS)
 	}
+	
+#undef CHECK_DATA
+	
+	free(buf);
 	
 	return 0;
 }

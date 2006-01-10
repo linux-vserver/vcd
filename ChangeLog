@@ -1,7 +1,7 @@
 # ChangeLog for vserver-utils
 
   10 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vmount.c:
-  Add bind mount support
+  Add support for mount flags
 
   09 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vncontext.c:
   Fix netmask handling
