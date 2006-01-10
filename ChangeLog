@@ -1,5 +1,11 @@
 # ChangeLog for vserver-utils
 
+  10 Jan 2006; Benedikt Böhm <hollow@gentoo.org> scripts/commands/release.sh:
+  Add command to release persistant vserver in case of failure
+
+  10 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vmount.c:
+  Code cleanup + various minor fixes
+
   10 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vmount.c:
   Rewrite error management to be more tolerant
 
