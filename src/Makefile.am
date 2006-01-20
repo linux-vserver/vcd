@@ -29,6 +29,7 @@ sbin_PROGRAMS = nidof \
                 vinfo \
                 vkill \
                 vlimit \
+                vlogin \
                 vmount \
                 vnamespace \
                 vncontext \
@@ -49,6 +50,8 @@ vflags_SOURCES = vflags.c
 vinfo_SOURCES = vinfo.c
 vkill_SOURCES = vkill.c
 vlimit_SOURCES = vlimit.c
+vlogin_SOURCES = vlogin.c
+vlogin_LDFLAGS = -lutil
 vmount_SOURCES = vmount.c
 vnamespace_SOURCES = vnamespace.c
 vncontext_SOURCES = vncontext.c
