@@ -16,17 +16,25 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_VU_INITRDDIR],
+AC_DEFUN([AC_VU_LIBVSERVER],
 [
-	AC_MSG_CHECKING([for initrddir])
-	AC_ARG_WITH([initrddir],
-	            [AC_HELP_STRING([--with-initrddir <DIR>],
-	                            [use <DIR> as directory for SysV init-files (default: $sysconfdir/init.d)])],
-	            [ac_vu_initrddir=$withval],
-	            [ac_vu_initrddir='$(sysconfdir)/init.d'])
+	AC_LANG_PUSH(C)
+	AC_CHECK_LIB([vserver], [vx_migrate])
+	AC_LANG_POP
 	
-	AC_MSG_RESULT([$ac_vu_initrddir])
-	
-	$1=$ac_vu_initrddir
-	AC_SUBST($1)
+	if test $ac_cv_lib_vserver_vx_migrate = no; then
+		AC_MSG_ERROR([libvserver is missing! please install libvserver and try again])
+	fi
 ])
+
+AC_DEFUN([AC_VU_LIBUTIL],
+[
+	AC_LANG_PUSH(C)
+	AC_CHECK_LIB([util], [forkpty])
+	AC_LANG_POP
+	
+	if test $ac_cv_lib_util_forkpty = no; then
+		AC_MSG_ERROR([libutil is missing! please reinstall glibc])
+	fi
+])
+

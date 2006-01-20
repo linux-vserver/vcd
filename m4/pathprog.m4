@@ -25,9 +25,9 @@ AC_DEFUN([AC_VU_PATHPROG_INIT],
 AC_DEFUN([AC_VU_PATHPROG],
 [
 	AC_REQUIRE([AC_VU_PATHPROG_INIT])
-
+	
 	AC_PATH_PROG($1, [$2])
-
+	
 	if test -z "${$1}"; then
 		AC_MSG_ERROR([Cannot find '$2' within '${PATH}'])
 	fi

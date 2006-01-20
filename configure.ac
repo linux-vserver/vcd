@@ -37,6 +37,8 @@ AC_VU_PATHPROG(CP,  cp)
 AC_VU_PATHPROG(SED, sed)
 
 # Checks for libraries.
+AC_VU_LIBVSERVER
+AC_VU_LIBUTIL
 
 # Checks for header files.
 

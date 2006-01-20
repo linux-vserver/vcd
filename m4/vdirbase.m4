@@ -20,14 +20,13 @@ AC_DEFUN([AC_VU_VDIRBASE],
 [
 	AC_MSG_CHECKING([for vserver base directory])
 	AC_ARG_WITH([vdirbase],
-		    [AC_HELP_STRING([--with-vdirbase=DIR],
-				    [default vserver vase directory (default: /vservers)])],
+	            [AC_HELP_STRING([--with-vdirbase=DIR],
+	                            [default vserver vase directory (default: /vservers)])],
 	            [ac_vu_vdirbase=$withval],
-		    [ac_vu_vdirbase=/vservers])
+	            [ac_vu_vdirbase=/vservers])
+	
 	AC_MSG_RESULT([$ac_vu_vdirbase])
 
-	if test -n "$1"; then
-		$1=$ac_vu_vdirbase
-		AC_SUBST($1)
-	fi
+	$1=$ac_vu_vdirbase
+	AC_SUBST($1)
 ])
