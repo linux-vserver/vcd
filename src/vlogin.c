@@ -22,7 +22,6 @@
 #include <config.h>
 #endif
 
-#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -30,7 +29,6 @@
 #include <string.h>
 #include <termios.h>
 #include <signal.h>
-#include <ncurses.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <errno.h>
@@ -57,59 +55,36 @@ struct terminal {
 	struct termios term;   /* terminal settings */
 	struct winsize ws;     /* terminal size */
 	pid_t pid;             /* terminal process id */
-	xid_t xid;             /* terminal context id */
 	struct termios termo;  /* original terminal settings */
 	int state;             /* terminal state */
 };
 
-static struct terminal *t;
+static struct terminal t;
 
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>*\n"
+	printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
 	       "\n"
 	       "Available options:\n"
+	       "    -n <xid>      Network Context ID\n"
 	       "    -x <xid>      Context ID\n"
 	       "\n",
 	       NAME);
 	exit(EXIT_SUCCESS);
 }
 
-/* allocate a terminal struct */
-static
-void terminal_alloc(void)
-{
-	t = malloc(sizeof(struct terminal));
-	
-	if (!t)
-		PEXIT("Failed to allocate memory for terminal struct", EXIT_COMMAND);
-	
-	memset(t, 0, sizeof(struct terminal));
-	
-	/* store initial entries */
-	t->fd  = -1;
-	t->xid = -1;
-	t->pid = -1;
-	t->state = TS_RESET;
-}
-
-/* dellocate a terminal struct */
-static
-void terminal_dealloc(void)
-{
-	free(t);
-}
-
+/* set terminal to raw mode */
 static
 int terminal_raw(void)
 {
 	struct termios buf;
 	
-	if (tcgetattr(STDIN_FILENO, &t->termo) == -1)
+	/* save original terminal settings */
+	if (tcgetattr(STDIN_FILENO, &t.termo) == -1)
 		return -1;
 	
-	buf = t->termo;
+	buf = t.termo;
 	
 	/* echo off
 	** canonical mode off
@@ -142,61 +117,65 @@ int terminal_raw(void)
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &buf) == -1)
 		return -1;
 	
-	t->state = TS_RAW;
+	t.state = TS_RAW;
 	
 	return 0;
 }
 
-static
-int terminal_clear(void)
-{
-	return write(STDOUT_FILENO, "\33[H\33[J", 6);
-}
-
+/* reset terminal to original state */
 static
 int terminal_reset(void)
 {
-	if (t->state != TS_RAW)
+	if (t.state != TS_RAW)
 		return 0;
 	
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &t->termo) == -1)
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &t.termo) == -1)
 		return -1;
 	
-	t->state = TS_RESET;
+	t.state = TS_RESET;
 	
 	return 0;
 }
 
+/* exit handler */
 static
 void terminal_atexit(void)
 {
 	terminal_reset();
-	terminal_dealloc();
-	printf("\n");
+	printf("\n"); /* for cosmetic reasons */
 }
 
+/* send signal to terminal */
 static
 void terminal_kill(int sig)
 {
 	pid_t pgrp = -1;
 	
-	if (ioctl(t->fd, TIOCGPGRP, &pgrp) >= 0 &&
+	/* try to get process group leader */
+	if (ioctl(t.fd, TIOCGPGRP, &pgrp) >= 0 &&
 	    pgrp != -1 &&
 	    kill(-pgrp, sig))
 		return;
 	
 	/* fallback using terminal pid */
-	kill(-t->pid, sig);
+	kill(-t.pid, sig);
 }
 
+/* redraw the terminal screen */
 static
 void terminal_redraw(void)
 {
-	ioctl(0, TIOCGWINSZ, &t->ws);
-	ioctl(t->fd, TIOCSWINSZ, &t->ws);
+	/* get winsize from stdin */
+	ioctl(0, TIOCGWINSZ, &t.ws);
+	
+	/* set winsize in terminal */
+	ioctl(t.fd, TIOCSWINSZ, &t.ws);
+	
+	/* set winsize change signal to terminal */
 	terminal_kill(SIGWINCH);
 }
 
+/* copy terminal activity to user */
 static
 void terminal_activity(void)
 {
@@ -204,50 +183,58 @@ void terminal_activity(void)
 	int len;
 	
 	/* read terminal activity */
-	len = read(t->fd, buf, sizeof(buf));
+	len = read(t.fd, buf, sizeof(buf));
 	
-	/* unlink terminal on error */
+	/* terminal died or strange things happened */
 	if (len == -1)
 		PEXIT("Failed to read from terminal", EXIT_COMMAND);
 	
-	/* Get the current terminal settings. */
-	if (tcgetattr(t->fd, &t->term) == -1)
+	/* get the current terminal settings */
+	if (tcgetattr(t.fd, &t.term) == -1)
 		PEXIT("Failed to get terminal attributes", EXIT_COMMAND);
 	
-	/* write activity to clients */
+	/* set the current terminal settings */
+	if (tcsetattr(STDIN_FILENO, TCSANOW, &t.term) == -1)
+		PEXIT("Failed to set terminal attributes", EXIT_COMMAND);
+	
+	/* write activity to user */
 	if (write(STDOUT_FILENO, buf, len) == -1)
 		PEXIT("Failed to write to stdout", EXIT_COMMAND);
 }
 
+/* copy user activity to terminal */
 static
 void user_activity(void)
 {
 	char buf[64];
 	int len;
 	
-	/* read client activity */
+	/* read user activity */
 	len = read(STDIN_FILENO, buf, sizeof(buf));
 	
-	/* unlink terminal on error */
+	/* the user process died or strange thins happened */
 	if (len == -1)
 		PEXIT("Failed to read from stdin", EXIT_COMMAND);
 	
 	/* write activity to terminal */
-	if (write(t->fd, buf, len) == -1)
+	if (write(t.fd, buf, len) == -1)
 		PEXIT("Failed to write to terminal", EXIT_COMMAND);
 }
 
+/* catch signals */
 static
 void signal_handler(int sig)
 {
 	int status;
 	
 	switch(sig) {
+		/* terminal died */
 		case SIGCHLD:
 			wait(&status);
 			exit(status);
 			break;
 		
+		/* window size has changed */
 		case SIGWINCH:
 			signal(SIGWINCH, signal_handler);
 			terminal_redraw();
@@ -292,10 +279,7 @@ int main(int argc, char *argv[])
 	if (opts.xid == 0)
 		EXIT("Invalid xid", EXIT_USAGE);
 	
-	/* allocate memory for terminal struct */
-	terminal_alloc();
-	atexit(terminal_atexit);
-	
+	/* enter context */
 	if (vx_enter_namespace(opts.xid) == -1)
 		PEXIT("Failed to enter namespace", EXIT_COMMAND);
 	
@@ -306,26 +290,36 @@ int main(int argc, char *argv[])
 		PEXIT("Failed to migrate to context", EXIT_COMMAND);
 	
 	/* set terminal to raw mode */
+	atexit(terminal_atexit);
 	if (terminal_raw() == -1)
 		PEXIT("Failed to set terminal to raw mode", EXIT_COMMAND);
 	
-	/* setup some signal handler */
+	/* setup some signal handlers */
 	signal(SIGCHLD, signal_handler);
 	signal(SIGWINCH, signal_handler);
 	
 	/* fork new pseudo terminal */
 	pid_t pid;
-	pid = forkpty(&t->fd, NULL, NULL, NULL);
+	pid = forkpty(&t.fd, NULL, NULL, NULL);
 	
 	if (pid == -1)
 		PEXIT("Failed to fork new pseudo terminal", EXIT_COMMAND);
 	
 	if (pid == 0) {
-		if (execl("/bin/sh", "/bin/sh", "-l", NULL) == -1)
-			PEXIT("Failed to execute default shell", EXIT_COMMAND);
+		/* check shell */
+		if (argc > optind) {
+			if (execv(argv[optind], argv+optind) == -1) {
+				PEXIT("Failed to execute default shell", EXIT_COMMAND);
+			}
+		}
+		else {
+			if (execl("/bin/sh", "/bin/sh", "-l", NULL) == -1) {
+				PEXIT("Failed to execute default shell", EXIT_COMMAND);
+			}
+		}
 	}
 	
-	t->pid = pid;
+	t.pid = pid;
 	
 	/* we want a redraw */
 	terminal_redraw();
@@ -338,8 +332,8 @@ int main(int argc, char *argv[])
 		/* init file descriptors for select */
 		FD_ZERO(&rfds);
 		FD_SET(STDIN_FILENO, &rfds);
-		FD_SET(t->fd, &rfds);
-		n = t->fd;
+		FD_SET(t.fd, &rfds);
+		n = t.fd;
 		
 		/* wait for something to happen */
 		while (select(n + 1, &rfds, NULL, NULL, NULL) == -1) {
@@ -350,7 +344,7 @@ int main(int argc, char *argv[])
 		if (FD_ISSET(STDIN_FILENO, &rfds))
 			user_activity();
 		
-		if (FD_ISSET(t->fd, &rfds))
+		if (FD_ISSET(t.fd, &rfds))
 			terminal_activity();
 	}
 	
