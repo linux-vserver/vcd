@@ -154,7 +154,7 @@ void terminal_kill(int sig)
 	/* try to get process group leader */
 	if (ioctl(t.fd, TIOCGPGRP, &pgrp) >= 0 &&
 	    pgrp != -1 &&
-	    kill(-pgrp, sig))
+	    kill(-pgrp, sig) != -1)
 		return;
 	
 	/* fallback using terminal pid */
@@ -228,6 +228,11 @@ void signal_handler(int sig)
 	int status;
 	
 	switch(sig) {
+		/* catch interrupt */
+		case SIGINT:
+			terminal_kill(sig);
+			break;
+		
 		/* terminal died */
 		case SIGCHLD:
 			wait(&status);
@@ -280,9 +285,6 @@ int main(int argc, char *argv[])
 		EXIT("Invalid xid", EXIT_USAGE);
 	
 	/* enter context */
-	if (vx_enter_namespace(opts.xid) == -1)
-		PEXIT("Failed to enter namespace", EXIT_COMMAND);
-	
 	if (opts.nid != 0 && nx_migrate(opts.xid) == -1)
 		PEXIT("Failed to migrate to network context", EXIT_COMMAND);
 	
@@ -294,13 +296,14 @@ int main(int argc, char *argv[])
 	if (terminal_raw() == -1)
 		PEXIT("Failed to set terminal to raw mode", EXIT_COMMAND);
 	
-	/* setup some signal handlers */
-	signal(SIGCHLD, signal_handler);
-	signal(SIGWINCH, signal_handler);
-	
 	/* fork new pseudo terminal */
 	pid_t pid;
 	pid = forkpty(&t.fd, NULL, NULL, NULL);
+	
+	/* setup some signal handlers */
+	signal(SIGINT, signal_handler);
+	signal(SIGCHLD, signal_handler);
+	signal(SIGWINCH, signal_handler);
 	
 	if (pid == -1)
 		PEXIT("Failed to fork new pseudo terminal", EXIT_COMMAND);
@@ -309,7 +312,7 @@ int main(int argc, char *argv[])
 		/* check shell */
 		if (argc > optind) {
 			if (execv(argv[optind], argv+optind) == -1) {
-				PEXIT("Failed to execute default shell", EXIT_COMMAND);
+				PEXIT("Failed to execute shell", EXIT_COMMAND);
 			}
 		}
 		else {
@@ -319,7 +322,19 @@ int main(int argc, char *argv[])
 		}
 	}
 	
+	/* save terminals pid */
 	t.pid = pid;
+	
+	/* set process title for ps */
+	int i, len;
+	
+	for (i = 1; i < argc; i++) {
+		memset(argv[i], '\0', strlen(argv[i]));
+	}
+	
+	len = strlen(argv[0]);
+	memset(argv[0], '\0', len);
+	strncpy(argv[0], "VLOGIN", len);
 	
 	/* we want a redraw */
 	terminal_redraw();
