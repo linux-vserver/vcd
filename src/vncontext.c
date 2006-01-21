@@ -213,7 +213,7 @@ int main(int argc, char *argv[])
 		
 		/* syscall */
 		if (nx_add_addr(opts.nid, &addr) == -1)
-			PEXIT("Failed to create networkcontext", EXIT_COMMAND);
+			PEXIT("Failed to add network address", EXIT_COMMAND);
 		
 		goto out;
 	}
@@ -241,7 +241,7 @@ int main(int argc, char *argv[])
 create:
 		/* syscall */
 		if (nx_create(opts.nid, &create_flags) == -1)
-			PEXIT("Failed to create networkcontext", EXIT_COMMAND);
+			PEXIT("Failed to create network context", EXIT_COMMAND);
 		
 		goto load;
 	}
@@ -276,7 +276,7 @@ create:
 		
 		/* syscall */
 		if (nx_rem_addr(opts.nid, &addr) == -1)
-			PEXIT("Failed to create networkcontext", EXIT_COMMAND);
+			PEXIT("Failed to remove network address", EXIT_COMMAND);
 		
 		goto out;
 	}
