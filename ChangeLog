@@ -1,5 +1,27 @@
 # ChangeLog for vserver-utils
 
+  21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vnamespace.c:
+  Prevent accidental namespace cleanup
+
+  21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vmount.c, src/vnamespace.c:
+  Fix lazy handling of getcwd(0,0)
+
+  21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> scripts/lib/vps.sh:
+  Catch unknown init styles
+
+  21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> configure.ac, m4/libs.m4:
+  Add dietlibc detection
+
+  21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> +scripts/commands/login.sh,
+  scripts/lib/vps.sh, scripts/pathconfig.in:
+  Add login command to vserver
+
+  21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> configure.ac, +m4/libs.m4:
+  Add check for libvserver and libutil (for openpty)
+
+  20 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/Makefile, +src/vlogin.c:
+  Add pseudo terminal login program
+
 *vserver-utils-1.0.2 (10 Jan 2006)
 
   10 Jan 2006; Benedikt Böhm <hollow@gentoo.org> scripts/commands/release.sh:
