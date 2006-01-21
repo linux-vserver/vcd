@@ -252,6 +252,10 @@ vps.init() {
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
 			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc default
 			;;
+		
+		*)
+			util.error "vps.init: unknown init style"
+			;;
 	esac
 	
 	popd >/dev/null
