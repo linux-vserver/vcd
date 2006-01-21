@@ -31,6 +31,7 @@ AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
 AC_PROG_LN_S
+AC_PROG_MAKE_SET
 
 AC_VU_PATHPROG(CP,  cp)
 AC_VU_PATHPROG(SED, sed)
@@ -47,12 +48,15 @@ AC_VU_DIETLIBC([$min_diet_ver])
 if test $ac_vu_have_dietlibc = yes; then
 	AM_CONDITIONAL(USE_DIETLIBC, true)
 	CC="${DIET} ${DIETFLAGS} ${CC}"
+	enable_static=yes
+	enable_shared=no
 else
 	AC_VU_LIBUTIL
 	AM_CONDITIONAL(USE_DIETLIBC, false)
 fi
 
 # Checks for libraries.
+AC_PROG_LIBTOOL
 AC_VU_LIBVSERVER
 
 # Checks for header files.
@@ -68,6 +72,21 @@ CFLAGS="${CFLAGS} -W -Wall -std=gnu99 -pedantic"
 AC_VU_INITRDDIR(initrddir)
 AC_VU_VDIRBASE(vdirbase)
 
+# Final info page
+AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
+
+                       CC: $CC ($($CC --version | head -n1))
+                 CPPFLAGS: '$CPPFLAGS'
+                   CFLAGS: '$CFLAGS'
+
+                   prefix: $prefix
+               build/host: $build/$host
+               sysconfdir: $sysconfdir
+                initrddir: $initrddir
+                 vdirbase: $vdirbase
+             use dietlibc: $ac_lv_have_dietlibc
+"])
+
 # Output
 AC_CONFIG_FILES([Makefile
                  etc/Makefile
@@ -75,3 +94,5 @@ AC_CONFIG_FILES([Makefile
                  src/Makefile])
 
 AC_OUTPUT
+
+AC_MSG_NOTICE([$SUMMARY])
