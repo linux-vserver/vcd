@@ -159,7 +159,7 @@ int main(int argc, char *argv[])
 	if (cmds.new) {
 		signal(SIGCHLD, SIG_DFL);
 		
-		pid = sys_clone(CLONE_NEWNS|CLONE_VFORK|SIGCHLD, 0);
+		pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0);
 		
 		switch(pid) {
 			case -1:
