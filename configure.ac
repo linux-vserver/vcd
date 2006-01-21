@@ -30,15 +30,27 @@ AM_MAINTAINER_MODE
 AC_PROG_CC
 AC_PROG_CPP
 AC_PROG_INSTALL
-AC_PROG_LIBTOOL
 AC_PROG_LN_S
 
 AC_VU_PATHPROG(CP,  cp)
 AC_VU_PATHPROG(SED, sed)
 
+# check for dietlibc
+case $host_cpu in
+	(i*86|athlon) min_diet_ver=0.25;;
+	(ia64|hppa*)  min_diet_ver=0.29;;
+	(*)           min_diet_ver=0.28;;
+esac
+
+AC_VU_DIETLIBC([$min_diet_ver])
+
+if test $ac_vu_have_dietlibc = yes; then
+	CC="${DIET} ${DIETFLAGS} ${CC}"
+fi
+
 # Checks for libraries.
 AC_VU_LIBVSERVER
-AC_VU_LIBUTIL
+#AC_VU_LIBUTIL
 
 # Checks for header files.
 
