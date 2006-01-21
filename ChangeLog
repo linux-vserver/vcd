@@ -13,7 +13,7 @@
   Add dietlibc detection
 
   21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> +scripts/commands/login.sh,
-  scripts/lib/vps.sh, scripts/pathconfig.in:
+  scripts/lib/vps.sh, scripts/pathconfig.in, scripts/Makefile.am:
   Add login command to vserver
 
   21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> configure.ac, +m4/libs.m4:

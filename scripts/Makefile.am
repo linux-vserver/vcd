@@ -21,6 +21,7 @@ pkgdata_DATA = pathconfig
 nobase_pkgdata_DATA = commands/enter.sh \
                       commands/exec.sh \
                       commands/info.sh \
+                      commands/login.sh \
                       commands/procfs.sh \
                       commands/release.sh \
                       commands/start.sh \
