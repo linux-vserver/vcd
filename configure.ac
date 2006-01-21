@@ -45,12 +45,15 @@ esac
 AC_VU_DIETLIBC([$min_diet_ver])
 
 if test $ac_vu_have_dietlibc = yes; then
+	AM_CONDITIONAL(USE_DIETLIBC, true)
 	CC="${DIET} ${DIETFLAGS} ${CC}"
+else
+	AC_VU_LIBUTIL
+	AM_CONDITIONAL(USE_DIETLIBC, false)
 fi
 
 # Checks for libraries.
 AC_VU_LIBVSERVER
-#AC_VU_LIBUTIL
 
 # Checks for header files.
 

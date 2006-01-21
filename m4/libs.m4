@@ -16,17 +16,6 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_VU_LIBVSERVER],
-[
-	AC_LANG_PUSH(C)
-	AC_CHECK_LIB([vserver], [vx_migrate])
-	AC_LANG_POP
-	
-	if test $ac_cv_lib_vserver_vx_migrate = no; then
-		AC_MSG_ERROR([libvserver is missing! please install libvserver and try again])
-	fi
-])
-
 AC_DEFUN([AC_VU_DIETLIBC],
 [
 	AC_MSG_CHECKING([whether to enable dietlibc])
@@ -103,14 +92,30 @@ AC_DEFUN([AC_VU_DIETLIBC],
 ])
 
 
-AC_DEFUN([AC_VU_LIBUTIL],
+AC_DEFUN([AC_VU_LIBVSERVER],
 [
 	AC_LANG_PUSH(C)
-	AC_CHECK_LIB([util], [forkpty])
+	AC_CHECK_LIB([vserver],
+	             [vx_migrate],
+	             [ac_vu_have_libvserver=yes],
+	             [ac_vu_have_libvserver=no])
 	AC_LANG_POP
 	
-	if test $ac_cv_lib_util_forkpty = no; then
-		AC_MSG_ERROR([libutil is missing! please reinstall glibc])
+	if test $ac_vu_have_libvserver = no; then
+		AC_MSG_ERROR([libvserver is missing! please install libvserver and try again])
 	fi
 ])
 
+AC_DEFUN([AC_VU_LIBUTIL],
+[
+	AC_LANG_PUSH(C)
+	AC_CHECK_LIB([util],
+	             [forkpty],
+	             [ac_vu_have_libutil=yes],
+	             [ac_vu_have_libutil=no])
+	AC_LANG_POP
+	
+	if test $ac_vu_have_libutil = no; then
+		AC_MSG_ERROR([libutil is missing! please reinstall glibc])
+	fi
+])

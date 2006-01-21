@@ -51,7 +51,9 @@ vinfo_SOURCES = vinfo.c
 vkill_SOURCES = vkill.c
 vlimit_SOURCES = vlimit.c
 vlogin_SOURCES = vlogin.c
+if !USE_DIETLIBC
 vlogin_LDFLAGS = -lutil
+endif
 vmount_SOURCES = vmount.c
 vnamespace_SOURCES = vnamespace.c
 vncontext_SOURCES = vncontext.c

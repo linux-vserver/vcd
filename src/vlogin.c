@@ -285,7 +285,7 @@ int main(int argc, char *argv[])
 		EXIT("Invalid xid", EXIT_USAGE);
 	
 	/* enter context */
-	if (opts.nid != 0 && nx_migrate(opts.xid) == -1)
+	if (opts.nid > 1 && nx_migrate(opts.nid) == -1)
 		PEXIT("Failed to migrate to network context", EXIT_COMMAND);
 	
 	if (vx_migrate(opts.xid) == -1)
@@ -297,8 +297,13 @@ int main(int argc, char *argv[])
 		PEXIT("Failed to set terminal to raw mode", EXIT_COMMAND);
 	
 	/* fork new pseudo terminal */
+	int slave;
+	
+	if (openpty(&t.fd, &slave, NULL, NULL, NULL) == -1)
+		PEXIT("Failed to open new pseudo terminal", EXIT_COMMAND);
+	
 	pid_t pid;
-	pid = forkpty(&t.fd, NULL, NULL, NULL);
+	pid = fork();
 	
 	/* setup some signal handlers */
 	signal(SIGINT, signal_handler);
@@ -309,6 +314,22 @@ int main(int argc, char *argv[])
 		PEXIT("Failed to fork new pseudo terminal", EXIT_COMMAND);
 	
 	if (pid == 0) {
+		/* we don't need the master side of the terminal */
+		close(t.fd);
+		
+		/* login_tty() stupid dietlibc doesn't have it */
+		setsid();
+		
+		if (ioctl(slave, TIOCSCTTY, NULL) == -1)
+			PEXIT("Failed to set controlling terminal", EXIT_COMMAND);
+		
+		dup2(slave, 0);
+		dup2(slave, 1);
+		dup2(slave, 2);
+		
+		if (slave > 2)
+			close(slave);
+		
 		/* check shell */
 		if (argc > optind) {
 			if (execv(argv[optind], argv+optind) == -1) {
