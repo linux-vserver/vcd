@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <errno.h>
+#include <limits.h>
 #include <sys/mount.h>
 #include <sys/file.h>
 #include <vserver.h>
@@ -236,8 +237,10 @@ int parse_fsent(struct mntspec *fsent, char *fstab_line)
 static
 int mount_fsent(struct mntspec *fsent, struct options *opts)
 {
-	char *cwd;
-	cwd = getcwd(0, 0);
+	char cwd[PATH_MAX];
+	
+	if (getcwd(cwd, PATH_MAX) == NULL)
+		goto error;
 	
 	if (secure_chdir(fsent->target) == -1)
 		goto skip;

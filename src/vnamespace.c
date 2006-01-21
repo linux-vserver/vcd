@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <sched.h>
 #include <signal.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <vserver.h>
@@ -39,7 +40,7 @@
 #define NAME  "vnamespace"
 #define DESCR "Filesystem Namespace Manager"
 
-#define SHORT_OPTS "CENSx:"
+#define SHORT_OPTS "CENSfx:"
 
 /* dietlibc does not define CLONE_NEWNS */
 #ifndef CLONE_NEWNS
@@ -54,6 +55,7 @@ struct commands {
 };
 
 struct options {
+	bool force_clean;
 	xid_t xid;
 };
 
@@ -86,13 +88,14 @@ int main(int argc, char *argv[])
 	};
 	
 	struct options opts = {
-		.xid = 0,
+		.force_clean = false,
+		.xid         = 0,
 	};
 	
 	int c;
 	pid_t pid; /* sys_clone */
 	int status; /* waitpid */
-	char *cwd; /* chdir */
+	char cwd[PATH_MAX]; /* chdir */
 	
 	/* parse command line */
 	while (1) {
@@ -118,6 +121,10 @@ int main(int argc, char *argv[])
 				cmds.set = true;
 				break;
 			
+			case 'f':
+				opts.force_clean = true;
+				break;
+			
 			case 'x':
 				opts.xid = (xid_t) atoi(optarg);
 				break;
@@ -127,6 +134,9 @@ int main(int argc, char *argv[])
 	}
 	
 	if (cmds.cleanup) {
+		if (!opts.force_clean)
+			SEXIT("You don't want this. Really. (Use -f if you are sure)", EXIT_USAGE);
+		
 		if (vx_cleanup_namespace() == -1)
 			PEXIT("Failed to cleanup namespace", EXIT_COMMAND);
 		
@@ -134,7 +144,8 @@ int main(int argc, char *argv[])
 	}
 	
 	if (cmds.enter) {
-		cwd = getcwd(0, 0);
+		if (getcwd(cwd, PATH_MAX) == NULL)
+			PEXIT("Failed to get cwd", EXIT_COMMAND);
 		
 		if (vx_enter_namespace(opts.xid) == -1)
 			PEXIT("Failed to enter namespace", EXIT_COMMAND);
