@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
 		EXIT("No xid given", EXIT_USAGE);
 	
 	if (argc <= optind)
-		EXIT("No init command given", EXIT_USAGE);
+		EXIT("No command given", EXIT_USAGE);
 	
 	if (opts.fork) {
 		pid = sys_clone(CLONE_VFORK, 0);

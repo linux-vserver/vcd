@@ -136,19 +136,25 @@ int main(int argc, char *argv[])
 	if (cmds.clear) {
 		if (ioctl(rootfd, VROOT_CLR_DEV, 0) == -1)
 			PEXIT("Failed to clear device", EXIT_COMMAND);
+		
+		goto out;
 	}
 	
-	else if (cmds.decr) {
+	if (cmds.decr) {
 		if (ioctl(rootfd, VROOT_DEC_USE, 0) == -1)
 			PEXIT("Failed to decrement device usage", EXIT_COMMAND);
+		
+		goto out;
 	}
 	
-	else if (cmds.incr) {
+	if (cmds.incr) {
 		if (ioctl(rootfd, VROOT_INC_USE, 0) == -1)
 			PEXIT("Failed to increment device usage", EXIT_COMMAND);
+		
+		goto out;
 	}
 	
-	else if (cmds.setup) {
+	if (cmds.setup) {
 		int realrootfd = open(opts.realroot, O_RDONLY, 0);
 		
 		if (realrootfd == -1)
@@ -158,8 +164,11 @@ int main(int argc, char *argv[])
 			PEXIT("Failed to decrement device usage", EXIT_COMMAND);
 		
 		close(realrootfd);
+		
+		goto out;
 	}
 	
+out:
 	close(rootfd);
 	
 	exit(EXIT_SUCCESS);

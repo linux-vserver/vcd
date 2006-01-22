@@ -98,10 +98,8 @@ int main(int argc, char *argv[])
 	}
 	
 	/* show help message */
-	if (argc == 1) {
+	if (argc == 1)
 		cmd_help();
-		exit(EXIT_SUCCESS);
-	}
 	
 	if (opts.xid == 0)
 		EXIT("No xid given", EXIT_USAGE);
