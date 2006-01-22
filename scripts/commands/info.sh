@@ -23,15 +23,10 @@
 
 
 info.usage() {
-	echo "Usage: vserver status <name>"
+	echo "Usage: vserver info <name>"
 	echo
 	echo "  <name>        Name of the vserver"
 	echo
-	echo "Exit codes:"
-	echo "   0 - running,unlocked"
-	echo "   1 - running,locked"
-	echo "   2 - stopped,unlocked"
-	echo "   3 - stopped,locked"
 }
 
 info.exit_handler() {

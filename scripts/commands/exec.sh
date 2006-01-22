@@ -32,7 +32,7 @@ exec.usage() {
 }
 
 exec.exit_handler() {
-	vps.unlock || :
+	:
 }
 
 exec.interrupt_handler() {
@@ -50,13 +50,5 @@ exec.main() {
 		util.error "exec: vserver '${VNAME}' not running"
 	fi
 	
-	vps.lock
-	
-	STATETRACK=exec
 	vps.exec "$@"
-	
-	STATETRACK=unlock
-	vps.unlock
-	
-	STATETRACK=done
 }
