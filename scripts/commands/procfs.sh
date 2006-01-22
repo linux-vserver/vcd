@@ -49,8 +49,7 @@ procfs.main() {
 	[ -z "${subcmd}" ] && util.error "procfs.start: missing argument <subcmd>"
 	
 	if [ "${subcmd}" == "hide" ]; then
-		${_VATTR} -S -cr -f HIDE /proc
-		[ $? -ne 0 ] && exit 2
+		${_VATTR} -S -cr -f HIDE /proc || exit 2
 		exit 0
 	fi
 	

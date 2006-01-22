@@ -1,5 +1,8 @@
 # ChangeLog for vserver-utils
 
+  22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vattr.c:
+  Fix error count logic
+
   22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> scripts/commands/status.sh,
   scripts/lib/vps.sh, src/lockfile.c:
   Fix status command logic

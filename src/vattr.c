@@ -112,6 +112,8 @@ void cmd_help()
 static
 int do_iattr(char *file, struct stat *sb, char *display, char *src)
 {
+	int rc = 0;
+	
 	/* init syscall data */
 	struct vx_iattr iattr;
 	
@@ -134,8 +136,10 @@ int do_iattr(char *file, struct stat *sb, char *display, char *src)
 		};
 		
 		/* validate descending list */
-		if (list_validate_flag(&link, clmod) == -1)
-			PEXIT("List validation failed", EXIT_USAGE);
+		if (list_validate_flag(&link, clmod) == -1) {
+			perror("List validation failed");
+			return 1;
+		}
 		
 		/* we need dummy flags and mask to convert them to uint32_t later */
 		uint64_t flags = 0, mask = 0;
@@ -157,8 +161,8 @@ set_iattr:
 		
 		/* syscall */
 		if (vx_set_iattr(&iattr) == -1) {
-			perror(iattr.filename);
-			return -1;
+			printf("vx_set_iattr(%s): %s\n", iattr.filename, strerror(errno));
+			return 1;
 		}
 	} else {
 		/* init list output chars */
@@ -190,6 +194,7 @@ set_iattr:
 		if (vx_get_iattr(&iattr) == -1) {
 			memcpy(ptr, "- ERR - ", 8);
 			ptr += 8;
+			rc = 1;
 		} else {
 			/* print pretty flag list */
 			list_foreach(ip, i) {
@@ -219,9 +224,8 @@ set_iattr:
 		else
 			printf(" %s\n", file);
 	}
-		
 	
-	return 0;
+	return rc;
 }
 
 #define S_ISXDEV(SB) (st.st_dev != SB.st_dev)
@@ -236,8 +240,8 @@ int handle_file(char *file, char *display)
 		goto out;
 	
 	if (lstat(file, &sb) == -1) {
-		perror("lstat()");
-		return -1;
+		printf("lstat(%s): %s\n", file, strerror(errno));
+		return 1;
 	}
 	
 	if (S_ISXDEV(sb) && opts.cross)
@@ -253,25 +257,24 @@ int handle_file(char *file, char *display)
 			if (errno == ENOENT)
 				return 0;
 			
-			printf("readlink(): ");
-			perror(display);
-			return -1;
+			printf("readlink(%s): %s\n", display, strerror(errno));
+			return 1;
 		}
 		
 		link_buf[link_len] = '\0';
 		
 		if (opts.follow) {
 			if (stat(link_buf, &sb) == -1) {
-				perror("lstat()");
-				return -1;
+				printf("stat(%s): %s\n", link_buf, strerror(errno));
+				return 1;
 			}
 			
-			do_iattr(link_buf, &sb, display, 0);
+			return do_iattr(link_buf, &sb, display, 0);
 		} else {
-			do_iattr(file, &sb, link_buf, display);
+			return do_iattr(file, &sb, link_buf, display);
 		}
 	} else {
-		do_iattr(file, &sb, display, 0);
+		return do_iattr(file, &sb, display, 0);
 	}
 	
 out:
@@ -286,13 +289,13 @@ int walk_tree(char *path, char *root)
 	DIR *dir        = opendir(path);
 	
 	if (dir == 0) {
-		perror("opendir()");
-		return -1;
+		printf("opendir(%s): %s\n", path, strerror(errno));
+		return 1;
 	}
 	
 	/* show current dir (only if we're not listing our root) */
 	if (root != 0)
-		errcnt += handle_file(path, root) ? 0 : 1;
+		errcnt += handle_file(path, root);
 	
 	/* strip trailing slash */
 	while (path_len > 0 && path[path_len-1] == '/')
@@ -306,8 +309,8 @@ int walk_tree(char *path, char *root)
 	
 	while ((ent = readdir(dir)) != 0) {
 		if (lstat(ent->d_name, &sb) == -1) {
-			perror("lstat()");
-			return -1;
+			printf("lstat(%s): %s\n", ent->d_name, strerror(errno));
+			return errcnt + 1;
 		}
 		
 		char new_root[PATH_MAX];
@@ -331,11 +334,11 @@ int walk_tree(char *path, char *root)
 		*ptr = '\0';
 		
 		if (S_ISDIR(sb.st_mode) && !F_ISDOT(ent->d_name) && opts.recurse) {
-			walk_tree(ent->d_name, new_root);
+			errcnt += walk_tree(ent->d_name, new_root);
 			continue;
 		}
 		
-		errcnt += handle_file(ent->d_name, new_root) ? 0 : 1;
+		errcnt += handle_file(ent->d_name, new_root);
 	}
 	
 	fchdir(cwd);
@@ -343,6 +346,7 @@ int walk_tree(char *path, char *root)
 	
 	closedir(dir);
 	
+	printf("tree: %s: %d\n", root, errcnt);
 	return errcnt;
 }
 
@@ -353,10 +357,12 @@ static
 int process_file(char *path)
 {
 	int cwd = open(".", O_RDONLY);
-	int rc;
+	int rc = 0;
 	
-	if (lstat(path, &st) == -1)
-		PEXIT("Failed to stat path", EXIT_COMMAND);
+	if (lstat(path, &st) == -1) {
+		perror("Failed to stat path");
+		return 1;
+	}
 	
 	if (S_ISDIR(st.st_mode) &&
 	   ((cmds.set && opts.recurse) ||
@@ -374,6 +380,8 @@ int process_file(char *path)
 	
 	fchdir(cwd);
 	close(cwd);
+	
+	printf("process_file: rc: %d\n", rc);
 	
 	return rc;
 }
@@ -437,6 +445,8 @@ int main(int argc, char *argv[])
 		errcnt = process_file(".");
 	else for(int i = optind; i < argc; ++i)
 		errcnt += process_file(argv[i]);
+	
+	printf("errcnt: %d\n", errcnt);
 	
 	if (errcnt == 0)
 		exit(EXIT_SUCCESS);
