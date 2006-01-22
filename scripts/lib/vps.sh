@@ -257,19 +257,19 @@ vps.init() {
 	pushd ${VDIR} >/dev/null
 	
 	case ${VX_INIT} in
-		plain)
+		sysvinit|init|plain)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
 			${_VEXEC} -cfi -n ${VX_XID} -x ${VX_XID} -- /sbin/init
+			;;
+		
+		initng)
+			${_VNAMESPACE} -E -x ${VX_XID} -- \
+			${_VEXEC} -cfi -n ${VX_XID} -x ${VX_XID} -- /sbin/initng
 			;;
 		
 		gentoo)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
 			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc default
-			;;
-		
-		initng)
-			${_VNAMESPACE} -E -x ${VX_XID} -- \
-			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/initng
 			;;
 		
 		*)
@@ -290,16 +290,11 @@ vps.halt() {
 	pushd ${VDIR} >/dev/null
 	
 	case ${VX_INIT} in
-		plain)
+		sysvinit|init|plain)
 			${_VFLAGS} -S -f REBOOT_KILL -x ${VX_XID}
 			
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
 			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/shutdown -h now
-			;;
-		
-		gentoo)
-			${_VNAMESPACE} -E -x ${VX_XID} -- \
-			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc shutdown
 			;;
 		
 		initng)
@@ -307,6 +302,11 @@ vps.halt() {
 			
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
 			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/ngc -0
+			;;
+		
+		gentoo)
+			${_VNAMESPACE} -E -x ${VX_XID} -- \
+			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc shutdown
 			;;
 		
 		*)
