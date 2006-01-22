@@ -84,7 +84,7 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                sysconfdir: $sysconfdir
                 initrddir: $initrddir
                  vdirbase: $vdirbase
-             use dietlibc: $ac_lv_have_dietlibc
+             use dietlibc: $ac_vu_have_dietlibc
 "])
 
 # Output

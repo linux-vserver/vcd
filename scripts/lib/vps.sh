@@ -20,7 +20,6 @@
 
 [ -z "${_HAVE_LIB_FS}" ]   && source ${_LIB_FS}
 [ -z "${_HAVE_LIB_UTIL}" ] && source ${_LIB_UTIL}
-[ -z "${_HAVE_LIB_VS}" ]   && source ${_LIB_VS}
 
 vps.loadconfig() {
 	[ -z "${VNAME}" ] && util.error "vps.loadconfig: VNAME missing"
@@ -53,28 +52,37 @@ vps.loadconfig() {
 	fi
 }
 
+_VPS_LOCK=
 vps.lock() {
-	[ -z "${VNAME}" ] && util.error "vps.lock: VNAME missing"
+	[ -z "${VNAME}" ]     && util.error "vps.lock: VNAME missing"
+	[ -n "${_VPS_LOCK}" ] && util.error "vps.lock: lock exists"
 	
-	fs.lock ${__PKGLOCKDIR}/${VNAME}
+	# create sync pipe
+	local syncpipe=$(mktemp)
+	rm -f ${syncpipe}
+	mkfifo -m700 ${syncpipe}
+	
+	# start lock
+	${_LOCKFILE} -l ${__PKGLOCKDIR}/${VNAME} -s ${syncpipe} &
+	grep -q "true" ${syncpipe} 2>/dev/null
+	
+	_VPS_LOCK=$!
 }
 
 vps.unlock() {
-	[ -z "${VNAME}" ] && util.error "vps.unlock: VNAME missing"
+	[ -n "${_VPS_LOCK}" ] && return
 	
-	fs.unlock ${__PKGLOCKDIR}/${VNAME} && rc=$?
+	kill -HUP ${_VPS_LOCK} >/dev/null || :
+	_VPS_LOCK=
 }
 
 vps.locked() {
-	[ -z "${VNAME}" ] && util.error "vps.unlock: VNAME missing"
-	
-	fs.locked ${__PKGLOCKDIR}/${VNAME}
+	[ -n "${_VPS_LOCK}" ]
 }
 
 vps.running() {
-	[ -z "${VX_XID}" ] && util.error "vps.running: VX_XID missing"
-	
-	vs.ctx_exists ${VX_XID}
+	${_VCONTEXT} -I -x ${VX_XID} &>/dev/null || return 1
+	return 0
 }
 
 vps.context() {
@@ -91,8 +99,8 @@ vps.context() {
 			;;
 		
 		release)
-			${_VNFLAGS} -S -n ${VX_XID} -f ~PERSISTANT
-			${_VFLAGS}  -S -x ${VX_XID} -f ~PERSISTANT
+			${_VNFLAGS} -S -n ${VX_XID} -f ~PERSISTANT &>/dev/null || :
+			${_VFLAGS}  -S -x ${VX_XID} -f ~PERSISTANT &>/dev/null || :
 			;;
 		
 		*)

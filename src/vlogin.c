@@ -40,7 +40,7 @@
 #define NAME  "vlogin"
 #define DESCR "Context Login"
 
-#define SHORT_OPTS "x:"
+#define SHORT_OPTS "n:x:"
 
 struct options {
 	nid_t nid;
@@ -301,6 +301,13 @@ int main(int argc, char *argv[])
 	
 	if (openpty(&t.fd, &slave, NULL, NULL, NULL) == -1)
 		PEXIT("Failed to open new pseudo terminal", EXIT_COMMAND);
+	
+	/* chroot to cwd */
+	if (chdir(".") == -1)
+		PEXIT("Failed to chdir to cwd", EXIT_COMMAND);
+	
+	if (chroot(".") == -1)
+		PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 	
 	pid_t pid;
 	pid = fork();

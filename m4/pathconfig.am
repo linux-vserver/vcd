@@ -29,6 +29,7 @@ pathconfig_RULES = -e 's:@PACKAGE\@:$(PACKAGE):g' \
                    -e 's:@PACKAGE_VERSION\@:$(PACKAGE_VERSION):g' \
                    -e 's:@SBINDIR\@:$(sbindir):g' \
                    -e 's:@PKGDATADIR\@:$(pkgdatadir):g' \
+                   -e 's:@PKGLIBDIR\@:$(pkglibdir):g' \
                    -e 's:@PKGLOCKDIR\@:$(pkglockdir):g' \
                    -e 's:@PKGCONFDIR\@:$(pkgconfdir):g' \
                    -e 's:@VDIRBASE\@:$(vdirbase):g' \

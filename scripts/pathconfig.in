@@ -29,6 +29,7 @@ __SBINDIR='@SBINDIR@'
 
 # package paths
 __PKGDATADIR='@PKGDATADIR@'
+__PKGLIBDIR='@PKGLIBDIR@'
 __PKGLOCKDIR='@PKGLOCKDIR@'
 __PKGCONFDIR='@PKGCONFDIR@'
 __VDIRBASE='@VDIRBASE@'
@@ -44,6 +45,9 @@ _LIB_FS="${__PKGDATALIBDIR}/fs.sh"
 _LIB_UTIL="${__PKGDATALIBDIR}/util.sh"
 _LIB_VPS="${__PKGDATALIBDIR}/vps.sh"
 _LIB_VS="${__PKGDATALIBDIR}/vs.sh"
+
+# package tools
+_LOCKFILE="${__PKGLIBDIR}/lockfile"
 
 # command line tools
 _NIDOF="${__SBINDIR}/nidof"
