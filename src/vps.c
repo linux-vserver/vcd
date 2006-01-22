@@ -127,12 +127,12 @@ void process_output(char *data, size_t len, struct options *opts)
 	else
 		*eol = '\0';
 	
-	char *pos;
+	char *pid_start;
 	
 	/* find PID column */
-	pos = strstr(data, "PID");
+	pid_start = strstr(data, "PID");
 	
-	if (pos == 0) {
+	if (pid_start == 0) {
 		/* we don't have output with PID column; possibly help message
 		** just forward it */
 		printf("vps: PID column not found, dumping ps's output.\n\n");
@@ -146,7 +146,7 @@ void process_output(char *data, size_t len, struct options *opts)
 	size_t pid_end;
 	
 	/* header */
-	pid_end = pos - data + 4;
+	pid_end = pid_start - data + 4;
 	pslines[0].lstart = data;
 	pslines[0].pidend = data + pid_end;
 	pslines[0].pid = 0;
@@ -247,28 +247,30 @@ void process_output(char *data, size_t len, struct options *opts)
 	write(1, pslines[0].pidend, strlen(pslines[0].pidend));
 	write(1, "\n", 1);
 	
+	int i;
+	
 	/* write ps lines */
-	for (lmaxcnt = 1; lmaxcnt < lcnt; lmaxcnt++) {
+	for (i = 1; i < lcnt; i++) {
 		char tmp[6];
 		int n = 0;
 		
-		write(1, pslines[lmaxcnt].lstart, pid_end);
+		write(1, pslines[i].lstart, pid_end);
 		
 		if (opts->showxid) {
-			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[lmaxcnt].xid);
+			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[i].xid);
 			write(1, "      ", xidwidth - n);
 			write(1, tmp, n);
 		}
 		
 		if (opts->shownid) {
-			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[lmaxcnt].nid);
+			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[i].nid);
 			write(1, "      ", nidwidth - n);
 			write(1, tmp, n);
 		}
 		
-		eol = strchr(pslines[lmaxcnt].pidend, '\n');
+		eol = strchr(pslines[i].pidend, '\n');
 		
-		write(1, pslines[lmaxcnt].pidend, eol - pslines[lmaxcnt].pidend);
+		write(1, pslines[i].pidend, eol - pslines[i].pidend);
 		write(1, "\n", 1);
 	}
 }
