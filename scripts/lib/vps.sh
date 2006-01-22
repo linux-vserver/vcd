@@ -298,7 +298,7 @@ vps.halt() {
 			;;
 		
 		*)
-			util.error "vps.init: unknown init style"
+			util.error "vps.halt: unknown init style"
 			;;
 	esac
 	
@@ -306,8 +306,8 @@ vps.halt() {
 }
 
 vps.exec() {
-	[ -z "${VX_XID}" ]  && util.error "vps.halt: VX_XID missing"
-	[ -z "${VDIR}" ]    && util.error "vps.halt: VDIR missing"
+	[ -z "${VX_XID}" ]  && util.error "vps.exec: VX_XID missing"
+	[ -z "${VDIR}" ]    && util.error "vps.exec: VDIR missing"
 	
 	pushd ${VDIR} >/dev/null
 	${_VNAMESPACE} -E -x ${VX_XID} -- \
@@ -326,7 +326,7 @@ vps.login() {
 }
 
 vps.kill() {
-	[ -z "${VX_XID}" ]  && util.error "vps.halt: VX_XID missing"
+	[ -z "${VX_XID}" ]  && util.error "vps.kill: VX_XID missing"
 	
 	${_VKILL} -x ${VX_XID}
 }
@@ -377,7 +377,7 @@ vps.umount() {
 	                     ${__PKGCONFDIR}/.defaults/init/fstab \
 	                     ${__PKGDATADEFAULTSDIR}/fstab)
 	
-	[ -z "${VX_XID}" ] && util.error "vps.mount: VX_XID missing"
+	[ -z "${VX_XID}" ] && util.error "vps.umount: VX_XID missing"
 	
 	[ -z "${fstab}" ] && util.error "vps.umount: cannot find fstab"
 	
