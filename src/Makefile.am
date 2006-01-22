@@ -34,6 +34,7 @@ sbin_PROGRAMS = nidof \
                 vnamespace \
                 vncontext \
                 vnflags \
+                vrsetup \
                 vsched \
                 vuname \
                 vwait \

@@ -30,6 +30,7 @@
 #include <ctype.h>
 #include <fcntl.h>
 #include <string.h>
+#include <strings.h>
 #include <errno.h>
 #include <limits.h>
 #include <sys/mount.h>

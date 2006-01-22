@@ -1,5 +1,8 @@
 # ChangeLog for vserver-utils
 
+  22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vrsetup.c, src/Makefile.am:
+  Add virtual root device support
+
   22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> -m4/initrddir.m4, configure.ac,
   -etc/vserver, etc/Makefile.am, +etc/examples/vservers.rc:
   Move init script to examples dir and skip global installation
