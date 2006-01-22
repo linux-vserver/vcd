@@ -70,10 +70,12 @@ vps.lock() {
 }
 
 vps.unlock() {
-	[ -n "${_VPS_LOCK}" ] && return
+	[ -z "${_VPS_LOCK}" ] && return
 	
 	kill -HUP ${_VPS_LOCK} >/dev/null || :
 	_VPS_LOCK=
+	
+	return 0
 }
 
 vps.locked() {

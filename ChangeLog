@@ -1,5 +1,13 @@
 # ChangeLog for vserver-utils
 
+  22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> scripts/commands/start.sh,
+  scripts/commands/stop.sh, scripts/lib/vps.sh:
+  Fix start/stop exit codes
+
+  22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> m4/pathconfig.am,
+  scripts/lib/vps.sh, scripts/pathconfig.in, src/Makefile, src/lockfile.c:
+  Add new lockfile implementation
+
   21 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vnamespace.c:
   Prevent accidental namespace cleanup
 

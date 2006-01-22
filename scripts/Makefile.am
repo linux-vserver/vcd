@@ -32,8 +32,7 @@ nobase_pkgdata_DATA = commands/enter.sh \
                       defaults/procfs.conf \
                       lib/fs.sh \
                       lib/util.sh \
-                      lib/vps.sh \
-                      lib/vs.sh
+                      lib/vps.sh
 
 sbin_SCRIPTS = vpstree \
                vserver \

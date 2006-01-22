@@ -30,12 +30,6 @@ stop.exit_handler() {
 			echo "An error occured while trying to halt vserver '${VNAME}'"
 			;;
 		
-		umount)
-			if vps.running; then
-				echo "An error occured while trying to unmount filesystems for '${VNAME}'"
-			fi
-			;;
-		
 		done)
 			is_ready=1
 			;;
@@ -44,7 +38,7 @@ stop.exit_handler() {
 	# silently ignore errors below
 	exec &> /dev/null
 	
-	vps.unlock || :
+	vps.unlock
 }
 
 stop.interrupt_handler() {
@@ -102,9 +96,6 @@ stop.main() {
 	
 	# silently ignore errors below
 	exec &>/dev/null
-	
-	STATETRACK=umount
-	vps.umount
 	
 	STATETRACK=done
 	vps.unlock

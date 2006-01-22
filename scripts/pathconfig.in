@@ -44,7 +44,6 @@ __PKGDATALIBDIR="${__PKGDATADIR}/lib"
 _LIB_FS="${__PKGDATALIBDIR}/fs.sh"
 _LIB_UTIL="${__PKGDATALIBDIR}/util.sh"
 _LIB_VPS="${__PKGDATALIBDIR}/vps.sh"
-_LIB_VS="${__PKGDATALIBDIR}/vs.sh"
 
 # package tools
 _LOCKFILE="${__PKGLIBDIR}/lockfile"
@@ -73,4 +72,4 @@ _XIDOF="${__SBINDIR}/xidof"
 _HAVE_PATHCONFIG=1
 
 # generic debug handler to be used through env
-[ -n "${UVDEBUG}" ] && set -x
+[ -n "${VUDEBUG}" ] && set -x
