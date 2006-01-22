@@ -79,7 +79,11 @@ vps.unlock() {
 }
 
 vps.locked() {
-	[ -n "${_VPS_LOCK}" ]
+	[ -f ${__PKGLOCKDIR}/${VNAME} ] || return 1
+	
+	local pid=$(<${__PKGLOCKDIR}/${VNAME})
+	
+	[ -d /proc/${pid} ]
 }
 
 vps.running() {

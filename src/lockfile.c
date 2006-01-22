@@ -131,7 +131,7 @@ int main(int argc, char *argv[])
 	if ((syncfd = open(opts.syncpipe, O_WRONLY)) == -1)
 		perror("Failed to open syncpipe");
 	
-	else if ((lockfd = open(opts.lockfile, O_CREAT|O_RDONLY|O_NOFOLLOW|O_NONBLOCK, 0644)) == -1)
+	else if ((lockfd = open(opts.lockfile, O_CREAT|O_RDWR|O_NOFOLLOW|O_NONBLOCK, 0644)) == -1)
 		perror("Failed to open lockfile");
 	
 	else if (unlink(opts.syncpipe) == -1)
@@ -156,6 +156,20 @@ int main(int argc, char *argv[])
 		}
 		
 		signal(SIGALRM, SIG_IGN);
+		
+		/* write pid file */
+		if (ftruncate(lockfd, 0) == -1) {
+			perror("Failed to truncate lockfile");
+			break;
+		}
+		
+		char buf[7];
+		snprintf(buf, 7, "%d\n", getpid());
+		
+		if (write(lockfd, buf, 7) == -1) {
+			perror("Failed to write pid to lockfile");
+			break;
+		}
 		
 		write(syncfd, "true", strlen("true"));
 		close(syncfd);

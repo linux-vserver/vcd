@@ -58,10 +58,10 @@ status.main() {
 	fi
 	
 	if vps.locked; then
-		echo "unlocked"
-	else
 		echo "locked"
 		let rc++
+	else
+		echo "unlocked"
 	fi
 	
 	exit ${rc}
