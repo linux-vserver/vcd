@@ -173,7 +173,7 @@ void process_output(char *data, size_t len, struct options *opts)
 		pslines[lcnt].pid    = extract_pid(data, data+pid_end);
 		
 		/* special case uglyness for guests init process */
-		if (opts->xid > 1 && pslines[0].pid == 1) {
+		if (opts->xid > 1 && pslines[lcnt].pid == 1) {
 			struct vx_info info;
 			vx_get_info(opts->xid, &info);
 			

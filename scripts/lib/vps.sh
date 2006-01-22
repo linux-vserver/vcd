@@ -267,6 +267,11 @@ vps.init() {
 			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc default
 			;;
 		
+		initng)
+			${_VNAMESPACE} -E -x ${VX_XID} -- \
+			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/initng
+			;;
+		
 		*)
 			util.error "vps.init: unknown init style"
 			;;
@@ -295,6 +300,13 @@ vps.halt() {
 		gentoo)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
 			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/rc shutdown
+			;;
+		
+		initng)
+			${_VFLAGS} -S -f REBOOT_KILL -x ${VX_XID}
+			
+			${_VNAMESPACE} -E -x ${VX_XID} -- \
+			${_VEXEC} -c -n ${VX_XID} -x ${VX_XID} -- /sbin/ngc -0
 			;;
 		
 		*)
