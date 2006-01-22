@@ -45,28 +45,6 @@ pkglib_PROGRAMS = lockfile
 
 noinst_HEADERS = tools.h
 
-nidof_SOURCES = nidof.c
-vattr_SOURCES = vattr.c
-vcontext_SOURCES = vcontext.c
-vdlimit_SOURCES = vdlimit.c
-vexec_SOURCES = vexec.c
-vflags_SOURCES = vflags.c
-vinfo_SOURCES = vinfo.c
-vkill_SOURCES = vkill.c
-vlimit_SOURCES = vlimit.c
-
-vlogin_SOURCES = vlogin.c
 if !USE_DIETLIBC
 vlogin_LDFLAGS = -lutil
 endif
-
-vmount_SOURCES = vmount.c
-vnamespace_SOURCES = vnamespace.c
-vncontext_SOURCES = vncontext.c
-vnflags_SOURCES = vnflags.c
-vsched_SOURCES = vsched.c
-vuname_SOURCES = vuname.c
-vwait_SOURCES = vwait.c
-xidof_SOURCES = xidof.c
-
-lockfile_SOURCES = lockfile.c
