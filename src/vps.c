@@ -108,6 +108,8 @@ char *read_output(int fd, size_t *total_len)
 static
 pid_t extract_pid(char *lstart, char *pid_end)
 {
+	if (pid_end > lstart) pid_end--;
+	
 	while (pid_end > lstart && pid_end[-1] != ' ')
 		pid_end--;
 	
@@ -115,109 +117,158 @@ pid_t extract_pid(char *lstart, char *pid_end)
 }
 
 static
-void process_output(char *data, size_t len, bool showxid, bool shownid, nid_t nid)
+void process_output(char *data, size_t len, struct options *opts)
 {
-	int lmaxcnt = 100;
-	int lcnt = 1;
-	struct psline* pslines = malloc(lmaxcnt * sizeof(struct psline));
-	size_t pid_end, xidwidth, nidwidth;
-	char * eol_pos = strchr(data, '\n');
-	char * pos;
-
-	if (eol_pos == 0)
-		eol_pos  = data + len;
+	char *eol = strchr(data, '\n');
+	
+	/* find end of line */
+	if (eol == 0)
+		eol = data + len;
 	else
-		*eol_pos = '\0';
-
+		*eol = '\0';
+	
+	char *pos;
+	
+	/* find PID column */
 	pos = strstr(data, "PID");
+	
 	if (pos == 0) {
-		// We don't have output we we know position of pid,
-		// possibly help message
-		// Just forward it
+		/* we don't have output with PID column; possibly help message
+		** just forward it */
 		printf("vps: PID column not found, dumping ps's output.\n\n");
 		write(1, data, len);
 		return;
 	}
-
-	pid_end = pos-data + 4;
+	
+	int lmaxcnt = 100;
+	struct psline* pslines = malloc(lmaxcnt * sizeof(struct psline));
+	
+	size_t pid_end;
+	
+	/* header */
+	pid_end = pos - data + 4;
 	pslines[0].lstart = data;
 	pslines[0].pidend = data + pid_end;
 	pslines[0].pid = 0;
 	pslines[0].xid = 0;
 	pslines[0].nid = 0;
-
-	// read the PIDs...
-	len -= eol_pos-data;
-	data = eol_pos+1;
-	while (len >1) {
+	
+	/* skip header */
+	len -= eol - data;
+	data = eol + 1;
+	
+	int lcnt = 1;
+	
+	/* read lines from ps */
+	while (len > 1) {
 		--len;
-		eol_pos = strchr(data, '\n');
-
-		if (eol_pos==0) eol_pos  = data + len;
-
+		
+		eol = strchr(data, '\n');
+		
+		if (eol == 0)
+			eol = data + len;
+		
 		pslines[lcnt].lstart = data;
 		pslines[lcnt].pidend = data + pid_end;
 		pslines[lcnt].pid    = extract_pid(data, data+pid_end);
+		
+		/* special case uglyness for guests init process */
+		if (opts->xid > 1 && pslines[0].pid == 1) {
+			struct vx_info info;
+			vx_get_info(opts->xid, &info);
+			
+			pslines[lcnt].xid    = vx_get_task_xid(info.initpid);
+			pslines[lcnt].nid    = nx_get_task_nid(info.initpid);
+		} else {
+			pslines[lcnt].xid    = vx_get_task_xid(pslines[lcnt].pid);
+			pslines[lcnt].nid    = nx_get_task_nid(pslines[lcnt].pid);
+		}
+		
+		/* remember highest values */
 		if (pslines[0].pid < pslines[lcnt].pid)
-			pslines[0].pid = pslines[lcnt].pid; // Remember max PID
-		pslines[lcnt].xid    = vx_get_task_xid(pslines[lcnt].pid);
+			pslines[0].pid = pslines[lcnt].pid;
+		
 		if (pslines[0].xid < pslines[lcnt].xid)
-			pslines[0].xid = pslines[lcnt].xid; // Remember max XID
-		pslines[lcnt].nid    = nx_get_task_nid(pslines[lcnt].pid);
+			pslines[0].xid = pslines[lcnt].xid;
+		
 		if (pslines[0].nid < pslines[lcnt].nid)
-			pslines[0].nid = pslines[lcnt].nid; // Remember max NID
-
-		if (nid <= 1 || nid == pslines[lcnt].nid) {
-			// Only consider if we don't filter on nid or nid matches
+			pslines[0].nid = pslines[lcnt].nid;
+		
+		/* skip entries with non-matching nid */
+		if (opts->nid <= 1 || opts->nid == pslines[lcnt].nid) {
 			lcnt++;
+			
+			/* line buffer runs out of space */
 			if (lcnt >= lmaxcnt) {
-				// Buffer getting small, enlarge
-				struct psline*tmp = realloc(pslines, (lmaxcnt+100)*sizeof(struct psline));
+				struct psline *tmp = realloc(pslines, (lmaxcnt+100)*sizeof(struct psline));
+				
 				if (tmp) {
-					pslines = tmp;
+					pslines  = tmp;
 					lmaxcnt += 100;
-				} else break; // out of memory, just print what we already have
+				}
+				
+				/* out of memory */
+				else
+					break;
 			}
 		}
-		len -= eol_pos-data;
-		data = eol_pos+1;
+		
+		len -= eol - data;
+		data = eol + 1;
 	}
-
-	// Now print the whole thing
+	
+	size_t xidwidth, nidwidth;
+	
+	/* get width of xid/nid columns
+	** max xid/nid is 65535; i.e. the column does never grow > 6 */
 	xidwidth = snprintf(NULL, 0, "%d ", pslines[0].xid);
-	if (xidwidth < 4) xidwidth = 4; // Make sure the title fits
 	nidwidth = snprintf(NULL, 0, "%d ", pslines[0].nid);
-	if (nidwidth < 4) nidwidth = 4; // Make sure the title fits
-
+	
+	/* just in case the header wouldn't fit */
+	if (xidwidth < 4)
+		xidwidth = 4;
+	
+	if (nidwidth < 4)
+		nidwidth = 4;
+	
+	/* print the header */
 	write(1, pslines[0].lstart, pid_end);
-	if (showxid) {
-		write(1, "                    ", xidwidth-4);
+	
+	if (opts->showxid) {
+		write(1, "      ", xidwidth - 4);
 		write(1, "XID ", 4);
 	}
-	if (shownid) {
-		write(1, "                    ", nidwidth-4);
+	
+	if (opts->shownid) {
+		write(1, "      ", nidwidth - 4);
 		write(1, "NID ", 4);
 	}
-	eol_pos = strchr(pslines[0].pidend, '\n');
-	write(1, pslines[0].pidend, eol_pos-pslines[0].pidend);
+	
+	write(1, pslines[0].pidend, strlen(pslines[0].pidend));
 	write(1, "\n", 1);
-
+	
+	/* write ps lines */
 	for (lmaxcnt = 1; lmaxcnt < lcnt; lmaxcnt++) {
-		char tmp[20];
+		char tmp[6];
 		int n = 0;
+		
 		write(1, pslines[lmaxcnt].lstart, pid_end);
-		if (showxid) {
+		
+		if (opts->showxid) {
 			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[lmaxcnt].xid);
-			write(1, "                    ", xidwidth-n);
+			write(1, "      ", xidwidth - n);
 			write(1, tmp, n);
 		}
-		if (shownid) {
+		
+		if (opts->shownid) {
 			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[lmaxcnt].nid);
-			write(1, "                    ", nidwidth-n);
+			write(1, "      ", nidwidth - n);
 			write(1, tmp, n);
 		}
-		eol_pos = strchr(pslines[lmaxcnt].pidend, '\n');
-		write(1, pslines[lmaxcnt].pidend, eol_pos-pslines[lmaxcnt].pidend);
+		
+		eol = strchr(pslines[lmaxcnt].pidend, '\n');
+		
+		write(1, pslines[lmaxcnt].pidend, eol - pslines[lmaxcnt].pidend);
 		write(1, "\n", 1);
 	}
 }
@@ -268,11 +319,9 @@ int main(int argc, char *argv[])
 	
 	if (opts.xid == 1)
 		opts.showxid = true;
+	
 	if (opts.nid <= 1)
 		opts.shownid = true;
-	
-	if (vx_migrate(opts.xid) == -1)
-		PEXIT("Failed to migrate to context", EXIT_COMMAND);
 	
 	/* create pipe for ps */
 	int p[2];
@@ -283,6 +332,9 @@ int main(int argc, char *argv[])
 	pid = fork();
 	
 	if (pid == 0) {
+		if (vx_migrate(opts.xid) == -1)
+			PEXIT("Failed to migrate to context", EXIT_COMMAND);
+		
 		int fd = open("/dev/null", O_RDONLY, 0);
 		
 		dup2(fd,   0);
@@ -307,7 +359,7 @@ int main(int argc, char *argv[])
 	close(p[0]);
 	
 	/* parse output */
-	process_output(data, len, opts.showxid, opts.shownid, opts.nid);
+	process_output(data, len, &opts);
 	
 	waitpid(pid, &c, 0);
 	
