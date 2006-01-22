@@ -346,7 +346,6 @@ int walk_tree(char *path, char *root)
 	
 	closedir(dir);
 	
-	printf("tree: %s: %d\n", root, errcnt);
 	return errcnt;
 }
 
@@ -360,7 +359,7 @@ int process_file(char *path)
 	int rc = 0;
 	
 	if (lstat(path, &st) == -1) {
-		perror("Failed to stat path");
+		printf("lstat(%s): %s\n", path, strerror(errno));
 		return 1;
 	}
 	
@@ -380,8 +379,6 @@ int process_file(char *path)
 	
 	fchdir(cwd);
 	close(cwd);
-	
-	printf("process_file: rc: %d\n", rc);
 	
 	return rc;
 }
@@ -445,8 +442,6 @@ int main(int argc, char *argv[])
 		errcnt = process_file(".");
 	else for(int i = optind; i < argc; ++i)
 		errcnt += process_file(argv[i]);
-	
-	printf("errcnt: %d\n", errcnt);
 	
 	if (errcnt == 0)
 		exit(EXIT_SUCCESS);
