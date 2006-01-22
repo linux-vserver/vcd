@@ -24,6 +24,7 @@ nobase_pkgdata_DATA = commands/enter.sh \
                       commands/login.sh \
                       commands/procfs.sh \
                       commands/release.sh \
+                      commands/reload.sh \
                       commands/start.sh \
                       commands/status.sh \
                       commands/stop.sh \

@@ -1,5 +1,9 @@
 # ChangeLog for vserver-utils
 
+  22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> +scripts/commands/reload.sh,
+  scripts/Makefile.am:
+  Add reload command to update limits and settings
+
   22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vrsetup.c, src/Makefile.am:
   Add virtual root device support
 
