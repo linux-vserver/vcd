@@ -69,7 +69,6 @@ AC_VU_LIBVSERVER
 CFLAGS="${CFLAGS} -W -Wall -std=gnu99 -pedantic"
 
 # Site settings
-AC_VU_INITRDDIR(initrddir)
 AC_VU_VDIRBASE(vdirbase)
 
 # Final info page
@@ -82,7 +81,6 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                    prefix: $prefix
                build/host: $build/$host
                sysconfdir: $sysconfdir
-                initrddir: $initrddir
                  vdirbase: $vdirbase
              use dietlibc: $ac_vu_have_dietlibc
 "])
