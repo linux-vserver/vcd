@@ -32,6 +32,7 @@
 #include <signal.h>
 #include <errno.h>
 #include <sys/file.h>
+#include <string.h>
 
 #include "tools.h"
 

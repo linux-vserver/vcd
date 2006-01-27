@@ -250,7 +250,6 @@ int mount_fsent(struct mntspec *fsent, struct options *opts)
 		goto error;
 	
 	chdir(cwd);
-	free(cwd);
 	
 	if (!opts->nomtab && update_mtab(fsent, opts) == -1)
 		perror("Failed to update mtab");
@@ -267,13 +266,14 @@ skip:
 static
 int umount_fsent(struct mntspec *fsent)
 {
-	char *cwd;
+	char cwd[PATH_MAX];
 	
 	/* skip the root filesystem */
 	if (strcmp(fsent->target, "/") == 0)
 		goto skip;
 	
-	cwd = getcwd(0, 0);
+	if (getcwd(cwd, PATH_MAX) == NULL)
+		goto error;
 	
 	if (secure_chdir(fsent->target) == -1)
 		goto skip;
@@ -286,7 +286,6 @@ int umount_fsent(struct mntspec *fsent)
 	}
 	
 	chdir(cwd);
-	free(cwd);
 	
 	return 0;
 	
