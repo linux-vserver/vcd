@@ -1,5 +1,11 @@
 # ChangeLog for vserver-utils
 
+  26 Jan 2006; Benedikt Böhm <hollow@gentoo.org> m4/libs.m4, configure.ac,
+  +src/libvconfig, src/Makefile.am, +src/vconfig.c, +src/pathconfig.h.in:
+  Add libvconfig + vconfig command line tool
+
+*vserver-utils-1.0.3 (22 Jan 2006)
+
   22 Jan 2006; Benedikt Böhm <hollow@gentoo.org> +scripts/lib/vps.sh:
   Add initng support
 

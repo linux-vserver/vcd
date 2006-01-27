@@ -16,12 +16,15 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)
+SUBDIRS = libvconfig
+
+INCLUDES = -I$(top_srcdir) -I$(srcdir)/libvconfig/
 
 AM_LDFLAGS = -lvserver
 
 sbin_PROGRAMS = nidof \
                 vattr \
+                vconfig \
                 vcontext \
                 vdlimit \
                 vexec \
@@ -45,6 +48,19 @@ pkglib_PROGRAMS = lockfile
 
 noinst_HEADERS = tools.h
 
+vconfig_LDADD = libvconfig/libvconfig.a
+
 if !USE_DIETLIBC
 vlogin_LDFLAGS = -lutil
 endif
+
+include $(top_srcdir)/m4/pathconfig.am
+
+BUILT_SOURCES = pathconfig.h
+CLEANFILES    = pathconfig.h
+
+EXTRA_DIST = pathconfig.h.in
+
+
+pathconfig.h: pathconfig.h.in
+	$(pathconfig_SED) $(srcdir)/pathconfig.h.in > pathconfig.h

@@ -1,0 +1,64 @@
+/***************************************************************************
+ *   Copyright 2005 by the vserver-utils team                              *
+ *   See AUTHORS for details                                               *
+ *                                                                         *
+ *   This program is free software; you can redistribute it and/or modify  *
+ *   it under the terms of the GNU General Public License as published by  *
+ *   the Free Software Foundation; either version 2 of the License, or     *
+ *   (at your option) any later version.                                   *
+ *                                                                         *
+ *   This program is distributed in the hope that it will be useful,       *
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+ *   GNU General Public License for more details.                          *
+ *                                                                         *
+ *   You should have received a copy of the GNU General Public License     *
+ *   along with this program; if not, write to the                         *
+ *   Free Software Foundation, Inc.,                                       *
+ *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+ ***************************************************************************/
+
+/* default system paths */
+#define __SBINDIR "@SBINDIR@"
+
+/* package paths */
+#define __PKGDATADIR "@PKGDATADIR@"
+#define __PKGLIBDIR "@PKGLIBDIR@"
+#define __PKGLOCKDIR "@PKGLOCKDIR@"
+#define __PKGCONFDIR "@PKGCONFDIR@"
+#define __VDIRBASE "@VDIRBASE@"
+#define __CONFDEFAULTSDIR __PKGCONFDIR "/.defaults"
+
+/* package data paths */
+#define __PKGDATACOMMANDSDIR __PKGDATADIR "/commands"
+#define __PKGDATADEFAULTSDIR __PKGDATADIR "/defaults"
+#define __PKGDATALIBDIR __PKGDATADIR "/lib"
+
+/* package data libraries */
+#define _LIB_FS __PKGDATALIBDIR "/fs.sh"
+#define _LIB_UTIL __PKGDATALIBDIR "/util.sh"
+#define _LIB_VPS __PKGDATALIBDIR "/vps.sh"
+
+/* package tools */
+#define _LOCKFILE __PKGLIBDIR "/lockfile"
+
+/* command line tools */
+#define _NIDOF __SBINDIR "/nidof"
+#define _VATTR __SBINDIR "/vattr"
+#define _VCONTEXT __SBINDIR "/vcontext"
+#define _VDLIMIT __SBINDIR "/vdlimit"
+#define _VEXEC __SBINDIR "/vexec"
+#define _VFLAGS __SBINDIR "/vflags"
+#define _VINFO __SBINDIR "/vinfo"
+#define _VKILL __SBINDIR "/vkill"
+#define _VLIMIT __SBINDIR "/vlimit"
+#define _VLOGIN __SBINDIR "/vlogin"
+#define _VMOUNT __SBINDIR "/vmount"
+#define _VNAMESPACE __SBINDIR "/vnamespace"
+#define _VNCONTEXT __SBINDIR "/vncontext"
+#define _VNFLAGS __SBINDIR "/vnflags"
+#define _VSCHED __SBINDIR "/vsched"
+#define _VSERVER __SBINDIR "/vserver"
+#define _VUNAME __SBINDIR "/vuname"
+#define _VWAIT __SBINDIR "/vwait"
+#define _XIDOF __SBINDIR "/xidof"

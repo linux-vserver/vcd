@@ -91,6 +91,23 @@ AC_DEFUN([AC_VU_DIETLIBC],
 	esac
 ])
 
+AC_DEFUN([AC_VU_LIBVCONFIG],
+[
+	AC_MSG_CHECKING([which backend to use for libvconfig])
+	
+	AC_ARG_WITH([vconfig],
+	            [AS_HELP_STRING([--with-vconfig],
+	                            [Backend for libvconfig (valid values: plain; default: plain)])],
+	            [case "$enableval" in
+	              (single) AC_DEFINE([LIBVCONFIG_BACKEND_SINGLE], [], [libvconfig backend]);;
+	              (no)     AC_MSG_ERROR([You cannot disable libvconfig]);;
+	              (*)      AC_MSG_ERROR(['$enableval' is not a valid value for --with-libvconfig]);;
+	            esac],
+	            [enableval=single; AC_DEFINE([LIBVCONFIG_BACKEND_SINGLE])])
+	
+	ac_vu_libvconfig_backend=$enableval
+	AC_MSG_RESULT([$enableval])
+])
 
 AC_DEFUN([AC_VU_LIBVSERVER],
 [

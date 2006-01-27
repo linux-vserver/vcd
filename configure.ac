@@ -70,6 +70,8 @@ CFLAGS="${CFLAGS} -W -Wall -std=gnu99 -pedantic"
 
 # Site settings
 AC_VU_VDIRBASE(vdirbase)
+AC_VU_LIBVCONFIG
+
 
 # Final info page
 AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
@@ -83,12 +85,14 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                sysconfdir: $sysconfdir
                  vdirbase: $vdirbase
              use dietlibc: $ac_vu_have_dietlibc
+          vconfig backend: $ac_vu_libvconfig_backend
 "])
 
 # Output
 AC_CONFIG_FILES([Makefile
                  etc/Makefile
                  scripts/Makefile
+                 src/libvconfig/Makefile
                  src/Makefile])
 
 AC_OUTPUT
