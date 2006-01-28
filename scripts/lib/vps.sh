@@ -18,7 +18,6 @@
 
 : ${_HAVE_PATHCONFIG:?"Internal error: no pathconfig in vps.sh"}
 
-[ -z "${_HAVE_LIB_FS}" ]   && source ${_LIB_FS}
 [ -z "${_HAVE_LIB_UTIL}" ] && source ${_LIB_UTIL}
 
 vps.config() {
@@ -436,10 +435,8 @@ vps.umount() {
 	[ -z "${VX_XID}" ] && util.error "vps.umount: VX_XID missing"
 	
 	pushd ${VDIR} >/dev/null
-	
 	${_VNAMESPACE} -E -x ${VX_XID} -- \
 	${_VMOUNT} -U -m etc/mtab
-	
 	popd >/dev/null
 }
 

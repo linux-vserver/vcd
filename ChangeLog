@@ -1,8 +1,20 @@
 # ChangeLog for vserver-utils
 
+  27 Jan 2006; Benedikt Böhm <hollow@gentoo.org> -scripts/commands/enter.sh:
+  Remove enter command (use login instead)
+
+  27 Jan 2006; Benedikt Böhm <hollow@gentoo.org> src/vexec.c, src/vnamespace.c,
+  scripts/lib/vps.sh:
+  Add sysvrc init style + cleanup
+
   26 Jan 2006; Benedikt Böhm <hollow@gentoo.org> m4/libs.m4, configure.ac,
-  +src/libvconfig, src/Makefile.am, +src/vconfig.c, +src/pathconfig.h.in:
-  Add libvconfig + vconfig command line tool
+  etc/makefile.am, -etc/examples/context.conf, +etc/fstab, +etc/mtab,
+  +etc/procfs.conf, scripts/Makefile.am, scripts/commands/enter.sh,
+  scripts/commands/info.sh, scripts/commands/procfs.sh, scripts/commands/stop.sh,
+  -scripts/defaults, -scripts/lib/fs.sh, scripts/lib/vps.sh, scripts/lib/util.sh,
+  scripts/pathconfig.in, +src/libvconfig, src/Makefile.am, +src/vconfig.c,
+  +src/pathconfig.h.in:
+  Add libvconfig + vconfig command line tool + adapt source tree
 
 *vserver-utils-1.0.3 (22 Jan 2006)
 
