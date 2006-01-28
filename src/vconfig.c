@@ -35,10 +35,11 @@
 #define NAME  "vcontext"
 #define DESCR "Context Manager"
 
-#define SHORT_OPTS "GSk:n:"
+#define SHORT_OPTS "GLSk:n:"
 
 struct commands {
 	bool get;
+	bool list;
 	bool set;
 };
 
@@ -54,6 +55,7 @@ void cmd_help()
 	       "\n"
 	       "Available commands:\n"
 	       "    -G            Get configuration value\n"
+	       "    -L            List valid configuration keys\n"
 	       "    -S            Set configuration value\n"
 	       "\n"
 	       "Available options:\n"
@@ -68,8 +70,9 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct commands cmds = {
-		.get = false,
-		.set = false,
+		.get  = false,
+		.list = false,
+		.set  = false,
 	};
 	
 	struct options opts = {
@@ -91,6 +94,10 @@ int main(int argc, char *argv[])
 				cmds.get = true;
 				break;
 			
+			case 'L':
+				cmds.list = true;
+				break;
+			
 			case 'S':
 				cmds.set = true;
 				break;
@@ -107,33 +114,51 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	if (opts.name == NULL)
-		EXIT("<name> missing", EXIT_USAGE);
-	
-	if (opts.key == NULL)
-		EXIT("<key> missing", EXIT_USAGE);
-	
-	
 	if (cmds.get) {
+		if (opts.name == NULL)
+			EXIT("<name> missing", EXIT_USAGE);
+		
+		if (opts.key == NULL)
+			EXIT("<key> missing", EXIT_USAGE);
+		
 		if (vconfig_isbool(opts.key) == 0) {
-			bool buf = vconfig_get_bool(opts.name, opts.key);
+			int buf = vconfig_get_bool(opts.name, opts.key);
 			
-			if (buf == true)
-				printf("true\n");
-			else
-				printf("false\n");
+			if (buf != -1) {
+				if (buf == 1)
+					printf("true\n");
+				else
+					printf("false\n");
+			}
 		}
 		
 		if (vconfig_isint(opts.key) == 0) {
 			int buf = vconfig_get_int(opts.name, opts.key);
-			printf("%d\n", buf);
+			if (buf != -1)
+				printf("%d\n", buf);
 		}
 		
 		if (vconfig_isstr(opts.key) == 0) {
 			char *buf = vconfig_get_str(opts.name, opts.key);
-			printf("%s\n", buf);
-			free(buf);
+			
+			if (buf != NULL) {
+				printf("%s\n", buf);
+				free(buf);
+			}
 		}
+		
+		if (vconfig_islist(opts.key) == 0) {
+			char *buf = vconfig_get_list(opts.name, opts.key);
+			
+			if (buf != NULL) {
+				printf("%s\n", buf);
+				free(buf);
+			}
+		}
+	}
+	
+	if (cmds.list) {
+		vconfig_print_nodes();
 	}
 	
 	if (cmds.set) {
