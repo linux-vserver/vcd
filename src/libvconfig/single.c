@@ -70,7 +70,6 @@ struct _single_node {
 	{ "uts.release",             "uts/release" },
 	{ "uts.sysname",             "uts/sysname" },
 	{ "uts.version",             "uts/version" },
-	{ "vps.login",               "login" },
 	{ "vps.shell",               "shell" },
 };
 
@@ -106,10 +105,10 @@ int _single_open(char *name, char *key, int flags)
 }
 
 /* bool methods */
-bool vconfig_get_bool(char *name, char *key)
+int vconfig_get_bool(char *name, char *key)
 {
 	if (vconfig_isbool(key) == -1)
-		return false;
+		return -1;
 	
 	int fd = _single_open(name, key, 0);
 	
@@ -134,18 +133,18 @@ bool vconfig_get_bool(char *name, char *key)
 	close(fd);
 	
 	if (strcmp(buf, "true") == 0)
-		return true;
+		return 1;
 	
-	return false;
+	return 0;
 	
 error:
 	errno_orig = errno;
 	close(fd);
 	errno = errno_orig;
-	return false;
+	return -1;
 }
 
-int vconfig_set_bool(char *name, char *key, bool value)
+int vconfig_set_bool(char *name, char *key, int value)
 {
 	if (vconfig_isbool(key) == -1)
 		return -1;
@@ -159,7 +158,7 @@ int vconfig_set_bool(char *name, char *key, bool value)
 	size_t len;
 	
 	/* we support up to 32 bit int (i.e. 10 digits max) */
-	if (value == true)
+	if (value == 1)
 		len = snprintf(buf, 6, "true");
 	else
 		len = snprintf(buf, 6, "false");
@@ -301,6 +300,79 @@ int vconfig_set_str(char *name, char *key, char *value)
 	
 	if (fd == -1)
 		goto error;
+	
+	if (write(fd, value, strlen(value)) == -1)
+		goto error;
+	
+	if (write(fd, "\n", 1) == -1)
+		goto error;
+	
+	close(fd);
+	return 0;
+	
+error:
+	errno_orig = errno;
+	close(fd);
+	errno = errno_orig;
+	return -1;
+}
+
+/* list methods */
+char *vconfig_get_list(char *name, char *key)
+{
+	if (vconfig_islist(key) == -1)
+		return NULL;
+	
+	int fd = _single_open(name, key, 0);
+	
+	if (fd == -1)
+		goto error;
+	
+	off_t len = lseek(fd, 0, SEEK_END);
+	lseek(fd, 0, SEEK_SET);
+	
+	int i;
+	char *buf = malloc(len+1);
+	memset(buf, '\0', len+1);
+	
+	/* read whole file */
+	for(i = 0; i <= len; i++) {
+		if (read(fd, buf+i, 1) == -1)
+			goto error;
+	}
+	
+	char *ptr = buf+len-1;
+	if (*ptr == '\n')
+		*ptr = '\0';
+	
+	close(fd);
+	
+	while ((ptr = strchr(buf, '\n')) != NULL)
+		*ptr = ',';
+	
+	return buf;
+	
+error:
+	errno_orig = errno;
+	close(fd);
+	errno = errno_orig;
+	return NULL;
+}
+
+int vconfig_set_list(char *name, char *key, char *value)
+{
+	if (vconfig_islist(key) == -1)
+		return -1;
+	
+	int fd = _single_open(name, key, O_CREAT|O_TRUNC);
+	
+	if (fd == -1)
+		goto error;
+	
+	char *ptr;
+	
+	while ((ptr = strchr(value, ',')) != NULL)
+		*ptr = '\n';
 	
 	if (write(fd, value, strlen(value)) == -1)
 		goto error;

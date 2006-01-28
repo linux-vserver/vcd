@@ -26,12 +26,12 @@
 #include "vconfig.h"
 
 /* bool methods */
-bool vconfig_get_bool(char *name, char *key)
+int vconfig_get_bool(char *name, char *key)
 {
-	return false;
+	return -1;
 }
 
-int vconfig_set_bool(char *name, char *key, bool value)
+int vconfig_set_bool(char *name, char *key, int value)
 {
 	return -1;
 }
@@ -54,6 +54,17 @@ char *vconfig_get_str(char *name, char *key)
 }
 
 int vconfig_set_str(char *name, char *key, char *value)
+{
+	return -1;
+}
+
+/* list methods */
+char *vconfig_get_list(char *name, char *key)
+{
+	return NULL;
+}
+
+int vconfig_set_list(char *name, char *key, char *value)
 {
 	return -1;
 }

@@ -24,6 +24,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include <linux/vserver/cvirt_cmd.h>
 
@@ -77,6 +78,31 @@ int vconfig_isstr(char key[])
 		return -1;
 	
 	return 0;
+}
+
+int vconfig_islist(char key[])
+{
+	struct vconfig_node buf, *res;
+	
+	buf.key = key;
+	res = bsearch(&buf, vconfig_map, NR_MAP_ENTRIES, sizeof(struct vconfig_node), _vconfig_comp);
+	
+	if (res == NULL)
+		return -1;
+	
+	if (res->type != VCONFIG_LIST_T)
+		return -1;
+	
+	return 0;
+}
+
+void vconfig_print_nodes(void)
+{
+	unsigned int i;
+	
+	for (i = 0; i < NR_MAP_ENTRIES; i++) {
+		printf("%s\n", vconfig_map[i].key);
+	}
 }
 
 #ifdef LIBVCONFIG_BACKEND_SINGLE

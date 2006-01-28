@@ -26,6 +26,7 @@ typedef enum {
 	VCONFIG_BOOL_T,
 	VCONFIG_INT_T,
 	VCONFIG_STR_T,
+	VCONFIG_LIST_T,
 } vconfig_types_t;
 
 /* configuration node */
