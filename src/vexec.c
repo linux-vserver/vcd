@@ -80,12 +80,12 @@ int main(int argc, char *argv[])
 	/* init syscall data */
 	struct vx_flags flags = {
 		.flags = 0,
-		.mask  = VXF_PERSISTANT|VXF_STATE_SETUP,
+		.mask  = VXF_STATE_SETUP,
 	};
 	
 	struct nx_flags nflags = {
 		.flags = 0,
-		.mask  = NXF_PERSISTANT|NXF_STATE_SETUP,
+		.mask  = NXF_STATE_SETUP,
 	};
 	
 	int c;

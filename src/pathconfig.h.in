@@ -27,11 +27,9 @@
 #define __PKGLOCKDIR "@PKGLOCKDIR@"
 #define __PKGCONFDIR "@PKGCONFDIR@"
 #define __VDIRBASE "@VDIRBASE@"
-#define __CONFDEFAULTSDIR __PKGCONFDIR "/.defaults"
 
 /* package data paths */
 #define __PKGDATACOMMANDSDIR __PKGDATADIR "/commands"
-#define __PKGDATADEFAULTSDIR __PKGDATADIR "/defaults"
 #define __PKGDATALIBDIR __PKGDATADIR "/lib"
 
 /* package data libraries */

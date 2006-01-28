@@ -43,7 +43,7 @@ procfs.usage() {
 
 procfs.main() {
 	local subcmd=$1 && shift
-	local procfsconf flags opts
+	local flags opts
 	local ok=1 passed=0
 	
 	[ -z "${subcmd}" ] && util.error "procfs.start: missing argument <subcmd>"
@@ -54,10 +54,6 @@ procfs.main() {
 	fi
 	
 	[ "${subcmd}" != "unhide" ] && util.error "unknown subcommand '${subcmd}'"
-	
-	procfsconf=$(fs.best_file $1 \
-	                          ${__PKGCONFDIR}/procfs.conf \
-	                          ${__PKGDATADEFAULTSDIR}/procfs.conf)
 	
 	while read line; do
 		case "${line}" in
@@ -84,7 +80,7 @@ procfs.main() {
 		else
 			ok=0
 		fi
-	done < "${procfsconf}"
+	done < ${__PKGCONFDIR}/procfs.conf
 	
 	[ ${ok} -eq 1 ]     && exit 0
 	[ ${passed} -eq 1 ] && exit 2

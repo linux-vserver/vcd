@@ -18,14 +18,11 @@
 
 include $(top_srcdir)/m4/pathconfig.am
 
-nobase_pkgdata_DATA = examples/context.conf \
-                      examples/vservers.rc
+nobase_pkgdata_DATA = examples/vservers.rc
 
-EXTRA_DIST = $(nobase_pkgdata_DATA)
+pkgconf_DATA = fstab \
+               mtab \
+               procfs.conf
 
-
-install-data-hook: install-pkgconfdir
-
-install-pkgconfdir:
-	$(mkinstalldirs) -m 755 $(DESTDIR)$(pkgconfdir)
-	$(mkinstalldirs) -m 755 $(DESTDIR)$(pkgconfdir)/.defaults
+EXTRA_DIST = $(nobase_pkgdata_DATA) \
+             $(pkgconf_DATA)

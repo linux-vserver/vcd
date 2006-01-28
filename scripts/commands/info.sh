@@ -44,10 +44,8 @@ info.main() {
 	
 	vps.loadconfig
 	
-	list=(VNAME VDIR VX_XID VX_INIT)
-	
-	for i in ${list[@]}; do
-		echo -n "${i}="
-		eval echo \$${i}
+	for i in $(vps.config list); do
+		echo -n "${i}: "
+		vps.config get ${i}
 	done
 }

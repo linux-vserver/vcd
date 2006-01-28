@@ -166,7 +166,9 @@ int main(int argc, char *argv[])
 				PEXIT("Failed to create new namespace", EXIT_COMMAND);
 			
 			case 0:
-				goto load;
+				if (vx_set_namespace(opts.xid) == -1)
+					PEXIT("Failed to set namespace", EXIT_COMMAND);
+				goto out;
 			
 			default:
 				if (waitpid(pid, &status, 0) == -1)
@@ -187,7 +189,7 @@ int main(int argc, char *argv[])
 		if (vx_set_namespace(opts.xid) == -1)
 			PEXIT("Failed to set namespace", EXIT_COMMAND);
 		
-		goto load;
+		goto out;
 	}
 	
 	cmd_help();

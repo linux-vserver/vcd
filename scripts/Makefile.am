@@ -28,9 +28,6 @@ nobase_pkgdata_DATA = commands/enter.sh \
                       commands/start.sh \
                       commands/status.sh \
                       commands/stop.sh \
-                      defaults/fstab \
-                      defaults/mtab \
-                      defaults/procfs.conf \
                       lib/fs.sh \
                       lib/util.sh \
                       lib/vps.sh

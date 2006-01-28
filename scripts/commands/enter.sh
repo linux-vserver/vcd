@@ -46,6 +46,9 @@ enter.main() {
 		util.error "enter: vserver '${VNAME}' not running"
 	fi
 	
-	vps.exec ${VX_SHELL}
+	local shell=$(vps.config.get vps.shell)
+	: ${shell:=/bin/bash}
+	
+	vps.exec ${shell}
 	
 }
