@@ -77,3 +77,17 @@ AC_DEFUN([AC_VU_LIBVSERVER],
 		AC_MSG_ERROR([libvserver is missing! please install libvserver and try again])
 	fi
 ])
+
+AC_DEFUN([AC_VU_LIBOWFAT],
+[
+	AC_LANG_PUSH(C)
+	AC_CHECK_LIB([owfat],
+	             [fmt_ulong0],
+	             [ac_vu_have_libowfat=yes],
+	             [ac_vu_have_libowfatr=no])
+	AC_LANG_POP
+	
+	if test $ac_vu_have_libowfat = no; then
+		AC_MSG_ERROR([libowfat is missing! please install libowfat and try again])
+	fi
+])

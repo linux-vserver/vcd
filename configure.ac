@@ -41,6 +41,7 @@ AC_VU_PATHPROG(SED, sed)
 # Checks for libraries.
 AC_VU_DIETLIBC
 AC_VU_LIBVSERVER
+AC_VU_LIBOWFAT
 
 # Checks for header files.
 
@@ -67,7 +68,6 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                build/host: $build/$host
                sysconfdir: $sysconfdir
                  vdirbase: $vdirbase
-             use dietlibc: $ac_vu_have_dietlibc
           vconfig backend: $ac_vu_libvconfig_backend
 "])
 
