@@ -29,34 +29,17 @@ AM_MAINTAINER_MODE
 # Checks for programs.
 AC_PROG_CC
 AC_PROG_CPP
+AC_PROG_RANLIB
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PROG_EGREP
 
 AC_VU_PATHPROG(CP,  cp)
 AC_VU_PATHPROG(SED, sed)
 
-# check for dietlibc
-case $host_cpu in
-	(i*86|athlon) min_diet_ver=0.25;;
-	(ia64|hppa*)  min_diet_ver=0.29;;
-	(*)           min_diet_ver=0.28;;
-esac
-
-AC_VU_DIETLIBC([$min_diet_ver])
-
-if test $ac_vu_have_dietlibc = yes; then
-	AM_CONDITIONAL(USE_DIETLIBC, true)
-	CC="${DIET} ${DIETFLAGS} ${CC}"
-	enable_static=yes
-	enable_shared=no
-else
-	AC_VU_LIBUTIL
-	AM_CONDITIONAL(USE_DIETLIBC, false)
-fi
-
 # Checks for libraries.
-AC_PROG_LIBTOOL
+AC_VU_DIETLIBC
 AC_VU_LIBVSERVER
 
 # Checks for header files.

@@ -1,5 +1,17 @@
 # ChangeLog for vserver-utils
 
+  30 Jan 2006; Benedikt Böhm <hollow@gentoo.org> m4/libs.m4, configure.ac,
+  src/tools/Makefile.am:
+  dietlibc is now mandatory; i.e. no more glibc support!
+
+  30 Jan 2006; Benedikt Böhm <hollow@gentoo.org> +src/libinternal,
+  src/libvconfig/main.c, src/libvconfig/single.c, src/Makefile.am, configure.ac:
+  Local printf functions for dietlibc compatibility
+
+  30 Jan 2006; Benedikt Böhm <hollow@gentoo.org> -src/*.c, +src/tools,
+  src/Makefile.am, configure.ac:
+  Source reorganization
+
   27 Jan 2006; Benedikt Böhm <hollow@gentoo.org> -scripts/commands/enter.sh:
   Remove enter command (use login instead)
 

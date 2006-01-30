@@ -26,6 +26,8 @@ LDADD = $(top_builddir)/src/libinternal/libinternal.a \
         -lowfat \
         -lvserver
 
+noinst_HEADERS = tools.h
+
 sbin_PROGRAMS = nidof \
                 vattr \
                 vconfig \
@@ -49,9 +51,3 @@ sbin_PROGRAMS = nidof \
                 xidof
 
 pkglib_PROGRAMS = lockfile
-
-noinst_HEADERS = tools.h
-
-if !USE_DIETLIBC
-vlogin_LDFLAGS = -lutil
-endif
