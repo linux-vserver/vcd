@@ -28,6 +28,7 @@
 #include <getopt.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vflags"
@@ -51,7 +52,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <command> <opts>*\n"
+ vu_printf("Usage: %s <command> <opts>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set context capabilities/flags\n"
@@ -220,17 +221,17 @@ cflags:
 		/* iterate through each list and print matching keys */
 		list_foreach(bp, i) {
 			if (caps.bcaps & *(uint64_t*)(bp->node+i)->data)
-				printf("B: %s\n", (char *)(bp->node+i)->key);
+			 vu_printf("B: %s\n", (char *)(bp->node+i)->key);
 		}
 		
 		list_foreach(cp, i) {
 			if (caps.ccaps & *(uint64_t*)(cp->node+i)->data)
-				printf("C: %s\n", (char *)(cp->node+i)->key);
+			 vu_printf("C: %s\n", (char *)(cp->node+i)->key);
 		}
 		
 		list_foreach(fp, i) {
 			if (flags.flags & *(uint64_t*)(fp->node+i)->data)
-				printf("F: %s\n", (char *)(fp->node+i)->key);
+			 vu_printf("F: %s\n", (char *)(fp->node+i)->key);
 		}
 		
 		goto out;
@@ -239,13 +240,13 @@ cflags:
 	if (cmds.list) {
 		/* iterate through each list and print all keys */
 		list_foreach(bp, i)
-			printf("B: %s\n", (char *)(bp->node+i)->key);
+		 vu_printf("B: %s\n", (char *)(bp->node+i)->key);
 		
 		list_foreach(cp, i)
-			printf("C: %s\n", (char *)(cp->node+i)->key);
+		 vu_printf("C: %s\n", (char *)(cp->node+i)->key);
 		
 		list_foreach(fp, i)
-			printf("F: %s\n", (char *)(fp->node+i)->key);
+		 vu_printf("F: %s\n", (char *)(fp->node+i)->key);
 		
 		goto out;
 	}

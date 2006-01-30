@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright 2005 by the libvserver team                                 *
+ *   Copyright 2005 by the vserver-utils team                              *
  *   See AUTHORS for details                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,57 +18,28 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#define GLOBAL_CMDS "hV"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-#define GLOBAL_CMDS_GETOPT \
-case 'h': \
-	cmd_help(); \
-	break; \
-\
-case 'V': \
-	CMD_VERSION(NAME, DESCR); \
-	break; \
+#include <stdio.h>
+#include <stdlib.h>
+#include <vserver.h>
 
-#define DEFAULT_GETOPT \
-default: \
-	printf("Try '%s -h' for more information\n", argv[0]); \
-	exit(EXIT_USAGE); \
-	break; \
+#include "printf.h"
+#include "tools.h"
 
-
-#define CMD_VERSION(name, desc) do { \
-	printf("%s -- %s\n", name, desc); \
-	printf("This program is part of %s\n\n", PACKAGE_STRING); \
-	printf("Copyright (c) 2005 The vserver-utils Team\n"); \
-	printf("This program is free software; you can redistribute it and/or\n"); \
-	printf("modify it under the terms of the GNU General Public License\n"); \
-	exit(0); \
-}	while(0)
-
-/* exit, silent exit, perror exit
- *
- * exit code conventions:
- * 
- * 0 = OK
- * 1 = Wrong usage
- * 2 = A command failed
- * 3 = An opts specific function failed
- */
-#define EXIT_USAGE   1
-#define EXIT_COMMAND 2
-#define EXIT_OPTS    3
-
-#define EXIT(MSG,RC) { \
-	printf(MSG"; try '%s -h' for more information\n", argv[0]); \
-	exit(RC); \
-}
-
-#define SEXIT(MSG,RC) { \
-	printf(MSG"\n"); \
-	exit(RC); \
-}
-
-#define PEXIT(MSG,RC) { \
-	perror(MSG); \
-	exit(RC); \
+int main(int argc, char *argv[])
+{
+	if (argc != 2)
+		SEXIT("Usage: xidof <pid>", EXIT_USAGE);
+	
+	int pid;
+	
+	if ((pid = vx_get_task_xid(atoi(argv[1]))) == -1)
+		exit(EXIT_COMMAND);
+	
+ vu_printf("%d\n", pid);
+	
+	exit(EXIT_SUCCESS);
 }

@@ -28,6 +28,7 @@
 
 #include <linux/vserver/cvirt_cmd.h>
 
+#include "printf.h"
 #include "node.h"
 #include "map.h"
 #include "vconfig.h"
@@ -101,7 +102,7 @@ void vconfig_print_nodes(void)
 	unsigned int i;
 	
 	for (i = 0; i < NR_MAP_ENTRIES; i++) {
-		printf("%s\n", vconfig_map[i].key);
+		vu_printf("%s\n", vconfig_map[i].key);
 	}
 }
 

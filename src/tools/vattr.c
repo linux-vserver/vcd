@@ -38,6 +38,7 @@
 
 #include <linux/vserver/inode.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vattr"
@@ -84,7 +85,7 @@ struct stat st;
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>* <file>*\n"
+ vu_printf("Usage: %s <opts>* <file>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set file attributes\n"
@@ -161,7 +162,7 @@ set_iattr:
 		
 		/* syscall */
 		if (vx_set_iattr(&iattr) == -1) {
-			printf("vx_set_iattr(%s): %s\n", iattr.filename, strerror(errno));
+		 vu_printf("vx_set_iattr(%s): %s\n", iattr.filename, strerror(errno));
 			return 1;
 		}
 	} else {
@@ -210,19 +211,19 @@ set_iattr:
 		}
 		
 		if (iattr.mask & IATTR_XID)
-			snprintf(ptr, 7, " %5d", iattr.xid);
+			vu_snprintf(ptr, 7, " %5d", iattr.xid);
 		else
-			snprintf(ptr, 7, " noxid");
+			vu_snprintf(ptr, 7, " noxid");
 		
-		printf("%s", buf);
+	 vu_printf("%s", buf);
 		
 		if (src != 0)
-			printf(" %s ->", src);
+		 vu_printf(" %s ->", src);
 		
 		if (display != 0)
-			printf(" %s\n", display);
+		 vu_printf(" %s\n", display);
 		else
-			printf(" %s\n", file);
+		 vu_printf(" %s\n", file);
 	}
 	
 	return rc;
@@ -240,7 +241,7 @@ int handle_file(char *file, char *display)
 		goto out;
 	
 	if (lstat(file, &sb) == -1) {
-		printf("lstat(%s): %s\n", file, strerror(errno));
+	 vu_printf("lstat(%s): %s\n", file, strerror(errno));
 		return 1;
 	}
 	
@@ -257,7 +258,7 @@ int handle_file(char *file, char *display)
 			if (errno == ENOENT)
 				return 0;
 			
-			printf("readlink(%s): %s\n", display, strerror(errno));
+		 vu_printf("readlink(%s): %s\n", display, strerror(errno));
 			return 1;
 		}
 		
@@ -265,7 +266,7 @@ int handle_file(char *file, char *display)
 		
 		if (opts.follow) {
 			if (stat(link_buf, &sb) == -1) {
-				printf("stat(%s): %s\n", link_buf, strerror(errno));
+			 vu_printf("stat(%s): %s\n", link_buf, strerror(errno));
 				return 1;
 			}
 			
@@ -289,7 +290,7 @@ int walk_tree(char *path, char *root)
 	DIR *dir        = opendir(path);
 	
 	if (dir == 0) {
-		printf("opendir(%s): %s\n", path, strerror(errno));
+	 vu_printf("opendir(%s): %s\n", path, strerror(errno));
 		return 1;
 	}
 	
@@ -309,7 +310,7 @@ int walk_tree(char *path, char *root)
 	
 	while ((ent = readdir(dir)) != 0) {
 		if (lstat(ent->d_name, &sb) == -1) {
-			printf("lstat(%s): %s\n", ent->d_name, strerror(errno));
+		 vu_printf("lstat(%s): %s\n", ent->d_name, strerror(errno));
 			return errcnt + 1;
 		}
 		
@@ -359,7 +360,7 @@ int process_file(char *path)
 	int rc = 0;
 	
 	if (lstat(path, &st) == -1) {
-		printf("lstat(%s): %s\n", path, strerror(errno));
+	 vu_printf("lstat(%s): %s\n", path, strerror(errno));
 		return 1;
 	}
 	

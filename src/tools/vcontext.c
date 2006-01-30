@@ -22,39 +22,50 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
+#include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <getopt.h>
-#include <string.h>
-#include <strings.h>
+#include <unistd.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
-#define NAME  "vsched"
-#define DESCR "Context CPU Limit Manager"
+#define NAME  "vcontext"
+#define DESCR "Context Manager"
 
-#define SHORT_OPTS "x:b:"
+#define SHORT_OPTS "CIMx:f:"
+
+struct commands {
+	bool create;
+	bool info;
+	bool migrate;
+};
 
 struct options {
 	xid_t xid;
-	list_t *bucket;
+	list_t *flags;
 };
 
+static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>*\n"
+	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	       "\n"
+	       "Available commands:\n"
+	       "    -C            Create a new security context\n"
+	       "    -I            Get information about a context\n"
+	       "    -M            Migrate to an existing context\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -x <xid>      Context ID\n"
-	       "    -b <bucket>   Set bucket described in <bucket>\n"
+	       "    -f <list>     Set flags described in <list>\n"
 	       "\n"
-	       "Bucket format string:\n"
-	       "    <bucket> = <key>=<value>,<key>=<value>,...\n"
+	       "Flag list format string:\n"
+	       "    <list> = [~]<flag>,[~]<flag>,...\n"
 	       "\n"
-	       "    <key> is one of: FILL_RATE, INTERVAL, TOKENS, \n"
-	       "                     TOKENS_MIN, TOKENS_MAX, PRIO_BIAS\n"
-	       "    <value> must be an integer\n"
+	       "    See 'vflags -L' for available flags\n"
 	       "\n",
 	       NAME);
 	exit(EXIT_SUCCESS);
@@ -63,25 +74,30 @@ void cmd_help()
 int main(int argc, char *argv[])
 {
 	/* init program data */
+	struct commands cmds = {
+		.create   = false,
+		.info     = false,
+		.migrate  = false,
+	};
+	
 	struct options opts = {
-		.xid    = 0,
-		.bucket = 0,
+		.xid   = (~0U),
+		.flags = 0,
 	};
 	
 	/* init syscall data */
-	struct vx_sched sched = {
-		.set_mask      = 0,
-		.fill_rate     = 0,
-		.interval      = 0,
-		.tokens        = 0,
-		.tokens_min    = 0,
-		.tokens_max    = 0,
-		.priority_bias = 0,
+	struct vx_create_flags create_flags = {
+		.flags = 0,
 	};
 	
+	struct vx_info info;
+	
+	/* init flags list */
+	list_t *cp = cflags_list_init();
+	
 	int c;
-	const char delim   = ','; // list delimiter
-	const char kvdelim = '='; // key/value delimiter
+	const char delim = ','; // list delimiter
+	const char clmod = '~'; // clear flag modifier
 	
 	/* parse command line */
 	while (1) {
@@ -91,79 +107,83 @@ int main(int argc, char *argv[])
 		switch (c) {
 			GLOBAL_CMDS_GETOPT
 			
+			case 'C':
+				cmds.create = true;
+				break;
+			
+			case 'I':
+				cmds.info = true;
+				break;
+			
+			case 'M':
+				cmds.migrate = true;
+				break;
+			
 			case 'x':
 				opts.xid = (xid_t) atoi(optarg);
 				break;
 			
-			case 'b':
-				opts.bucket = list_parse_hash(optarg, delim, kvdelim);
+			case 'f':
+				opts.flags = list_parse_list(optarg, delim);
 				break;
 			
 			DEFAULT_GETOPT
 		}
 	}
 	
-	if (opts.bucket != 0) {
-		/* init scheduler mask list */
-		list_t *sp = sched_list_init();
+	if (cmds.create) {
+		if (opts.flags == 0)
+			goto create;
 		
 		list_link_t link = {
-			.p = sp,
-			.d = opts.bucket,
+			.p = cp,
+			.d = opts.flags,
 		};
 		
 		/* validate descending list */
-		if (list_validate(&link) == -1)
+		if (list_validate_flag(&link, clmod) == -1)
 			PEXIT("List validation failed", EXIT_USAGE);
 		
-		/* we kinda misuse the list parser here:
-		 * the pristine list is used to calculate the set mask
-		 * whereas the descending list is used to set the actual values
-		 */
-		list_foreach(link.d, i) {
-			/* let's make a pointer to prevent unreadable code */
-			list_node_t *dnode = (link.d)->node+i;
-			
-			/* find set mask to given key from descending list */
-			list_node_t *pnode = list_search(link.p, dnode->key);
-			
-			/* convert list data */
-			char *key      = pnode->key;
-			uint64_t value = atoi((char *)dnode->data);
-			uint64_t mask  = *(uint64_t *)pnode->data;
-			
-			/* set value of d according to key from p */
-			if (strcasecmp(key, "FILL_RATE") == 0)
-				sched.fill_rate = value;
-			
-			if (strcasecmp(key, "INTERVAL") == 0)
-				sched.interval = value;
-			
-			if (strcasecmp(key, "TOKENS") == 0)
-				sched.tokens = value;
-			
-			if (strcasecmp(key, "TOKENS_MIN") == 0)
-				sched.tokens_min = value;
-			
-			if (strcasecmp(key, "TOKENS_MAX") == 0)
-				sched.tokens_max = value;
-			
-			if (strcasecmp(key, "PRIO_BIAS") == 0)
-				sched.priority_bias = value;
-			
-			/* set scheduler mask */
-			sched.set_mask |= mask;
-		}
+		/* vx_create_flags has no mask member
+		 * so we create a dumb one */
+		uint64_t mask = 0;
 		
+		/* convert given descending list to flags using the pristine copy */
+		list_list2flags(&link, clmod, &create_flags.flags, &mask);
+		
+create:
 		/* syscall */
-		if (vx_set_sched(opts.xid, &sched) == -1)
-			PEXIT("Failed to set scheduler settings", EXIT_COMMAND);
+		if (vx_create(opts.xid, &create_flags) == -1)
+			PEXIT("Failed to create context", EXIT_COMMAND);
+		
+		goto load;
+	}
+	
+	if (cmds.migrate) {
+		/* syscall */
+		if (vx_migrate(opts.xid) == -1)
+			PEXIT("Failed to migrate to context", EXIT_COMMAND);
+		
+		goto load;
+	}
+	
+	if (cmds.info) {
+		/* syscall */
+		if (vx_get_info(opts.xid, &info) == -1)
+			PEXIT("Failed to get context information", EXIT_COMMAND);
+		
+		vu_printf("Context ID: %d\n", info.xid);
+		vu_printf("Init PID: %d\n", info.initpid);
 		
 		goto out;
 	}
 	
 	cmd_help();
-
+	
+load:
+	if (argc > optind)
+		execvp(argv[optind], argv+optind);
+	
 out:
 	exit(EXIT_SUCCESS);
 }

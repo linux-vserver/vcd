@@ -27,6 +27,7 @@
 
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
 int main(int argc, char *argv[])
@@ -39,7 +40,7 @@ int main(int argc, char *argv[])
 	if ((pid = nx_get_task_nid(atoi(argv[1]))) == -1)
 		exit(EXIT_COMMAND);
 	
-	printf("%d\n", pid);
+ vu_printf("%d\n", pid);
 		
 	exit(EXIT_SUCCESS);
 }

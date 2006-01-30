@@ -35,6 +35,7 @@
 #include <pty.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vlogin"
@@ -64,7 +65,7 @@ static struct terminal t;
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
+ vu_printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -n <xid>      Network Context ID\n"
@@ -142,7 +143,7 @@ static
 void terminal_atexit(void)
 {
 	terminal_reset();
-	printf("\n"); /* for cosmetic reasons */
+ vu_printf("\n"); /* for cosmetic reasons */
 }
 
 /* send signal to terminal */

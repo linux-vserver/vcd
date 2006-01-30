@@ -27,44 +27,52 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <sched.h>
+#include <signal.h>
+#include <limits.h>
+#include <sys/types.h>
+#include <sys/wait.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
-#define NAME  "vcontext"
-#define DESCR "Context Manager"
+#define NAME  "vnamespace"
+#define DESCR "Filesystem Namespace Manager"
 
-#define SHORT_OPTS "CIMx:f:"
+#define SHORT_OPTS "CENSfx:"
+
+/* dietlibc does not define CLONE_NEWNS */
+#ifndef CLONE_NEWNS
+#define CLONE_NEWNS 0x00020000
+#endif
 
 struct commands {
-	bool create;
-	bool info;
-	bool migrate;
+	bool cleanup;
+	bool enter;
+	bool new;
+	bool set;
 };
 
 struct options {
+	bool force_clean;
 	xid_t xid;
-	list_t *flags;
 };
 
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+ vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
-	       "    -C            Create a new security context\n"
-	       "    -I            Get information about a context\n"
-	       "    -M            Migrate to an existing context\n"
+	       "    -C            Remove all mounts from current context\n"
+	       "    -E            Enter the namespace of context <xid>\n"
+	       "    -N            Create a new namespace\n"
+	       "    -S            Make current namespace the namespace of current context\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -x <xid>      Context ID\n"
-	       "    -f <list>     Set flags described in <list>\n"
-	       "\n"
-	       "Flag list format string:\n"
-	       "    <list> = [~]<flag>,[~]<flag>,...\n"
-	       "\n"
-	       "    See 'vflags -L' for available flags\n"
 	       "\n",
 	       NAME);
 	exit(EXIT_SUCCESS);
@@ -74,29 +82,21 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct commands cmds = {
-		.create   = false,
-		.info     = false,
-		.migrate  = false,
+		.cleanup = false,
+		.enter   = false,
+		.new     = false,
+		.set     = false,
 	};
 	
 	struct options opts = {
-		.xid   = (~0U),
-		.flags = 0,
+		.force_clean = false,
+		.xid         = 0,
 	};
-	
-	/* init syscall data */
-	struct vx_create_flags create_flags = {
-		.flags = 0,
-	};
-	
-	struct vx_info info;
-	
-	/* init flags list */
-	list_t *cp = cflags_list_init();
 	
 	int c;
-	const char delim = ','; // list delimiter
-	const char clmod = '~'; // clear flag modifier
+	pid_t pid; /* sys_clone */
+	int status; /* waitpid */
+	char cwd[PATH_MAX]; /* chdir */
 	
 	/* parse command line */
 	while (1) {
@@ -107,77 +107,94 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'C':
-				cmds.create = true;
+				cmds.cleanup = true;
 				break;
 			
-			case 'I':
-				cmds.info = true;
+			case 'E':
+				cmds.enter = true;
 				break;
 			
-			case 'M':
-				cmds.migrate = true;
+			case 'N':
+				cmds.new = true;
+				break;
+			
+			case 'S':
+				cmds.set = true;
+				break;
+			
+			case 'f':
+				opts.force_clean = true;
 				break;
 			
 			case 'x':
 				opts.xid = (xid_t) atoi(optarg);
 				break;
 			
-			case 'f':
-				opts.flags = list_parse_list(optarg, delim);
-				break;
-			
 			DEFAULT_GETOPT
 		}
 	}
 	
-	if (cmds.create) {
-		if (opts.flags == 0)
-			goto create;
+	if (cmds.cleanup) {
+		if (!opts.force_clean)
+			SEXIT("You don't want this. Really. (Use -f if you are sure)", EXIT_USAGE);
 		
-		list_link_t link = {
-			.p = cp,
-			.d = opts.flags,
-		};
+		if (vx_cleanup_namespace() == -1)
+			PEXIT("Failed to cleanup namespace", EXIT_COMMAND);
 		
-		/* validate descending list */
-		if (list_validate_flag(&link, clmod) == -1)
-			PEXIT("List validation failed", EXIT_USAGE);
+		goto out;
+	}
+	
+	if (cmds.enter) {
+		if (getcwd(cwd, PATH_MAX) == NULL)
+			PEXIT("Failed to get cwd", EXIT_COMMAND);
 		
-		/* vx_create_flags has no mask member
-		 * so we create a dumb one */
-		uint64_t mask = 0;
+		if (vx_enter_namespace(opts.xid) == -1)
+			PEXIT("Failed to enter namespace", EXIT_COMMAND);
 		
-		/* convert given descending list to flags using the pristine copy */
-		list_list2flags(&link, clmod, &create_flags.flags, &mask);
-		
-create:
-		/* syscall */
-		if (vx_create(opts.xid, &create_flags) == -1)
-			PEXIT("Failed to create context", EXIT_COMMAND);
+		if (chdir(cwd) == -1)
+			PEXIT("Failed to restore cwd", EXIT_COMMAND);
 		
 		goto load;
 	}
 	
-	if (cmds.migrate) {
-		/* syscall */
-		if (vx_migrate(opts.xid) == -1)
-			PEXIT("Failed to migrate to context", EXIT_COMMAND);
+	if (cmds.new) {
+		signal(SIGCHLD, SIG_DFL);
 		
-		goto load;
+		pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0);
+		
+		switch(pid) {
+			case -1:
+				PEXIT("Failed to create new namespace", EXIT_COMMAND);
+			
+			case 0:
+				if (vx_set_namespace(opts.xid) == -1)
+					PEXIT("Failed to set namespace", EXIT_COMMAND);
+				goto out;
+			
+			default:
+				if (waitpid(pid, &status, 0) == -1)
+					PEXIT("Failed to wait for child", EXIT_COMMAND);
+			
+				if (WIFEXITED(status))
+					exit(WEXITSTATUS(status));
+				
+				if (WIFSIGNALED(status)) {
+				 vu_printf("Child interrupted by signal; following...\n");
+					kill(getpid(), WTERMSIG(status));
+					exit(1);
+				}
+		}
 	}
 	
-	if (cmds.info) {
-		/* syscall */
-		if (vx_get_info(opts.xid, &info) == -1)
-			PEXIT("Failed to get context information", EXIT_COMMAND);
-		
-		printf("Context ID: %d\n", info.xid);
-		printf("Init PID: %d\n", info.initpid);
+	if (cmds.set) {
+		if (vx_set_namespace(opts.xid) == -1)
+			PEXIT("Failed to set namespace", EXIT_COMMAND);
 		
 		goto out;
 	}
 	
 	cmd_help();
+	goto out;
 	
 load:
 	if (argc > optind)

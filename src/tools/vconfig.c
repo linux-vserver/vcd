@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 #include "vconfig.h"
 
@@ -51,7 +52,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <command> <opts>*\n"
+ vu_printf("Usage: %s <command> <opts>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -G            Get configuration value\n"
@@ -126,23 +127,23 @@ int main(int argc, char *argv[])
 			
 			if (buf != -1) {
 				if (buf == 1)
-					printf("true\n");
+				 vu_printf("true\n");
 				else
-					printf("false\n");
+				 vu_printf("false\n");
 			}
 		}
 		
 		if (vconfig_isint(opts.key) == 0) {
 			int buf = vconfig_get_int(opts.name, opts.key);
 			if (buf != -1)
-				printf("%d\n", buf);
+			 vu_printf("%d\n", buf);
 		}
 		
 		if (vconfig_isstr(opts.key) == 0) {
 			char *buf = vconfig_get_str(opts.name, opts.key);
 			
 			if (buf != NULL) {
-				printf("%s\n", buf);
+			 vu_printf("%s\n", buf);
 				free(buf);
 			}
 		}
@@ -151,7 +152,7 @@ int main(int argc, char *argv[])
 			char *buf = vconfig_get_list(opts.name, opts.key);
 			
 			if (buf != NULL) {
-				printf("%s\n", buf);
+			 vu_printf("%s\n", buf);
 				free(buf);
 			}
 		}

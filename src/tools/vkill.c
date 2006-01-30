@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vkill"
@@ -45,7 +46,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>*\n"
+ vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -x <xid>      Context ID\n"

@@ -34,6 +34,7 @@
 #include <sys/file.h>
 #include <string.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "lockfile"
@@ -60,7 +61,7 @@ struct options opts = {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>*\n"
+ vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -l <file>     Lock file\n"
@@ -165,7 +166,7 @@ int main(int argc, char *argv[])
 		}
 		
 		char buf[7];
-		snprintf(buf, 7, "%d\n", getpid());
+		vu_snprintf(buf, 7, "%d\n", getpid());
 		
 		if (write(lockfd, buf, 7) == -1) {
 			perror("Failed to write pid to lockfile");

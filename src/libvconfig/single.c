@@ -31,6 +31,7 @@
 #include <errno.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "pathconfig.h"
 #include "vconfig.h"
 
@@ -97,7 +98,7 @@ int _single_open(char *name, char *key, int flags)
 		return -1;
 	
 	char path[PATH_MAX];
-	snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
+	vu_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
 	
 	return open(path, O_RDWR|flags, 0600);
 }
@@ -157,9 +158,9 @@ int vconfig_set_bool(char *name, char *key, int value)
 	
 	/* we support up to 32 bit int (i.e. 10 digits max) */
 	if (value == 1)
-		len = snprintf(buf, 6, "true");
+		len = vu_snprintf(buf, 6, "true");
 	else
-		len = snprintf(buf, 6, "false");
+		len = vu_snprintf(buf, 6, "false");
 	
 	if (len > 6 || len == 0)
 		goto error;
@@ -230,7 +231,7 @@ int vconfig_set_int(char *name, char *key, int value)
 	size_t len;
 	
 	/* we support up to 32 bit int (i.e. 10 digits max) */
-	len = snprintf(buf, 11, "%d", value);
+	len = vu_snprintf(buf, 11, "%d", value);
 	
 	if (len > 11 || len == 0)
 		goto error;

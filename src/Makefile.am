@@ -16,43 +16,9 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = libvconfig
-
-INCLUDES = -I$(top_srcdir) -I$(srcdir)/libvconfig/
-
-AM_LDFLAGS = -lvserver
-
-sbin_PROGRAMS = nidof \
-                vattr \
-                vconfig \
-                vcontext \
-                vdlimit \
-                vexec \
-                vflags \
-                vinfo \
-                vkill \
-                vlimit \
-                vlogin \
-                vmount \
-                vnamespace \
-                vncontext \
-                vnflags \
-                vps \
-                vrsetup \
-                vsched \
-                vuname \
-                vwait \
-                xidof
-
-pkglib_PROGRAMS = lockfile
-
-noinst_HEADERS = tools.h
-
-vconfig_LDADD = libvconfig/libvconfig.a
-
-if !USE_DIETLIBC
-vlogin_LDFLAGS = -lutil
-endif
+SUBDIRS = libinternal \
+          libvconfig \
+          tools
 
 include $(top_srcdir)/m4/pathconfig.am
 

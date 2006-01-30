@@ -35,6 +35,7 @@
 #include <linux/vserver/context.h>
 #include <linux/vserver/network.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vexec"
@@ -53,7 +54,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>* -- <command> <args>*\n"
+ vu_printf("Usage: %s <opts>* -- <command> <args>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -c            chroot to current working directory\n"

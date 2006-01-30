@@ -31,6 +31,7 @@
 #include <sys/ioctl.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vrsetup"
@@ -58,7 +59,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <command> <rootdev> [<realrootdev>]\n"
+ vu_printf("Usage: %s <command> <rootdev> [<realrootdev>]\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -C            Clear device\n"

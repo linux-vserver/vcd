@@ -17,15 +17,10 @@
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 INCLUDES = -I$(top_srcdir) \
-           -I$(top_srcdir)/src/libinternal \
            -I$(top_builddir)/src
 
-noinst_HEADERS = dummy.c \
-                 map.h \
-                 node.h \
-                 single.c \
-                 vconfig.h
+noinst_HEADERS = printf.h
 
-noinst_LIBRARIES = libvconfig.a
+noinst_LIBRARIES = libinternal.a
 
-libvconfig_a_SOURCES = main.c
+libinternal_a_SOURCES = printf.c

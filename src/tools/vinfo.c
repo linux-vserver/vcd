@@ -22,30 +22,31 @@
 #include <config.h>
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <stdlib.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
-#define NAME  "vwait"
-#define DESCR "Kill context processes"
+#define NAME  "vinfo"
+#define DESCR "VServer information"
 
-#define SHORT_OPTS "x:"
+#define SHORT_OPTS "v"
 
 struct options {
-	xid_t xid;
+	bool version;
 };
 
-static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>*\n"
+ vu_printf("Usage: %s <opts>\n"
 	       "\n"
 	       "Available options:\n"
-	       "    -x <xid>      Context ID\n"
+	       "    -v            Show VServer interface version\n"
 	       "\n",
 	       NAME);
 	exit(EXIT_SUCCESS);
@@ -55,13 +56,7 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct options opts = {
-		.xid = 0,
-	};
-	
-	/* init syscall data */
-	struct vx_wait_opts wait_opts = {
-		.a = 0,
-		.b = 0,
+		.version = false,
 	};
 	
 	int c;
@@ -74,26 +69,27 @@ int main(int argc, char *argv[])
 		switch (c) {
 			GLOBAL_CMDS_GETOPT
 			
-			case 'x':
-				opts.xid = (xid_t) atoi(optarg);
+			case 'v':
+				opts.version = true;
 				break;
 			
 			DEFAULT_GETOPT
 		}
 	}
 	
-	/* show help message */
-	if (argc == 1) {
-		cmd_help();
-		exit(EXIT_SUCCESS);
+	if (opts.version) {
+		int version;
+		
+		if((version = vs_get_version()) == -1)
+			PEXIT("Failed to get VServer interface version", EXIT_COMMAND);
+		
+	 vu_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
+		
+		goto out;
 	}
 	
-	if (opts.xid == 0)
-		EXIT("No xid given", EXIT_USAGE);
+	cmd_help();
 	
-	/* syscall */
-	if (vx_wait(opts.xid, &wait_opts) == -1)
-		PEXIT("Failed to wait for context", EXIT_COMMAND);
-	
+out:
 	exit(EXIT_SUCCESS);
 }

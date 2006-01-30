@@ -27,14 +27,18 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <strings.h>
 #include <vserver.h>
 
+#include <linux/vserver/limit_cmd.h>
+
+#include "printf.h"
 #include "tools.h"
 
-#define NAME  "vuname"
-#define DESCR "Virtual Host Information Manager"
+#define NAME  "vlimit"
+#define DESCR "Context Resource Limit Manager"
 
-#define SHORT_OPTS "SGx:n:"
+#define SHORT_OPTS "SGx:r:l:"
 
 struct commands {
 	bool set;
@@ -43,55 +47,63 @@ struct commands {
 
 struct options {
 	xid_t xid;
-	list_t *names;
+	uint32_t rid;
+	list_t *limit;
 };
 
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <command> <opts>*\n"
+ vu_printf("Usage: %s <command> <opts>**\n"
 	       "\n"
 	       "Available commands:\n"
-	       "    -S            Set virtual host information\n"
-	       "    -G            Get virtual host information\n"
+	       "    -S            Set resource limits\n"
+	       "    -G            Get resource limits\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -x <xid>      Context ID\n"
-	       "    -n <names>    Set VHI names described in <names>\n"
+	       "    -r <res>      Use specified resource\n"
+	       "    -l <limit>    Set limit specified in <limit>\n"
 	       "\n"
-	       "VHI names format string:\n"
-	       "    <names> = <key>=<value>,<key>=<value>,...\n"
+	       "Available resource limits:\n"
+	       "    RSS, NPROC, NOFILE, MEMLOCK, \n"
+	       "    AS, NSOCK, OPENFD, ANON, SHMEM\n"
 	       "\n"
-	       "    <key> is one of: CONTEXT, SYSNAME, NODENAME, RELEASE,\n"
-	       "                     VERSION, MACHINE, DOMAINNAME\n"
-	       "    <value> must be a string\n"
+	       "Resource limit format string:\n"
+	       "    <limit> = <min>,<soft>,<hard>\n"
 	       "\n",
 	       NAME);
-	exit(EXIT_SUCCESS);
+	exit(0);
 }
 
 int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct commands cmds = {
-		.set = false,
-		.get = false,
+		.set = 0,
+		.get = 0,
 	};
 	
 	struct options opts = {
 		.xid   = 0,
-		.names = 0,
+		.rid   = 0,
+		.limit = 0,
 	};
 	
 	/* init syscall data */
-	struct vx_vhi_name vhi_name;
+	struct vx_rlimit rlimit = {
+		.id        = 0,
+		.minimum   = CRLIM_KEEP,
+		.softlimit = CRLIM_KEEP,
+		.maximum   = CRLIM_KEEP,
+	};
 	
-	/* init vhi names list */
-	list_t *vp = vhi_list_init();
+	/* init resource limit list */
+	list_t *rp = rlimit_list_init();
 	
 	int c;
-	const char delim   = ','; // list delimiter
-	const char kvdelim = '='; // key/value delimiter
+	list_node_t *rnode; // resource id search result
+	const char delim = ','; // list delimiter
 	
 	/* parse command line */
 	while (1) {
@@ -113,71 +125,68 @@ int main(int argc, char *argv[])
 				opts.xid = (xid_t) atoi(optarg);
 				break;
 			
-			case 'n':
-				opts.names = list_parse_hash(optarg, delim, kvdelim);
+			case 'r':
+				rnode    = list_search(rp, optarg);
+				opts.rid = *(uint64_t *)rnode->data;
+				break;
+			
+			case 'l':
+				opts.limit = list_parse_list(optarg, delim);
 				break;
 			
 			DEFAULT_GETOPT
 		}
 	}
 	
+	if ((rlimit.id = opts.rid) == 0)
+		EXIT("Invalid resource", EXIT_USAGE);
+	
 	if (cmds.set) {
-		if (opts.names == 0)
-			goto out;
+		if (opts.rid == 0 || opts.limit == 0)
+			PEXIT("No resource limit specified", EXIT_USAGE);
 		
-		list_link_t link = {
-			.p = vp,
-			.d = opts.names,
-		};
+		/* let's make a pointer to prevent unreadable code */
+		list_node_t *lnode = (opts.limit)->node;
 		
-		/* validate descending list */
-		if (list_validate(&link) == -1)
-			PEXIT("List validation failed", EXIT_USAGE);
+#define SETLIMIT(LIMIT) {                           \
+		if (strlen(lnode->key) != 0) {              \
+			if (strcasecmp(lnode->key, "inf") == 0) \
+				LIMIT = CRLIM_INFINITY;             \
+			else LIMIT = atoi(lnode->key);          \
+		}                                           \
+		lnode++;                                    \
+}
 		
-		/* we kinda misuse the list parser here:
-		 * the pristine list is used to decide where to put the data
-		 * of the descending list with a matching key
-		 */
-		list_foreach(link.d, i) {
-			/* let's make a pointer to prevent unreadable code */
-			list_node_t *dnode = (link.d)->node+i;
-			
-			/* find vhi field to given key from descending list */
-			list_node_t *pnode = list_search(link.p, dnode->key);
-			
-			/* convert list data */
-			uint64_t field = *(uint64_t *)pnode->data;
-			char *name     = (char *)dnode->data;
-			
-			vhi_name.field = field;
-			strncpy(vhi_name.name, name, VHILEN-2);
-			vhi_name.name[VHILEN-1] = '\0';
-			
-			/* syscall */
-			if (vx_set_vhi_name(opts.xid, &vhi_name) == -1)
-				PEXIT("Failed to set VHI field", EXIT_COMMAND);
-		}
+		/* set MSH values */
+		SETLIMIT(rlimit.minimum)
+		SETLIMIT(rlimit.softlimit)
+		SETLIMIT(rlimit.maximum)
+		
+#undef SETLIMIT
+		
+		/* syscall */
+		if (vx_set_rlimit(opts.xid, &rlimit) == -1)
+			PEXIT("Failed to set resource limits", EXIT_COMMAND);
 		
 		goto out;
 	}
 	
 	if (cmds.get) {
-		list_foreach(vp, i) {
-			/* let's make a pointer to prevent unreadable code */
-			list_node_t *vnode = vp->node+i;
-			
-			/* convert list data */
-			uint64_t field  = *(uint64_t *)vnode->data;
-			char *fieldname = vnode->key;
-			
-			vhi_name.field = field;
-			
-			/* syscall */
-			if (vx_get_vhi_name(opts.xid, &vhi_name) == -1)
-				PEXIT("Failed to get VHI field", EXIT_COMMAND);
-			
-			printf("%s: %s\n", fieldname, vhi_name.name);
-		}
+		/* syscall */
+		if (vx_get_rlimit(opts.xid, &rlimit) == -1)
+			PEXIT("Failed to get resource limits", EXIT_COMMAND);
+
+#define PRINTLIMIT(LIMIT, SUFFIX) {                        \
+		if (LIMIT == CRLIM_INFINITY) vu_printf("inf" SUFFIX); \
+		else vu_printf("%llu" SUFFIX, LIMIT);                 \
+}
+		
+		/* print list parser compliant MSH value */
+		PRINTLIMIT(rlimit.minimum, ",")
+		PRINTLIMIT(rlimit.softlimit,  ",")
+		PRINTLIMIT(rlimit.maximum, "\n")
+
+#undef PRINTLIMIT
 		
 		goto out;
 	}

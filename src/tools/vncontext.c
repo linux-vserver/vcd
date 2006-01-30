@@ -33,6 +33,7 @@
 
 #include <linux/vserver/network.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vncontext"
@@ -57,7 +58,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+ vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -A            Add adress to network context\n"
@@ -259,7 +260,7 @@ create:
 		if (nx_get_info(opts.nid, &info) == -1)
 			PEXIT("Failed to get network context information", EXIT_COMMAND);
 		
-		printf("Network context ID: %d\n", info.nid);
+	 vu_printf("Network context ID: %d\n", info.nid);
 		
 		goto out;
 	}

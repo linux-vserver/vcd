@@ -37,6 +37,7 @@
 #include <sys/file.h>
 #include <vserver.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vmount"
@@ -80,7 +81,7 @@ int root_fd;
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+ vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	            "\n"
 	            "Available commands:\n"
 	            "    -M            Mount vserver filesystems\n"
@@ -161,7 +162,7 @@ int update_mtab(struct mntspec *fsent, struct options *opts)
 	if (fsent->data == 0)
 		fsent->data = "defaults";
 	
-	asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target, fsent->vfstype, fsent->data);
+	vu_asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target, fsent->vfstype, fsent->data);
 	
 	if (write(mtab_fd, line, strlen(line)) == -1)
 		goto error;
@@ -396,7 +397,7 @@ int main(int argc, char *argv[])
 			
 			switch (parse_fsent(&fsent, fstab_line)) {
 				case -1:
-					printf("Failed to parse fstab line:\n%s\n", fstab_line);
+				 vu_printf("Failed to parse fstab line:\n%s\n", fstab_line);
 					break;
 				
 				case 0:
@@ -473,7 +474,7 @@ rbind:
 			
 			switch (parse_fsent(&fsent, mtab_line)) {
 				case -1:
-					printf("Failed to parse mtab line:\n%s\n", mtab_line);
+				 vu_printf("Failed to parse mtab line:\n%s\n", mtab_line);
 					break;
 				
 				case 0:

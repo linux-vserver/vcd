@@ -36,6 +36,7 @@
 #include <linux/vserver/context.h>
 #include <linux/vserver/network.h>
 
+#include "printf.h"
 #include "tools.h"
 
 #define NAME  "vps"
@@ -63,7 +64,7 @@ struct psline {
 static inline
 void cmd_help()
 {
-	printf("Usage: %s <opts>* -- <ps args>*\n"
+ vu_printf("Usage: %s <opts>* -- <ps args>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -n <nid>      Network Context ID\n"
@@ -136,7 +137,7 @@ void process_output(char *data, size_t len, struct options *opts)
 	if (pid_start == 0) {
 		/* we don't have output with PID column; possibly help message
 		** just forward it */
-		printf("vps: PID column not found, dumping ps's output.\n\n");
+	 vu_printf("vps: PID column not found, dumping ps's output.\n\n");
 		write(1, data, len);
 		return;
 	}
@@ -222,8 +223,8 @@ void process_output(char *data, size_t len, struct options *opts)
 	
 	/* get width of xid/nid columns
 	** max xid/nid is 65535; i.e. the column does never grow > 6 */
-	xidwidth = snprintf(NULL, 0, "%d ", pslines[0].xid);
-	nidwidth = snprintf(NULL, 0, "%d ", pslines[0].nid);
+	xidwidth = vu_snprintf(NULL, 0, "%d ", pslines[0].xid);
+	nidwidth = vu_snprintf(NULL, 0, "%d ", pslines[0].nid);
 	
 	/* just in case the header wouldn't fit */
 	if (xidwidth < 4)
@@ -258,13 +259,13 @@ void process_output(char *data, size_t len, struct options *opts)
 		write(1, pslines[i].lstart, pid_end);
 		
 		if (opts->showxid) {
-			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[i].xid);
+			n = vu_snprintf(tmp, sizeof(tmp), "%d ", pslines[i].xid);
 			write(1, "      ", xidwidth - n);
 			write(1, tmp, n);
 		}
 		
 		if (opts->shownid) {
-			n = snprintf(tmp, sizeof(tmp), "%d ", pslines[i].nid);
+			n = vu_snprintf(tmp, sizeof(tmp), "%d ", pslines[i].nid);
 			write(1, "      ", nidwidth - n);
 			write(1, tmp, n);
 		}
