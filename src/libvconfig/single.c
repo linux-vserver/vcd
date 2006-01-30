@@ -30,6 +30,10 @@
 #include <limits.h>
 #include <errno.h>
 #include <vserver.h>
+#include <sys/mman.h>
+
+#include <libowfat/mmap.h>
+#include <libowfat/str.h>
 
 #include "printf.h"
 #include "pathconfig.h"
@@ -48,6 +52,8 @@ struct _single_node {
 	{ "context.personality",     "personality" },
 	{ "context.personalityflag", "personalityflag" },
 	{ "context.sched",           "scheduler" },
+	{ "init.runlevel",           "init/runlevel" },
+	{ "init.style",              "init/style" },
 	{ "limit.anon",              "limits/anon" },
 	{ "limit.as",                "limits/as" },
 	{ "limit.memlock",           "limits/memlock" },
@@ -67,7 +73,6 @@ struct _single_node {
 	{ "uts.release",             "uts/release" },
 	{ "uts.sysname",             "uts/sysname" },
 	{ "uts.version",             "uts/version" },
-	{ "vps.init",                "init" },
 	{ "vps.shell",               "shell" },
 	{ "vps.timeout",             "timeout" },
 };
@@ -87,12 +92,35 @@ int _single_comp(const void *n1, const void *n2)
 }
 
 static
-int _single_open(char *name, char *key, int flags)
+unsigned long _single_readkey(char *name, char *key, char **buf)
 {
-	struct _single_node buf, *res;
+	struct _single_node n, *res;
 	
-	buf.key = key;
-	res = bsearch(&buf, _single_map, NR_NODES, sizeof(struct _single_node), _single_comp);
+	n.key = key;
+	res = bsearch(&n, _single_map, NR_NODES, sizeof(struct _single_node), _single_comp);
+	
+	if (res == NULL)
+		return 0;
+	
+	char path[PATH_MAX];
+	vu_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
+	
+	unsigned long len;
+	*buf = mmap_private(path, &len);
+	
+	if (!buf)
+		return 0;
+	
+	return len;
+}
+
+static
+int _single_writekey(char *name, char *key, char *value)
+{
+	struct _single_node n, *res;
+	
+	n.key = key;
+	res = bsearch(&n, _single_map, NR_NODES, sizeof(struct _single_node), _single_comp);
 	
 	if (res == NULL)
 		return -1;
@@ -100,7 +128,23 @@ int _single_open(char *name, char *key, int flags)
 	char path[PATH_MAX];
 	vu_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
 	
-	return open(path, O_RDWR|flags, 0600);
+	char *buf;
+	unsigned long len;
+	
+	buf = mmap_shared(path, &len);
+	
+	if (!buf)
+		return -1;
+	
+	buf = mremap(buf, len, strlen(value), 0);
+	
+	if (buf == MAP_FAILED)
+		return -1;
+	
+	buf = value;
+	munmap(buf, len);
+	
+	return 0;
 }
 
 /* bool methods */
@@ -109,38 +153,22 @@ int vconfig_get_bool(char *name, char *key)
 	if (vconfig_isbool(key) == -1)
 		return -1;
 	
-	int fd = _single_open(name, key, 0);
+	int rc = -1;
+	char *buf;
+	unsigned long len;
 	
-	if (fd == -1)
-		goto error;
+	len = _single_readkey(name, key, &buf);
 	
-	int i;
-	char buf[6];
-	memset(buf, '\0', 6);
+	if (len == 0)
+		return -1;
 	
-	/* we support true/false (i.e. up to 5 chars max) */
-	for(i = 0; i <= 5; i++) {
-		if (read(fd, &buf[i], 1) == -1)
-			goto error;
-		 
-		if (buf[i] == '\0' || buf[i] == '\n') {
-			buf[i] = '\0';
-			break;
-		}
-	}
+	if (str_diffn(buf, "true\n", len))
+		rc = 1;
 	
-	close(fd);
+	if (str_diffn(buf, "false\n", len))
+		rc = 0;
 	
-	if (strcmp(buf, "true") == 0)
-		return 1;
-	
-	return 0;
-	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return -1;
+	return rc;
 }
 
 int vconfig_set_bool(char *name, char *key, int value)
@@ -148,37 +176,20 @@ int vconfig_set_bool(char *name, char *key, int value)
 	if (vconfig_isbool(key) == -1)
 		return -1;
 	
-	int fd = _single_open(name, key, O_CREAT|O_TRUNC);
+	int rc;
+	char *buf;
 	
-	if (fd == -1)
-		goto error;
-	
-	char buf[6];
-	size_t len;
-	
-	/* we support up to 32 bit int (i.e. 10 digits max) */
 	if (value == 1)
-		len = vu_snprintf(buf, 6, "true");
+		vu_asprintf(&buf, "true\n");
+	else if (value == 0)
+		vu_asprintf(&buf, "false\n");
 	else
-		len = vu_snprintf(buf, 6, "false");
+		return -1;
 	
-	if (len > 6 || len == 0)
-		goto error;
+	rc = _single_writekey(name, key, buf);
 	
-	if (write(fd, buf, 6) == -1)
-		goto error;
-	
-	if (write(fd, "\n", 1) == -1)
-		goto error;
-	
-	close(fd);
-	return 0;
-	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return -1;
+	free(buf);
+	return rc;
 }
 
 /* integer methods */
@@ -187,34 +198,15 @@ int vconfig_get_int(char *name, char *key)
 	if (vconfig_isint(key) == -1)
 		return -1;
 	
-	int fd = _single_open(name, key, 0);
+	char *buf;
+	unsigned long len;
 	
-	if (fd == -1)
-		goto error;
+	len = _single_readkey(name, key, &buf);
 	
-	int i;
-	char buf[11];
-	memset(buf, '\0', 11);
+	if (len == 0)
+		return -1;
 	
-	/* we support up to 32 bit int (i.e. 10 digits max) */
-	for(i = 0; i <= 10; i++) {
-		if (read(fd, &buf[i], 1) == -1)
-			goto error;
-		 
-		if (buf[i] == '\0' || buf[i] == '\n') {
-			buf[i] = '\0';
-			break;
-		}
-	}
-	
-	close(fd);
 	return atoi(buf);
-	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return -1;
 }
 
 int vconfig_set_int(char *name, char *key, int value)
@@ -222,34 +214,15 @@ int vconfig_set_int(char *name, char *key, int value)
 	if (vconfig_isint(key) == -1)
 		return -1;
 	
-	int fd = _single_open(name, key, O_CREAT|O_TRUNC);
+	int rc;
+	char *buf;
 	
-	if (fd == -1)
-		goto error;
+	vu_asprintf(&buf, "%d\n", value);
 	
-	char buf[11];
-	size_t len;
+	rc = _single_writekey(name, key, buf);
 	
-	/* we support up to 32 bit int (i.e. 10 digits max) */
-	len = vu_snprintf(buf, 11, "%d", value);
-	
-	if (len > 11 || len == 0)
-		goto error;
-	
-	if (write(fd, buf, len) == -1)
-		goto error;
-	
-	if (write(fd, "\n", 1) == -1)
-		goto error;
-	
-	close(fd);
-	return 0;
-	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return -1;
+	free(buf);
+	return rc;
 }
 
 /* string methods */
@@ -258,36 +231,15 @@ char *vconfig_get_str(char *name, char *key)
 	if (vconfig_isstr(key) == -1)
 		return NULL;
 	
-	int fd = _single_open(name, key, 0);
+	char *buf;
+	unsigned long len;
 	
-	if (fd == -1)
-		goto error;
+	len = _single_readkey(name, key, &buf);
 	
-	off_t len = lseek(fd, 0, SEEK_END);
-	lseek(fd, 0, SEEK_SET);
+	if (len == 0)
+		return NULL;
 	
-	int i;
-	char *buf = malloc(len+1);
-	memset(buf, '\0', len+1);
-	
-	/* read whole file */
-	for(i = 0; i <= len; i++) {
-		if (read(fd, buf+i, 1) == -1)
-			goto error;
-	}
-	
-	char *ptr = buf+len-1;
-	if (*ptr == '\n')
-		*ptr = '\0';
-	
-	close(fd);
 	return buf;
-	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return NULL;
 }
 
 int vconfig_set_str(char *name, char *key, char *value)
@@ -295,25 +247,15 @@ int vconfig_set_str(char *name, char *key, char *value)
 	if (vconfig_isstr(key) == -1)
 		return -1;
 	
-	int fd = _single_open(name, key, O_CREAT|O_TRUNC);
+	int rc;
+	char *buf;
 	
-	if (fd == -1)
-		goto error;
+	vu_asprintf(&buf, "%s\n", value);
 	
-	if (write(fd, value, strlen(value)) == -1)
-		goto error;
+	rc = _single_writekey(name, key, buf);
 	
-	if (write(fd, "\n", 1) == -1)
-		goto error;
-	
-	close(fd);
-	return 0;
-	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return -1;
+	free(buf);
+	return rc;
 }
 
 /* list methods */
@@ -322,40 +264,23 @@ char *vconfig_get_list(char *name, char *key)
 	if (vconfig_islist(key) == -1)
 		return NULL;
 	
-	int fd = _single_open(name, key, 0);
+	char *buf;
+	unsigned long len;
 	
-	if (fd == -1)
-		goto error;
+	len = _single_readkey(name, key, &buf);
 	
-	off_t len = lseek(fd, 0, SEEK_END);
-	lseek(fd, 0, SEEK_SET);
+	if (len == 0)
+		return NULL;
 	
-	int i;
-	char *buf = malloc(len+1);
-	memset(buf, '\0', len+1);
+	char *ptr = buf + len - 1;
 	
-	/* read whole file */
-	for(i = 0; i <= len; i++) {
-		if (read(fd, buf+i, 1) == -1)
-			goto error;
-	}
-	
-	char *ptr = buf+len-1;
 	if (*ptr == '\n')
 		*ptr = '\0';
-	
-	close(fd);
 	
 	while ((ptr = strchr(buf, '\n')) != NULL)
 		*ptr = ',';
 	
 	return buf;
-	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return NULL;
 }
 
 int vconfig_set_list(char *name, char *key, char *value)
@@ -363,30 +288,20 @@ int vconfig_set_list(char *name, char *key, char *value)
 	if (vconfig_islist(key) == -1)
 		return -1;
 	
-	int fd = _single_open(name, key, O_CREAT|O_TRUNC);
-	
-	if (fd == -1)
-		goto error;
-	
-	char *ptr;
+	int rc;
+	char *ptr = NULL;
 	
 	while ((ptr = strchr(value, ',')) != NULL)
 		*ptr = '\n';
 	
-	if (write(fd, value, strlen(value)) == -1)
-		goto error;
+	char *buf;
 	
-	if (write(fd, "\n", 1) == -1)
-		goto error;
+	vu_asprintf(&buf, "%s\n", value);
 	
-	close(fd);
-	return 0;
+	rc = _single_writekey(name, key, buf);
 	
-error:
-	errno_orig = errno;
-	close(fd);
-	errno = errno_orig;
-	return -1;
+	free(buf);
+	return rc;
 }
 
 #endif

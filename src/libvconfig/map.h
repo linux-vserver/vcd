@@ -33,6 +33,8 @@ static struct vconfig_node vconfig_map[] = {
 	{ "context.personality",     VCONFIG_LIST_T },
 	{ "context.personalityflag", VCONFIG_LIST_T },
 	{ "context.sched",           VCONFIG_LIST_T },
+	{ "init.runlevel",           VCONFIG_STR_T },
+	{ "init.style",              VCONFIG_STR_T },
 	{ "limit.anon",              VCONFIG_LIST_T },
 	{ "limit.as",                VCONFIG_LIST_T },
 	{ "limit.memlock",           VCONFIG_LIST_T },
@@ -52,7 +54,6 @@ static struct vconfig_node vconfig_map[] = {
 	{ "uts.release",             VCONFIG_STR_T },
 	{ "uts.sysname",             VCONFIG_STR_T },
 	{ "uts.version",             VCONFIG_STR_T },
-	{ "vps.init",                VCONFIG_STR_T },
 	{ "vps.shell",               VCONFIG_STR_T },
 	{ "vps.timeout",             VCONFIG_INT_T },
 };
