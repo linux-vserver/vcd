@@ -77,17 +77,3 @@ AC_DEFUN([AC_VU_LIBVSERVER],
 		AC_MSG_ERROR([libvserver is missing! please install libvserver and try again])
 	fi
 ])
-
-AC_DEFUN([AC_VU_LIBUTIL],
-[
-	AC_LANG_PUSH(C)
-	AC_CHECK_LIB([util],
-	             [forkpty],
-	             [ac_vu_have_libutil=yes],
-	             [ac_vu_have_libutil=no])
-	AC_LANG_POP
-	
-	if test $ac_vu_have_libutil = no; then
-		AC_MSG_ERROR([libutil is missing! please reinstall glibc])
-	fi
-])
