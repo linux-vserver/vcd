@@ -21,11 +21,6 @@
 #ifndef _COMMANDS_H_
 #define _COMMANDS_H_
 
-#include <unistd.h>
-#include <getopt.h>
-
-#include "printf.h"
-
 /* command prototypes */
 int context_main(int, char **);
 

@@ -40,9 +40,14 @@ void usage(int rc)
 {
 	vu_printf("Usage: vcmd <command> <opts>*\n"
 	          "\n"
-	          "Available commands:\n"
-	          /* TODO: list commands */
-	          "\n");
+	          "Available commands:\n");
+	
+	int i;
+	
+	for (i = 0; commands[i].name; i++)
+		vu_printf("  %-15s %s\n", commands[i].name, commands[i].desc);
+	
+	vu_printf("\nSee 'vcmd <command> --help' for details\n");
 	exit(rc);
 }
 
@@ -70,7 +75,6 @@ int main(int argc, char *argv[])
 			return commands[i].func(argc, argv);
 	
 	/* none found */
-	err("Unknown command: %s", cmd);
-	
-	return EXIT_FAILURE;
+	warn("Unknown command: %s", cmd);
+	usage(EXIT_FAILURE);
 }

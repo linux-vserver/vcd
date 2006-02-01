@@ -18,9 +18,6 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include "printf.h"
-#include "commands.h"
-
 /* getopt settings */
 #define CONTEXT_SHORT_OPTS "a" COMMON_SHORT_OPTS
 
