@@ -27,6 +27,7 @@
 #include <string.h>
 #include <fcntl.h>
 #include <libgen.h>
+#include <getopt.h>
 
 #include "printf.h"
 #include "msg.h"
