@@ -16,25 +16,5 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = commands \
-          libinternal \
-          libvconfig \
-          tools
-
-INCLUDES = -I$(top_srcdir)/src/libinternal
-
-LDADD = $(top_builddir)/src/libinternal/libinternal.a \
-        -lowfat
-
-sbin_PROGRAMS = vcmd
-
-include $(top_srcdir)/m4/pathconfig.am
-
-BUILT_SOURCES = pathconfig.h
-CLEANFILES    = pathconfig.h
-
-EXTRA_DIST = pathconfig.h.in
-
-
-pathconfig.h: pathconfig.h.in
-	$(pathconfig_SED) $(srcdir)/pathconfig.h.in > pathconfig.h
+noinst_HEADERS = commands.h \
+                 context.c

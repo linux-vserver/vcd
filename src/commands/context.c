@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright 2005 by the vserver-utils team                              *
+ *   Copyright 2005-2006 by the vserver-utils team                         *
  *   See AUTHORS for details                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,42 +18,38 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _INTERNAL_PRINTF_H
-#define _INTERNAL_PRINTF_H
+#include "printf.h"
+#include "commands.h"
 
-#include <stdbool.h>
-#include <stdarg.h>
+/* getopt settings */
+#define CONTEXT_SHORT_OPTS "a" COMMON_SHORT_OPTS
 
-/* format structs */
-typedef struct {
-	bool alt;
-	bool zero;
-	bool left;
-	bool blank;
-	bool sign;
-} __flags_t;
+static struct option const context_long_opts[] = {
+	COMMON_LONG_OPTS
+};
 
-typedef struct {
-	bool isset;
-	unsigned int width;
-} __prec_t;
+static const char context_rcsid[] = "$Id$";
 
-typedef struct {
-	__flags_t f;
-	unsigned int w;
-	__prec_t  p;
-	unsigned char l;
-	unsigned char c;
-} vu_printf_t;
+static
+void context_usage(int rc)
+{
+	vu_printf("usage...\n");
+	exit(rc);
+}
 
-/* public methods */
-int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int vu_vasprintf(char **ptr, const char *fmt, va_list ap);
-int vu_snprintf(char *str, size_t size, const char *fmt, /*args*/ ...);
-int vu_asprintf(char **ptr, const char *fmt, /*args*/ ...);
-int vu_vdprintf(int fd, const char *fmt, va_list ap);
-int vu_dprintf(int fd, const char *fmt, /*args*/ ...);
-int vu_vprintf(const char *fmt, va_list ap);
-int vu_printf(const char *fmt, /*args*/ ...);
-
-#endif
+int context_main(int argc, char **argv)
+{
+	int c;
+	
+	while (1) {
+		c = GETOPT_LONG(CONTEXT, context);
+		if (c == -1) break;
+		
+		
+		switch (c) {
+			COMMON_GETOPT_CASES(context)
+		}
+	}
+	
+	return EXIT_SUCCESS;
+}

@@ -18,42 +18,38 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _INTERNAL_PRINTF_H
-#define _INTERNAL_PRINTF_H
+#ifndef _INTERNAL_MSG_H
+#define _INTERNAL_MSG_H
 
-#include <stdbool.h>
-#include <stdarg.h>
+#include <unistd.h>
+#include <string.h>
 
-/* format structs */
-typedef struct {
-	bool alt;
-	bool zero;
-	bool left;
-	bool blank;
-	bool sign;
-} __flags_t;
+#include "printf.h"
 
-typedef struct {
-	bool isset;
-	unsigned int width;
-} __prec_t;
+/* save argv[0] for error functions below */
+static const char *argv0;
 
-typedef struct {
-	__flags_t f;
-	unsigned int w;
-	__prec_t  p;
-	unsigned char l;
-	unsigned char c;
-} vu_printf_t;
+/* warnings */
+#define warn(fmt, ...) vu_dprintf(STDERR_FILENO, \
+                                  "%s: " fmt "\n", \
+                                  argv0, \
+                                  ## __VA_ARGS__)
 
-/* public methods */
-int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int vu_vasprintf(char **ptr, const char *fmt, va_list ap);
-int vu_snprintf(char *str, size_t size, const char *fmt, /*args*/ ...);
-int vu_asprintf(char **ptr, const char *fmt, /*args*/ ...);
-int vu_vdprintf(int fd, const char *fmt, va_list ap);
-int vu_dprintf(int fd, const char *fmt, /*args*/ ...);
-int vu_vprintf(const char *fmt, va_list ap);
-int vu_printf(const char *fmt, /*args*/ ...);
+#define warnf(fmt, ...) warn("%s(): " fmt, \
+                             __FUNCTION__, \
+                             ## __VA_ARGS__)
+
+#define warnp(fmt, ...)  warn(fmt ": %s", ## __VA_ARGS__ , strerror(errno))
+#define warnfp(fmt, ...) warnf(fmt ": %s", ## __VA_ARGS__ , strerror(errno))
+
+/* errors */
+#define _err(wfunc, fmt, ...) do { \
+	wfunc(fmt, ## __VA_ARGS__); \
+	exit(EXIT_FAILURE); \
+} while(0)
+
+#define err(fmt, ...)  _err(warn, fmt, ## __VA_ARGS__)
+#define errf(fmt, ...) _err(warnf, fmt, ## __VA_ARGS__)
+#define errp(fmt, ...) _err(warnp, fmt, ## __VA_ARGS__)
 
 #endif

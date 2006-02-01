@@ -19,7 +19,8 @@
 INCLUDES = -I$(top_srcdir) \
            -I$(top_builddir)/src
 
-noinst_HEADERS = printf.h
+noinst_HEADERS = msg.h \
+                 printf.h
 
 noinst_LIBRARIES = libinternal.a
 

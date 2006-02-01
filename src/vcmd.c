@@ -18,42 +18,63 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _INTERNAL_PRINTF_H
-#define _INTERNAL_PRINTF_H
-
-#include <stdbool.h>
-#include <stdarg.h>
-
-/* format structs */
-typedef struct {
-	bool alt;
-	bool zero;
-	bool left;
-	bool blank;
-	bool sign;
-} __flags_t;
-
-typedef struct {
-	bool isset;
-	unsigned int width;
-} __prec_t;
-
-typedef struct {
-	__flags_t f;
-	unsigned int w;
-	__prec_t  p;
-	unsigned char l;
-	unsigned char c;
-} vu_printf_t;
-
-/* public methods */
-int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int vu_vasprintf(char **ptr, const char *fmt, va_list ap);
-int vu_snprintf(char *str, size_t size, const char *fmt, /*args*/ ...);
-int vu_asprintf(char **ptr, const char *fmt, /*args*/ ...);
-int vu_vdprintf(int fd, const char *fmt, va_list ap);
-int vu_dprintf(int fd, const char *fmt, /*args*/ ...);
-int vu_vprintf(const char *fmt, va_list ap);
-int vu_printf(const char *fmt, /*args*/ ...);
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
+#include <fcntl.h>
+#include <libgen.h>
+
+#include "printf.h"
+#include "msg.h"
+
+/* link all commands */
+#include "commands/commands.h"
+#include "commands/context.c"
+
+static inline
+void usage(int rc)
+{
+	vu_printf("Usage: vcmd <command> <opts>*\n"
+	          "\n"
+	          "Available commands:\n"
+	          /* TODO: list commands */
+	          "\n");
+	exit(rc);
+}
+
+int main(int argc, char *argv[])
+{
+	/* check command line */
+	if (argc == 0)
+		usage(EXIT_FAILURE);
+	
+	char *cmd;
+	
+	/* check argv[0] */
+	argv0 = cmd = basename(argv[0]);
+	
+	if (strcmp(cmd, "vcmd") == 0) {
+		if (argc < 1)
+			usage(EXIT_FAILURE);
+		
+		cmd = basename(argv[1]);
+		argv = &argv[1];
+		argc--;
+	}
+	
+	int i;
+	
+	/* try to run command */
+	for (i = 0; commands[i].name; i++)
+		if (strcmp(commands[i].name, cmd) == 0)
+			return commands[i].func(argc, argv);
+	
+	/* none found */
+	err("Unknown command: %s", cmd);
+	
+	return EXIT_FAILURE;
+}
