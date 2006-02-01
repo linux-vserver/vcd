@@ -48,7 +48,7 @@ AC_VU_LIBOWFAT
 # Checks for library functions.
 
 # Compiler settings
-CFLAGS="${CFLAGS} -W -Wall -std=gnu99 -pedantic"
+CFLAGS="${CFLAGS} -W -Wall -Wno-unused -std=gnu99 -pedantic"
 
 # Site settings
 AC_VU_VDIRBASE(vdirbase)

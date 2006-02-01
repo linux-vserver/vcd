@@ -23,8 +23,8 @@ SUBDIRS = commands \
 
 INCLUDES = -I$(top_srcdir)/src/libinternal
 
-LDADD = $(top_builddir)/src/libinternal/libinternal.a \
-        -lowfat
+LDADD = -lowfat \
+        -lvserver
 
 sbin_PROGRAMS = vcmd
 

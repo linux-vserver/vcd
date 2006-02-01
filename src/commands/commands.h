@@ -50,19 +50,24 @@ struct command_t {
 	exit(0); \
 } while(0)
 
-#define COMMON_SHORT_OPTS "hQV"
+#define COMMON_SHORT_OPTS "hqV"
 
 #define COMMON_LONG_OPTS \
 	{ "help",    no_argument, NULL, 'h' }, \
-	{ "quiet",   no_argument, NULL, 'Q' }, \
+	{ "quiet",   no_argument, NULL, 'q' }, \
 	{ "version", no_argument, NULL, 'V' }, \
 	{ NULL,      no_argument, NULL, 0x0 }
 
 #define COMMON_GETOPT_CASES(applet) \
-	case 'Q': dup2(open("/dev/null", O_WRONLY), STDERR_FILENO); break; \
+	case 'q': dup2(open("/dev/null", O_WRONLY), STDERR_FILENO); break; \
 	case 'V': VERSIONINFO(applet ## _rcsid); break; \
 	case 'h': applet ## _usage(EXIT_SUCCESS); break; \
 	default: applet ## _usage(EXIT_FAILURE); break;
+
+#define COMMON_OPTS_HELP \
+	"    -h,--help     View this help message\n" \
+	"    -q,--quiet    Suppres all warnings and errors\n" \
+	"    -V,--version  View version information\n"
 
 #define GETOPT_LONG(A, a) \
 	getopt_long(argc, argv, "+" A ## _SHORT_OPTS, a ## _long_opts, NULL)

@@ -51,5 +51,6 @@ static const char *argv0;
 #define err(fmt, ...)  _err(warn, fmt, ## __VA_ARGS__)
 #define errf(fmt, ...) _err(warnf, fmt, ## __VA_ARGS__)
 #define errp(fmt, ...) _err(warnp, fmt, ## __VA_ARGS__)
+#define errfp(fmt, ...) _err(warnfp, fmt, ## __VA_ARGS__)
 
 #endif

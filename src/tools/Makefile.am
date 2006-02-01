@@ -21,8 +21,7 @@ INCLUDES = -I$(top_srcdir) \
            -I$(top_srcdir)/src/libvconfig \
            -I$(top_builddir)/src
 
-LDADD = $(top_builddir)/src/libinternal/libinternal.a \
-        $(top_builddir)/src/libvconfig/libvconfig.a \
+LDADD = $(top_builddir)/src/libvconfig/libvconfig.a \
         -lowfat \
         -lvserver
 

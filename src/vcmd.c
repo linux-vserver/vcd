@@ -28,9 +28,11 @@
 #include <fcntl.h>
 #include <libgen.h>
 #include <getopt.h>
+#include <vserver.h>
 
-#include "printf.h"
+#include "list.h"
 #include "msg.h"
+#include "printf.h"
 
 /* link all commands */
 #include "commands/commands.h"

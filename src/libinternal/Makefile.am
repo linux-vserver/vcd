@@ -16,12 +16,6 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir) \
-           -I$(top_builddir)/src
-
-noinst_HEADERS = msg.h \
+noinst_HEADERS = list.h \
+                 msg.h \
                  printf.h
-
-noinst_LIBRARIES = libinternal.a
-
-libinternal_a_SOURCES = printf.c
