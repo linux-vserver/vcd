@@ -48,17 +48,13 @@ void usage(int rc)
 
 int main(int argc, char *argv[])
 {
-	/* check command line */
-	if (argc == 0)
-		usage(EXIT_FAILURE);
-	
 	char *cmd;
 	
 	/* check argv[0] */
 	argv0 = cmd = basename(argv[0]);
 	
 	if (strcmp(cmd, "vcmd") == 0) {
-		if (argc < 1)
+		if (argc <= 1)
 			usage(EXIT_FAILURE);
 		
 		cmd = basename(argv[1]);
