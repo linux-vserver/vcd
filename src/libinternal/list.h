@@ -22,9 +22,6 @@
 #define _INTERNAL_LIST_H
 
 #include <stdint.h>
-#include <strings.h>
-
-#include "printf.h"
 
 /* list types */
 typedef struct {
@@ -47,172 +44,17 @@ typedef struct {
 #define LIST64_END { NULL, 0 } };
 
 /* list methods */
-static
-uint32_t list32_getval(char *key, const list32_t list[])
-{
-	int i;
-	
-	for (i = 0; list[i].key; i++)
-		if (strcasecmp(list[i].key, key) == 0)
-			return list[i].val;
-	
-	return 0;
-}
-
-static
-uint64_t list64_getval(char *key, const list64_t list[])
-{
-	int i;
-	
-	for (i = 0; list[i].key; i++)
-		if (strcasecmp(list[i].key, key) == 0)
-			return list[i].val;
-	
-	return 0;
-}
-
-static
-char *list32_getkey(uint32_t val, const list32_t list[])
-{
-	int i;
-	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val == val)
-			return list[i].key;
-	
-	return NULL;
-}
-
-static
-char *list64_getkey(uint32_t val, const list64_t list[])
-{
-	int i;
-	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val == val)
-			return list[i].key;
-	
-	return NULL;
-}
-
-static
-void list32_parse(char *str, const list32_t list[], uint32_t *flags, uint32_t *mask)
-{
-	char *p, *buf;
-	int i, len;
-	
-	if (str == NULL)
-		return;
-	
-	for (;;) {
-		p = strchr(str, ',');
-		
-		if (p == NULL)
-			len = strlen(str) + 1;
-		else
-			len = p - str + 1;
-		
-		buf = alloca(len);
-		memset(buf, '\0', len);
-		memcpy(buf, str, len - 1);
-		
-		if (*buf == '~') {
-			*flags &= ~list32_getval(++buf, list);
-		} else {
-			*flags |= list32_getval(buf, list);
-		}
-		
-		*mask |= list32_getval(buf, list);
-		
-		free(buf);
-		
-		if (p == NULL)
-			break;
-		else
-			str = ++p;
-	}
-	
-	return;
-}
-
-static
-void list64_parse(char *str, const list64_t list[], uint64_t *flags, uint64_t *mask)
-{
-	char *p, *buf;
-	int i, len;
-	
-	if (str == NULL)
-		return;
-	
-	for (;;) {
-		p = strchr(str, ',');
-		
-		if (p == NULL)
-			len = strlen(str) + 1;
-		else
-			len = p - str + 1;
-		
-		buf = alloca(len);
-		memset(buf, '\0', len);
-		memcpy(buf, str, len - 1);
-		
-		if (*buf == '~') {
-			*flags &= ~list64_getval(++buf, list);
-		} else {
-			*flags |= list64_getval(buf, list);
-		}
-		
-		*mask |= list64_getval(buf, list);
-		
-		free(buf);
-		
-		if (p == NULL)
-			break;
-		else
-			str = ++p;
-	}
-	
-	return;
-}
-
-static
-char *list32_tostr(uint32_t val, const list32_t list[])
-{
-	int i, len = 0, idx = 0;
-	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val & val)
-			len += vu_snprintf(NULL, 0, "%s,", list[i].key);
-	
-	char *str = malloc(len);
-	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val & val)
-			idx += vu_snprintf(str+idx, len-idx, "%s,", list[i].key);
-	
-	str[len-1] = '\0';
-	
-	return str;
-}
-
-static
-char *list64_tostr(uint64_t val, const list64_t *list)
-{
-	int i, len = 0, idx = 0;
-	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val & val)
-			len += vu_snprintf(NULL, 0, "%s,", list[i].key);
-	
-	char *str = malloc(len);
-	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val & val)
-			idx += vu_snprintf(str+idx, len-idx, "%s,", list[i].key);
-	
-	str[len-1] = '\0';
-	
-	return str;
-}
+uint32_t list32_getval(char *key, const list32_t list[]);
+uint64_t list64_getval(char *key, const list64_t list[]);
+char *list32_getkey(uint32_t val, const list32_t list[]);
+char *list64_getkey(uint32_t val, const list64_t list[]);
+void list32_parse(char *str, const list32_t list[],
+                  uint32_t *flags, uint32_t *mask,
+                  char clmod, char delim);
+void list64_parse(char *str, const list64_t list[],
+                  uint64_t *flags, uint64_t *mask,
+                  char clmod, char delim);
+char *list32_tostr(uint32_t val, const list32_t list[], char delim);
+char *list64_tostr(uint64_t val, const list64_t *list, char delim);
 
 #endif

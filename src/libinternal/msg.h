@@ -21,36 +21,16 @@
 #ifndef _INTERNAL_MSG_H
 #define _INTERNAL_MSG_H
 
-#include <unistd.h>
-#include <string.h>
+extern const char *argv0;
 
-#include "printf.h"
+void warn(const char *fmt, /*args*/ ...);
+void warnp(const char *fmt, /*args*/ ...);
+void err(const char *fmt, /*args*/ ...);
+void errp(const char *fmt, /*args*/ ...);
 
-/* save argv[0] for error functions below */
-static const char *argv0;
-
-/* warnings */
-#define warn(fmt, ...) vu_dprintf(STDERR_FILENO, \
-                                  "%s: " fmt "\n", \
-                                  argv0, \
-                                  ## __VA_ARGS__)
-
-#define warnf(fmt, ...) warn("%s(): " fmt, \
-                             __FUNCTION__, \
-                             ## __VA_ARGS__)
-
-#define warnp(fmt, ...)  warn(fmt ": %s", ## __VA_ARGS__ , strerror(errno))
-#define warnfp(fmt, ...) warnf(fmt ": %s", ## __VA_ARGS__ , strerror(errno))
-
-/* errors */
-#define _err(wfunc, fmt, ...) do { \
-	wfunc(fmt, ## __VA_ARGS__); \
-	exit(EXIT_FAILURE); \
-} while(0)
-
-#define err(fmt, ...)  _err(warn, fmt, ## __VA_ARGS__)
-#define errf(fmt, ...) _err(warnf, fmt, ## __VA_ARGS__)
-#define errp(fmt, ...) _err(warnp, fmt, ## __VA_ARGS__)
-#define errfp(fmt, ...) _err(warnfp, fmt, ## __VA_ARGS__)
+#define warnf(fmt, ...)  warn("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
+#define warnfp(fmt, ...) warnp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
+#define errf(fmt, ...)   err("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
+#define errfp(fmt, ...)  errp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 
 #endif

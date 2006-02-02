@@ -19,3 +19,9 @@
 noinst_HEADERS = list.h \
                  msg.h \
                  printf.h
+
+noinst_LIBRARIES = libinternal.a
+
+libinternal_a_SOURCES = list.c \
+                        msg.c \
+                        printf.c

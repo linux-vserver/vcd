@@ -18,19 +18,58 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _INTERNAL_PRINTF_H
-#define _INTERNAL_PRINTF_H
-
 #include <unistd.h>
+#include <stdlib.h>
 #include <stdarg.h>
+#include <errno.h>
 
-int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int vu_vasprintf(char **ptr, const char *fmt, va_list ap);
-int vu_snprintf(char *str, size_t size, const char *fmt, /*args*/ ...);
-int vu_asprintf(char **ptr, const char *fmt, /*args*/ ...);
-int vu_vdprintf(int fd, const char *fmt, va_list ap);
-int vu_dprintf(int fd, const char *fmt, /*args*/ ...);
-int vu_vprintf(const char *fmt, va_list ap);
-int vu_printf(const char *fmt, /*args*/ ...);
+#include "printf.h"
+#include "msg.h"
 
-#endif
+/* save argv[0] for error functions below */
+const char *argv0;
+
+/* warnings */
+void warn(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vu_dprintf(STDERR_FILENO, "%s: ", argv0);
+	vu_vdprintf(STDERR_FILENO, fmt, ap);
+	vu_dprintf(STDERR_FILENO, "\n");
+}
+
+void warnp(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vu_dprintf(STDERR_FILENO, "%s: ", argv0);
+	vu_vdprintf(STDERR_FILENO, fmt, ap);
+	vu_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+}
+
+void err(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vu_dprintf(STDERR_FILENO, "%s: ", argv0);
+	vu_vdprintf(STDERR_FILENO, fmt, ap);
+	vu_dprintf(STDERR_FILENO, "\n");
+	
+	exit(EXIT_FAILURE);
+}
+
+void errp(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vu_dprintf(STDERR_FILENO, "%s: ", argv0);
+	vu_vdprintf(STDERR_FILENO, fmt, ap);
+	vu_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	
+	exit(EXIT_FAILURE);
+}
