@@ -18,6 +18,8 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+static const char single_dummy; /* prevent empty source file */
+
 #ifdef LIBVCONFIG_BACKEND_SINGLE
 
 #include <stdbool.h>

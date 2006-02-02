@@ -18,23 +18,15 @@
 
 SUBDIRS = commands \
           libinternal \
-          libvconfig \
-          tools
+          libvconfig
 
 INCLUDES = -I$(top_srcdir)/src/libinternal
 
-LDADD = -lowfat \
+LDADD = $(top_builddir)/src/libinternal/libinternal.a \
+        -lowfat \
         -lvserver
 
 sbin_PROGRAMS = vcmd
 
-include $(top_srcdir)/m4/pathconfig.am
-
-BUILT_SOURCES = pathconfig.h
-CLEANFILES    = pathconfig.h
-
-EXTRA_DIST = pathconfig.h.in
-
-
-pathconfig.h: pathconfig.h.in
-	$(pathconfig_SED) $(srcdir)/pathconfig.h.in > pathconfig.h
+vcmd_LDADD = $(top_builddir)/src/commands/libcommands.a \
+             $(LDADD)

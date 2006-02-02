@@ -25,23 +25,18 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 #include <libgen.h>
-#include <getopt.h>
-#include <vserver.h>
 
-#include "list.h"
 #include "msg.h"
 #include "printf.h"
 
-/* link all commands */
+/* get command prototypes */
 #include "commands/commands.h"
-#include "commands/context.c"
 
 static inline
 void usage(int rc)
 {
-	vu_printf("Usage: vcmd <command> <opts>*\n"
+	vu_printf("Usage: vcmd <command> <opts>* <subcommand>\n"
 	          "\n"
 	          "Available commands:\n");
 	
@@ -50,7 +45,9 @@ void usage(int rc)
 	for (i = 0; commands[i].name; i++)
 		vu_printf("  %-15s %s\n", commands[i].name, commands[i].desc);
 	
-	vu_printf("\nSee 'vcmd <command> --help' for details\n");
+	vu_printf("\nAvailable options:\n"
+	          COMMON_OPTS_HELP
+	          "\nSee 'vcmd <command> --help' for details\n");
 	exit(rc);
 }
 
@@ -70,6 +67,10 @@ int main(int argc, char *argv[])
 		argc--;
 	}
 	
+	if (strcmp(cmd, "-h") == 0 ||
+	    strcmp(cmd, "--help") == 0)
+		usage(EXIT_SUCCESS);
+	
 	int i;
 	
 	/* try to run command */
@@ -78,6 +79,6 @@ int main(int argc, char *argv[])
 			return commands[i].func(argc, argv);
 	
 	/* none found */
-	warn("Unknown command: %s", cmd);
-	usage(EXIT_FAILURE);
+	err("Unknown command: %s", cmd);
+	return EXIT_FAILURE;
 }
