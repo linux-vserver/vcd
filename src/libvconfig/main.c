@@ -106,14 +106,6 @@ void vconfig_print_nodes(void)
 	}
 }
 
-#ifdef LIBVCONFIG_BACKEND_SINGLE
-#include "single.c"
-#endif
-
-#ifndef LIBVCONFIG_HAVE_BACKEND
-#include "dummy.c"
-#endif
-
 xid_t vconfig_get_xid(char *name)
 {
 	int buf = vconfig_get_int(name, "context.id");

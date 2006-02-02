@@ -18,9 +18,9 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <stdbool.h>
 #include <vserver.h>
 
+/* main.c */
 int vconfig_isbool(char *key);
 int vconfig_isint(char *key);
 int vconfig_isstr(char *key);
@@ -30,6 +30,7 @@ void vconfig_print_nodes(void);
 xid_t vconfig_get_xid(char *name);
 char *vconfig_get_name(xid_t xid);
 
+/* backend api */
 int vconfig_get_bool(char *name, char *key);
 int vconfig_set_bool(char *name, char *key, int value);
 int vconfig_get_int(char *name, char *key);

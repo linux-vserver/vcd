@@ -18,8 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef LIBVCONFIG_HAVE_BACKEND
-#define LIBVCONFIG_HAVE_BACKEND
+#ifdef LIBVCONFIG_BACKEND_SINGLE
 
 #include <stdbool.h>
 #include <unistd.h>

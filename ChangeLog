@@ -1,5 +1,10 @@
 # ChangeLog for vserver-utils
 
+  02 Feb 2006; Benedikt Böhm <hollow@gentoo.org> src/libvconfig/vconfig.h,
+  src/libvconfig/single.c, src/libvconfig/main.c, src/libvconfig/Makefile.am,
+  -src/libvconfig/dummy.c:
+  libvconfig cleanup
+
   30 Jan 2006; Benedikt Böhm <hollow@gentoo.org> m4/libs.m4, configure.ac,
   src/tools/Makefile.am:
   dietlibc is now mandatory; i.e. no more glibc support!
