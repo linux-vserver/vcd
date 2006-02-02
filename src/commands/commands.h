@@ -21,24 +21,12 @@
 #ifndef _COMMANDS_H_
 #define _COMMANDS_H_
 
-/* command prototypes */
-int context_main(int, char **);
+#include <unistd.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <fcntl.h>
 
-/* command main function */
-typedef int (*COMMAND)(int, char **);
-
-/* command map */
-struct command_t {
-	const char *name;
-	COMMAND func;
-	const char *desc;
-} commands[] = {
-	/* keep sorted */
-	{ "context",   context_main,   "context commands" },
-	
-	/* end of list */
-	{ NULL, NULL, NULL }
-};
+#include "printf.h"
 
 /* common macros */
 #define VERSIONINFO(rcsid) do { \
@@ -52,24 +40,41 @@ struct command_t {
 
 #define COMMON_SHORT_OPTS "hqV"
 
+extern struct option const common_long_opts[];
+
 #define COMMON_LONG_OPTS \
 	{ "help",    no_argument, NULL, 'h' }, \
 	{ "quiet",   no_argument, NULL, 'q' }, \
 	{ "version", no_argument, NULL, 'V' }, \
 	{ NULL,      no_argument, NULL, 0x0 }
 
-#define COMMON_GETOPT_CASES(applet) \
+#define COMMON_GETOPT_CASES(command) \
 	case 'q': dup2(open("/dev/null", O_WRONLY), STDERR_FILENO); break; \
-	case 'V': VERSIONINFO(applet ## _rcsid); break; \
-	case 'h': applet ## _usage(EXIT_SUCCESS); break; \
-	default: applet ## _usage(EXIT_FAILURE); break;
+	case 'V': VERSIONINFO(command ## _rcsid); break; \
+	case 'h': command ## _usage(EXIT_SUCCESS); break; \
+	default: command ## _usage(EXIT_FAILURE); break;
 
 #define COMMON_OPTS_HELP \
-	"    -h,--help     View this help message\n" \
-	"    -q,--quiet    Suppres all warnings and errors\n" \
-	"    -V,--version  View version information\n"
+	"  -h,--help       View this help message\n" \
+	"  -q,--quiet      Suppres all warnings and errors\n" \
+	"  -V,--version    View version information\n"
 
-#define GETOPT_LONG(A, a) \
-	getopt_long(argc, argv, "+" A ## _SHORT_OPTS, a ## _long_opts, NULL)
+#define GETOPT_LONG(C, c) \
+	getopt_long(argc, argv, "+" C ## _SHORT_OPTS, c ## _long_opts, NULL)
+
+/* command prototypes */
+#include "context.h"
+
+/* command main function */
+typedef int (*COMMAND)(int, char **);
+
+/* command map */
+struct command_t {
+	const char *name;
+	COMMAND func;
+	const char *desc;
+};
+
+extern struct command_t commands[];
 
 #endif

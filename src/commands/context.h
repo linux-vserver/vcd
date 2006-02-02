@@ -18,11 +18,19 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _CONTEXT_H_
-#define _CONTEXT_H_
+#ifndef _COMMANDS_CONTEXT_H_
+#define _COMMANDS_CONTEXT_H_
 
-#include <linux/capability.h>
-#include <linux/vserver/context.h>
+#include <vserver.h>
+
+#include "list.h"
+
+/* prototypes */
+int context_create(char *id, char *list);
+int context_migrate(char *id);
+int context_get(char *id, char *type);
+int context_set(char *id, char *type, char *list);
+int context_main(int argc, char **argv);
 
 /* system capabilities */
 LIST64_START(bcaps_list)
