@@ -16,23 +16,17 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-lockdir    = $(localstatedir)/lock
-pkglockdir = $(lockdir)/vservers
+lockdir  = @lockdir@
+vdirbase = @vdirbase@
 
+pkglockdir = $(lockdir)/vservers
 pkgconfdir = $(sysconfdir)/vservers
 
-pathconfig_RULES = -e 's:@PACKAGE\@:$(PACKAGE):g' \
-                   -e 's:@PACKAGE_BUGREPORT\@:$(PACKAGE_BUGREPORT):g' \
-                   -e 's:@PACKAGE_NAME\@:$(PACKAGE_NAME):g' \
-                   -e 's:@PACKAGE_STRING\@:$(PACKAGE_STRING):g' \
-                   -e 's:@PACKAGE_TARNAME\@:$(PACKAGE_TARNAME):g' \
-                   -e 's:@PACKAGE_VERSION\@:$(PACKAGE_VERSION):g' \
-                   -e 's:@SBINDIR\@:$(sbindir):g' \
-                   -e 's:@PKGDATADIR\@:$(pkgdatadir):g' \
-                   -e 's:@PKGLIBDIR\@:$(pkglibdir):g' \
-                   -e 's:@PKGLOCKDIR\@:$(pkglockdir):g' \
-                   -e 's:@PKGCONFDIR\@:$(pkgconfdir):g' \
-                   -e 's:@VDIRBASE\@:$(vdirbase):g' \
-                   $(VU_PATHPROG_REGEX)
-
-pathconfig_SED = $(SED) $(pathconfig_RULES)
+PATHCONFIG_SCRIPT = -e 's:@BINDIR\@:$(bindir):g' \
+                    -e 's:@LIBDIR\@:$(libdir):g' \
+                    -e 's:@LOCALSTATEDIR\@:$(localstatedir):g' \
+                    -e 's:@MANDIR\@:$(mandir):g' \
+                    -e 's:@SBINDIR\@:$(sbindir):g' \
+                    -e 's:@SYSCONFDIR\@:$(sysconfdir):g' \
+                    -e 's:@LOCKDIR\@:$(lockdir):g' \
+                    -e 's:@VDIRBASE\@:$(vdirbase):g'

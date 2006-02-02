@@ -20,6 +20,9 @@
 AC_PREREQ(2.59)
 AC_INIT(vserver-utils, 1.0.3, hollow@gentoo.org)
 AC_CONFIG_HEADER([config.h])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 AC_GNU_SOURCE
 
 # Automake
@@ -33,8 +36,10 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-AC_VU_PATHPROG(CP,  cp)
-AC_VU_PATHPROG(SED, sed)
+AC_CHECK_PROGS(regex_cmd, sed)
+if test x$regex_cmd = "x" ; then
+    AC_MSG_ERROR([sed is required to build header files])
+fi
 
 # Checks for libraries.
 AC_VU_DIETLIBC
@@ -48,12 +53,14 @@ AC_VU_LIBOWFAT
 # Checks for library functions.
 
 # Compiler settings
+AC_C_CONST
+AC_C_INLINE
+
 CFLAGS="${CFLAGS} -W -Wall -Wno-unused -std=gnu99 -pedantic"
 
 # Site settings
-AC_VU_VDIRBASE(vdirbase)
-AC_VU_LIBVCONFIG
-
+AC_VU_VCONFIG_BACKEND
+AC_VU_PATHCONFIG
 
 # Final info page
 AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
@@ -61,22 +68,22 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                        CC: $CC ($($CC --version | head -n1))
                  CPPFLAGS: '$CPPFLAGS'
                    CFLAGS: '$CFLAGS'
+                    build: $build
+                     host: $host
+                   target: $target
 
                    prefix: $prefix
-               build/host: $build/$host
                sysconfdir: $sysconfdir
                  vdirbase: $vdirbase
-          vconfig backend: $ac_vu_libvconfig_backend
+          vconfig backend: $ac_vu_vconfig_backend
 "])
 
 # Output
 AC_CONFIG_FILES([Makefile
                  etc/Makefile
-                 scripts/Makefile
                  src/commands/Makefile
                  src/libinternal/Makefile
                  src/libvconfig/Makefile
-                 src/tools/Makefile
                  src/Makefile])
 
 AC_OUTPUT

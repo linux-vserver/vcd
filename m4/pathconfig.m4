@@ -16,17 +16,33 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_VU_VDIRBASE],
+# These are defined by autoconf:
+# - bindir
+# - libdir
+# - localstatedir
+# - mandir
+# - sbindir
+# - sysconfdir
+#
+# We also set those:
+# - lockdir
+# - vdirbase
+
+AC_DEFUN([AC_VU_PATHCONFIG],
 [
+	lockdir='${localstatedir}/lock'
+	
 	AC_MSG_CHECKING([for vserver base directory])
 	AC_ARG_WITH([vdirbase],
 	            [AC_HELP_STRING([--with-vdirbase=DIR],
-	                            [default vserver vase directory (default: /vservers)])],
+	                            [default vserver base directory (default: /vservers)])],
 	            [ac_vu_vdirbase=$withval],
 	            [ac_vu_vdirbase=/vservers])
 	
 	AC_MSG_RESULT([$ac_vu_vdirbase])
 
-	$1=$ac_vu_vdirbase
-	AC_SUBST($1)
+	vdirbase=$ac_vu_vdirbase
+	
+	AC_SUBST(lockdir)
+	AC_SUBST(vdirbase)
 ])

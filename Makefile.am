@@ -19,8 +19,10 @@
 include $(top_srcdir)/m4/pathconfig.am
 
 SUBDIRS = etc \
-          scripts \
           src
+
+pathconfig.h: pathconfig.h.in
+	@regex_cmd@ $(PATHCONFIG_SCRIPT) $(srcdir)/pathconfig.h.in > ./pathconfig.h
 
 install-data-hook: install-vdirbase install-pkglockdir
 

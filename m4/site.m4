@@ -16,25 +16,20 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_VU_PATHPROG_INIT],
+AC_DEFUN([AC_VU_VCONFIG_BACKEND],
 [
-	VU_PATHPROG_REGEX=
-	AC_SUBST([VU_PATHPROG_REGEX])
-])
-
-AC_DEFUN([AC_VU_PATHPROG],
-[
-	AC_REQUIRE([AC_VU_PATHPROG_INIT])
+	AC_MSG_CHECKING([which backend to use for libvconfig])
 	
-	AC_PATH_PROG($1, [$2])
+	AC_ARG_WITH([vconfig],
+	            [AS_HELP_STRING([--with-vconfig],
+	                            [Backend for libvconfig (valid values: plain; default: plain)])],
+	            [case "$enableval" in
+	              (single) AC_DEFINE([LIBVCONFIG_BACKEND_SINGLE], [], [libvconfig backend]);;
+	              (no)     AC_MSG_ERROR([You cannot disable libvconfig]);;
+	              (*)      AC_MSG_ERROR(['$enableval' is not a valid value for --with-vconfig]);;
+	            esac],
+	            [enableval=single; AC_DEFINE([LIBVCONFIG_BACKEND_SINGLE])])
 	
-	if test -z "${$1}"; then
-		AC_MSG_ERROR([Cannot find '$2' within '${PATH}'])
-	fi
-
-	if test -n "${$1}"; then
-		VU_PATHPROG_REGEX="${VU_PATHPROG_REGEX} -e 's:@$1\@:${$1}:g'"
-	fi
-	
-	test -n "${$1}"
+	ac_vu_vconfig_backend=$enableval
+	AC_MSG_RESULT([$enableval])
 ])
