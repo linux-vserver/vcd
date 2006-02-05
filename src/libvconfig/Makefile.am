@@ -18,11 +18,11 @@
 
 INCLUDES = -I$(top_srcdir)/src/libinternal
 
-noinst_HEADERS = map.h \
-                 node.h \
-                 vconfig.h
+include $(top_srcdir)/m4/pathconfig.am
 
-noinst_LIBRARIES = libvconfig.a
+pkginclude_HEADERS = vconfig.h
+
+pkglib_LIBRARIES = libvconfig.a
 
 libvconfig_a_SOURCES = main.c \
                        single.c

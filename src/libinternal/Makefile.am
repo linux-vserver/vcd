@@ -16,11 +16,13 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-noinst_HEADERS = list.h \
-                 msg.h \
-                 printf.h
+include $(top_srcdir)/m4/pathconfig.am
 
-noinst_LIBRARIES = libinternal.a
+pkginclude_HEADERS = list.h \
+                     msg.h \
+                     printf.h
+
+pkglib_LIBRARIES = libinternal.a
 
 libinternal_a_SOURCES = list.c \
                         msg.c \
