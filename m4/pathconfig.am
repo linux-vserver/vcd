@@ -19,6 +19,7 @@
 lockdir  = @lockdir@
 vdirbase = @vdirbase@
 
+pkgincludedir = $(includedir)/vserver
 pkglockdir = $(lockdir)/vservers
 pkgconfdir = $(sysconfdir)/vservers
 

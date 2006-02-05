@@ -18,10 +18,16 @@
 
 INCLUDES = -I$(top_srcdir)/src/libinternal
 
-noinst_HEADERS = commands.h \
-                 context.h
+include $(top_srcdir)/m4/pathconfig.am
 
-noinst_LIBRARIES = libcommands.a
+pkginclude_HEADERS = vc.h
 
-libcommands_a_SOURCES = commands.c \
-                        context.c
+pkglib_LIBRARIES = libvc.a
+
+libcommands_a_SOURCES = dx.c \
+                        in.c \
+                        lists.c \
+                        ns.c \
+                        nx.c \
+                        task.c \
+                        vx.c

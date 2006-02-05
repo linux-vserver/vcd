@@ -18,22 +18,23 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#include <getopt.h>
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
-#include "commands.h"
+#include "vc.h"
 
-struct option const common_long_opts[] = {
-	{ "help",    no_argument, NULL, 'h' },
-	{ "quiet",   no_argument, NULL, 'q' },
-	{ "version", no_argument, NULL, 'V' },
-	{ NULL,      no_argument, NULL, 0x0 }
-};
 
-/* command map */
-struct command_t commands[] = {
-	/* keep sorted */
-	{ "context",   context_main,   "context commands" },
+int vc_task_nid(pid_t pid, nid_t *nid)
+{
+	*nid = nx_get_task_nid(pid);
 	
-	/* end of list */
-	{ NULL, NULL, NULL }
-};
+	return 0;
+}
+
+int vc_task_xid(pid_t pid, xid_t *xid)
+{
+	*xid = vx_get_task_xid(pid);
+	
+	return 0;
+}
