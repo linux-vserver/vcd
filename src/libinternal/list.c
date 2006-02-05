@@ -27,59 +27,80 @@
 #include "list.h"
 #include "printf.h"
 
-uint32_t list32_getval(char *key, const list32_t list[])
+/* list search */
+int list32_getval(const list32_t list[], char *key, uint32_t *val)
 {
 	int i;
 	
-	for (i = 0; list[i].key; i++)
-		if (strcasecmp(list[i].key, key) == 0)
-			return list[i].val;
+	for (i = 0; list[i].key; i++) {
+		if (strcasecmp(list[i].key, key) == 0) {
+			*val = list[i].val;
+			return 0;
+		}
+	}
 	
-	return 0;
+	errno = EINVAL;
+	return -1;
 }
 
-uint64_t list64_getval(char *key, const list64_t list[])
+int list64_getval(const list64_t list[], char *key, uint64_t *val)
 {
 	int i;
 	
-	for (i = 0; list[i].key; i++)
-		if (strcasecmp(list[i].key, key) == 0)
-			return list[i].val;
+	for (i = 0; list[i].key; i++) {
+		if (strcasecmp(list[i].key, key) == 0) {
+			*val = list[i].val;
+			return 0;
+		}
+	}
 	
-	return 0;
+	errno = EINVAL;
+	return -1;
 }
 
-char *list32_getkey(uint32_t val, const list32_t list[])
+int list32_getkey(const list32_t list[], uint32_t val, char **key)
 {
 	int i;
 	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val == val)
-			return list[i].key;
+	for (i = 0; list[i].key; i++) {
+		if (list[i].val == val) {
+			vu_asprintf(key, "%s", list[i].key);
+			return 0;
+		}
+	}
 	
-	return NULL;
+	errno = EINVAL;
+	return -1;
 }
 
-char *list64_getkey(uint32_t val, const list64_t list[])
+int list64_getkey(const list64_t list[], uint64_t val, char **key)
 {
 	int i;
 	
-	for (i = 0; list[i].key; i++)
-		if (list[i].val == val)
-			return list[i].key;
+	for (i = 0; list[i].key; i++) {
+		if (list[i].val == val) {
+			vu_asprintf(key, "%s", list[i].key);
+			return 0;
+		}
+	}
 	
-	return NULL;
+	errno = EINVAL;
+	return -1;
 }
 
-void list32_parse(char *str, const list32_t list[],
-                  uint32_t *flags, uint32_t *mask,
-                  char clmod, char delim)
+/* list parser */
+int list32_parse(char *str, const list32_t list[],
+                 uint32_t *flags, uint32_t *mask,
+                 char clmod, char delim)
 {
 	char *p, *buf;
-	int i, len;
+	int i, len, clear = 0;
+	uint32_t cur_flag;
 	
-	if (str == NULL)
-		return;
+	if (str == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
 	
 	for (;;) {
 		p = strchr(str, delim);
@@ -89,17 +110,29 @@ void list32_parse(char *str, const list32_t list[],
 		else
 			len = p - str + 1;
 		
-		buf = alloca(len);
+		buf = malloc(len);
+		
+		if (buf == NULL)
+			return -1;
+		
 		memset(buf, '\0', len);
 		memcpy(buf, str, len - 1);
 		
 		if (*buf == clmod) {
-			*flags &= ~list32_getval(++buf, list);
-		} else {
-			*flags |= list32_getval(buf, list);
+			clear = 1;
+			++buf;
 		}
 		
-		*mask |= list32_getval(buf, list);
+		if (list32_getval(list, buf, &cur_flag) == -1)
+			return -1;
+		
+		if (clear) {
+			*flags &= ~cur_flag;
+			*mask  |=  cur_flag;
+		} else {
+			*flags |=  cur_flag;
+			*mask  |=  cur_flag;
+		}
 		
 		free(buf);
 		
@@ -109,18 +142,21 @@ void list32_parse(char *str, const list32_t list[],
 			str = ++p;
 	}
 	
-	return;
+	return 0;
 }
 
-void list64_parse(char *str, const list64_t list[],
-                  uint64_t *flags, uint64_t *mask,
-                  char clmod, char delim)
+int list64_parse(char *str, const list64_t list[],
+                 uint64_t *flags, uint64_t *mask,
+                 char clmod, char delim)
 {
 	char *p, *buf;
-	int i, len;
+	int i, len, clear = 0;
+	uint64_t cur_flag;
 	
-	if (str == NULL)
-		return;
+	if (str == NULL) {
+		errno = EINVAL;
+		return -1;
+	}
 	
 	for (;;) {
 		p = strchr(str, delim);
@@ -130,17 +166,29 @@ void list64_parse(char *str, const list64_t list[],
 		else
 			len = p - str + 1;
 		
-		buf = alloca(len);
+		buf = malloc(len);
+		
+		if (buf == NULL)
+			return -1;
+		
 		memset(buf, '\0', len);
 		memcpy(buf, str, len - 1);
 		
 		if (*buf == clmod) {
-			*flags &= ~list64_getval(++buf, list);
-		} else {
-			*flags |= list64_getval(buf, list);
+			clear = 1;
+			++buf;
 		}
 		
-		*mask |= list64_getval(buf, list);
+		if (list64_getval(list, buf, &cur_flag) == -1)
+			return -1;
+		
+		if (clear) {
+			*flags &= ~cur_flag;
+			*mask  |=  cur_flag;
+		} else {
+			*flags |=  cur_flag;
+			*mask  |=  cur_flag;
+		}
 		
 		free(buf);
 		
@@ -150,43 +198,52 @@ void list64_parse(char *str, const list64_t list[],
 			str = ++p;
 	}
 	
-	return;
+	return 0;
 }
 
-char *list32_tostr(uint32_t val, const list32_t list[], char delim)
+/* list converter */
+int list32_tostr(const list32_t list[], uint32_t val, char **str, char delim)
 {
 	int i, len = 0, idx = 0;
+	char *p = *str;
 	
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
 			len += vu_snprintf(NULL, 0, "%s%c", list[i].key, delim);
 	
-	char *str = malloc(len+1);
-	memset(str, '\0', len+1);
+	p = malloc(len+1);
+	
+	if (p == NULL)
+		return -1;
+	
+	memset(p, '\0', len+1);
 	
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
-			idx += vu_snprintf(str+idx, len-idx, "%s%c", list[i].key, delim);
+			idx += vu_snprintf(p+idx, len-idx, "%s%c", list[i].key, delim);
 	
-	str[len-1] = '\0';
-	
-	return str;
+	return 0;
 }
 
-char *list64_tostr(uint64_t val, const list64_t *list, char delim)
+int list64_tostr(const list64_t list[], uint64_t val, char **str, char delim)
 {
 	int i, len = 0, idx = 0;
+	char *p = *str;
 	
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
 			len += vu_snprintf(NULL, 0, "%s%c", list[i].key, delim);
 	
-	char *str = malloc(len+1);
-	memset(str, '\0', len+1);
+	p = malloc(len+1);
+	
+	if (p == NULL)
+		return -1;
+	
+	memset(p, '\0', len+1);
 	
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
-			idx += vu_snprintf(str+idx, len-idx, "%s%c", list[i].key, delim);
+			idx += vu_snprintf(p+idx, len-idx, "%s%c", list[i].key, delim);
 	
-	return str;
+	return 0;
 }
