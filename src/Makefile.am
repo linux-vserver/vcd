@@ -19,14 +19,3 @@
 SUBDIRS = commands \
           libinternal \
           libvconfig
-
-INCLUDES = -I$(top_srcdir)/src/libinternal
-
-LDADD = $(top_builddir)/src/libinternal/libinternal.a \
-        -lowfat \
-        -lvserver
-
-sbin_PROGRAMS = vcmd
-
-vcmd_LDADD = $(top_builddir)/src/commands/libcommands.a \
-             $(LDADD)
