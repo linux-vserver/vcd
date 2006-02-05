@@ -24,10 +24,10 @@ pkginclude_HEADERS = vc.h
 
 pkglib_LIBRARIES = libvc.a
 
-libcommands_a_SOURCES = dx.c \
-                        in.c \
-                        lists.c \
-                        ns.c \
-                        nx.c \
-                        task.c \
-                        vx.c
+libvc_a_SOURCES = dx.c \
+                  in.c \
+                  lists.c \
+                  ns.c \
+                  nx.c \
+                  task.c \
+                  vx.c

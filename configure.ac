@@ -81,8 +81,8 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  etc/Makefile
-                 src/commands/Makefile
                  src/libinternal/Makefile
+                 src/libvc/Makefile
                  src/libvconfig/Makefile
                  src/Makefile])
 
