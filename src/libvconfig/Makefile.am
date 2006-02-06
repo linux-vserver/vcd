@@ -16,13 +16,13 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)/src/libinternal
+INCLUDES = -I$(top_srcdir)/src/libvc
 
 include $(top_srcdir)/m4/pathconfig.am
 
 pkginclude_HEADERS = vconfig.h
 
-pkglib_LIBRARIES = libvconfig.a
+lib_LIBRARIES = libvconfig.a
 
 libvconfig_a_SOURCES = main.c \
                        single.c

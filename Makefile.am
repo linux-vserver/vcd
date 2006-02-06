@@ -21,6 +21,11 @@ include $(top_srcdir)/m4/pathconfig.am
 SUBDIRS = etc \
           src
 
+BUILT_SOURCES = pathconfig.h
+CLEANFILES    = pathconfig.h
+
+EXTRA_DIST = pathconfig.h.in
+
 pathconfig.h: pathconfig.h.in
 	@regex_cmd@ $(PATHCONFIG_SCRIPT) $(srcdir)/pathconfig.h.in > ./pathconfig.h
 

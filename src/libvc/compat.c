@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright 2005 by the vserver-utils team                              *
+ *   Copyright 2005-2006 by the vserver-utils team                         *
  *   See AUTHORS for details                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -26,7 +26,7 @@
 #include <libowfat/fmt.h>
 #include <libowfat/str.h>
 
-#include "printf.h"
+#include "vc.h"
 
 /* libowfat misses prototype for fmt_8longlong */
 unsigned int fmt_8longlong(char *dest, unsigned long long i);
@@ -51,7 +51,7 @@ typedef struct {
 	__prec_t  p;
 	unsigned char l;
 	unsigned char c;
-} vu_printf_t;
+} vc_printf_t;
 
 /* supported formats:
 ** - format flags: #, 0, -, ' ', +
@@ -59,7 +59,7 @@ typedef struct {
 ** - argument precision
 ** - length mods: hh, h, l, z (handled as long); ll (handled as long long)
 ** - conversion spec: d, i, u, o, x, f, c, s, p */
-int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
+int vc_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 {
 	/* keep track of string length */
 	size_t idx = 0;
@@ -79,7 +79,7 @@ int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 			*fmt++;
 			
 			/* format struct */
-			vu_printf_t f;
+			vc_printf_t f;
 			
 			/* sanitize struct with default values */
 			f.f.alt   = false;
@@ -515,7 +515,7 @@ int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 	return idx;
 }
 
-int vu_vasprintf(char **ptr, const char *fmt, va_list ap)
+int vc_vasprintf(char **ptr, const char *fmt, va_list ap)
 {
 	va_list ap2;
 	int len;
@@ -526,7 +526,7 @@ int vu_vasprintf(char **ptr, const char *fmt, va_list ap)
 	va_copy(ap2, ap);
 	
 	/* get required size */
-	len = vu_vsnprintf(FMT_LEN, 0, fmt, ap2);
+	len = vc_vsnprintf(FMT_LEN, 0, fmt, ap2);
 	
 	va_end(ap2);
 	
@@ -540,58 +540,58 @@ int vu_vasprintf(char **ptr, const char *fmt, va_list ap)
 			return -1;
 		}
 		
-		vu_vsnprintf(*ptr, len + 1, fmt, ap);
+		vc_vsnprintf(*ptr, len + 1, fmt, ap);
 		return len;
 	}
 	
 	return len;
 }
 
-int vu_snprintf(char *str, size_t size, const char *fmt, /*args*/ ...)
+int vc_snprintf(char *str, size_t size, const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	return vu_vsnprintf(str, size, fmt, ap);
+	return vc_vsnprintf(str, size, fmt, ap);
 }
 
-int vu_asprintf(char **ptr, const char *fmt, /*args*/ ...)
+int vc_asprintf(char **ptr, const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	return vu_vasprintf(ptr, fmt, ap);
+	return vc_vasprintf(ptr, fmt, ap);
 }
 
-int vu_vdprintf(int fd, const char *fmt, va_list ap)
+int vc_vdprintf(int fd, const char *fmt, va_list ap)
 {
 	char *buf;
 	int buflen, len;
 	
-	buflen = vu_vasprintf(&buf, fmt, ap);
+	buflen = vc_vasprintf(&buf, fmt, ap);
 	len = write(fd, buf, buflen + 1);
 	free(buf);
 	
 	return len;
 }
 
-int vu_dprintf(int fd, const char *fmt, /*args*/ ...)
+int vc_dprintf(int fd, const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	return vu_vdprintf(fd, fmt, ap);
+	return vc_vdprintf(fd, fmt, ap);
 }
 
-int vu_vprintf(const char *fmt, va_list ap)
+int vc_vprintf(const char *fmt, va_list ap)
 {
-	return vu_vdprintf(STDOUT_FILENO, fmt, ap);
+	return vc_vdprintf(STDOUT_FILENO, fmt, ap);
 }
 
-int vu_printf(const char *fmt, /*args*/ ...)
+int vc_printf(const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	return vu_vprintf(fmt, ap);
+	return vc_vprintf(fmt, ap);
 }

@@ -22,10 +22,16 @@
 #include <config.h>
 #endif
 
+#include "vconfig.h"
 #include "vc.h"
 
-int vc_dx_add_path(xid_t xid, char *path)
+int vc_dx_add_path(char *name, char *path)
 {
+	xid_t xid;
+	
+	if (vconfig_get_xid(name, &xid) == -1)
+		return -1;
+	
 	struct vx_dlimit_base base = {
 		.filename = path,
 		.flags    = 0,
@@ -37,8 +43,13 @@ int vc_dx_add_path(xid_t xid, char *path)
 	return 0;
 }
 
-int vc_dx_rem_path(xid_t xid, char *path)
+int vc_dx_rem_path(char *name, char *path)
 {
+	xid_t xid;
+	
+	if (vconfig_get_xid(name, &xid) == -1)
+		return -1;
+	
 	struct vx_dlimit_base base = {
 		.filename = path,
 		.flags    = 0,
@@ -50,9 +61,16 @@ int vc_dx_rem_path(xid_t xid, char *path)
 	return 0;
 }
 
-int vc_dx_get_limit(xid_t xid, char *path, uint32_t *spaceu, uint32_t *spacet,
-                 uint32_t *inodesu, uint32_t *inodest, uint32_t *reserved)
+int vc_dx_get_limit(char *name, char *path,
+                    uint32_t *spaceu, uint32_t *spacet,
+                    uint32_t *inodesu, uint32_t *inodest,
+                    uint32_t *reserved)
 {
+	xid_t xid;
+	
+	if (vconfig_get_xid(name, &xid) == -1)
+		return -1;
+	
 	struct vx_dlimit dlimit = {
 		.filename     = path,
 		.space_used   = 0,
@@ -74,9 +92,16 @@ int vc_dx_get_limit(xid_t xid, char *path, uint32_t *spaceu, uint32_t *spacet,
 	return 0;
 }
 
-int vc_dx_set_limit(xid_t xid, char *path, uint32_t spaceu, uint32_t spacet,
-                 uint32_t inodesu, uint32_t inodest, uint32_t reserved)
+int vc_dx_set_limit(char *name, char *path,
+                    uint32_t spaceu, uint32_t spacet,
+                    uint32_t inodesu, uint32_t inodest,
+                    uint32_t reserved)
 {
+	xid_t xid;
+	
+	if (vconfig_get_xid(name, &xid) == -1)
+		return -1;
+	
 	struct vx_dlimit dlimit = {
 		.filename     = path,
 		.space_used   = spaceu,

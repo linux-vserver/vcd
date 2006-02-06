@@ -27,17 +27,28 @@
 #include <arpa/inet.h>
 
 #include "printf.h"
+#include "vconfig.h"
 #include "vc.h"
 
-int vc_nx_exists(nid_t nid)
+int vc_nx_exists(char *name)
 {
+	nid_t nid;
+	
+	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+		return -1;
+	
 	struct nx_info info;
 	
 	return nx_get_info(nid, &info) == -1 ? 0 : 1;
 }
 
-int vc_nx_create(nid_t nid, char *flagstr)
+int vc_nx_create(char *name, char *flagstr)
 {
+	nid_t nid;
+	
+	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+		return -1;
+	
 	struct nx_create_flags flags = {
 		.flags = 0,
 	};
@@ -47,7 +58,7 @@ int vc_nx_create(nid_t nid, char *flagstr)
 	
 	uint64_t mask = 0;
 	
-	if (list64_parse(flagstr, nflags_list, &flags.flags, &mask, '~', ',') == -1)
+	if (vc_list64_parse(flagstr, vc_nflags_list, &flags.flags, &mask, '~', ',') == -1)
 		return -1;
 	
 create:
@@ -57,7 +68,7 @@ create:
 	return 0;
 }
 
-int vc_nx_new(nid_t nid, char *flagstr)
+int vc_nx_new(char *name, char *flagstr)
 {
 	pid_t pid;
 	int status;
@@ -68,9 +79,9 @@ int vc_nx_new(nid_t nid, char *flagstr)
 			return -1;
 		
 		case 0:
-			vu_asprintf(&buf, "%s,%s", flagstr, "PERSISTANT");
+			vc_asprintf(&buf, "%s,%s", flagstr, "PERSISTANT");
 			
-			if (vc_nx_create(nid, buf) == -1)
+			if (vc_nx_create(name, buf) == -1)
 				exit(EXIT_FAILURE);
 			else
 				exit(EXIT_SUCCESS);
@@ -95,10 +106,15 @@ int vc_nx_new(nid_t nid, char *flagstr)
 	return 0;
 }
 
-int vc_nx_migrate(nid_t nid)
+int vc_nx_migrate(char *name)
 {
-	if (!vc_nx_exists(nid)) {
-		if (vc_nx_create(nid, NULL) == -1)
+	nid_t nid;
+	
+	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+		return -1;
+	
+	if (!vc_nx_exists(name)) {
+		if (vc_nx_create(name, NULL) == -1)
 			return -1;
 	}
 	
@@ -110,8 +126,13 @@ int vc_nx_migrate(nid_t nid)
 	return 0;
 }
 
-int vc_nx_get_flags(nid_t nid, char **flagstr, uint64_t *flags)
+int vc_nx_get_flags(char *name, char **flagstr, uint64_t *flags)
 {
+	nid_t nid;
+	
+	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+		return -1;
+	
 	struct nx_flags nflags = {
 		.flags = 0,
 		.mask  = 0,
@@ -123,20 +144,25 @@ int vc_nx_get_flags(nid_t nid, char **flagstr, uint64_t *flags)
 	if (flags != NULL)
 		*flags = nflags.flags;
 	
-	if (list64_tostr(nflags_list, nflags.flags, flagstr, ',') == -1)
+	if (vc_list64_tostr(vc_nflags_list, nflags.flags, flagstr, ',') == -1)
 		return -1;
 	
 	return 0;
 }
 
-int vc_nx_set_flags(nid_t nid, char *flagstr)
+int vc_nx_set_flags(char *name, char *flagstr)
 {
+	nid_t nid;
+	
+	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+		return -1;
+	
 	struct nx_flags flags = {
 		.flags = 0,
 		.mask  = 0,
 	};
 	
-	if (list64_parse(flagstr, nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+	if (vc_list64_parse(flagstr, vc_nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
 		return -1;
 	
 	if (nx_set_flags(nid, &flags) == -1)
@@ -191,8 +217,13 @@ int _parse_cidr(char *cidr, uint32_t *ip, uint32_t *mask)
 	return 0;
 }
 
-int vc_nx_add_addr(nid_t nid, char *cidr)
+int vc_nx_add_addr(char *name, char *cidr)
 {
+	nid_t nid;
+	
+	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+		return -1;
+	
 	struct nx_addr addr;
 	
 	addr.type  = NXA_TYPE_IPV4;
@@ -207,8 +238,13 @@ int vc_nx_add_addr(nid_t nid, char *cidr)
 	return 0;
 }
 
-int vc_nx_rem_addr(nid_t nid, char *cidr)
+int vc_nx_rem_addr(char *name, char *cidr)
 {
+	nid_t nid;
+	
+	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+		return -1;
+	
 	struct nx_addr addr;
 	
 	addr.type  = NXA_TYPE_IPV4;

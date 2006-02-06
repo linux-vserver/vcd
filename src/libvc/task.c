@@ -22,8 +22,18 @@
 #include <config.h>
 #endif
 
+#include "vconfig.h"
 #include "vc.h"
 
+int vc_task_name(pid_t pid, char **name)
+{
+	xid_t xid = vx_get_task_xid(pid);
+	
+	if (vconfig_get_name(xid, name) == -1)
+		return -1;
+	
+	return 0;
+}
 
 int vc_task_nid(pid_t pid, nid_t *nid)
 {

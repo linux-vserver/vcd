@@ -22,7 +22,26 @@
 #include <config.h>
 #endif
 
+#include "vconfig.h"
 #include "vc.h"
+
+int vc_in_get_name(char *file, char **name)
+{
+	struct vx_iattr iattr = {
+		.filename = file,
+		.xid      = 0,
+		.flags    = 0,
+		.mask     = 0,
+	};
+	
+	if (vx_get_iattr(&iattr) == -1)
+		return -1;
+	
+	if (vconfig_get_name(iattr.xid, name) == -1)
+		return -1;
+	
+	return 0;
+}
 
 int vc_in_get_xid(char *file, xid_t *xid)
 {
@@ -56,7 +75,27 @@ int vc_in_get_attr(char *file, char **flagstr, uint32_t *flags)
 	if (flags != NULL)
 		*flags = iattr.flags;
 	
-	if (list32_tostr(iattr_list, iattr.flags, flagstr, ',') == -1)
+	if (vc_list32_tostr(vc_iattr_list, iattr.flags, flagstr, ',') == -1)
+		return -1;
+	
+	return 0;
+}
+
+int vc_in_set_name(char *file, char *name)
+{
+	xid_t xid;
+	
+	if (vconfig_get_xid(name, &xid) == -1)
+		return -1;
+	
+	struct vx_iattr iattr = {
+		.filename = file,
+		.xid      = xid,
+		.flags    = IATTR_XID,
+		.mask     = IATTR_XID,
+	};
+	
+	if (vx_set_iattr(&iattr) == -1)
 		return -1;
 	
 	return 0;
@@ -86,7 +125,7 @@ int vc_in_set_attr(char *file, char *flagstr)
 		.mask     = 0,
 	};
 	
-	if (list32_parse(flagstr, iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
+	if (vc_list32_parse(flagstr, vc_iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
 		return -1;
 	
 	if (vx_set_iattr(&iattr) == -1)

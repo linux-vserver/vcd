@@ -25,17 +25,17 @@ int vconfig_isbool(char *key);
 int vconfig_isint(char *key);
 int vconfig_isstr(char *key);
 int vconfig_islist(char *key);
-void vconfig_print_nodes(void);
+int vconfig_print_nodes(void);
 
-xid_t vconfig_get_xid(char *name);
-char *vconfig_get_name(xid_t xid);
+int vconfig_get_xid(char *name, xid_t *xid);
+int vconfig_get_name(xid_t xid, char **name);
 
 /* backend api */
-int vconfig_get_bool(char *name, char *key);
+int vconfig_get_bool(char *name, char *key, int *value);
 int vconfig_set_bool(char *name, char *key, int value);
-int vconfig_get_int(char *name, char *key);
+int vconfig_get_int(char *name, char *key, int *value);
 int vconfig_set_int(char *name, char *key, int value);
-char *vconfig_get_str(char *name, char *key);
+int vconfig_get_str(char *name, char *key, char **value);
 int vconfig_set_str(char *name, char *key, char *value);
-char *vconfig_get_list(char *name, char *key);
+int vconfig_get_list(char *name, char *key, char **value);
 int vconfig_set_list(char *name, char *key, char *value);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright 2005 by the vserver-utils team                              *
+ *   Copyright 2005 by the libvserver team                                 *
  *   See AUTHORS for details                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -18,19 +18,12 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _INTERNAL_MSG_H
-#define _INTERNAL_MSG_H
-
-extern const char *argv0;
-
-void warn(const char *fmt, /*args*/ ...);
-void warnp(const char *fmt, /*args*/ ...);
-void err(const char *fmt, /*args*/ ...);
-void errp(const char *fmt, /*args*/ ...);
-
-#define warnf(fmt, ...)  warn("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
-#define warnfp(fmt, ...) warnp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
-#define errf(fmt, ...)   err("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
-#define errfp(fmt, ...)  errp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
-
-#endif
+#define __BINDIR        "@BINDIR@"
+#define __LIBDIR        "@LIBDIR@"
+#define __LOCALSTATEDIR "@LOCALSTATEDIR@"
+#define __LOCKDIR       "@LOCKDIR@"
+#define __MANDIR        "@MANDIR@"
+#define __PKGCONFDIR    "@PKGCONFDIR@"
+#define __SBINDIR       "@SBINDIR@"
+#define __SYSCONFDIR    "@SYSCONFDIR@"
+#define __VDIRBASE      "@VDIRBASE@"

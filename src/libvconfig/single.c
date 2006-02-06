@@ -18,6 +18,10 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 static const char single_dummy; /* prevent empty source file */
 
 #ifdef LIBVCONFIG_BACKEND_SINGLE
@@ -36,7 +40,7 @@ static const char single_dummy; /* prevent empty source file */
 #include <libowfat/mmap.h>
 #include <libowfat/str.h>
 
-#include "printf.h"
+#include "vc.h"
 #include "pathconfig.h"
 #include "vconfig.h"
 
@@ -104,7 +108,7 @@ unsigned long _single_readkey(char *name, char *key, char **buf)
 		return 0;
 	
 	char path[PATH_MAX];
-	vu_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
+	vc_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
 	
 	unsigned long len;
 	*buf = mmap_private(path, &len);
@@ -127,7 +131,7 @@ int _single_writekey(char *name, char *key, char *value)
 		return -1;
 	
 	char path[PATH_MAX];
-	vu_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
+	vc_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
 	
 	char *buf;
 	unsigned long len;
@@ -149,12 +153,11 @@ int _single_writekey(char *name, char *key, char *value)
 }
 
 /* bool methods */
-int vconfig_get_bool(char *name, char *key)
+int vconfig_get_bool(char *name, char *key, int *value)
 {
 	if (vconfig_isbool(key) == -1)
 		return -1;
 	
-	int rc = -1;
 	char *buf;
 	unsigned long len;
 	
@@ -164,12 +167,15 @@ int vconfig_get_bool(char *name, char *key)
 		return -1;
 	
 	if (str_diffn(buf, "true\n", len))
-		rc = 1;
+		*value = 1;
 	
-	if (str_diffn(buf, "false\n", len))
-		rc = 0;
+	else if (str_diffn(buf, "false\n", len))
+		*value = 0;
 	
-	return rc;
+	else
+		return -1;
+	
+	return 0;
 }
 
 int vconfig_set_bool(char *name, char *key, int value)
@@ -181,9 +187,9 @@ int vconfig_set_bool(char *name, char *key, int value)
 	char *buf;
 	
 	if (value == 1)
-		vu_asprintf(&buf, "true\n");
+		vc_asprintf(&buf, "true\n");
 	else if (value == 0)
-		vu_asprintf(&buf, "false\n");
+		vc_asprintf(&buf, "false\n");
 	else
 		return -1;
 	
@@ -194,7 +200,7 @@ int vconfig_set_bool(char *name, char *key, int value)
 }
 
 /* integer methods */
-int vconfig_get_int(char *name, char *key)
+int vconfig_get_int(char *name, char *key, int *value)
 {
 	if (vconfig_isint(key) == -1)
 		return -1;
@@ -207,7 +213,9 @@ int vconfig_get_int(char *name, char *key)
 	if (len == 0)
 		return -1;
 	
-	return atoi(buf);
+	*value = atoi(buf);
+	
+	return 0;
 }
 
 int vconfig_set_int(char *name, char *key, int value)
@@ -218,7 +226,7 @@ int vconfig_set_int(char *name, char *key, int value)
 	int rc;
 	char *buf;
 	
-	vu_asprintf(&buf, "%d\n", value);
+	vc_asprintf(&buf, "%d\n", value);
 	
 	rc = _single_writekey(name, key, buf);
 	
@@ -227,10 +235,10 @@ int vconfig_set_int(char *name, char *key, int value)
 }
 
 /* string methods */
-char *vconfig_get_str(char *name, char *key)
+int vconfig_get_str(char *name, char *key, char **value)
 {
 	if (vconfig_isstr(key) == -1)
-		return NULL;
+		return -1;
 	
 	char *buf;
 	unsigned long len;
@@ -238,9 +246,11 @@ char *vconfig_get_str(char *name, char *key)
 	len = _single_readkey(name, key, &buf);
 	
 	if (len == 0)
-		return NULL;
+		return -1;
 	
-	return buf;
+	*value = buf;
+	
+	return 0;
 }
 
 int vconfig_set_str(char *name, char *key, char *value)
@@ -251,7 +261,7 @@ int vconfig_set_str(char *name, char *key, char *value)
 	int rc;
 	char *buf;
 	
-	vu_asprintf(&buf, "%s\n", value);
+	vc_asprintf(&buf, "%s\n", value);
 	
 	rc = _single_writekey(name, key, buf);
 	
@@ -260,10 +270,10 @@ int vconfig_set_str(char *name, char *key, char *value)
 }
 
 /* list methods */
-char *vconfig_get_list(char *name, char *key)
+int vconfig_get_list(char *name, char *key, char **value)
 {
 	if (vconfig_islist(key) == -1)
-		return NULL;
+		return -1;
 	
 	char *buf;
 	unsigned long len;
@@ -271,7 +281,7 @@ char *vconfig_get_list(char *name, char *key)
 	len = _single_readkey(name, key, &buf);
 	
 	if (len == 0)
-		return NULL;
+		return -1;
 	
 	char *ptr = buf + len - 1;
 	
@@ -281,7 +291,9 @@ char *vconfig_get_list(char *name, char *key)
 	while ((ptr = strchr(buf, '\n')) != NULL)
 		*ptr = ',';
 	
-	return buf;
+	*value = buf;
+	
+	return 0;
 }
 
 int vconfig_set_list(char *name, char *key, char *value)
@@ -297,7 +309,7 @@ int vconfig_set_list(char *name, char *key, char *value)
 	
 	char *buf;
 	
-	vu_asprintf(&buf, "%s\n", value);
+	vc_asprintf(&buf, "%s\n", value);
 	
 	rc = _single_writekey(name, key, buf);
 	

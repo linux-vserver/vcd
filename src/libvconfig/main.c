@@ -25,10 +25,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <vserver.h>
 
-#include <linux/vserver/cvirt_cmd.h>
-
-#include "printf.h"
+#include "vc.h"
 #include "node.h"
 #include "map.h"
 #include "vconfig.h"
@@ -97,41 +96,40 @@ int vconfig_islist(char key[])
 	return 0;
 }
 
-void vconfig_print_nodes(void)
+int vconfig_print_nodes(void)
 {
+	int len = 0;
 	unsigned int i;
 	
 	for (i = 0; i < NR_MAP_ENTRIES; i++) {
-		vu_printf("%s\n", vconfig_map[i].key);
+		len += vc_printf("%s\n", vconfig_map[i].key);
 	}
+	
+	return len;
 }
 
-xid_t vconfig_get_xid(char *name)
+int vconfig_get_xid(char *name, xid_t *xid)
 {
-	int buf = vconfig_get_int(name, "context.id");
-	struct vx_vhi_name vhi_name;
-	vhi_name.field = VHIN_CONTEXT;
+	int buf;
 	
-	if (vx_get_vhi_name((xid_t) buf, &vhi_name) == -1)
+	if (vconfig_get_int(name, "context.id", &buf) == -1)
 		return -1;
 	
-	if (strcmp(vhi_name.name, name) != 0)
-		/* TODO: probably implement search */
-		return -1;
+	*xid = (xid_t) buf;
 	
-	return (xid_t) buf;
+	return 0;
 }
 
-char *vconfig_get_name(xid_t xid)
+int vconfig_get_name(xid_t xid, char **name)
 {
 	struct vx_vhi_name vhi_name;
 	vhi_name.field = VHIN_CONTEXT;
 	char *buf = malloc(65);
 	
 	if (vx_get_vhi_name(xid, &vhi_name) == -1)
-		return NULL;
+		return -1;
 	
-	memcpy(buf, vhi_name.name, 65);
+	vc_asprintf(&buf, "%s", vhi_name.name);
 	
-	return buf;
+	return 0;
 }

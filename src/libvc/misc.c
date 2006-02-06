@@ -18,19 +18,51 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifndef _INTERNAL_PRINTF_H
-#define _INTERNAL_PRINTF_H
-
 #include <unistd.h>
-#include <stdarg.h>
+#include <fcntl.h>
 
-int vu_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int vu_vasprintf(char **ptr, const char *fmt, va_list ap);
-int vu_snprintf(char *str, size_t size, const char *fmt, /*args*/ ...);
-int vu_asprintf(char **ptr, const char *fmt, /*args*/ ...);
-int vu_vdprintf(int fd, const char *fmt, va_list ap);
-int vu_dprintf(int fd, const char *fmt, /*args*/ ...);
-int vu_vprintf(const char *fmt, va_list ap);
-int vu_printf(const char *fmt, /*args*/ ...);
+#include "vc.h"
 
-#endif
+/* go to <dir> in <cwd> as root, while <root> is the original root.
+** going into the chroot before doing chdir(dir) prevents symlink attacks
+** and hence is safer */
+int vc_secure_chdir(int rootfd, int cwdfd, char *dir)
+{
+	int dirfd;
+	
+	/* check cwdfd */
+	if (fchdir(cwdfd) == -1)
+		return -1;
+	
+	/* chroot to cwd */
+	if (chroot(".") == -1)
+		return -1;
+	
+	/* now go to dir in the chroot */
+	if (chdir(dir) == -1)
+		return -1;
+	
+	/* save a file descriptor of the target dir */
+	dirfd = open(".", O_RDONLY|O_DIRECTORY);
+	
+	if (dirfd == -1)
+		return -1;
+	
+	/* break out of the chroot */
+	if (fchdir(rootfd) == -1)
+		goto error;
+	
+	if (chroot(".") == -1)
+		goto error;
+	
+	/* now go to the saved target dir (but outside the chroot) */
+	if (fchdir(dirfd) == -1)
+		goto error;
+	
+	close(dirfd);
+	return 0;
+	
+error:
+	close(dirfd);
+	return -1;
+}

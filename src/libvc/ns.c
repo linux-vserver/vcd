@@ -25,12 +25,18 @@
 #include <stdlib.h>
 #include <wait.h>
 
+#include "vconfig.h"
 #include "vc.h"
 
 #define CLONE_NEWNS 0x00020000
 
-int vc_ns_new(xid_t xid)
+int vc_ns_new(char *name)
 {
+	xid_t xid;
+	
+	if (vconfig_get_xid(name, &xid) == -1)
+		return -1;
+	
 	pid_t pid;
 	int status;
 	signal(SIGCHLD, SIG_DFL);
@@ -63,10 +69,17 @@ int vc_ns_new(xid_t xid)
 				exit(EXIT_FAILURE);
 			}
 	}
+	
+	return 0;
 }
 
-int vc_ns_migrate(xid_t xid)
+int vc_ns_migrate(char *name)
 {
+	xid_t xid;
+	
+	if (vconfig_get_xid(name, &xid) == -1)
+		return -1;
+	
 	if (vx_enter_namespace(xid) == -1)
 		return -1;
 	
