@@ -27,7 +27,7 @@
 #include "vc.h"
 
 /* list search */
-int vc_list32_getval(const list32_t list[], char *key, uint32_t *val)
+int vc_list32_getval(const vc_list32_t list[], char *key, uint32_t *val)
 {
 	int i;
 	
@@ -42,7 +42,7 @@ int vc_list32_getval(const list32_t list[], char *key, uint32_t *val)
 	return -1;
 }
 
-int vc_list64_getval(const list64_t list[], char *key, uint64_t *val)
+int vc_list64_getval(const vc_list64_t list[], char *key, uint64_t *val)
 {
 	int i;
 	
@@ -57,7 +57,7 @@ int vc_list64_getval(const list64_t list[], char *key, uint64_t *val)
 	return -1;
 }
 
-int vc_list32_getkey(const list32_t list[], uint32_t val, char **key)
+int vc_list32_getkey(const vc_list32_t list[], uint32_t val, char **key)
 {
 	int i;
 	
@@ -72,7 +72,7 @@ int vc_list32_getkey(const list32_t list[], uint32_t val, char **key)
 	return -1;
 }
 
-int vc_list64_getkey(const list64_t list[], uint64_t val, char **key)
+int vc_list64_getkey(const vc_list64_t list[], uint64_t val, char **key)
 {
 	int i;
 	
@@ -88,7 +88,7 @@ int vc_list64_getkey(const list64_t list[], uint64_t val, char **key)
 }
 
 /* list parser */
-int vc_list32_parse(char *str, const list32_t list[],
+int vc_list32_parse(char *str, const vc_list32_t list[],
                  uint32_t *flags, uint32_t *mask,
                  char clmod, char delim)
 {
@@ -144,7 +144,7 @@ int vc_list32_parse(char *str, const list32_t list[],
 	return 0;
 }
 
-int vc_list64_parse(char *str, const list64_t list[],
+int vc_list64_parse(char *str, const vc_list64_t list[],
                  uint64_t *flags, uint64_t *mask,
                  char clmod, char delim)
 {
@@ -201,7 +201,7 @@ int vc_list64_parse(char *str, const list64_t list[],
 }
 
 /* list converter */
-int vc_list32_tostr(const list32_t list[], uint32_t val, char **str, char delim)
+int vc_list32_tostr(const vc_list32_t list[], uint32_t val, char **str, char delim)
 {
 	int i, len = 0, idx = 0;
 	char *p = *str;
@@ -224,7 +224,7 @@ int vc_list32_tostr(const list32_t list[], uint32_t val, char **str, char delim)
 	return 0;
 }
 
-int vc_list64_tostr(const list64_t list[], uint64_t val, char **str, char delim)
+int vc_list64_tostr(const vc_list64_t list[], uint64_t val, char **str, char delim)
 {
 	int i, len = 0, idx = 0;
 	char *p = *str;

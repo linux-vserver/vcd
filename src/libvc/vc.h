@@ -97,45 +97,45 @@ int vc_vx_set_uname(char *name, char *key, char *value);
 typedef struct {
 	char *key;
 	uint32_t val;
-} list32_t;
+} vc_list32_t;
 
 typedef struct {
 	char *key;
 	uint64_t val;
-} list64_t;
+} vc_list64_t;
 
 /* list macros */
-#define LIST32_START(LIST) const list32_t LIST[] = {
+#define LIST32_START(LIST) const vc_list32_t LIST[] = {
 #define LIST32_NODE(PREFIX, NAME) { #NAME, PREFIX ## _ ## NAME },
 #define LIST32_END { NULL, 0 } };
 
-#define LIST64_START(LIST) const list64_t LIST[] = {
+#define LIST64_START(LIST) const vc_list64_t LIST[] = {
 #define LIST64_NODE(PREFIX, NAME) { #NAME, PREFIX ## _ ## NAME },
 #define LIST64_END { NULL, 0 } };
 
 /* list methods */
-int vc_list32_getval(const list32_t list[], char *key, uint32_t *val);
-int vc_list64_getval(const list64_t list[], char *key, uint64_t *val);
-int vc_list32_getkey(const list32_t list[], uint32_t val, char **key);
-int vc_list64_getkey(const list64_t list[], uint64_t val, char **key);
-int vc_list32_parse(char *str, const list32_t list[],
+int vc_list32_getval(const vc_list32_t list[], char *key, uint32_t *val);
+int vc_list64_getval(const vc_list64_t list[], char *key, uint64_t *val);
+int vc_list32_getkey(const vc_list32_t list[], uint32_t val, char **key);
+int vc_list64_getkey(const vc_list64_t list[], uint64_t val, char **key);
+int vc_list32_parse(char *str, const vc_list32_t list[],
                     uint32_t *flags, uint32_t *mask,
                     char clmod, char delim);
-int vc_list64_parse(char *str, const list64_t list[],
+int vc_list64_parse(char *str, const vc_list64_t list[],
                     uint64_t *flags, uint64_t *mask,
                     char clmod, char delim);
-int vc_list32_tostr(const list32_t list[], uint32_t val, char **str, char delim);
-int vc_list64_tostr(const list64_t list[], uint64_t val, char **str, char delim);
+int vc_list32_tostr(const vc_list32_t list[], uint32_t val, char **str, char delim);
+int vc_list64_tostr(const vc_list64_t list[], uint64_t val, char **str, char delim);
 
 /* lists */
-extern const list64_t vc_bcaps_list[];
-extern const list64_t vc_ccaps_list[];
-extern const list64_t vc_cflags_list[];
-extern const list32_t vc_vhiname_list[];
-extern const list32_t vc_iattr_list[];
-extern const list32_t vc_rlimit_list[];
-extern const list64_t vc_nflags_list[];
-extern const list32_t vc_sched_list[];
+extern const vc_list64_t vc_bcaps_list[];
+extern const vc_list64_t vc_ccaps_list[];
+extern const vc_list64_t vc_cflags_list[];
+extern const vc_list32_t vc_vhiname_list[];
+extern const vc_list32_t vc_iattr_list[];
+extern const vc_list32_t vc_rlimit_list[];
+extern const vc_list64_t vc_nflags_list[];
+extern const vc_list32_t vc_sched_list[];
 
 int vc_secure_chdir(int rootfd, int cwdfd, char *dir);
 
