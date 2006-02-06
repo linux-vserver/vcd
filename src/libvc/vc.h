@@ -105,13 +105,13 @@ typedef struct {
 } vc_list64_t;
 
 /* list macros */
-#define LIST32_START(LIST) const vc_list32_t LIST[] = {
-#define LIST32_NODE(PREFIX, NAME) { #NAME, PREFIX ## _ ## NAME },
-#define LIST32_END { NULL, 0 } };
+#define VC_LIST32_START(LIST) const vc_list32_t LIST[] = {
+#define VC_LIST32_NODE(PREFIX, NAME) { #NAME, PREFIX ## _ ## NAME },
+#define VC_LIST32_END { NULL, 0 } };
 
-#define LIST64_START(LIST) const vc_list64_t LIST[] = {
-#define LIST64_NODE(PREFIX, NAME) { #NAME, PREFIX ## _ ## NAME },
-#define LIST64_END { NULL, 0 } };
+#define VC_LIST64_START(LIST) const vc_list64_t LIST[] = {
+#define VC_LIST64_NODE(PREFIX, NAME) { #NAME, PREFIX ## _ ## NAME },
+#define VC_LIST64_END { NULL, 0 } };
 
 /* list methods */
 int vc_list32_getval(const vc_list32_t list[], char *key, uint32_t *val);
