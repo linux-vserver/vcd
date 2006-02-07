@@ -24,8 +24,8 @@ lib_LIBRARIES = libvc.a
 
 libvc_a_SOURCES = cfg.c \
                   dx.c \
-                  in.c \
                   io.c \
+                  ix.c \
                   list.c \
                   lists.c \
                   misc.c \

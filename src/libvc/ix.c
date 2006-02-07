@@ -24,7 +24,7 @@
 
 #include "vc.h"
 
-int vc_in_get_name(char *file, char **name)
+int vc_ix_get_name(char *file, char **name)
 {
 	struct vx_iattr iattr = {
 		.filename = file,
@@ -42,7 +42,7 @@ int vc_in_get_name(char *file, char **name)
 	return 0;
 }
 
-int vc_in_get_xid(char *file, xid_t *xid)
+int vc_ix_get_xid(char *file, xid_t *xid)
 {
 	struct vx_iattr iattr = {
 		.filename = file,
@@ -59,7 +59,7 @@ int vc_in_get_xid(char *file, xid_t *xid)
 	return 0;
 }
 
-int vc_in_get_attr(char *file, char **flagstr, uint32_t *flags)
+int vc_ix_get_attr(char *file, char **flagstr, uint32_t *flags)
 {
 	struct vx_iattr iattr = {
 		.filename = file,
@@ -80,7 +80,7 @@ int vc_in_get_attr(char *file, char **flagstr, uint32_t *flags)
 	return 0;
 }
 
-int vc_in_set_name(char *file, char *name)
+int vc_ix_set_name(char *file, char *name)
 {
 	xid_t xid;
 	
@@ -100,7 +100,7 @@ int vc_in_set_name(char *file, char *name)
 	return 0;
 }
 
-int vc_in_set_xid(char *file, xid_t xid)
+int vc_ix_set_xid(char *file, xid_t xid)
 {
 	struct vx_iattr iattr = {
 		.filename = file,
@@ -115,7 +115,7 @@ int vc_in_set_xid(char *file, xid_t xid)
 	return 0;
 }
 
-int vc_in_set_attr(char *file, char *flagstr)
+int vc_ix_set_attr(char *file, char *flagstr)
 {
 	struct vx_iattr iattr = {
 		.filename = file,

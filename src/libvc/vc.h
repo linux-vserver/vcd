@@ -74,12 +74,12 @@ int vc_dx_set_limit(char *name, char *path,
                     uint32_t reserved);
 
 /* in.c */
-int vc_in_get_name(char *file, char **name);
-int vc_in_get_xid(char *file, xid_t *xid);
-int vc_in_get_attr(char *file, char **flagstr, uint32_t *flags);
-int vc_in_set_name(char *file, char *name);
-int vc_in_set_xid(char *file, xid_t xid);
-int vc_in_set_attr(char *file, char *flagstr);
+int vc_ix_get_name(char *file, char **name);
+int vc_ix_get_xid(char *file, xid_t *xid);
+int vc_ix_get_attr(char *file, char **flagstr, uint32_t *flags);
+int vc_ix_set_name(char *file, char *name);
+int vc_ix_set_xid(char *file, xid_t xid);
+int vc_ix_set_attr(char *file, char *flagstr);
 
 /* io.c */
 int vc_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
