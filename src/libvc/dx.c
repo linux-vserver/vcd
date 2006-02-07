@@ -22,14 +22,13 @@
 #include <config.h>
 #endif
 
-#include "vconfig.h"
 #include "vc.h"
 
 int vc_dx_add_path(char *name, char *path)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_dlimit_base base = {
@@ -47,7 +46,7 @@ int vc_dx_rem_path(char *name, char *path)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_dlimit_base base = {
@@ -68,7 +67,7 @@ int vc_dx_get_limit(char *name, char *path,
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_dlimit dlimit = {
@@ -99,7 +98,7 @@ int vc_dx_set_limit(char *name, char *path,
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_dlimit dlimit = {

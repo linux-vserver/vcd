@@ -26,15 +26,13 @@
 #include <wait.h>
 #include <arpa/inet.h>
 
-#include "printf.h"
-#include "vconfig.h"
 #include "vc.h"
 
 int vc_nx_exists(char *name)
 {
 	nid_t nid;
 	
-	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
 		return -1;
 	
 	struct nx_info info;
@@ -46,7 +44,7 @@ int vc_nx_create(char *name, char *flagstr)
 {
 	nid_t nid;
 	
-	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
 		return -1;
 	
 	struct nx_create_flags flags = {
@@ -110,7 +108,7 @@ int vc_nx_migrate(char *name)
 {
 	nid_t nid;
 	
-	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
 		return -1;
 	
 	if (!vc_nx_exists(name)) {
@@ -130,7 +128,7 @@ int vc_nx_get_flags(char *name, char **flagstr, uint64_t *flags)
 {
 	nid_t nid;
 	
-	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
 		return -1;
 	
 	struct nx_flags nflags = {
@@ -154,7 +152,7 @@ int vc_nx_set_flags(char *name, char *flagstr)
 {
 	nid_t nid;
 	
-	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
 		return -1;
 	
 	struct nx_flags flags = {
@@ -221,7 +219,7 @@ int vc_nx_add_addr(char *name, char *cidr)
 {
 	nid_t nid;
 	
-	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
 		return -1;
 	
 	struct nx_addr addr;
@@ -242,7 +240,7 @@ int vc_nx_rem_addr(char *name, char *cidr)
 {
 	nid_t nid;
 	
-	if (vconfig_get_xid(name, (xid_t *) &nid) == -1)
+	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
 		return -1;
 	
 	struct nx_addr addr;

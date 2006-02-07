@@ -25,16 +25,13 @@
 #include <stdlib.h>
 #include <wait.h>
 
-#include "printf.h"
-#include "vconfig.h"
 #include "vc.h"
-
 
 int vc_vx_exists(char *name)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_info info;
@@ -46,7 +43,7 @@ int vc_vx_create(char *name, char *flagstr)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_create_flags flags = {
@@ -110,7 +107,7 @@ int vc_vx_migrate(char *name)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	if (!vc_vx_exists(name)) {
@@ -130,7 +127,7 @@ int vc_vx_kill(char *name, pid_t pid, int sig)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_kill_opts kill_opts = {
@@ -148,7 +145,7 @@ int vc_vx_wait(char *name)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_wait_opts wait_opts = {
@@ -166,7 +163,7 @@ int vc_vx_get_bcaps(char *name, char **flagstr, uint64_t *flags)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_caps caps = {
@@ -192,7 +189,7 @@ int vc_vx_get_ccaps(char *name, char **flagstr, uint64_t *flags)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_caps caps = {
@@ -218,7 +215,7 @@ int vc_vx_get_flags(char *name, char **flagstr, uint64_t *flags)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_flags cflags = {
@@ -243,7 +240,7 @@ int vc_vx_get_limit(char *name, char *type,
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_rlimit rlimit = {
@@ -270,7 +267,7 @@ int vc_vx_get_uname(char *name, char *key, char **value)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	uint32_t field;
@@ -294,7 +291,7 @@ int vc_vx_set_bcaps(char *name, char *flagstr)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_caps caps = {
@@ -318,7 +315,7 @@ int vc_vx_set_ccaps(char *name, char *flagstr)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_caps caps = {
@@ -341,7 +338,7 @@ int vc_vx_set_flags(char *name, char *flagstr)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_flags flags = {
@@ -363,7 +360,7 @@ int vc_vx_set_limit(char *name, char *type,
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	uint32_t id;
@@ -388,7 +385,7 @@ int vc_vx_set_uname(char *name, char *key, char *value)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	uint32_t field;

@@ -22,7 +22,6 @@
 #include <config.h>
 #endif
 
-#include "vconfig.h"
 #include "vc.h"
 
 int vc_in_get_name(char *file, char **name)
@@ -37,7 +36,7 @@ int vc_in_get_name(char *file, char **name)
 	if (vx_get_iattr(&iattr) == -1)
 		return -1;
 	
-	if (vconfig_get_name(iattr.xid, name) == -1)
+	if (vc_cfg_get_name(iattr.xid, name) == -1)
 		return -1;
 	
 	return 0;
@@ -85,7 +84,7 @@ int vc_in_set_name(char *file, char *name)
 {
 	xid_t xid;
 	
-	if (vconfig_get_xid(name, &xid) == -1)
+	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
 	struct vx_iattr iattr = {

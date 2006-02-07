@@ -51,7 +51,7 @@ typedef struct {
 	__prec_t  p;
 	unsigned char l;
 	unsigned char c;
-} vc_printf_t;
+} __printf_t;
 
 /* supported formats:
 ** - format flags: #, 0, -, ' ', +
@@ -79,7 +79,7 @@ int vc_vsnprintf(char *str, size_t size, const char *fmt, va_list ap)
 			*fmt++;
 			
 			/* format struct */
-			vc_printf_t f;
+			__printf_t f;
 			
 			/* sanitize struct with default values */
 			f.f.alt   = false;
@@ -594,4 +594,52 @@ int vc_printf(const char *fmt, /*args*/ ...)
 	va_start(ap, fmt);
 	
 	return vc_vprintf(fmt, ap);
+}
+
+/* save argv[0] for error functions below */
+const char *vc_argv0;
+
+/* warnings */
+void vc_warn(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, "\n");
+}
+
+void vc_warnp(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+}
+
+void vc_err(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, "\n");
+	
+	exit(EXIT_FAILURE);
+}
+
+void vc_errp(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	
+	exit(EXIT_FAILURE);
 }
