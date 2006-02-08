@@ -16,37 +16,18 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir) \
-           -I$(top_srcdir)/src/libinternal \
-           -I$(top_srcdir)/src/libvconfig \
-           -I$(top_builddir)/src
+INCLUDES = -I$(top_srcdir)/src/libvc
 
-LDADD = $(top_builddir)/src/libvconfig/libvconfig.a \
+LDADD = $(top_builddir)/src/libvc/libvc.a \
         -lowfat \
         -lvserver
 
 noinst_HEADERS = tools.h
 
-sbin_PROGRAMS = nidof \
-                vattr \
-                vconfig \
-                vcontext \
-                vdlimit \
-                vexec \
-                vflags \
-                vinfo \
-                vkill \
-                vlimit \
-                vlogin \
-                vmount \
-                vnamespace \
-                vncontext \
-                vnflags \
-                vps \
-                vrsetup \
-                vsched \
-                vuname \
-                vwait \
-                xidof
+pkglibbindir = $(pkglibdir)/bin
 
-pkglib_PROGRAMS = lockfile
+pkglibbin_PROGRAMS = dx \
+                     ix \
+                     ns \
+                     nx \
+                     vx

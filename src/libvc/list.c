@@ -92,8 +92,8 @@ int vc_list32_parse(char *str, const vc_list32_t list[],
                  uint32_t *flags, uint32_t *mask,
                  char clmod, char delim)
 {
-	char *p, *buf;
-	int i, len, clear = 0;
+	char *p;
+	int clear = 0;
 	uint32_t cur_flag;
 	
 	if (str == NULL) {
@@ -101,28 +101,11 @@ int vc_list32_parse(char *str, const vc_list32_t list[],
 		return -1;
 	}
 	
-	for (;;) {
-		p = strchr(str, delim);
-		
-		if (p == NULL)
-			len = strlen(str) + 1;
-		else
-			len = p - str + 1;
-		
-		buf = malloc(len);
-		
-		if (buf == NULL)
-			return -1;
-		
-		memset(buf, '\0', len);
-		memcpy(buf, str, len - 1);
-		
-		if (*buf == clmod) {
+	for (p = strtok(str, &delim); p != NULL;) {
+		if (*p == clmod)
 			clear = 1;
-			++buf;
-		}
 		
-		if (vc_list32_getval(list, buf, &cur_flag) == -1)
+		if (vc_list32_getval(list, p+clear, &cur_flag) == -1)
 			return -1;
 		
 		if (clear) {
@@ -133,12 +116,7 @@ int vc_list32_parse(char *str, const vc_list32_t list[],
 			*mask  |=  cur_flag;
 		}
 		
-		free(buf);
-		
-		if (p == NULL)
-			break;
-		else
-			str = ++p;
+		p = strtok(NULL, &delim);
 	}
 	
 	return 0;
@@ -148,8 +126,8 @@ int vc_list64_parse(char *str, const vc_list64_t list[],
                  uint64_t *flags, uint64_t *mask,
                  char clmod, char delim)
 {
-	char *p, *buf;
-	int i, len, clear = 0;
+	char *p;
+	int clear = 0;
 	uint64_t cur_flag;
 	
 	if (str == NULL) {
@@ -157,28 +135,11 @@ int vc_list64_parse(char *str, const vc_list64_t list[],
 		return -1;
 	}
 	
-	for (;;) {
-		p = strchr(str, delim);
-		
-		if (p == NULL)
-			len = strlen(str) + 1;
-		else
-			len = p - str + 1;
-		
-		buf = malloc(len);
-		
-		if (buf == NULL)
-			return -1;
-		
-		memset(buf, '\0', len);
-		memcpy(buf, str, len - 1);
-		
-		if (*buf == clmod) {
+	for (p = strtok(str, &delim); p != NULL;) {
+		if (*p == clmod)
 			clear = 1;
-			++buf;
-		}
 		
-		if (vc_list64_getval(list, buf, &cur_flag) == -1)
+		if (vc_list64_getval(list, p+clear, &cur_flag) == -1)
 			return -1;
 		
 		if (clear) {
@@ -189,12 +150,7 @@ int vc_list64_parse(char *str, const vc_list64_t list[],
 			*mask  |=  cur_flag;
 		}
 		
-		free(buf);
-		
-		if (p == NULL)
-			break;
-		else
-			str = ++p;
+		p = strtok(NULL, &delim);
 	}
 	
 	return 0;
@@ -227,7 +183,7 @@ int vc_list32_tostr(const vc_list32_t list[], uint32_t val, char **str, char del
 int vc_list64_tostr(const vc_list64_t list[], uint64_t val, char **str, char delim)
 {
 	int i, len = 0, idx = 0;
-	char *p = *str;
+	char *p;
 	
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
@@ -243,6 +199,8 @@ int vc_list64_tostr(const vc_list64_t list[], uint64_t val, char **str, char del
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
 			idx += vc_snprintf(p+idx, len-idx, "%s%c", list[i].key, delim);
+	
+	*str = p;
 	
 	return 0;
 }

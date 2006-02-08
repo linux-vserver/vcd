@@ -93,6 +93,8 @@ int vc_printf(const char *fmt, /*args*/ ...);
 
 extern const char *vc_argv0;
 
+#define VC_INIT_ARGV0 vc_argv0 = argv[0];
+
 void vc_warn(const char *fmt, /*args*/ ...);
 void vc_warnp(const char *fmt, /*args*/ ...);
 void vc_err(const char *fmt, /*args*/ ...);

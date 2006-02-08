@@ -18,57 +18,16 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#define GLOBAL_CMDS "hV"
+#include <getopt.h>
 
-#define GLOBAL_CMDS_GETOPT \
-case 'h': \
-	cmd_help(); \
-	break; \
-\
-case 'V': \
-	CMD_VERSION(NAME, DESCR); \
-	break; \
+#define COMMON_LONG_OPTS \
+	{ "help",    0, 0, 0x01 }, \
+	{ "version", 0, 0, 0x02 },
 
-#define DEFAULT_GETOPT \
-default: \
-	vu_printf("Try '%s -h' for more information\n", argv[0]); \
-	exit(EXIT_USAGE); \
-	break; \
+#define COMMON_GETOPT_CASES \
+	case 0x01: usage(EXIT_SUCCESS); break; \
+	case 0x02: vc_printf("%s\n", rcsid); exit(EXIT_SUCCESS); break;
 
+#define DEFAULT_GETOPT_CASES default: usage(EXIT_FAILURE); break;
 
-#define CMD_VERSION(name, desc) do { \
-	vu_printf("%s -- %s\n", name, desc); \
-	vu_printf("This program is part of %s\n\n", PACKAGE_STRING); \
-	vu_printf("Copyright (c) 2005 The vserver-utils Team\n"); \
-	vu_printf("This program is free software; you can redistribute it and/or\n"); \
-	vu_printf("modify it under the terms of the GNU General Public License\n"); \
-	exit(0); \
-}	while(0)
-
-/* exit, silent exit, perror exit
- *
- * exit code conventions:
- * 
- * 0 = OK
- * 1 = Wrong usage
- * 2 = A command failed
- * 3 = An opts specific function failed
- */
-#define EXIT_USAGE   1
-#define EXIT_COMMAND 2
-#define EXIT_OPTS    3
-
-#define EXIT(MSG,RC) { \
-	vu_printf(MSG"; try '%s -h' for more information\n", argv[0]); \
-	exit(RC); \
-}
-
-#define SEXIT(MSG,RC) { \
-	vu_printf(MSG"\n"); \
-	exit(RC); \
-}
-
-#define PEXIT(MSG,RC) { \
-	perror(MSG); \
-	exit(RC); \
-}
+#define GETOPT(VAL) ((VAL = getopt_long_only(argc, argv, "", long_opts, NULL)) != -1)
