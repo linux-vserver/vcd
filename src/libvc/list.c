@@ -160,7 +160,7 @@ int vc_list64_parse(char *str, const vc_list64_t list[],
 int vc_list32_tostr(const vc_list32_t list[], uint32_t val, char **str, char delim)
 {
 	int i, len = 0, idx = 0;
-	char *p = *str;
+	char *p;
 	
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
@@ -175,7 +175,9 @@ int vc_list32_tostr(const vc_list32_t list[], uint32_t val, char **str, char del
 	
 	for (i = 0; list[i].key; i++)
 		if (list[i].val & val)
-			idx += vc_snprintf(p+idx, len-idx, "%s%c", list[i].key, delim);
+			idx += vc_snprintf(p+idx, len-idx-1, "%s%c", list[i].key, delim);
+	
+	*str = p;
 	
 	return 0;
 }

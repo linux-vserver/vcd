@@ -24,6 +24,10 @@
 #include <stdarg.h>
 #include <vserver.h>
 
+/* argv.c */
+char **vc_str_to_argv(char *str, int *argc);
+void vc_argv_free(int argc, char **argv);
+
 /* cfg.c */
 enum {
 	VC_CFG_BOOL_T = 1,
@@ -104,6 +108,8 @@ void vc_errp(const char *fmt, /*args*/ ...);
 #define vc_warnfp(fmt, ...) vc_warnp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 #define vc_errf(fmt, ...)   vc_err("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 #define vc_errfp(fmt, ...)  vc_errp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
+
+int vc_readline(int fd, char **line);
 
 /* list.c */
 typedef struct {

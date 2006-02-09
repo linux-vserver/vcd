@@ -643,3 +643,39 @@ void vc_errp(const char *fmt, /*args*/ ...)
 	
 	exit(EXIT_FAILURE);
 }
+
+#define CHUNKSIZE 32
+
+int vc_readline(int fd, char **line)
+{
+	int chunks = 1, idx = 0;
+	char *buf = malloc(chunks * CHUNKSIZE + 1);
+	char c;
+	
+	for (;;) {
+		switch(read(fd, &c, 1)) {
+			case -1:
+				return -1;
+			
+			case 0:
+				return -2;
+			
+			default:
+				if (c == '\n')
+					goto out;
+				
+				if (idx >= chunks * CHUNKSIZE) {
+					chunks++;
+					buf = realloc(buf, chunks * CHUNKSIZE + 1);
+				}
+				
+				buf[idx++] = c;
+				break;
+		}
+	}
+	
+out:
+	buf[idx] = '\0';
+	*line = buf;
+	return strlen(buf);
+}
