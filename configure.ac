@@ -83,6 +83,7 @@ AC_CONFIG_FILES([Makefile
                  etc/Makefile
                  src/libvc/Makefile
                  src/tools/Makefile
+                 src/vcc/Makefile
                  src/Makefile])
 
 AC_OUTPUT
