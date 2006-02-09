@@ -18,78 +18,105 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
 #include <stdlib.h>
 #include <vserver.h>
+#include <sys/ioctl.h>
+#include <libowfat/open.h>
 
-#include "printf.h"
+#include "vc.h"
 #include "tools.h"
 
-#define NAME  "vinfo"
-#define DESCR "VServer information"
+#ifndef VROOT_SET_DEV
+#define VROOT_SET_DEV 0x5600
+#endif
 
-#define SHORT_OPTS "v"
+#ifndef VROOT_CLR_DEV
+#define VROOT_CLR_DEV 0x5601
+#endif
 
-struct options {
-	bool version;
+static const char *rcsid = "$Id: dx.c 105 2006-02-08 12:45:56Z hollow $";
+
+static
+struct option long_opts[] = {
+	COMMON_LONG_OPTS
+	{ "set-dev",   1, 0, 0x10 },
+	{ "clear-dev", 1, 0, 0x11 },
+	{ NULL,        0, 0, 0 },
 };
 
-void cmd_help()
+static inline
+void usage(int rc)
 {
- vu_printf("Usage: %s <opts>\n"
-	       "\n"
-	       "Available options:\n"
-	       "    -v            Show VServer interface version\n"
-	       "\n",
-	       NAME);
-	exit(EXIT_SUCCESS);
+	vc_printf("Usage:\n\n"
+	          "vr -set-dev   <dev> <realdev>\n"
+	          "   -clear-dev <dev>\n");
+	exit(rc);
 }
 
 int main(int argc, char *argv[])
 {
-	/* init program data */
-	struct options opts = {
-		.version = false,
-	};
+	VC_INIT_ARGV0
 	
-	int c;
+	int c, fd;
+	char *dev;
+	
+	/* syscall data */
+#define CASE_GOTO(ID, P) case ID: dev = optarg; goto P; break
 	
 	/* parse command line */
-	while (1) {
-		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
-		if (c == -1) break;
-		
+	while (GETOPT(c)) {
 		switch (c) {
-			GLOBAL_CMDS_GETOPT
+			COMMON_GETOPT_CASES
 			
-			case 'v':
-				opts.version = true;
-				break;
+			CASE_GOTO(0x10, setdev);
+			CASE_GOTO(0x11, cleardev);
 			
-			DEFAULT_GETOPT
+			DEFAULT_GETOPT_CASES
 		}
 	}
 	
-	if (opts.version) {
-		int version;
-		
-		if((version = vs_get_version()) == -1)
-			PEXIT("Failed to get VServer interface version", EXIT_COMMAND);
-		
-	 vu_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
-		
-		goto out;
-	}
+#undef CASE_GOTO
 	
-	cmd_help();
+	goto usage;
 	
+setdev:
+	if (argc <= optind)
+		goto usage;
+	
+	fd = open_read(dev);
+	
+	if (fd == -1)
+		vc_errp("open_read");
+	
+	int realfd = open_read(argv[optind]);
+	
+	if (realfd == -1)
+		vc_errp("open_read");
+	
+	if (ioctl(fd, VROOT_SET_DEV, (void *)realfd) == -1)
+		vc_errp("ioctl");
+	
+	close(realfd);
+	close(fd);
+	
+	goto out;
+	
+cleardev:
+	fd = open_read(dev);
+	
+	if (fd == -1)
+		vc_errp("open_read");
+	
+	if (ioctl(fd, VROOT_CLR_DEV, 0) == -1)
+		vc_errp("ioctl");
+	
+	close(fd);
+	
+	goto out;
+	
+usage:
+	usage(EXIT_FAILURE);
+
 out:
 	exit(EXIT_SUCCESS);
 }

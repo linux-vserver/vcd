@@ -19,6 +19,7 @@
  ***************************************************************************/
 
 #include <stdlib.h>
+#include <strings.h>
 #include <vserver.h>
 
 #include "vc.h"
@@ -182,65 +183,79 @@ migrate:
 	goto out;
 	
 setbcaps:
-	if (argc > optind) {
-		if (vc_list64_parse(argv[optind], vc_bcaps_list, &caps.bcaps, &caps.bmask, '~', ',') == -1)
-			vc_errp("vc_list64_parse");
-		
-		if (vx_set_caps(xid, &caps) == -1)
-			vc_errp("vx_set_caps");
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
+	
+	if (vc_list64_parse(argv[optind], vc_bcaps_list, &caps.bcaps, &caps.bmask, '~', ',') == -1)
+		vc_errp("vc_list64_parse");
+	
+	if (vx_set_caps(xid, &caps) == -1)
+		vc_errp("vx_set_caps");
+	
+	goto out;
 	
 setccaps:
-	if (argc > optind) {
-		if (vc_list64_parse(argv[optind], vc_ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
-			vc_errp("vc_list64_parse");
-		
-		if (vx_set_caps(xid, &caps) == -1)
-			vc_errp("vx_set_caps");
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
+	
+	if (vc_list64_parse(argv[optind], vc_ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
+		vc_errp("vc_list64_parse");
+	
+	if (vx_set_caps(xid, &caps) == -1)
+		vc_errp("vx_set_caps");
+	
+	goto out;
 	
 setflags:
-	if (argc > optind) {
-		if (vc_list64_parse(argv[optind], vc_cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-			vc_errp("vc_list64_parse");
-		
-		if (vx_set_flags(xid, &flags) == -1)
-			vc_errp("vx_set_flags");
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
+	
+	if (vc_list64_parse(argv[optind], vc_cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+		vc_errp("vc_list64_parse");
+	
+	if (vx_set_flags(xid, &flags) == -1)
+		vc_errp("vx_set_flags");
+	
+	goto out;
 	
 setlimit:
 	if (argc <= optind)
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		buf = strchr(argv[i], '=');
+		buf = strtok(argv[i], "=");
 		
 		if (buf == NULL)
-			return -1;
+			goto usage;
 		
-		*buf++ = '\0';
-		
-		if (vc_list32_getval(vc_rlimit_list, argv[i], &rlimit.id) == -1)
+		if (vc_list32_getval(vc_rlimit_list, buf, &rlimit.id) == -1)
 			vc_errp("vc_list32_getval");
 		
-		rlimit.minimum   = atoi(strtok(buf,  ","));
-		rlimit.softlimit = atoi(strtok(NULL, ","));
-		rlimit.maximum   = atoi(strtok(NULL, ","));
+		int k = 0;
+		
+		for (buf = strtok(NULL, ","); buf != NULL; k++) {
+			if (strlen(buf) < 1)
+				continue;
+			
+#define BUF2LIM(LIM) do { \
+	if (strcasecmp(buf, "inf") == 0)       LIM = CRLIM_INFINITY; \
+	else if (strcasecmp(buf, "keep") == 0) LIM = CRLIM_KEEP; \
+	else                                   LIM = (uint32_t) atoi(buf); \
+} while(0)
+			
+			switch (k) {
+				case 0: BUF2LIM(rlimit.minimum); break;
+				case 1: BUF2LIM(rlimit.softlimit); break;
+				case 2: BUF2LIM(rlimit.maximum); break;
+			}
+			
+#undef BUF2LIM
+			
+			buf = strtok(NULL, ",");
+		}
+		
+		if (k != 3)
+			goto usage;
 		
 		if (vx_set_rlimit(xid, &rlimit) == -1)
 			vc_errp("vx_set_rlimit");
@@ -253,15 +268,18 @@ setsched:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		buf = strchr(argv[i], '=');
+		buf = strtok(argv[i], "=");
 		
 		if (buf == NULL)
-			return -1;
+			goto usage;
 		
-		*buf++ = '\0';
-		
-		if (vc_list32_getval(vc_sched_list, argv[i], &sched.set_mask) == -1)
+		if (vc_list32_getval(vc_sched_list, buf, &sched.set_mask) == -1)
 			vc_errp("vc_list32_getval");
+		
+		buf = strtok(NULL, "=");
+		
+		if (buf == NULL)
+			goto usage;
 		
 		switch (sched.set_mask) {
 			case VXSM_FILL_RATE:
@@ -290,7 +308,7 @@ setsched:
 		}
 		
 		if (vx_set_sched(xid, &sched) == -1)
-			vc_errp("vx_set_rlimit");
+			vc_errp("vx_set_sched");
 	}
 	
 	goto out;
@@ -300,15 +318,18 @@ setvhi:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		buf = strchr(argv[i], '=');
+		buf = strtok(argv[i], "=");
 		
 		if (buf == NULL)
 			return -1;
 		
-		*buf++ = '\0';
-		
 		if (vc_list32_getval(vc_vhiname_list, argv[i], &vhiname.field) == -1)
 			vc_errp("vc_list32_getval");
+		
+		buf = strtok(NULL, "=");
+		
+		if (buf == NULL)
+			goto usage;
 		
 		strncpy(vhiname.name, buf, VHILEN-2);
 		vhiname.name[VHILEN-1] = '\0';
@@ -366,7 +387,18 @@ getlimit:
 		if (vx_get_rlimit(xid, &rlimit) == -1)
 			vc_errp("vx_get_rlimit");
 		
-		vc_printf("%s=%d,%d,%d,\n", argv[i], rlimit.minimum, rlimit.softlimit, rlimit.maximum);
+#define LIM2OUT(LIM, DELIM) do { \
+	if (LIM == CRLIM_INFINITY) vc_printf("%s", "inf"); \
+	else vc_printf("%d", LIM); \
+	vc_printf("%c", DELIM); \
+} while(0)
+		
+		LIM2OUT(rlimit.minimum,   ',');
+		LIM2OUT(rlimit.softlimit, ',');
+		LIM2OUT(rlimit.maximum,   '\n');
+		
+#undef LIM2OUT
+		
 	}
 	
 	goto out;

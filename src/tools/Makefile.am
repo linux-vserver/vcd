@@ -30,4 +30,5 @@ pkglibbin_PROGRAMS = dx \
                      ix \
                      ns \
                      nx \
+                     vr \
                      vx

@@ -88,29 +88,34 @@ getattr:
 	if (vx_get_iattr(&iattr) == -1)
 		vc_errp("vx_get_iattr");
 	
-	if (vc_list32_tostr(vc_iattr_list, iattr.flags, &buf, '\n') == -1)
+	if (vc_list32_tostr(vc_iattr_list, iattr.flags & iattr.mask, &buf, ',') == -1)
 		vc_errp("vc_list32_tostr");
 	
-	vc_printf("%s\n", buf);
+	if (strlen(buf) > 0)
+		vc_printf("%s\n", buf);
 	
 	goto out;
 	
 setattr:
-	if (argc > optind) {
-		if (vc_list32_parse(argv[optind], vc_iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
-			vc_errp("vc_list32_parse");
-		
-		if (vx_set_iattr(&iattr) == -1)
-			vc_errp("vx_set_iattr");
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
 	
+	if (vc_list32_parse(argv[optind], vc_iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
+		vc_errp("vc_list32_parse");
+	
+	if (vx_set_iattr(&iattr) == -1)
+		vc_errp("vx_set_iattr");
+	
+	goto out;
+	
 setxid:
-	if (argc > optind) {
+	if (argc <= optind)
+		goto usage;
+	
+	if (vx_get_iattr(&iattr) == -1)
+		vc_errp("vx_get_iattr");
+	
+	if (iattr.mask & IATTR_XID) {
 		iattr.xid = atoi(argv[optind]);
 		
 		iattr.flags |= IATTR_XID;
@@ -123,7 +128,9 @@ setxid:
 	}
 	
 	else
-		goto usage;
+		vc_err("%s: IATTR_XID not available", iattr.filename);
+	
+	goto out;
 	
 getxid:
 	if (vx_get_iattr(&iattr) == -1)

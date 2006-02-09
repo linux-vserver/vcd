@@ -173,18 +173,16 @@ migrate:
 	goto out;
 	
 setflags:
-	if (argc > optind) {
-		if (vc_list64_parse(argv[optind], vc_nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-			vc_errp("vc_list64_parse");
-		
-		if (nx_set_flags(nid, &flags) == -1)
-			vc_errp("nx_set_flags");
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
+	
+	if (vc_list64_parse(argv[optind], vc_nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+		vc_errp("vc_list64_parse");
+	
+	if (nx_set_flags(nid, &flags) == -1)
+		vc_errp("nx_set_flags");
+	
+	goto out;
 	
 getflags:
 	if (nx_get_flags(nid, &flags) == -1)

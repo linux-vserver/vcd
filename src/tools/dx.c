@@ -95,92 +95,90 @@ int main(int argc, char *argv[])
 	goto usage;
 	
 addpath:
-	if (argc > optind) {
-		base.filename = argv[optind];
-		
-		if (vx_add_dlimit(xid, &base) == -1)
-			vc_errp("vx_add_dlimit");
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
+	
+	base.filename = argv[optind];
+	
+	if (vx_add_dlimit(xid, &base) == -1)
+		vc_errp("vx_add_dlimit");
+	
+	goto out;
 	
 rempath:
-	if (argc > optind) {
-		base.filename = argv[optind];
-		
-		if (vx_rem_dlimit(xid, &base) == -1)
-			vc_errp("vx_rem_dlimit");
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
+	
+	base.filename = argv[optind];
+	
+	if (vx_rem_dlimit(xid, &base) == -1)
+		vc_errp("vx_rem_dlimit");
+	
+	goto out;
 	
 setlimit:
-	if (argc > optind+1) {
-		dlimit.filename = argv[optind];
+	if (argc <= optind)
+		goto usage;
+	
+	dlimit.filename = argv[optind];
+	
+	i = 0;
+	
+	for (buf = strtok(argv[optind+1], ","); buf != NULL; i++) {
+		if (strlen(buf) < 1)
+			continue;
 		
-		i = 0;
+#define BUF2LIM(LIM) do { \
+	if (strcasecmp(buf, "inf") == 0)       LIM = CDLIM_INFINITY; \
+	else if (strcasecmp(buf, "keep") == 0) LIM = CDLIM_KEEP; \
+	else                                   LIM = (uint32_t) atoi(buf); \
+} while(0)
 		
-		for (buf = strtok(argv[optind+1], ","); buf != NULL; i++) {
-			if (strlen(buf) < 1)
-				continue;
-			
-#define BUF2LIM(BUF) strcasecmp(BUF, "inf") == 0 ? CDLIM_INFINITY : (uint32_t) atoi(BUF)
-			
-			switch (i) {
-				case 0: dlimit.space_used   = BUF2LIM(buf); break;
-				case 1: dlimit.space_total  = BUF2LIM(buf); break;
-				case 2: dlimit.inodes_used  = BUF2LIM(buf); break;
-				case 3: dlimit.inodes_total = BUF2LIM(buf); break;
-				case 4: dlimit.reserved     = BUF2LIM(buf); break;
-			}
-			
-#undef BUF2LIM
-			
-			buf = strtok(NULL, ",");
+		switch (i) {
+			case 0: BUF2LIM(dlimit.space_used); break;
+			case 1: BUF2LIM(dlimit.space_total); break;
+			case 2: BUF2LIM(dlimit.inodes_used); break;
+			case 3: BUF2LIM(dlimit.inodes_total); break;
+			case 4: BUF2LIM(dlimit.reserved); break;
 		}
 		
-		if (i != 5)
-			goto usage;
+#undef BUF2LIM
 		
-		if (vx_set_dlimit(xid, &dlimit) == -1)
-			vc_errp("vx_set_dlimit");
-		
-		goto out;
+		buf = strtok(NULL, ",");
 	}
 	
-	else
+	if (i != 5)
 		goto usage;
+	
+	if (vx_set_dlimit(xid, &dlimit) == -1)
+		vc_errp("vx_set_dlimit");
+	
+	goto out;
 	
 getlimit:
-	if (argc > optind) {
-		dlimit.filename = argv[optind];
-		
-		if (vx_get_dlimit(xid, &dlimit) == -1)
-			vc_errp("vx_get_dlimit");
-		
-#define LIM2OUT(LIM, DELIM) \
-	if (LIM == CDLIM_INFINITY) vc_printf("%s%c", "inf", DELIM); \
-	else vc_printf("%d%c", LIM, DELIM);
-		
-		LIM2OUT(dlimit.space_used,   ',');
-		LIM2OUT(dlimit.space_total,  ',');
-		LIM2OUT(dlimit.inodes_used,  ',');
-		LIM2OUT(dlimit.inodes_total, ',');
-		LIM2OUT(dlimit.reserved,     '\n');
-		
-#undef LIM2OUT
-		
-		goto out;
-	}
-	
-	else
+	if (argc <= optind)
 		goto usage;
+	
+	dlimit.filename = argv[optind];
+	
+	if (vx_get_dlimit(xid, &dlimit) == -1)
+		vc_errp("vx_get_dlimit");
+	
+#define LIM2OUT(LIM, DELIM) do { \
+	if (LIM == CDLIM_INFINITY) vc_printf("%s", "inf"); \
+	else vc_printf("%d", LIM); \
+	vc_printf("%c", DELIM); \
+} while(0)
+	
+	LIM2OUT(dlimit.space_used,   ',');
+	LIM2OUT(dlimit.space_total,  ',');
+	LIM2OUT(dlimit.inodes_used,  ',');
+	LIM2OUT(dlimit.inodes_total, ',');
+	LIM2OUT(dlimit.reserved,     '\n');
+	
+#undef LIM2OUT
+	
+	goto out;
 	
 usage:
 	usage(EXIT_FAILURE);
