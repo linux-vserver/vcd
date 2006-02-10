@@ -23,6 +23,7 @@
 #endif
 
 #include <stdlib.h>
+#include <errno.h>
 #include <wait.h>
 
 #include "vc.h"
@@ -39,65 +40,51 @@ int vc_vx_exists(char *name)
 	return vx_get_info(xid, &info) == -1 ? 0 : 1;
 }
 
-int vc_vx_create(char *name, char *flagstr)
+int vc_vx_new(char *name, char *flagstr)
 {
 	xid_t xid;
+	pid_t pid;
+	int status;
+	
+	struct vx_create_flags flags = {
+		.flags = VXF_PERSISTANT,
+	};
 	
 	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
-	struct vx_create_flags flags = {
-		.flags = 0,
-	};
-	
-	if (flagstr == NULL)
-		goto create;
-	
-	uint64_t mask = 0;
-	
-	if (vc_list64_parse(flagstr, vc_cflags_list, &flags.flags, &mask, '~', ',') == -1)
-		return -1;
-	
-create:
-	if (vx_create(xid, &flags) == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_new(char *name, char *flagstr)
-{
-	pid_t pid;
-	int status;
-	char *buf;
+	if (flagstr != NULL) {
+		uint64_t mask = 0;
+		
+		if (vc_list64_parse(flagstr, vc_cflags_list, &flags.flags, &mask, '~', ',') == -1)
+			return -1;
+	}
 	
 	switch((pid = fork())) {
 		case -1:
 			return -1;
 		
 		case 0:
-			vc_asprintf(&buf, "%s,%s", flagstr, "PERSISTANT");
+			if (vx_create(xid, &flags) == -1)
+				exit(errno);
 			
-			if (vc_vx_create(name, buf) == -1)
-				exit(EXIT_FAILURE);
-			else
-				exit(EXIT_SUCCESS);
+			exit(EXIT_SUCCESS);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
 				return -1;
-		
+			
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) == EXIT_SUCCESS)
 					return 0;
-				else
+				else {
+					errno = WEXITSTATUS(status);
 					return -1;
+				}
 			}
 			
-			if (WIFSIGNALED(status)) {
+			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
-				exit(EXIT_FAILURE);
-			}
 	}
 	
 	return 0;
@@ -107,18 +94,34 @@ int vc_vx_migrate(char *name)
 {
 	xid_t xid;
 	
-	if (vc_cfg_get_xid(name, &xid) == -1)
+	if (!vc_vx_exists(name))
 		return -1;
 	
-	if (!vc_vx_exists(name)) {
-		if (vc_vx_create(name, NULL) == -1)
-			return -1;
-	}
-	
 	else {
+		if (vc_cfg_get_xid(name, &xid) == -1)
+			return -1;
+		
 		if (vx_migrate(xid) == -1)
 			return -1;
 	}
+	
+	return 0;
+}
+
+int vc_vx_release(char *name)
+{
+	xid_t xid;
+	
+	if (vc_cfg_get_xid(name, &xid) == -1)
+		return -1;
+	
+	struct vx_flags flags = {
+		.flags = 0,
+		.mask  = VXF_PERSISTANT,
+	};
+	
+	if (vx_set_flags(xid, &flags) == -1)
+		return -1;
 	
 	return 0;
 }

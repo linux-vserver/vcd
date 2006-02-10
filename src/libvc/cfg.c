@@ -78,7 +78,6 @@ vc_cfg_node_t vc_cfg_map[] = {
 /* errno buffer */
 int errno_orig;
 
-
 int vc_cfg_get_type(char *key)
 {
 	int i;
@@ -95,9 +94,12 @@ int vc_cfg_get_file(char *key, char **file)
 {
 	int i;
 	
-	for (i = 0; vc_cfg_map[i].key; i++)
-		if (strcasecmp(vc_cfg_map[i].key, key) == 0)
+	for (i = 0; vc_cfg_map[i].key; i++) {
+		if (strcmp(vc_cfg_map[i].key, key) == 0) {
 			vc_asprintf(file, "%s", vc_cfg_map[i].file);
+			return 0;
+		}
+	}
 	
 	errno = EINVAL;
 	return -1;
@@ -132,12 +134,11 @@ int vc_cfg_get_name(xid_t xid, char **name)
 {
 	struct vx_vhi_name vhi_name;
 	vhi_name.field = VHIN_CONTEXT;
-	char *buf = malloc(65);
 	
 	if (vx_get_vhi_name(xid, &vhi_name) == -1)
 		return -1;
 	
-	vc_asprintf(&buf, "%s", vhi_name.name);
+	vc_asprintf(name, "%s", vhi_name.name);
 	
 	return 0;
 }
@@ -152,6 +153,8 @@ unsigned long _cfg_readkey(char *name, char *key, char **buf)
 	
 	char path[PATH_MAX];
 	vc_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, file);
+	
+	free(file);
 	
 	unsigned long len;
 	*buf = mmap_private(path, &len);
@@ -174,11 +177,11 @@ int _cfg_writekey(char *name, char *key, char *value)
 	struct stat sb;
 	
 	if (lstat(__PKGCONFDIR, &sb) == -1)
-		return -1;
+		goto error;
 	
 	if (!S_ISDIR(sb.st_mode)) {
 		errno = ENOTDIR;
-		return -1;
+		goto error;
 	}
 	
 	char path[PATH_MAX];
@@ -187,16 +190,16 @@ int _cfg_writekey(char *name, char *key, char *value)
 	if (lstat(path, &sb) == -1) {
 		if (errno == ENOENT) {
 			if (mkdir(path, 0700) == -1)
-				return -1;
+				goto error;
 		}
 		
 		else
-			return -1;
+			goto error;
 	}
 	
 	else if (!S_ISDIR(sb.st_mode)) {
 		errno = ENOTDIR;
-		return -1;
+		goto error;
 	}
 	
 	vc_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, dirname(file));
@@ -204,44 +207,51 @@ int _cfg_writekey(char *name, char *key, char *value)
 	if (lstat(path, &sb) == -1) {
 		if (errno == ENOENT) {
 			if (mkdir(path, 0700) == -1)
-				return -1;
+				goto error;
 		}
 		
 		else
-			return -1;
+			goto error;
 	}
 	
 	else if (!S_ISDIR(sb.st_mode)) {
 		errno = ENOTDIR;
-		return -1;
+		goto error;
 	}
 	
-	
 	vc_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, file);
+	
+	free(file);
 	
 	if (lstat(path, &sb) == -1) {
 		if (errno == ENOENT)
 			goto open;
 		
 		else
-			return -1;
+			goto error;
 	}
 	
 	else if (!S_ISDIR(sb.st_mode)) {
 		errno = ENOTDIR;
-		return -1;
+		goto error;
 	}
 	
 open:
 	fd = open_trunc(path);
 	
 	if (fd == -1)
-		return -1;
+		goto error;
 	
 	if (write(fd, value, strlen(value)) == -1)
-		return -1;
+		goto error;
 	
 	return 0;
+	
+error:
+	errno_orig = errno;
+	free(file);
+	errno = errno_orig;
+	return -1;
 }
 
 /* bool methods */

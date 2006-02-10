@@ -94,6 +94,7 @@ getattr:
 	if (strlen(buf) > 0)
 		vc_printf("%s\n", buf);
 	
+	free(buf);
 	goto out;
 	
 setattr:
@@ -105,6 +106,15 @@ setattr:
 	
 	if (vx_set_iattr(&iattr) == -1)
 		vc_errp("vx_set_iattr");
+	
+	goto out;
+	
+getxid:
+	if (vx_get_iattr(&iattr) == -1)
+		vc_errp("vx_get_iattr");
+	
+	if (iattr.mask & IATTR_XID)
+		vc_printf("%d\n", iattr.xid);
 	
 	goto out;
 	
@@ -129,15 +139,6 @@ setxid:
 	
 	else
 		vc_err("%s: IATTR_XID not available", iattr.filename);
-	
-	goto out;
-	
-getxid:
-	if (vx_get_iattr(&iattr) == -1)
-		vc_errp("vx_get_iattr");
-	
-	if (iattr.mask & IATTR_XID)
-		vc_printf("%d\n", iattr.xid);
 	
 	goto out;
 	

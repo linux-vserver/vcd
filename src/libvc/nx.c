@@ -24,6 +24,7 @@
 
 #include <stdlib.h>
 #include <wait.h>
+#include <errno.h>
 #include <arpa/inet.h>
 
 #include "vc.h"
@@ -40,65 +41,51 @@ int vc_nx_exists(char *name)
 	return nx_get_info(nid, &info) == -1 ? 0 : 1;
 }
 
-int vc_nx_create(char *name, char *flagstr)
-{
-	nid_t nid;
-	
-	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
-		return -1;
-	
-	struct nx_create_flags flags = {
-		.flags = 0,
-	};
-	
-	if (flagstr == NULL)
-		goto create;
-	
-	uint64_t mask = 0;
-	
-	if (vc_list64_parse(flagstr, vc_nflags_list, &flags.flags, &mask, '~', ',') == -1)
-		return -1;
-	
-create:
-	if (nx_create(nid, &flags) == -1)
-		return -1;
-	
-	return 0;
-}
-
 int vc_nx_new(char *name, char *flagstr)
 {
+	nid_t nid;
 	pid_t pid;
 	int status;
-	char *buf;
+	
+	struct nx_create_flags flags = {
+		.flags = NXF_PERSISTANT,
+	};
+	
+	if (vc_cfg_get_xid(name, &nid) == -1)
+		return -1;
+	
+	if (flagstr != NULL) {
+		uint64_t mask = 0;
+		
+		if (vc_list64_parse(flagstr, vc_nflags_list, &flags.flags, &mask, '~', ',') == -1)
+			return -1;
+	}
 	
 	switch((pid = fork())) {
 		case -1:
 			return -1;
 		
 		case 0:
-			vc_asprintf(&buf, "%s,%s", flagstr, "PERSISTANT");
+			if (nx_create(nid, &flags) == -1)
+				exit(errno);
 			
-			if (vc_nx_create(name, buf) == -1)
-				exit(EXIT_FAILURE);
-			else
-				exit(EXIT_SUCCESS);
+			exit(EXIT_SUCCESS);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
 				return -1;
-		
+			
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) == EXIT_SUCCESS)
 					return 0;
-				else
+				else {
+					errno = WEXITSTATUS(status);
 					return -1;
+				}
 			}
 			
-			if (WIFSIGNALED(status)) {
+			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
-				exit(EXIT_FAILURE);
-			}
 	}
 	
 	return 0;
@@ -108,18 +95,34 @@ int vc_nx_migrate(char *name)
 {
 	nid_t nid;
 	
-	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
+	if (!vc_nx_exists(name))
 		return -1;
 	
-	if (!vc_nx_exists(name)) {
-		if (vc_nx_create(name, NULL) == -1)
-			return -1;
-	}
-	
 	else {
+		if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
+			return -1;
+		
 		if (nx_migrate(nid) == -1)
 			return -1;
 	}
+	
+	return 0;
+}
+
+int vc_nx_release(char *name)
+{
+	nid_t nid;
+	
+	if (vc_cfg_get_xid(name, &nid) == -1)
+		return -1;
+	
+	struct nx_flags flags = {
+		.flags = 0,
+		.mask  = NXF_PERSISTANT,
+	};
+	
+	if (nx_set_flags(nid, &flags) == -1)
+		return -1;
 	
 	return 0;
 }

@@ -321,9 +321,9 @@ setvhi:
 		buf = strtok(argv[i], "=");
 		
 		if (buf == NULL)
-			return -1;
+			goto usage;
 		
-		if (vc_list32_getval(vc_vhiname_list, argv[i], &vhiname.field) == -1)
+		if (vc_list32_getval(vc_vhiname_list, buf, &vhiname.field) == -1)
 			vc_errp("vc_list32_getval");
 		
 		buf = strtok(NULL, "=");
@@ -331,7 +331,7 @@ setvhi:
 		if (buf == NULL)
 			goto usage;
 		
-		strncpy(vhiname.name, buf, VHILEN-2);
+		strncpy(vhiname.name, buf, VHILEN-1);
 		vhiname.name[VHILEN-1] = '\0';
 		
 		if (vx_set_vhi_name(xid, &vhiname) == -1)

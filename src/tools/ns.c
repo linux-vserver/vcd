@@ -76,13 +76,9 @@ int main(int argc, char *argv[])
 	goto usage;
 	
 create:
-	signal(SIGCHLD, SIG_DFL);
-	
-	pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0);
-	
-	switch(pid) {
+	switch((pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0))) {
 		case -1:
-			vc_errp("sys_clone");
+			vc_errp("clone");
 		
 		case 0:
 			if (vx_set_namespace(xid) == -1)
@@ -93,15 +89,12 @@ create:
 		default:
 			if (waitpid(pid, &status, 0) == -1)
 				vc_errp("waitpid");
-		
-			if (WIFEXITED(status))
-				exit(WEXITSTATUS(status));
 			
-			if (WIFSIGNALED(status)) {
-				vc_printf("Child interrupted by signal; following...\n");
+			if (WIFEXITED(status))
+				exit(WEXITSTATUS(status);
+			
+			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
-				exit(1);
-			}
 	}
 	
 	goto out;

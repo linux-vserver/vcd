@@ -18,8 +18,12 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#define _GNU_SOURCE
+#include <string.h>
+
 #include <stdlib.h>
 #include <strings.h>
+#include <wait.h>
 #include <sys/poll.h>
 
 #include "vc.h"
@@ -27,60 +31,80 @@
 
 static const char *rcsid = "$Id$";
 
-int interactive = 0;
+int vcc_interactive = 0;
 
 vcc_command_t commands[] = {
-	{ "start", start_main },
-	{ NULL,    NULL },
+	{ "start", start_main, start_usage },
+	{ NULL,    NULL,       NULL },
 };
 
 static
-int usage(int rc)
+int usage(int rc, char *command)
 {
 	int i;
 	
-	if (interactive == 1) {
-		vc_printf("usage: <command> [args]\n"
-		          "Type '<command> help' for help on a specific command.\n"
-		          "\n"
-		          "Available commands:\n");
-	} else {
-		vc_printf("usage: vcc <command> [args]\n"
-		          "Type 'vcc <command> --help' for help on a specific command.\n"
-		          "\n"
-		          "Available commands:\n");
+	/* display command help */
+	if (command != NULL) {
+		for (i = 0; commands[i].name; i++) {
+			if (strcasecmp(commands[i].name, command) == 0)
+				commands[i].help(rc);
+		}
+		
+		vc_err("%s: Function not supported", command);
 	}
 	
-	for (i = 0; commands[i].name; i++)
-		vc_printf("  %s\n", commands[i].name);
+	/* display global help */
+	else {
+		if (vcc_interactive == 1) {
+			vc_printf("usage: <command> [args]\n"
+								"Type 'help <command>' for help on a specific command.\n"
+								"\n"
+								"Available commands:\n");
+		} else {
+			vc_printf("usage: vcc <command> [args]\n"
+								"Type 'vcc --help <command>' for help on a specific command.\n"
+								"\n"
+								"Available commands:\n");
+		}
+		
+		for (i = 0; commands[i].name; i++)
+			vc_printf("  %s\n", commands[i].name);
+		
+		vc_printf("\n%s\n", rcsid);
+	}
 	
-	vc_printf("\n");
-	
-	return rc;
+	exit(rc);
 }
 
 static
-int do_command(int argc, char **argv)
+void do_command(int argc, char **argv)
 {
 	char *name = argv[0];
 	int i;
 	
 	/* catch help */
-	if (strcmp(name, "help") == 0 && interactive)
-		return usage(EXIT_SUCCESS);
+	if (strcmp(name, "help") == 0 && vcc_interactive) {
+		if (argc > 1)
+			usage(EXIT_SUCCESS, argv[1]);
+		else
+			usage(EXIT_SUCCESS, NULL);
+	}
 	
-	if (strcmp(name, "--help") == 0 && !interactive)
-		return usage(EXIT_SUCCESS);
+	if (strcmp(name, "--help") == 0 && !vcc_interactive) {
+		if (argc > 1)
+			usage(EXIT_SUCCESS, argv[1]);
+		else
+			usage(EXIT_SUCCESS, NULL);
+	}
 	
 	/* search command list */
 	for (i = 0; commands[i].name; i++) {
 		if (strcasecmp(commands[i].name, name) == 0)
-			return commands[i].func(argc, argv);
+			commands[i].func(argc, argv);
 	}
 	
 	vc_warn("%s: Function not supported", name);
-	
-	return EXIT_FAILURE;
+	exit(EXIT_FAILURE);
 }
 
 int main(int argc, char *argv[])
@@ -94,7 +118,8 @@ int main(int argc, char *argv[])
 	};
 	
 	/* for interactive mode */
-	int rc = 0, num;
+	pid_t pid;
+	int status, rc = 0, num;
 	int len;
 	
 	char *line = NULL;
@@ -103,7 +128,7 @@ int main(int argc, char *argv[])
 	
 	/* interative mode */
 	if (argc < 2) {
-		interactive = 1;
+		vcc_interactive = 1;
 		
 		for (num = 0;; num++) {
 			vc_printf("vcc[%d:%d]> ", num, rc);
@@ -120,28 +145,62 @@ int main(int argc, char *argv[])
 			}
 			
 			/* no command given */
-			else if (len == 0)
+			else if (len == 0) {
+				free(line);
 				rc = 0;
+			}
 			
 			/* run command */
 			else if (len > 0) {
 				av = vc_str_to_argv(line, &ac);
 				
+				free(line);
+				
 				/* catch exit commands */
 				if (strcmp(av[0], "logout") == 0 ||
 				    strcmp(av[0], "exit")   == 0 ||
-				    strcmp(av[0], "quit")   == 0)
+				    strcmp(av[0], "quit")   == 0) {
+					vc_argv_free(ac, av);
 					break;
+				}
 				
-				else
-					rc = do_command(ac, av);
+				else {
+					switch((pid = fork())) {
+						case -1:
+							vc_warnp("fork");
+							rc = EXIT_FAILURE;
+							break;
+						
+						case 0:
+							do_command(ac, av);
+							break;
+						
+						default:
+							if (waitpid(pid, &status, 0) == -1) {
+								vc_warnp("waitpid");
+								rc = EXIT_FAILURE;
+							}
+							
+							if (WIFEXITED(status)) {
+								if (WEXITSTATUS(status) == EXIT_SUCCESS)
+									rc = EXIT_SUCCESS;
+								else
+									rc = EXIT_FAILURE;
+							}
+							
+							if (WIFSIGNALED(status)) {
+								vc_printf("--- %s ---\n", strsignal(WTERMSIG(status)));
+								rc = EXIT_FAILURE;
+							}
+					}
+				}
 			}
 		}
 	}
 	
-	/* call command directly and return */
+	/* call command directly */
 	else
-		return do_command(argc-1, argv+1);
+		do_command(argc-1, argv+1);
 	
 	return EXIT_SUCCESS;
 }

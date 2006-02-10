@@ -23,6 +23,7 @@
 #endif
 
 #include <stdlib.h>
+#include <errno.h>
 #include <wait.h>
 
 #include "vc.h"
@@ -32,41 +33,37 @@
 int vc_ns_new(char *name)
 {
 	xid_t xid;
+	pid_t pid;
+	int status;
 	
 	if (vc_cfg_get_xid(name, &xid) == -1)
 		return -1;
 	
-	pid_t pid;
-	int status;
-	signal(SIGCHLD, SIG_DFL);
-	
-	pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0);
-	
-	switch(pid) {
+	switch((pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0))) {
 		case -1:
 			return -1;
 		
 		case 0:
 			if (vx_set_namespace(xid) == -1)
-				exit(EXIT_FAILURE);
-			else
-				exit(EXIT_SUCCESS);
+				exit(errno);
+			
+			exit(EXIT_SUCCESS);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
 				return -1;
-		
+			
 			if (WIFEXITED(status)) {
 				if (WEXITSTATUS(status) == EXIT_SUCCESS)
 					return 0;
-				else
+				else {
+					errno = WEXITSTATUS(status);
 					return -1;
+				}
 			}
 			
-			if (WIFSIGNALED(status)) {
+			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
-				exit(EXIT_FAILURE);
-			}
 	}
 	
 	return 0;

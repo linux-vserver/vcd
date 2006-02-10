@@ -20,13 +20,16 @@
 
 /* command types */
 typedef int (*COMMAND)(int, char **);
+typedef int (*COMMANDH)(int);
 
 typedef struct {
-	char *name;
-	COMMAND func;
+	char     *name;
+	COMMAND  func;
+	COMMANDH help;
 } vcc_command_t;
 
-extern int interactive;
+extern int vcc_interactive;
 
 /* main prototypes */
 int start_main(int argc, char **argv);
+int start_usage(int rc);

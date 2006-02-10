@@ -540,6 +540,7 @@ int vc_vasprintf(char **ptr, const char *fmt, va_list ap)
 			return -1;
 		}
 		
+		/* TODO: len+1? */
 		vc_vsnprintf(*ptr, len + 1, fmt, ap);
 		return len;
 	}

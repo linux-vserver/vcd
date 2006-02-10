@@ -162,9 +162,9 @@ int vc_ns_migrate(char *name);
 
 /* nx.c */
 int vc_nx_exists(char *name);
-int vc_nx_create(char *name, char *flagstr);
 int vc_nx_new(char *name, char *flagstr);
 int vc_nx_migrate(char *name);
+int vc_nx_release(char *name);
 int vc_nx_get_flags(char *name, char **flagstr, uint64_t *flags);
 int vc_nx_set_flags(char *name, char *flagstr);
 int vc_nx_add_addr(char *name, char *cidr);
@@ -177,9 +177,9 @@ int vc_task_xid(pid_t pid, nid_t *nid);
 
 /* vx.c */
 int vc_vx_exists(char *name);
-int vc_vx_create(char *name, char *flagstr);
 int vc_vx_new(char *name, char *flagstr);
 int vc_vx_migrate(char *name);
+int vc_vx_release(char *name);
 int vc_vx_kill(char *name, pid_t pid, int sig);
 int vc_vx_wait(char *name);
 int vc_vx_get_bcaps(char *name, char **flagstr, uint64_t *flags);
