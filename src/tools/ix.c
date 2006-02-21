@@ -88,8 +88,8 @@ getattr:
 	if (vx_get_iattr(&iattr) == -1)
 		vc_errp("vx_get_iattr");
 	
-	if (vc_list32_tostr(vc_iattr_list, iattr.flags & iattr.mask, &buf, ',') == -1)
-		vc_errp("vc_list32_tostr");
+	if (flist32_tostr(vc_iattr_list, iattr.flags & iattr.mask, &buf, ',') == -1)
+		vc_errp("flist32_tostr");
 	
 	if (strlen(buf) > 0)
 		vc_printf("%s\n", buf);
@@ -101,8 +101,8 @@ setattr:
 	if (argc <= optind)
 		goto usage;
 	
-	if (vc_list32_parse(argv[optind], vc_iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
-		vc_errp("vc_list32_parse");
+	if (flist32_parse(argv[optind], vc_iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
+		vc_errp("flist32_parse");
 	
 	if (vx_set_iattr(&iattr) == -1)
 		vc_errp("vx_set_iattr");

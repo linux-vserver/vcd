@@ -53,54 +53,6 @@ void usage(int rc)
 	exit(rc);
 }
 
-static
-int _parse_addr(char *addr, uint32_t *ip, uint32_t *mask)
-{
-	struct in_addr ib;
-	char *addr_ip, *addr_mask;
-	
-	*ip   = 0;
-	*mask = 0;
-	
-	addr_ip   = strtok(addr, "/");
-	addr_mask = strtok(NULL, "/");
-	
-	if (addr_ip == 0) {
-		errno = EINVAL;
-		return -1;
-	}
-	
-	if (inet_aton(addr_ip, &ib) == -1)
-		return -1;
-	
-	*ip = ib.s_addr;
-	
-	if (addr_mask == 0) {
-		/* default to /24 */
-		*mask = ntohl(0xffffff00);
-	} else {
-		if (strchr(addr_mask, '.') == 0) {
-			/* We have CIDR notation */
-			int sz = atoi(addr_mask);
-			
-			for (*mask = 0; sz > 0; --sz) {
-				*mask >>= 1;
-				*mask  |= 0x80000000;
-			}
-			
-			*mask = ntohl(*mask);
-		} else {
-			/* Standard netmask notation */
-			if (inet_aton(addr_mask, &ib) == -1)
-				return -1;
-			
-			*mask = ib.s_addr;
-		}
-	}
-	
-	return 0;
-}
-
 int main(int argc, char *argv[])
 {
 	VC_INIT_ARGV0
@@ -117,13 +69,6 @@ int main(int argc, char *argv[])
 	struct nx_flags flags = {
 		.flags = 0,
 		.mask  = 0,
-	};
-	
-	struct nx_addr addr = {
-		.type  = NXA_TYPE_IPV4,
-		.count = 0,
-		.ip    = { 0, 0, 0, 0 },
-		.mask  = { 0, 0, 0, 0 },
 	};
 	
 	uint64_t mask;
@@ -152,8 +97,8 @@ int main(int argc, char *argv[])
 	
 create:
 	if (argc > optind && strcmp(argv[optind], "--") != 0)
-		if (vc_list64_parse(argv[optind], vc_nflags_list, &cf.flags, &mask, '~', ',') == -1)
-			vc_errp("vc_list64_parse");
+		if (flist64_parse(argv[optind], vc_nflags_list, &cf.flags, &mask, '~', ',') == -1)
+			vc_errp("flist64_parse");
 	
 	if (nx_create(nid, &cf) == -1)
 		vc_errp("nx_create");
@@ -176,8 +121,8 @@ setflags:
 	if (argc <= optind)
 		goto usage;
 	
-	if (vc_list64_parse(argv[optind], vc_nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-		vc_errp("vc_list64_parse");
+	if (flist64_parse(argv[optind], vc_nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+		vc_errp("flist64_parse");
 	
 	if (nx_set_flags(nid, &flags) == -1)
 		vc_errp("nx_set_flags");
@@ -188,8 +133,8 @@ getflags:
 	if (nx_get_flags(nid, &flags) == -1)
 		vc_errp("nx_get_flags");
 	
-	if (vc_list64_tostr(vc_nflags_list, flags.flags, &buf, '\n') == -1)
-		vc_errp("vc_list64_tostr");
+	if (flist64_tostr(vc_nflags_list, flags.flags, &buf, '\n') == -1)
+		vc_errp("flist64_tostr");
 	
 	vc_printf("%s", buf);
 	free(buf);
@@ -201,10 +146,7 @@ addaddr:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (_parse_addr(argv[i], &addr.ip[0], &addr.mask[0]) == -1)
-			vc_errp("_parse_addr");
-		
-		if (nx_add_addr(nid, &addr) == -1)
+		if (vc_nx_add_addr(nid, argv[i]) == -1)
 			vc_errp("nx_add_addr");
 	}
 	
@@ -215,10 +157,7 @@ remaddr:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (_parse_addr(argv[i], &addr.ip[0], &addr.mask[0]) == -1)
-			vc_errp("_parse_addr");
-		
-		if (nx_rem_addr(nid, &addr) == -1)
+		if (vc_nx_rem_addr(nid, argv[i]) == -1)
 			vc_errp("nx_rem_addr");
 	}
 	

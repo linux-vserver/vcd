@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
 	int c, i;
 	xid_t xid = 0;
 	char *buf;
+	uint64_t mask;
 	
 	/* syscall data */
 	struct vx_create_flags cf = {
@@ -85,7 +86,6 @@ int main(int argc, char *argv[])
 	
 	struct vx_caps caps = {
 		.bcaps = ~(0ULL),
-		.bmask = ~(0ULL),
 		.ccaps =   0,
 		.cmask =   0,
 	};
@@ -103,13 +103,13 @@ int main(int argc, char *argv[])
 	};
 	
 	struct vx_sched sched = {
-		.set_mask      = 0,
-		.fill_rate     = 0,
-		.interval      = 0,
-		.tokens        = 0,
-		.tokens_min    = 0,
-		.tokens_max    = 0,
-		.priority_bias = 0,
+		.set_mask   = 0,
+		.fill_rate  = 0,
+		.interval   = 0,
+		.tokens     = 0,
+		.tokens_min = 0,
+		.tokens_max = 0,
+		.prio_bias  = 0,
 	};
 	
 	struct vx_vhi_name vhiname = {
@@ -126,8 +126,6 @@ int main(int argc, char *argv[])
 		.pid = 0,
 		.sig = SIGKILL,
 	};
-	
-	uint64_t mask;
 	
 #define CASE_GOTO(ID, P) case ID: xid = atoi(optarg); goto P; break
 	
@@ -162,8 +160,8 @@ int main(int argc, char *argv[])
 	
 create:
 	if (argc > optind && strcmp(argv[optind], "--") != 0)
-		if (vc_list64_parse(argv[optind], vc_cflags_list, &cf.flags, &mask, '~', ',') == -1)
-			vc_errp("vc_list64_parse");
+		if (flist64_parse(argv[optind], vc_cflags_list, &cf.flags, &mask, '~', ',') == -1)
+			vc_errp("flist64_parse");
 	
 	if (vx_create(xid, &cf) == -1)
 		vc_errp("vx_create");
@@ -186,8 +184,8 @@ setbcaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (vc_list64_parse(argv[optind], vc_bcaps_list, &caps.bcaps, &caps.bmask, '~', ',') == -1)
-		vc_errp("vc_list64_parse");
+	if (flist64_parse(argv[optind], vc_bcaps_list, &caps.bcaps, &mask, '~', ',') == -1)
+		vc_errp("flist64_parse");
 	
 	if (vx_set_caps(xid, &caps) == -1)
 		vc_errp("vx_set_caps");
@@ -198,8 +196,8 @@ setccaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (vc_list64_parse(argv[optind], vc_ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
-		vc_errp("vc_list64_parse");
+	if (flist64_parse(argv[optind], vc_ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
+		vc_errp("flist64_parse");
 	
 	if (vx_set_caps(xid, &caps) == -1)
 		vc_errp("vx_set_caps");
@@ -210,8 +208,8 @@ setflags:
 	if (argc <= optind)
 		goto usage;
 	
-	if (vc_list64_parse(argv[optind], vc_cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-		vc_errp("vc_list64_parse");
+	if (flist64_parse(argv[optind], vc_cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+		vc_errp("flist64_parse");
 	
 	if (vx_set_flags(xid, &flags) == -1)
 		vc_errp("vx_set_flags");
@@ -228,34 +226,27 @@ setlimit:
 		if (buf == NULL)
 			goto usage;
 		
-		if (vc_list32_getval(vc_rlimit_list, buf, &rlimit.id) == -1)
-			vc_errp("vc_list32_getval");
+		if (flist32_getval(vc_rlimit_list, buf, &rlimit.id) == -1)
+			vc_errp("flist32_getval");
+		
+		rlimit.id = flist32_mask2val(rlimit.id);
 		
 		int k = 0;
 		
-		for (buf = strtok(NULL, ","); buf != NULL; k++) {
-			if (strlen(buf) < 1)
-				continue;
-			
-#define BUF2LIM(LIM) do { \
-	if (strcasecmp(buf, "inf") == 0)       LIM = CRLIM_INFINITY; \
-	else if (strcasecmp(buf, "keep") == 0) LIM = CRLIM_KEEP; \
-	else                                   LIM = (uint32_t) atoi(buf); \
-} while(0)
-			
-			switch (k) {
-				case 0: BUF2LIM(rlimit.minimum); break;
-				case 1: BUF2LIM(rlimit.softlimit); break;
-				case 2: BUF2LIM(rlimit.maximum); break;
-			}
-			
-#undef BUF2LIM
-			
-			buf = strtok(NULL, ",");
-		}
-		
-		if (k != 3)
+		if ((buf = strtok(NULL, ",")) == NULL)
 			goto usage;
+		else
+			rlimit.minimum = vc_str_to_rlim(buf);
+		
+		if ((buf = strtok(NULL, ",")) == NULL)
+			goto usage;
+		else
+			rlimit.softlimit = vc_str_to_rlim(buf);
+		
+		if ((buf = strtok(NULL, ",")) == NULL)
+			goto usage;
+		else
+			rlimit.maximum = vc_str_to_rlim(buf);
 		
 		if (vx_set_rlimit(xid, &rlimit) == -1)
 			vc_errp("vx_set_rlimit");
@@ -273,8 +264,8 @@ setsched:
 		if (buf == NULL)
 			goto usage;
 		
-		if (vc_list32_getval(vc_sched_list, buf, &sched.set_mask) == -1)
-			vc_errp("vc_list32_getval");
+		if (flist32_getval(vc_sched_list, buf, &sched.set_mask) == -1)
+			vc_errp("flist32_getval");
 		
 		buf = strtok(NULL, "=");
 		
@@ -303,7 +294,7 @@ setsched:
 				break;
 			
 			case VXSM_PRIO_BIAS:
-				sched.priority_bias = atoi(buf);
+				sched.prio_bias = atoi(buf);
 				break;
 		}
 		
@@ -323,8 +314,8 @@ setvhi:
 		if (buf == NULL)
 			goto usage;
 		
-		if (vc_list32_getval(vc_vhiname_list, buf, &vhiname.field) == -1)
-			vc_errp("vc_list32_getval");
+		if (flist32_getval(vc_vhiname_list, buf, &vhiname.field) == -1)
+			vc_errp("flist32_getval");
 		
 		buf = strtok(NULL, "=");
 		
@@ -344,8 +335,8 @@ getbcaps:
 	if (vx_get_caps(xid, &caps) == -1)
 		vc_errp("vx_get_caps");
 	
-	if (vc_list64_tostr(vc_bcaps_list, caps.bcaps, &buf, '\n') == -1)
-		vc_errp("vc_list64_tostr");
+	if (flist64_tostr(vc_bcaps_list, caps.bcaps, &buf, '\n') == -1)
+		vc_errp("flist64_tostr");
 	
 	vc_printf("%s", buf);
 	free(buf);
@@ -356,8 +347,8 @@ getccaps:
 	if (vx_get_caps(xid, &caps) == -1)
 		vc_errp("vx_get_caps");
 	
-	if (vc_list64_tostr(vc_ccaps_list, caps.ccaps, &buf, '\n') == -1)
-		vc_errp("vc_list64_tostr");
+	if (flist64_tostr(vc_ccaps_list, caps.ccaps, &buf, '\n') == -1)
+		vc_errp("flist64_tostr");
 	
 	vc_printf("%s", buf);
 	free(buf);
@@ -368,8 +359,8 @@ getflags:
 	if (vx_get_flags(xid, &flags) == -1)
 		vc_errp("vx_get_flags");
 	
-	if (vc_list64_tostr(vc_cflags_list, flags.flags, &buf, '\n') == -1)
-		vc_errp("vc_list64_tostr");
+	if (flist64_tostr(vc_cflags_list, flags.flags, &buf, '\n') == -1)
+		vc_errp("flist64_tostr");
 	
 	vc_printf("%s", buf);
 	free(buf);
@@ -381,24 +372,23 @@ getlimit:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (vc_list32_getval(vc_rlimit_list, argv[i], &rlimit.id) == -1)
-			vc_errp("vc_list32_getval");
+		if (flist32_getval(vc_rlimit_list, argv[i], &rlimit.id) == -1)
+			vc_errp("flist32_getval");
 		
 		if (vx_get_rlimit(xid, &rlimit) == -1)
 			vc_errp("vx_get_rlimit");
 		
-#define LIM2OUT(LIM, DELIM) do { \
-	if (LIM == CRLIM_INFINITY) vc_printf("%s", "inf"); \
-	else vc_printf("%d", LIM); \
-	vc_printf("%c", DELIM); \
-} while(0)
+		buf = vc_rlim_to_str(rlimit.minimum);
+		vc_printf("%s,", buf);
+		free(buf);
 		
-		LIM2OUT(rlimit.minimum,   ',');
-		LIM2OUT(rlimit.softlimit, ',');
-		LIM2OUT(rlimit.maximum,   '\n');
+		buf = vc_rlim_to_str(rlimit.softlimit);
+		vc_printf("%s,", buf);
+		free(buf);
 		
-#undef LIM2OUT
-		
+		buf = vc_rlim_to_str(rlimit.maximum);
+		vc_printf("%s\n", buf);
+		free(buf);
 	}
 	
 	goto out;
@@ -408,8 +398,8 @@ getvhi:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (vc_list32_getval(vc_vhiname_list, argv[i], &vhiname.field) == -1)
-			vc_errp("vc_list32_getval");
+		if (flist32_getval(vc_vhiname_list, argv[i], &vhiname.field) == -1)
+			vc_errp("flist32_getval");
 		
 		if (vx_get_vhi_name(xid, &vhiname) == -1)
 			vc_errp("vx_get_vhi_name");
