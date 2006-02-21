@@ -60,16 +60,16 @@ AC_DEFUN([AC_VU_LIBVSERVER],
 	fi
 ])
 
-AC_DEFUN([AC_VU_LIBOWFAT],
+AC_DEFUN([AC_VU_LUCID],
 [
 	AC_LANG_PUSH(C)
-	AC_CHECK_LIB([owfat],
-	             [fmt_ulong0],
-	             [ac_vu_have_libowfat=yes],
-	             [ac_vu_have_libowfatr=no])
+	AC_CHECK_LIB([ucid],
+	             [_lucid_printf],
+	             [ac_vu_have_lucid=yes],
+	             [ac_vu_have_lucid=no])
 	AC_LANG_POP
 	
-	if test $ac_vu_have_libowfat = no; then
-		AC_MSG_ERROR([libowfat is missing! please install libowfat and try again])
+	if test $ac_vu_have_lucid = no; then
+		AC_MSG_ERROR([lucid is missing! please install lucid and try again])
 	fi
 ])

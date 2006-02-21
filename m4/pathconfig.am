@@ -34,4 +34,5 @@ PATHCONFIG_SCRIPT = -e 's:@BINDIR\@:$(bindir):g' \
                     -e 's:@PKGLOCKDIR\@:$(pkglockdir):g' \
                     -e 's:@SBINDIR\@:$(sbindir):g' \
                     -e 's:@SYSCONFDIR\@:$(sysconfdir):g' \
-                    -e 's:@VDIRBASE\@:$(vdirbase):g'
+                    -e 's:@VDIRBASE\@:$(vdirbase):g' \
+                    -e 's:@MOUNT\@:@MOUNT@:g'

@@ -16,20 +16,11 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-AC_DEFUN([AC_VU_VCONFIG_BACKEND],
+AC_DEFUN([AC_VU_CHECK_PROG],
 [
-	AC_MSG_CHECKING([which backend to use for libvconfig])
+	AC_PATH_PROGS($1, $2)
 	
-	AC_ARG_WITH([vconfig],
-	            [AS_HELP_STRING([--with-vconfig],
-	                            [Backend for libvconfig (valid values: plain; default: plain)])],
-	            [case "$enableval" in
-	              (single) AC_DEFINE([LIBVCONFIG_BACKEND_SINGLE], [], [libvconfig backend]);;
-	              (no)     AC_MSG_ERROR([You cannot disable libvconfig]);;
-	              (*)      AC_MSG_ERROR(['$enableval' is not a valid value for --with-vconfig]);;
-	            esac],
-	            [enableval=single; AC_DEFINE([LIBVCONFIG_BACKEND_SINGLE])])
-	
-	ac_vu_vconfig_backend=$enableval
-	AC_MSG_RESULT([$enableval])
+	if test x$$1 = "x" ; then
+		AC_MSG_ERROR([could not find $2 within your PATH])
+	fi
 ])

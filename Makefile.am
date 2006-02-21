@@ -27,7 +27,7 @@ CLEANFILES    = pathconfig.h
 EXTRA_DIST = pathconfig.h.in
 
 pathconfig.h: pathconfig.h.in
-	@regex_cmd@ $(PATHCONFIG_SCRIPT) $(srcdir)/pathconfig.h.in > ./pathconfig.h
+	@SED@ $(PATHCONFIG_SCRIPT) $(srcdir)/pathconfig.h.in > ./pathconfig.h
 
 install-data-hook: install-vdirbase install-pkglockdir
 

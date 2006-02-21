@@ -36,15 +36,13 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-AC_CHECK_PROGS(regex_cmd, sed)
-if test x$regex_cmd = "x" ; then
-    AC_MSG_ERROR([sed is required to build header files])
-fi
+AC_VU_CHECK_PROG(SED, sed)
+AC_VU_CHECK_PROG(MOUNT, mount)
 
 # Checks for libraries.
 AC_VU_DIETLIBC
 AC_VU_LIBVSERVER
-AC_VU_LIBOWFAT
+AC_VU_LUCID
 
 # Checks for header files.
 
@@ -59,7 +57,6 @@ AC_C_INLINE
 CFLAGS="${CFLAGS} -W -Wall -Wno-unused -std=gnu99 -pedantic"
 
 # Site settings
-AC_VU_VCONFIG_BACKEND
 AC_VU_PATHCONFIG
 
 # Final info page
@@ -75,7 +72,6 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                    prefix: $prefix
                sysconfdir: $sysconfdir
                  vdirbase: $vdirbase
-          vconfig backend: $ac_vu_vconfig_backend
 "])
 
 # Output

@@ -18,6 +18,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+/* paths */
 #define __BINDIR        "@BINDIR@"
 #define __LIBDIR        "@LIBDIR@"
 #define __LOCALSTATEDIR "@LOCALSTATEDIR@"
@@ -27,3 +28,6 @@
 #define __SBINDIR       "@SBINDIR@"
 #define __SYSCONFDIR    "@SYSCONFDIR@"
 #define __VDIRBASE      "@VDIRBASE@"
+
+/* programs */
+#define __MOUNT         "@MOUNT@"
