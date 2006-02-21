@@ -25,6 +25,7 @@
 #include <strings.h>
 #include <wait.h>
 #include <sys/poll.h>
+#include <lucid/argv.h>
 
 #include "vc.h"
 #include "commands.h"
@@ -107,6 +108,43 @@ void do_command(int argc, char **argv)
 	exit(EXIT_FAILURE);
 }
 
+#define CHUNKSIZE 32
+
+/* TODO: move this to lucid */
+int vc_readline(int fd, char **line)
+{
+	int chunks = 1, idx = 0;
+	char *buf = malloc(chunks * CHUNKSIZE + 1);
+	char c;
+
+	for (;;) {
+		switch(read(fd, &c, 1)) {
+			case -1:
+				return -1;
+			
+			case 0:
+				return -2;
+			
+			default:
+				if (c == '\n')
+					goto out;
+				
+				if (idx >= chunks * CHUNKSIZE) {
+					chunks++;
+					buf = realloc(buf, chunks * CHUNKSIZE + 1);
+				}
+				
+				buf[idx++] = c;
+				break;
+		}
+	}
+	
+out:
+	buf[idx] = '\0';
+	*line = buf;
+	return strlen(buf);
+}
+
 int main(int argc, char *argv[])
 {
 	VC_INIT_ARGV0
@@ -152,18 +190,18 @@ int main(int argc, char *argv[])
 			
 			/* run command */
 			else if (len > 0) {
-				av = vc_str_to_argv(line, &ac);
-				
+				argv_parse(line, &ac, &av);
 				free(line);
 				
 				/* catch exit commands */
 				if (strcmp(av[0], "logout") == 0 ||
 				    strcmp(av[0], "exit")   == 0 ||
 				    strcmp(av[0], "quit")   == 0) {
-					vc_argv_free(ac, av);
+					argv_free(ac, av);
 					break;
 				}
 				
+				/* TODO: vc_argv_free */
 				else {
 					switch((pid = fork())) {
 						case -1:

@@ -19,7 +19,7 @@
 INCLUDES = -I$(top_srcdir)/src/libvc
 
 LDADD = $(top_builddir)/src/libvc/libvc.a \
-        -lowfat \
+        -lucid \
         -lvserver
 
 noinst_HEADERS = commands.h

@@ -18,9 +18,12 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#ifndef _VCC_COMMANDS_H
+#define _VCC_COMMANDS_H
+
 /* command types */
-typedef int (*COMMAND)(int, char **);
-typedef int (*COMMANDH)(int);
+typedef void (*COMMAND)(int, char **);
+typedef void (*COMMANDH)(int);
 
 typedef struct {
 	char     *name;
@@ -31,5 +34,9 @@ typedef struct {
 extern int vcc_interactive;
 
 /* main prototypes */
-int start_main(int argc, char **argv);
-int start_usage(int rc);
+void start_main(int argc, char **argv);
+
+/* usage prototypes */
+void start_usage(int rc);
+
+#endif
