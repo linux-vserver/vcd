@@ -18,47 +18,28 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
 #include <errno.h>
 #include <wait.h>
+#include <lucid/sys.h>
 
 #include "vc.h"
 
-int vc_vx_exists(char *name)
+int vc_vx_exists(xid_t xid)
 {
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
 	struct vx_info info;
 	
 	return vx_get_info(xid, &info) == -1 ? 0 : 1;
 }
 
-int vc_vx_new(char *name, char *flagstr)
+int vc_vx_new(xid_t xid)
 {
-	xid_t xid;
 	pid_t pid;
 	int status;
 	
 	struct vx_create_flags flags = {
 		.flags = VXF_PERSISTANT,
 	};
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	if (flagstr != NULL) {
-		uint64_t mask = 0;
-		
-		if (vc_list64_parse(flagstr, vc_cflags_list, &flags.flags, &mask, '~', ',') == -1)
-			return -1;
-	}
 	
 	switch((pid = fork())) {
 		case -1:
@@ -90,31 +71,8 @@ int vc_vx_new(char *name, char *flagstr)
 	return 0;
 }
 
-int vc_vx_migrate(char *name)
+int vc_vx_release(xid_t xid)
 {
-	xid_t xid;
-	
-	if (!vc_vx_exists(name))
-		return -1;
-	
-	else {
-		if (vc_cfg_get_xid(name, &xid) == -1)
-			return -1;
-		
-		if (vx_migrate(xid) == -1)
-			return -1;
-	}
-	
-	return 0;
-}
-
-int vc_vx_release(char *name)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
 	struct vx_flags flags = {
 		.flags = 0,
 		.mask  = VXF_PERSISTANT,
@@ -126,282 +84,28 @@ int vc_vx_release(char *name)
 	return 0;
 }
 
-int vc_vx_kill(char *name, pid_t pid, int sig)
+uint64_t vc_str_to_rlim(char *str)
 {
-	xid_t xid;
+	if (str == NULL)
+		return CRLIM_KEEP;
 	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
+	if (strcmp(str, "inf") == 0)
+		return CRLIM_INFINITY;
 	
-	struct vx_kill_opts kill_opts = {
-		.pid = pid,
-		.sig = sig,
-	};
+	if (strcmp(str, "keep") == 0)
+		return CRLIM_KEEP;
 	
-	if (vx_kill(xid, &kill_opts) == -1)
-		return -1;
-	
-	return 0;
+	return atoi(str);
 }
 
-int vc_vx_wait(char *name)
+char *vc_rlim_to_str(uint64_t lim)
 {
-	xid_t xid;
+	char *buf;
 	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
+	if (lim == CRLIM_INFINITY)
+		vc_asprintf(&buf, "%s", "inf");
 	
-	struct vx_wait_opts wait_opts = {
-		.a = 0,
-		.b = 0,
-	};
+	vc_asprintf(&buf, "%d", lim);
 	
-	if (vx_wait(xid, &wait_opts) == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_get_bcaps(char *name, char **flagstr, uint64_t *flags)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	struct vx_caps caps = {
-		.bcaps = 0,
-		.bmask = 0,
-		.ccaps = 0,
-		.cmask = 0,
-	};
-	
-	if (vx_get_caps(xid, &caps) == -1)
-		return -1;
-	
-	if (flags != NULL)
-		*flags = caps.bcaps;
-	
-	if (vc_list64_tostr(vc_bcaps_list, caps.bcaps, flagstr, ',') == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_get_ccaps(char *name, char **flagstr, uint64_t *flags)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	struct vx_caps caps = {
-		.bcaps = 0,
-		.bmask = 0,
-		.ccaps = 0,
-		.cmask = 0,
-	};
-	
-	if (vx_get_caps(xid, &caps) == -1)
-		return -1;
-	
-	if (flags != NULL)
-		*flags = caps.ccaps;
-	
-	if (vc_list64_tostr(vc_ccaps_list, caps.ccaps, flagstr, ',') == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_get_flags(char *name, char **flagstr, uint64_t *flags)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	struct vx_flags cflags = {
-		.flags = 0,
-		.mask  = 0,
-	};
-	
-	if (vx_get_flags(xid, &cflags) == -1)
-		return -1;
-	
-	if (flags != NULL)
-		*flags = cflags.flags;
-	
-	if (vc_list64_tostr(vc_cflags_list, cflags.flags, flagstr, ',') == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_get_limit(char *name, char *type,
-                    uint64_t *min, uint64_t *soft, uint64_t *max)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	struct vx_rlimit rlimit = {
-		.id        = 0,
-		.minimum   = 0,
-		.softlimit = 0,
-		.maximum   = 0,
-	};
-	
-	if (vc_list32_getval(vc_rlimit_list, type, &rlimit.id) == -1)
-		return -1;
-	
-	if (vx_get_rlimit(xid, &rlimit) == -1)
-		return -1;
-	
-	*min  = rlimit.minimum;
-	*soft = rlimit.softlimit;
-	*max  = rlimit.maximum;
-	
-	return 0;
-}
-
-int vc_vx_get_uname(char *name, char *key, char **value)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	uint32_t field;
-	
-	if (vc_list32_getval(vc_vhiname_list, key, &field) == -1)
-		return -1;
-	
-	struct vx_vhi_name vhi_name;
-	vhi_name.field = field;
-	
-	if (vx_get_vhi_name(xid, &vhi_name) == -1)
-		return -1;
-	
-	vc_asprintf(value, "%s", vhi_name.name);
-	
-	return 0;
-}
-
-
-int vc_vx_set_bcaps(char *name, char *flagstr)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	struct vx_caps caps = {
-		.bcaps = ~(0ULL),
-		.bmask = ~(0ULL),
-		.ccaps = 0,
-		.cmask = 0,
-	};
-	
-	if (flagstr != NULL)
-		if (vc_list64_parse(flagstr, vc_bcaps_list, &caps.bcaps, &caps.bmask, '~', ',') == -1)
-			return -1;
-	
-	if (vx_set_caps(xid, &caps) == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_set_ccaps(char *name, char *flagstr)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	struct vx_caps caps = {
-		.bcaps = ~(0ULL),
-		.bmask = ~(0ULL),
-		.ccaps = 0,
-		.cmask = 0,
-	};
-	
-	if (vc_list64_parse(flagstr, vc_ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
-		return -1;
-	
-	if (vx_set_caps(xid, &caps) == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_set_flags(char *name, char *flagstr)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	struct vx_flags flags = {
-		.flags = 0,
-		.mask  = 0,
-	};
-	
-	if (vc_list64_parse(flagstr, vc_cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-		return -1;
-	
-	if (vx_set_flags(xid, &flags) == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_set_limit(char *name, char *type,
-                    uint32_t min, uint32_t soft, uint32_t max)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	uint32_t id;
-	
-	if (vc_list32_getval(vc_rlimit_list, type, &id) == -1)
-		return -1;
-	
-	struct vx_rlimit rlimit = {
-		.id        = id,
-		.minimum   = min,
-		.softlimit = soft,
-		.maximum   = max,
-	};
-	
-	if (vx_set_rlimit(xid, &rlimit) == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_vx_set_uname(char *name, char *key, char *value)
-{
-	xid_t xid;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
-	
-	uint32_t field;
-	
-	if (vc_list32_getval(vc_vhiname_list, key, &field) == -1)
-		return -1;
-	
-	struct vx_vhi_name vhi_name;
-	vhi_name.field = field;
-	vc_snprintf(vhi_name.name, 65, "%s", value);
-	
-	if (vx_set_vhi_name(xid, &vhi_name) == -1)
-		return -1;
-	
-	return 0;
+	return buf;
 }

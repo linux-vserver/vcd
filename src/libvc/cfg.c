@@ -32,47 +32,41 @@
 #include <libgen.h>
 #include <vserver.h>
 
-#include <libowfat/mmap.h>
-#include <libowfat/open.h>
-#include <libowfat/str.h>
+#include <lucid/mmap.h>
+#include <lucid/open.h>
 
 #include "pathconfig.h"
 #include "vc.h"
 
 /* configuration map */
 vc_cfg_node_t vc_cfg_map[] = {
-	{ "context.bcapabilities",   VC_CFG_LIST_T, "bcapabilities" },
-	{ "context.capabilities",    VC_CFG_LIST_T, "ccapabilities" },
-	{ "context.flags",           VC_CFG_LIST_T, "flags" },
-	{ "context.id",              VC_CFG_INT_T,  "id" },
-	{ "context.nice",            VC_CFG_INT_T,  "nice", },
-	{ "context.personality",     VC_CFG_LIST_T, "personality" },
-	{ "context.personalityflag", VC_CFG_LIST_T, "personalityflag" },
-	{ "context.sched",           VC_CFG_LIST_T, "scheduler" },
-	{ "init.runlevel",           VC_CFG_STR_T,  "init/runlevel" },
-	{ "init.style",              VC_CFG_STR_T,  "init/style" },
-	{ "limit.anon",              VC_CFG_LIST_T, "limits/anon" },
-	{ "limit.as",                VC_CFG_LIST_T, "limits/as" },
-	{ "limit.memlock",           VC_CFG_LIST_T, "limits/memlock" },
-	{ "limit.nofile",            VC_CFG_LIST_T, "limits/nofile" },
-	{ "limit.nproc",             VC_CFG_LIST_T, "limits/nproc" },
-	{ "limit.nsock",             VC_CFG_LIST_T, "limits/nsock" },
-	{ "limit.openfd",            VC_CFG_LIST_T, "limits/openfd" },
-	{ "limit.rss",               VC_CFG_LIST_T, "limits/rss" },
-	{ "limit.shmem",             VC_CFG_LIST_T, "limits/shmem" },
-	{ "namespace.fstab",         VC_CFG_STR_T,  "namespace/fstab" },
-	{ "namespace.mtab",          VC_CFG_STR_T,  "namespace/mtab" },
-	{ "namespace.root",          VC_CFG_STR_T,  "namespace/root" },
-	{ "net.addr",                VC_CFG_LIST_T, "net/addr" },
-	{ "uts.domainname",          VC_CFG_STR_T,  "uts/domainname" },
-	{ "uts.machine",             VC_CFG_STR_T,  "uts/machine" },
-	{ "uts.nodename",            VC_CFG_STR_T,  "uts/nodename" },
-	{ "uts.release",             VC_CFG_STR_T,  "uts/release" },
-	{ "uts.sysname",             VC_CFG_STR_T,  "uts/sysname" },
-	{ "uts.version",             VC_CFG_STR_T,  "uts/version" },
-	{ "vps.shell",               VC_CFG_STR_T,  "shell" },
-	{ "vps.timeout",             VC_CFG_INT_T,  "timeout" },
-	{ NULL,                      0,             NULL },
+	{ "init.runlevel",     VC_CFG_STR_T,  "init/runlevel" },
+	{ "init.style",        VC_CFG_STR_T,  "init/style" },
+	{ "limit.anon",        VC_CFG_LIST_T, "limits/anon" },
+	{ "limit.as",          VC_CFG_LIST_T, "limits/as" },
+	{ "limit.memlock",     VC_CFG_LIST_T, "limits/memlock" },
+	{ "limit.nofile",      VC_CFG_LIST_T, "limits/nofile" },
+	{ "limit.nproc",       VC_CFG_LIST_T, "limits/nproc" },
+	{ "limit.rss",         VC_CFG_LIST_T, "limits/rss" },
+	{ "ns.fstab",          VC_CFG_STR_T,  "ns/fstab" },
+	{ "ns.mtab",           VC_CFG_STR_T,  "ns/mtab" },
+	{ "ns.root",           VC_CFG_STR_T,  "ns/root" },
+	{ "nx.addr",           VC_CFG_LIST_T, "net/addr" },
+	{ "nx.flags",          VC_CFG_LIST_T, "net/addr" },
+	{ "vhi.domainname",    VC_CFG_STR_T,  "vhi/domainname" },
+	{ "vhi.machine",       VC_CFG_STR_T,  "vhi/machine" },
+	{ "vhi.nodename",      VC_CFG_STR_T,  "vhi/nodename" },
+	{ "vhi.release",       VC_CFG_STR_T,  "vhi/release" },
+	{ "vhi.sysname",       VC_CFG_STR_T,  "vhi/sysname" },
+	{ "vhi.version",       VC_CFG_STR_T,  "vhi/version" },
+	{ "vps.shell",         VC_CFG_STR_T,  "shell" },
+	{ "vps.timeout",       VC_CFG_INT_T,  "timeout" },
+	{ "vx.bcaps",          VC_CFG_LIST_T, "bcapabilities" },
+	{ "vx.ccaps",          VC_CFG_LIST_T, "ccapabilities" },
+	{ "vx.flags",          VC_CFG_LIST_T, "flags" },
+	{ "vx.id",             VC_CFG_INT_T,  "id" },
+	{ "vx.sched",          VC_CFG_LIST_T, "scheduler" },
+	{ NULL,                0,             NULL },
 };
 
 /* errno buffer */
@@ -122,7 +116,7 @@ int vc_cfg_get_xid(char *name, xid_t *xid)
 {
 	int buf;
 	
-	if (vc_cfg_get_int(name, "context.id", &buf) == -1)
+	if (vc_cfg_get_int(name, "vx.id", &buf) == -1)
 		return -1;
 	
 	*xid = (xid_t) buf;
@@ -156,11 +150,17 @@ unsigned long _cfg_readkey(char *name, char *key, char **buf)
 	
 	free(file);
 	
-	unsigned long len;
-	*buf = mmap_private(path, &len);
+	size_t len;
+	char *buf2;
+	buf2 = mmap_private(path, &len);
 	
-	if (*buf == NULL)
+	if (buf2 == NULL)
 		return 0;
+	
+	if (buf2[len-1] == '\n')
+		buf2[len-1] = '\0';
+	
+	*buf = buf2;
 	
 	return len;
 }
@@ -221,8 +221,6 @@ int _cfg_writekey(char *name, char *key, char *value)
 	
 	vc_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, file);
 	
-	free(file);
-	
 	if (lstat(path, &sb) == -1) {
 		if (errno == ENOENT)
 			goto open;
@@ -245,12 +243,14 @@ open:
 	if (write(fd, value, strlen(value)) == -1)
 		goto error;
 	
+	if (write(fd, "\n", 1) == -1)
+		goto error;
+	
+	free(file);
 	return 0;
 	
 error:
-	errno_orig = errno;
 	free(file);
-	errno = errno_orig;
 	return -1;
 }
 
@@ -270,10 +270,10 @@ int vc_cfg_get_bool(char *name, char *key, int *value)
 		return -1;
 	}
 	
-	if (str_diffn(buf, "true\n", len))
+	if (strncmp(buf, "true\n", len) == 0)
 		*value = 1;
 	
-	else if (str_diffn(buf, "false\n", len))
+	else if (strncmp(buf, "false\n", len) == 0)
 		*value = 0;
 	
 	else
@@ -397,10 +397,7 @@ int vc_cfg_get_list(char *name, char *key, char **value)
 		return -1;
 	}
 	
-	char *ptr = buf + len - 1;
-	
-	if (*ptr == '\n')
-		*ptr = '\0';
+	char *ptr;
 	
 	while ((ptr = strchr(buf, '\n')) != NULL)
 		*ptr = ',';

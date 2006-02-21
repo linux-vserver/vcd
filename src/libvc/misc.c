@@ -18,10 +18,24 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
+#include <stdlib.h>
+#include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <wait.h>
 
 #include "vc.h"
+
+int vc_fchroot(int fd)
+{
+	if (fchdir(fd) == -1)
+		return -1;
+	
+	if (chroot(".") == -1)
+		return -1;
+	
+	return 0;
+}
 
 /* go to <dir> in <cwd> as root, while <root> is the original root.
 ** going into the chroot before doing chdir(dir) prevents symlink attacks
@@ -29,40 +43,59 @@
 int vc_secure_chdir(int rootfd, int cwdfd, char *dir)
 {
 	int dirfd;
+	int errno_orig;
 	
 	/* check cwdfd */
-	if (fchdir(cwdfd) == -1)
-		return -1;
-	
-	/* chroot to cwd */
-	if (chroot(".") == -1)
+	if (vc_fchroot(cwdfd) == -1)
 		return -1;
 	
 	/* now go to dir in the chroot */
 	if (chdir(dir) == -1)
-		return -1;
+		goto err;
 	
 	/* save a file descriptor of the target dir */
 	dirfd = open(".", O_RDONLY|O_DIRECTORY);
 	
 	if (dirfd == -1)
-		return -1;
+		goto err;
 	
 	/* break out of the chroot */
-	if (fchdir(rootfd) == -1)
-		goto error;
-	
-	if (chroot(".") == -1)
-		goto error;
+	vc_fchroot(rootfd);
 	
 	/* now go to the saved target dir (but outside the chroot) */
 	if (fchdir(dirfd) == -1)
-		goto error;
+		goto err2;
 	
 	close(dirfd);
 	return 0;
 	
-error:
+err2:
+	errno_orig = errno;
 	close(dirfd);
+	errno = errno_orig;
+err:
+	errno_orig = errno;
+	vc_fchroot(rootfd);
+	errno = errno_orig;
 	return -1;
+}
+
+pid_t vc_waitpid(pid_t pid)
+{
+	int status;
+	
+	if (waitpid(pid, &status, 0) == -1)
+		return -1;
+	
+	if (WIFEXITED(status)) {
+		if (WEXITSTATUS(status) != EXIT_SUCCESS) {
+			errno = WEXITSTATUS(status);
+			return -2;
+		}
+	}
+	
+	if (WIFSIGNALED(status))
+		kill(getpid(), WTERMSIG(status));
+	
+	return pid;
 }

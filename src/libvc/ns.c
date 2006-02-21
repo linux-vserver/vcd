@@ -18,26 +18,22 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
 #include <errno.h>
 #include <wait.h>
+#include <ctype.h>
+#include <lucid/sys.h>
 
 #include "vc.h"
 
+#ifndef CLONE_NEWNS
 #define CLONE_NEWNS 0x00020000
+#endif
 
-int vc_ns_new(char *name)
+int vc_ns_new(xid_t xid)
 {
-	xid_t xid;
 	pid_t pid;
 	int status;
-	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
 	
 	switch((pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0))) {
 		case -1:
@@ -69,15 +65,34 @@ int vc_ns_new(char *name)
 	return 0;
 }
 
-int vc_ns_migrate(char *name)
+int vc_str_to_fstab(char *str, char **src, char **dst, char **type, char **data)
 {
-	xid_t xid;
+	*src = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	if (*str == '\0') goto error;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
 	
-	if (vc_cfg_get_xid(name, &xid) == -1)
-		return -1;
+	*dst = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	if (*str == '\0') goto error;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
 	
-	if (vx_enter_namespace(xid) == -1)
-		return -1;
+	*type = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	if (*str == '\0') goto error;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
+	
+	*data = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
 	
 	return 0;
+	
+error:
+	errno = EINVAL;
+	return -1;
 }

@@ -22,15 +22,10 @@ pkginclude_HEADERS = vc.h
 
 lib_LIBRARIES = libvc.a
 
-libvc_a_SOURCES = argv.c \
-                  cfg.c \
-                  dx.c \
-                  io.c \
-                  ix.c \
-                  list.c \
+libvc_a_SOURCES = cfg.c \
                   lists.c \
                   misc.c \
+                  msg.c \
                   ns.c \
                   nx.c \
-                  task.c \
                   vx.c

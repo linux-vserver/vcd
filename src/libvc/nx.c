@@ -18,48 +18,29 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
 #include <wait.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <lucid/sys.h>
 
 #include "vc.h"
 
-int vc_nx_exists(char *name)
+int vc_nx_exists(nid_t nid)
 {
-	nid_t nid;
-	
-	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
-		return -1;
-	
 	struct nx_info info;
 	
 	return nx_get_info(nid, &info) == -1 ? 0 : 1;
 }
 
-int vc_nx_new(char *name, char *flagstr)
+int vc_nx_new(nid_t nid)
 {
-	nid_t nid;
 	pid_t pid;
 	int status;
 	
 	struct nx_create_flags flags = {
 		.flags = NXF_PERSISTANT,
 	};
-	
-	if (vc_cfg_get_xid(name, &nid) == -1)
-		return -1;
-	
-	if (flagstr != NULL) {
-		uint64_t mask = 0;
-		
-		if (vc_list64_parse(flagstr, vc_nflags_list, &flags.flags, &mask, '~', ',') == -1)
-			return -1;
-	}
 	
 	switch((pid = fork())) {
 		case -1:
@@ -91,80 +72,12 @@ int vc_nx_new(char *name, char *flagstr)
 	return 0;
 }
 
-int vc_nx_migrate(char *name)
+int vc_nx_release(nid_t nid)
 {
-	nid_t nid;
-	
-	if (!vc_nx_exists(name))
-		return -1;
-	
-	else {
-		if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
-			return -1;
-		
-		if (nx_migrate(nid) == -1)
-			return -1;
-	}
-	
-	return 0;
-}
-
-int vc_nx_release(char *name)
-{
-	nid_t nid;
-	
-	if (vc_cfg_get_xid(name, &nid) == -1)
-		return -1;
-	
 	struct nx_flags flags = {
 		.flags = 0,
 		.mask  = NXF_PERSISTANT,
 	};
-	
-	if (nx_set_flags(nid, &flags) == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_nx_get_flags(char *name, char **flagstr, uint64_t *flags)
-{
-	nid_t nid;
-	
-	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
-		return -1;
-	
-	struct nx_flags nflags = {
-		.flags = 0,
-		.mask  = 0,
-	};
-	
-	if (nx_get_flags(nid, &nflags) == -1)
-		return -1;
-	
-	if (flags != NULL)
-		*flags = nflags.flags;
-	
-	if (vc_list64_tostr(vc_nflags_list, nflags.flags, flagstr, ',') == -1)
-		return -1;
-	
-	return 0;
-}
-
-int vc_nx_set_flags(char *name, char *flagstr)
-{
-	nid_t nid;
-	
-	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
-		return -1;
-	
-	struct nx_flags flags = {
-		.flags = 0,
-		.mask  = 0,
-	};
-	
-	if (vc_list64_parse(flagstr, vc_nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-		return -1;
 	
 	if (nx_set_flags(nid, &flags) == -1)
 		return -1;
@@ -218,20 +131,17 @@ int _parse_cidr(char *cidr, uint32_t *ip, uint32_t *mask)
 	return 0;
 }
 
-int vc_nx_add_addr(char *name, char *cidr)
+int vc_nx_add_addr(nid_t nid, char *cidr)
 {
-	nid_t nid;
-	
-	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
-		return -1;
-	
 	struct nx_addr addr;
 	
 	addr.type  = NXA_TYPE_IPV4;
 	addr.count = 1;
 	
-	if (_parse_cidr(cidr, &addr.ip[0], &addr.mask[0]) == -1)
+	if (_parse_cidr(cidr, &addr.ip[0], &addr.mask[0]) == -1) {
+		errno = EINVAL;
 		return -1;
+	}
 	
 	if (nx_add_addr(nid, &addr) == -1)
 		return -1;
@@ -239,20 +149,11 @@ int vc_nx_add_addr(char *name, char *cidr)
 	return 0;
 }
 
-int vc_nx_rem_addr(char *name, char *cidr)
+int vc_nx_rem_addr(nid_t nid, char *cidr)
 {
-	nid_t nid;
-	
-	if (vc_cfg_get_xid(name, (xid_t *) &nid) == -1)
-		return -1;
-	
 	struct nx_addr addr;
 	
-	addr.type  = NXA_TYPE_IPV4;
-	addr.count = 1;
-	
-	if (_parse_cidr(cidr, &addr.ip[0], &addr.mask[0]) == -1)
-		return -1;
+	addr.type  = NXA_TYPE_ANY;
 	
 	if (nx_rem_addr(nid, &addr) == -1)
 		return -1;

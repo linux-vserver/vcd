@@ -18,32 +18,78 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <errno.h>
 
 #include "vc.h"
 
-int vc_task_name(pid_t pid, char **name)
+/* save argv[0] for error functions below */
+const char *vc_argv0;
+
+/* warnings */
+void vc_warn(const char *fmt, /*args*/ ...)
 {
-	xid_t xid = vx_get_task_xid(pid);
+	va_list ap;
+	va_start(ap, fmt);
 	
-	if (vc_cfg_get_name(xid, name) == -1)
-		return -1;
-	
-	return 0;
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, "\n");
 }
 
-int vc_task_nid(pid_t pid, nid_t *nid)
+void vc_warnp(const char *fmt, /*args*/ ...)
 {
-	*nid = nx_get_task_nid(pid);
+	va_list ap;
+	va_start(ap, fmt);
 	
-	return 0;
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
 }
 
-int vc_task_xid(pid_t pid, xid_t *xid)
+void vc_err(const char *fmt, /*args*/ ...)
 {
-	*xid = vx_get_task_xid(pid);
+	va_list ap;
+	va_start(ap, fmt);
 	
-	return 0;
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, "\n");
+	
+	exit(EXIT_FAILURE);
+}
+
+void vc_errp(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	
+	exit(EXIT_FAILURE);
+}
+
+void vc_abort(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, "\n");
+	
+	abort();
+}
+
+void vc_abortp(const char *fmt, /*args*/ ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
+	vc_vdprintf(STDERR_FILENO, fmt, ap);
+	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	
+	abort();
 }
