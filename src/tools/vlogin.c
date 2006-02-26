@@ -65,7 +65,7 @@ static struct terminal t;
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
+	vu_printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -n <xid>      Network Context ID\n"
@@ -143,7 +143,7 @@ static
 void terminal_atexit(void)
 {
 	terminal_reset();
- vu_printf("\n"); /* for cosmetic reasons */
+	vu_printf("\n"); /* for cosmetic reasons */
 }
 
 /* send signal to terminal */
@@ -284,6 +284,8 @@ int main(int argc, char *argv[])
 	
 	if (opts.xid == 0)
 		EXIT("Invalid xid", EXIT_USAGE);
+	
+	/* TODO: also change namespace? */
 	
 	/* enter context */
 	if (opts.nid > 1 && nx_migrate(opts.nid) == -1)

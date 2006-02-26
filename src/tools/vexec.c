@@ -31,6 +31,7 @@
 #include <fcntl.h>
 #include <sys/wait.h>
 #include <vserver.h>
+#include <errno.h>
 
 #include <linux/vserver/context.h>
 #include <linux/vserver/network.h>
@@ -54,7 +55,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <opts>* -- <command> <args>*\n"
+	vu_printf("Usage: %s <opts>* -- <command> <args>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -c            chroot to current working directory\n"
@@ -184,7 +185,24 @@ migrate:
 				if (chroot(".") == -1)
 					PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 			}
-			
+			// TODO: change TTY and stdin/out to something sensible for the guest!
+			// -- check for /dev/console or /dev/tty in the guest's root
+			if (opts.init) {
+				vu_printf("Preparing for switching stdin to /dev/console...\n");
+				struct stat st;
+				if (stat("/dev/console", &st) == -1) {
+					vu_printf("Failed to stat /dev/console:  %s\n", strerror(errno));
+				} else if (!S_ISCHR(st.st_mode)) {
+					int fd = open("/dev/console", O_RDWR); // O_NOCTTY);
+					if (fd < 0) vu_printf("Failed to open /dev/console:  %s\n", strerror(errno));
+					if (fd > 0) dup2(fd, 0);
+					if (fd >= 0 && fd != 1) dup2(fd, 1);
+					if (fd >= 0 && fd != 2) dup2(fd, 2);
+					if (fd > 2) close(fd);
+				} else
+					vu_printf("Cannot use /dev/console as it's not a character device.\n");
+			}
+
 			if(execvp(argv[optind], argv+optind) == -1)
 				PEXIT("Failed to start init", EXIT_COMMAND);
 		

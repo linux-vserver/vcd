@@ -61,7 +61,7 @@ struct options opts = {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <opts>*\n"
+	vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -l <file>     Lock file\n"
@@ -118,10 +118,10 @@ int main(int argc, char *argv[])
 	}
 	
 	/* check command line */
-	if (opts.lockfile == NULL)
+	if (opts.lockfile == NULL || *opts.lockfile == '\0')
 		EXIT("No lockfile specified", EXIT_USAGE);
 	
-	if (opts.syncpipe == NULL)
+	if (opts.syncpipe == NULL || *opts.syncpipe == '\0')
 		EXIT("No syncpipe specified", EXIT_USAGE);
 	
 	pid_t ppid = getppid();

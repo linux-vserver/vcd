@@ -18,7 +18,8 @@
 
 pkgdata_DATA = pathconfig
 
-nobase_pkgdata_DATA = commands/exec.sh \
+nobase_pkgdata_DATA = commands/enter.sh \
+                      commands/exec.sh \
                       commands/info.sh \
                       commands/login.sh \
                       commands/procfs.sh \
@@ -27,6 +28,10 @@ nobase_pkgdata_DATA = commands/exec.sh \
                       commands/start.sh \
                       commands/status.sh \
                       commands/stop.sh \
+                      defaults/fstab \
+                      defaults/mtab \
+                      defaults/procfs.conf \
+                      lib/fs.sh \
                       lib/util.sh \
                       lib/vps.sh
 

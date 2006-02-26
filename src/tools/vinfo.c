@@ -43,7 +43,7 @@ struct options {
 
 void cmd_help()
 {
- vu_printf("Usage: %s <opts>\n"
+	vu_printf("Usage: %s <opts>\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -v            Show VServer interface version\n"
@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 		if((version = vs_get_version()) == -1)
 			PEXIT("Failed to get VServer interface version", EXIT_COMMAND);
 		
-	 vu_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
+		vu_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
 		
 		goto out;
 	}

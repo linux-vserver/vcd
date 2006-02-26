@@ -50,7 +50,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <opts>*\n"
+	vu_printf("Usage: %s <command> <opts>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set virtual host information\n"
@@ -177,7 +177,7 @@ int main(int argc, char *argv[])
 			if (vx_get_vhi_name(opts.xid, &vhi_name) == -1)
 				PEXIT("Failed to get VHI field", EXIT_COMMAND);
 			
-		 vu_printf("%s: %s\n", fieldname, vhi_name.name);
+			vu_printf("%s: %s\n", fieldname, vhi_name.name);
 		}
 		
 		goto out;

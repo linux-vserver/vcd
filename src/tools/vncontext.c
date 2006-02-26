@@ -39,7 +39,7 @@
 #define NAME  "vncontext"
 #define DESCR "Network Context Manager"
 
-#define SHORT_OPTS "ACIMRa:f:n:"
+#define SHORT_OPTS "ACIMR46a:f:n:"
 
 struct commands {
 	bool add;
@@ -51,6 +51,7 @@ struct commands {
 
 struct options {
 	char *addr;
+	int addrt;
 	list_t *flags;
 	nid_t nid;
 };
@@ -58,7 +59,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -A            Add adress to network context\n"
@@ -68,7 +69,9 @@ void cmd_help()
 	       "    -R            Remove adress from network context\n"
 	       "\n"
 	       "Available options:\n"
-	       "    -a <addr>     IP adress (a.b.c.d/e)\n"
+	       "    -a <addr>     IP address (a.b.c.d/e or x::y:z/e)\n"
+	       "    -6            Address specified by -a is IPv6\n"
+	       "    -4            Address specified by -a is IPv4\n"
 	       "    -f <list>     Set flags described in <list>\n"
 	       "    -n <nid>      Context ID\n"
 	       "\n"
@@ -79,6 +82,40 @@ void cmd_help()
 	       "\n",
 	       NAME);
 	exit(EXIT_SUCCESS);
+}
+
+static inline
+int parse_addr6(char*addr, uint32_t *ip, uint32_t *prefix)
+{
+	struct in6_addr ib;
+	char *addr_ip, *addr_mask;
+	
+	ip[0] = 0; ip[1] = 0; ip[2] = 0; ip[3] = 0;
+	*prefix = 0;
+	
+	addr_ip = strtok(addr, "/");
+	addr_mask = strtok(NULL, "/");
+	
+	if (addr_ip == 0)
+		return -1;
+	
+	if (inet_pton(AF_INET6, addr_ip, &ib) <= 0)
+		return -1;
+	
+	ip[0] = ib.s6_addr32[0];
+	ip[1] = ib.s6_addr32[1];
+	ip[2] = ib.s6_addr32[2];
+	ip[3] = ib.s6_addr32[3];
+	
+	if (addr_mask == 0) {
+		/* default to /48 */
+		*prefix = 48;
+	} else {
+		*prefix = atoi(addr_mask);
+		if (*prefix > 128)
+			*prefix = 128;
+	}
+	return 0;
 }
 
 static inline
@@ -198,6 +235,14 @@ int main(int argc, char *argv[])
 				opts.nid = (nid_t) atoi(optarg);
 				break;
 			
+			case '4':
+				opts.addrt = NXA_TYPE_IPV4;
+				break;
+			
+			case '6':
+				opts.addrt = NXA_TYPE_IPV6;
+				break;
+			
 			DEFAULT_GETOPT
 		}
 	}
@@ -206,11 +251,28 @@ int main(int argc, char *argv[])
 		if (opts.addr == 0)
 			EXIT("No IP given", EXIT_USAGE);
 		
-		addr.type  = NXA_TYPE_IPV4;
-		addr.count = 1;
-		
-		if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
-			EXIT("Invalid IP given", EXIT_USAGE);
+		if (opts.addrt == NXA_TYPE_IPV4) {
+			addr.type  = NXA_TYPE_IPV4;
+			addr.count = 1;
+			
+			if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
+				EXIT("Invalid IPv4 given", EXIT_USAGE);
+		} else if (opts.addrt == NXA_TYPE_IPV6) {
+			addr.type  = NXA_TYPE_IPV6;
+			addr.count = 1;
+			
+			if (parse_addr6(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
+				EXIT("Invalid IPv6 given", EXIT_USAGE);
+		} else {
+			/* Try detecting addr tpye */
+			addr.count = 1;
+			if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == 0)
+				addr.type  = NXA_TYPE_IPV4;
+			else if (parse_addr6(opts.addr, &addr.ip[0], &addr.mask[0]) == 0)
+				addr.type  = NXA_TYPE_IPV6;
+			else
+				EXIT("Invalid IP given", EXIT_USAGE);
+		}
 		
 		/* syscall */
 		if (nx_add_addr(opts.nid, &addr) == -1)
@@ -260,7 +322,7 @@ create:
 		if (nx_get_info(opts.nid, &info) == -1)
 			PEXIT("Failed to get network context information", EXIT_COMMAND);
 		
-	 vu_printf("Network context ID: %d\n", info.nid);
+		vu_printf("Network context ID: %d\n", info.nid);
 		
 		goto out;
 	}
@@ -269,11 +331,28 @@ create:
 		if (opts.addr == 0)
 			EXIT("No IP given", EXIT_USAGE);
 		
-		addr.type  = NXA_TYPE_IPV4;
-		addr.count = 1;
-		
-		if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
-			EXIT("Invalid IP given", EXIT_USAGE);
+		if (opts.addrt == NXA_TYPE_IPV4) {
+			addr.type  = NXA_TYPE_IPV4;
+			addr.count = 1;
+			
+			if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
+				EXIT("Invalid IPv4 given", EXIT_USAGE);
+		} else if (opts.addrt == NXA_TYPE_IPV6) {
+			addr.type  = NXA_TYPE_IPV6;
+			addr.count = 1;
+			
+			if (parse_addr6(opts.addr, &addr.ip[0], &addr.mask[0]) == -1)
+				EXIT("Invalid IPv6 given", EXIT_USAGE);
+		} else {
+			/* Try detecting addr tpye */
+			addr.count = 1;
+			if (parse_addr(opts.addr, &addr.ip[0], &addr.mask[0]) == 0)
+				addr.type  = NXA_TYPE_IPV4;
+			else if (parse_addr6(opts.addr, &addr.ip[0], &addr.mask[0]) == 0)
+				addr.type  = NXA_TYPE_IPV6;
+			else
+				EXIT("Invalid IP given", EXIT_USAGE);
+		}
 		
 		/* syscall */
 		if (nx_rem_addr(opts.nid, &addr) == -1)

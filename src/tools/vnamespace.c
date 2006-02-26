@@ -63,7 +63,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -C            Remove all mounts from current context\n"

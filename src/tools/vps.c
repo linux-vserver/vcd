@@ -64,7 +64,7 @@ struct psline {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <opts>* -- <ps args>*\n"
+	vu_printf("Usage: %s <opts>* -- <ps args>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -n <nid>      Network Context ID\n"
@@ -137,7 +137,7 @@ void process_output(char *data, size_t len, struct options *opts)
 	if (pid_start == 0) {
 		/* we don't have output with PID column; possibly help message
 		** just forward it */
-	 vu_printf("vps: PID column not found, dumping ps's output.\n\n");
+		vu_printf("vps: PID column not found, dumping ps's output.\n\n");
 		write(1, data, len);
 		return;
 	}
@@ -336,6 +336,10 @@ int main(int argc, char *argv[])
 	pid = fork();
 	
 	if (pid == 0) {
+		// TODO: chnamespace
+		//if (vx_enter_namespace(opts.xid) == -1)
+		//	PEXIT("Failed to enter namespace", EXIT_COMMAND);
+		
 		if (vx_migrate(opts.xid) == -1)
 			PEXIT("Failed to migrate to context", EXIT_COMMAND);
 		
@@ -350,9 +354,11 @@ int main(int argc, char *argv[])
 		
 		argv[optind-1] = "ps";
 		
+		// TODO: chroot to context's root (for ps to map uid <-> user correctly) -- if one exists
 		if (execv("/bin/ps", argv+optind-1) == -1)
 			PEXIT("Failed to start ps", EXIT_COMMAND);
-	}
+	} else if (pid == -1)
+		PEXIT("Failed to clone process", EXIT_COMMAND);
 	
 	/* get output from ps */
 	char *data;

@@ -64,7 +64,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <opts>* <mountpoint>\n"
+	vu_printf("Usage: %s <command> <opts>* <mountpoint>\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -A            Add a disk limit entry\n"

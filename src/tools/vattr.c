@@ -85,7 +85,7 @@ struct stat st;
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <opts>* <file>*\n"
+	vu_printf("Usage: %s <opts>* <file>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set file attributes\n"
@@ -162,7 +162,7 @@ set_iattr:
 		
 		/* syscall */
 		if (vx_set_iattr(&iattr) == -1) {
-		 vu_printf("vx_set_iattr(%s): %s\n", iattr.filename, strerror(errno));
+			vu_printf("vx_set_iattr(%s): %s\n", iattr.filename, strerror(errno));
 			return 1;
 		}
 	} else {
@@ -215,15 +215,15 @@ set_iattr:
 		else
 			vu_snprintf(ptr, 7, " noxid");
 		
-	 vu_printf("%s", buf);
+		vu_printf("%s", buf);
 		
 		if (src != 0)
-		 vu_printf(" %s ->", src);
+			vu_printf(" %s ->", src);
 		
 		if (display != 0)
-		 vu_printf(" %s\n", display);
+			vu_printf(" %s\n", display);
 		else
-		 vu_printf(" %s\n", file);
+			vu_printf(" %s\n", file);
 	}
 	
 	return rc;
@@ -241,7 +241,7 @@ int handle_file(char *file, char *display)
 		goto out;
 	
 	if (lstat(file, &sb) == -1) {
-	 vu_printf("lstat(%s): %s\n", file, strerror(errno));
+		vu_printf("lstat(%s): %s\n", file, strerror(errno));
 		return 1;
 	}
 	
@@ -258,7 +258,7 @@ int handle_file(char *file, char *display)
 			if (errno == ENOENT)
 				return 0;
 			
-		 vu_printf("readlink(%s): %s\n", display, strerror(errno));
+			vu_printf("readlink(%s): %s\n", display, strerror(errno));
 			return 1;
 		}
 		
@@ -266,7 +266,7 @@ int handle_file(char *file, char *display)
 		
 		if (opts.follow) {
 			if (stat(link_buf, &sb) == -1) {
-			 vu_printf("stat(%s): %s\n", link_buf, strerror(errno));
+				vu_printf("stat(%s): %s\n", link_buf, strerror(errno));
 				return 1;
 			}
 			
@@ -290,7 +290,7 @@ int walk_tree(char *path, char *root)
 	DIR *dir        = opendir(path);
 	
 	if (dir == 0) {
-	 vu_printf("opendir(%s): %s\n", path, strerror(errno));
+		vu_printf("opendir(%s): %s\n", path, strerror(errno));
 		return 1;
 	}
 	
@@ -310,7 +310,7 @@ int walk_tree(char *path, char *root)
 	
 	while ((ent = readdir(dir)) != 0) {
 		if (lstat(ent->d_name, &sb) == -1) {
-		 vu_printf("lstat(%s): %s\n", ent->d_name, strerror(errno));
+			vu_printf("lstat(%s): %s\n", ent->d_name, strerror(errno));
 			return errcnt + 1;
 		}
 		
@@ -360,15 +360,16 @@ int process_file(char *path)
 	int rc = 0;
 	
 	if (lstat(path, &st) == -1) {
-	 vu_printf("lstat(%s): %s\n", path, strerror(errno));
+		vu_printf("lstat(%s): %s\n", path, strerror(errno));
 		return 1;
 	}
-	
-	if (S_ISDIR(st.st_mode) &&
-	   ((cmds.set && opts.recurse) ||
-	    (!cmds.set && !opts.dirent))) {
-		rc = walk_tree(path, 0);
-	} else {
+
+	if (opts.dirent || !S_ISDIR(st.st_mode || cmds.set)) {
+		/* First operate on the file/folder itself if either:
+		 * - It's not a directory
+		 * - Even dires should be processed
+		 * - If we are setting value
+		 */
 		char *pathc = strdup(path);
 		char *basec = strdup(path);
 		char *dname = dirname(pathc);
@@ -376,6 +377,12 @@ int process_file(char *path)
 		
 		chdir(dname);
 		rc = handle_file(bname, path);
+	}
+
+	// If we need to recurse, do it
+	if (S_ISDIR(st.st_mode) &&
+	   ((cmds.set && opts.recurse) || (!cmds.set && !opts.dirent))) {
+		rc = walk_tree(path, 0);
 	}
 	
 	fchdir(cwd);

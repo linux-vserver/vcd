@@ -16,38 +16,36 @@
 # Free Software Foundation, Inc.,
 # 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-: ${_HAVE_PATHCONFIG:?"Internal error: no pathconfig in info.sh"}
+: ${_HAVE_PATHCONFIG:?"Internal error: no pathconfig in enter.sh"}
 
 [ -z "${_HAVE_LIB_UTIL}" ] && source ${_LIB_UTIL}
 [ -z "${_HAVE_LIB_VPS}" ]  && source ${_LIB_VPS}
 
 
-info.usage() {
-	echo "Usage: vserver info <name>"
+enter.usage() {
+	echo "Usage: vserver enter <name>"
 	echo
 	echo "  <name>        Name of the vserver"
 	echo
 }
 
-info.exit_handler() {
+enter.exit_handler() {
 	:
 }
 
-info.interrupt_handler() {
-	info.exit_handler
+enter.interrupt_handler() {
+	enter.exit_handler
 }
 
-info.main() {
-	local list
-	
-	[ -z "${VNAME:=$1}" ] && util.error "info: missing argument <name>"
+enter.main() {
+	[ -z "${VNAME:=$1}" ] && util.error "enter: missing argument <name>"
 	
 	vps.loadconfig
 	
-	list=(VNAME VDIR VX_XID VX_INIT)
+	if ! vps.running; then
+		util.error "enter: vserver '${VNAME}' not running"
+	fi
 	
-	for i in ${list[@]}; do
-		echo -n "${i}="
-		eval echo \$${i}
-	done
+	vps.exec ${VX_SHELL}
+	
 }

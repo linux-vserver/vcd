@@ -54,7 +54,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <opts>**\n"
+	vu_printf("Usage: %s <command> <opts>**\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set resource limits\n"

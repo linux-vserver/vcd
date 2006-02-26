@@ -36,6 +36,8 @@
 #include <sys/mount.h>
 #include <sys/file.h>
 #include <vserver.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include "printf.h"
 #include "tools.h"
@@ -81,7 +83,7 @@ int root_fd;
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	            "\n"
 	            "Available commands:\n"
 	            "    -M            Mount vserver filesystems\n"
@@ -203,36 +205,7 @@ int parse_fsent(struct mntspec *fsent, char *fstab_line)
 	GET_STRING(fsent->data, true)
 	
 #undef GET_STRING
-	
-	/* set safe mount flags */
-	fsent->flags = MS_NODEV;
-	
-	/* perform sanity checks */
-	if (strcmp(fsent->vfstype, "swap")   == 0) return 1;
-	if (strcmp(fsent->vfstype, "devpts") == 0) fsent->flags |= MS_NODEV;
-	if (strcmp(fsent->vfstype, "none")   == 0) fsent->vfstype = 0;
-	
-	/* check data */
-	char *data = strdup(fsent->data);
-	char *buf;
 
-#define CHECK_DATA(DATA,FLAGS) \
-	if (strcasecmp(buf, DATA) == 0) fsent->flags |= FLAGS;
-	
-	while ((buf = strsep(&data, ",")) != 0) {
-		CHECK_DATA("bind",       MS_BIND)
-		CHECK_DATA("rbind",      MS_BIND|MS_REC)
-		CHECK_DATA("noatime",    MS_NOATIME)
-		CHECK_DATA("nodev",      MS_NODEV)
-		CHECK_DATA("noexec",     MS_NOEXEC)
-		CHECK_DATA("nodiratime", MS_NODIRATIME)
-		CHECK_DATA("nosuid",     MS_NOSUID)
-		CHECK_DATA("ro",         MS_RDONLY)
-		CHECK_DATA("sync",       MS_SYNCHRONOUS)
-	}
-	
-#undef CHECK_DATA
-	
 	return 0;
 }
 
@@ -247,7 +220,12 @@ int mount_fsent(struct mntspec *fsent, struct options *opts)
 	if (secure_chdir(fsent->target) == -1)
 		goto skip;
 	
-	if (mount(fsent->source, ".", fsent->vfstype, fsent->flags, fsent->data) == -1)
+		char mcwd[PATH_MAX];
+		if (getcwd(mcwd, PATH_MAX) == NULL)
+			goto error;
+		vu_printf("Mounting2 '%s' on '%s', type '%s' from '%s'\n", fsent->source, fsent->target, fsent->vfstype, mcwd);
+
+	if (mount(fsent->source, "/", fsent->vfstype, fsent->flags, fsent->data) == -1)
 		goto error;
 	
 	chdir(cwd);
@@ -258,6 +236,58 @@ int mount_fsent(struct mntspec *fsent, struct options *opts)
 	return 0;
 	
 error:
+	return -1;
+	
+skip:
+	return -2;
+}
+
+static
+int mount_fs(struct mntspec *fsent, struct options *opts)
+{
+	char cwd[PATH_MAX];
+	
+	if (getcwd(cwd, PATH_MAX) == NULL)
+		goto error;
+	
+	if (secure_chdir(fsent->target) == -1)
+		goto skip;
+	
+	/* fork ps */
+	pid_t pid;
+	int c;
+	pid = fork();
+
+	if (pid == 0) {
+		char mcwd[PATH_MAX];
+		if (getcwd(mcwd, PATH_MAX) == NULL)
+			goto error;
+		vu_printf("Mounting '%s' on '%s', type '%s' from '%s'\n", fsent->source, fsent->target, fsent->vfstype, mcwd);
+		// mount source target -t fs -o opts
+		if (fsent->data && fsent->data[0] != '\0') {
+			if (execl("/bin/mount", "mount", fsent->source, ".", "-t", fsent->vfstype, "-n", "-o", fsent->data, (char*)NULL) == -1)
+				PEXIT("Failed to start mount", EXIT_COMMAND);
+		} else {
+			// If there are no options, don't provide empty argument to mount
+			if (execl("/bin/mount", "mount", fsent->source, ".", "-t", fsent->vfstype, "-n", (char*)NULL) == -1)
+				PEXIT("Failed to start mount", EXIT_COMMAND);
+		}
+	} else if (pid == -1)
+		PEXIT("Failed to clone process", EXIT_COMMAND);
+
+	waitpid(pid, &c, 0);
+	if ((WIFEXITED(c) ? WEXITSTATUS(c) : 1) != 0)
+		goto error;
+
+	chdir(cwd);
+	
+	if (!opts->nomtab && update_mtab(fsent, opts) == -1)
+		perror("Failed to update mtab");
+	
+	return 0;
+	
+error:
+	vu_printf("Mount failed for '%s' type '%s'", fsent->target, fsent->vfstype);
 	return -1;
 	
 skip:
@@ -393,15 +423,16 @@ int main(int argc, char *argv[])
 		
 		/* iterate through fstab and mount appropriate entries */
 		while ((fstab_line = strsep(&fstab_buf, "\n")) != 0) {
+			// TODO: replace parse_fsent() with something that forks to /bin/mount to do the mount operation
 			struct mntspec fsent;
 			
 			switch (parse_fsent(&fsent, fstab_line)) {
 				case -1:
-				 vu_printf("Failed to parse fstab line:\n%s\n", fstab_line);
+					vu_printf("Failed to parse fstab line:\n%s\n", fstab_line);
 					break;
 				
 				case 0:
-					if (mount_fsent(&fsent, &opts) == -1)
+					if (mount_fs(&fsent, &opts) == -1)
 						ok = false;
 					else
 						passed = true;
@@ -474,7 +505,7 @@ rbind:
 			
 			switch (parse_fsent(&fsent, mtab_line)) {
 				case -1:
-				 vu_printf("Failed to parse mtab line:\n%s\n", mtab_line);
+					vu_printf("Failed to parse mtab line:\n%s\n", mtab_line);
 					break;
 				
 				case 0:

@@ -44,7 +44,7 @@ struct options {
 
 void cmd_help()
 {
- vu_printf("Usage: %s <opts>*\n"
+	vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
 	       "    -x <xid>      Context ID\n"

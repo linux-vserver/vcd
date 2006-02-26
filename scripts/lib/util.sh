@@ -18,6 +18,19 @@
 
 : ${_HAVE_PATHCONFIG:?"Internal error: no pathconfig in util.sh"}
 
+util.exec_scriplets() {
+# $1 - base script path
+	local path=$1
+	
+	[ -z "${path}" ] && return 0
+	
+	[ ! -e ${path} -a ! -e ${path}.d ] && return 0
+	
+	for i in ${path} ${path}.d/*; do
+		[ -r ${i} ] && source ${i}
+	done
+}
+
 util.error() {
 # $1 - error message
 # $2 - exit code (default: 1)
@@ -36,6 +49,20 @@ util.warning() {
 	[ -z "${msg}" ] && msg="(no warning message)"
 	
 	echo "warning: ${msg}" >&2
+}
+
+util.array_to_list() {
+	local list
+	
+	[ -z "$1" ] && return 0
+	
+	while true; do
+		list="${list},${1}"
+		[ -z "$2" ] && break
+		shift
+	done
+	
+	echo ${list/,}
 }
 
 _HAVE_LIB_UTIL=1

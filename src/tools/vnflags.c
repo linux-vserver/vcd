@@ -51,7 +51,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <opts>*\n"
+	vu_printf("Usage: %s <command> <opts>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set context capabilities/flags\n"
@@ -194,12 +194,12 @@ nflags:
 		/* iterate through each list and print matching keys */
 		list_foreach(cp, i) {
 			if (caps.caps & *(uint64_t*)(cp->node+i)->data)
-			 vu_printf("C: %s\n", (char *)(cp->node+i)->key);
+				vu_printf("C: %s\n", (char *)(cp->node+i)->key);
 		}
 		
 		list_foreach(fp, i) {
 			if (flags.flags & *(uint64_t*)(fp->node+i)->data)
-			 vu_printf("F: %s\n", (char *)(fp->node+i)->key);
+				vu_printf("F: %s\n", (char *)(fp->node+i)->key);
 		}
 		
 		goto out;
@@ -208,10 +208,10 @@ nflags:
 	if (cmds.list) {
 		/* iterate through each list and print all keys */
 		list_foreach(cp, i)
-		 vu_printf("C: %s\n", (char *)(cp->node+i)->key);
+			vu_printf("C: %s\n", (char *)(cp->node+i)->key);
 		
 		list_foreach(fp, i)
-		 vu_printf("F: %s\n", (char *)(fp->node+i)->key);
+			vu_printf("F: %s\n", (char *)(fp->node+i)->key);
 		
 		goto out;
 	}

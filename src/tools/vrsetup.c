@@ -59,7 +59,7 @@ struct options {
 static inline
 void cmd_help()
 {
- vu_printf("Usage: %s <command> <rootdev> [<realrootdev>]\n"
+	vu_printf("Usage: %s <command> <rootdev> [<realrootdev>]\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -C            Clear device\n"

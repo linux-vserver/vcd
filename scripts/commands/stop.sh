@@ -66,20 +66,16 @@ stop.main() {
 	STATETRACK=halt
 	vps.halt
 	
-	if vps.running; then
-		local cnt=0
-		local timeout=$(vps.config get vps.timeout)
-		: ${timeout:=30}
+	while [ ${cnt} -lt ${VX_TIMEOUT_KILL} ]; do
+		vps.running || break
 		
-		while [ ${cnt} -lt ${timeout} ]; do
-			vps.running || { echo; break; }
-			
-			echo -n "."
-			
-			sleep 2
-			let cnt+=2
-		done
-	fi
+		echo -n "."
+		
+		sleep 2
+		let cnt+=2
+	done
+	
+	echo
 	
 	if vps.running; then
 		STATETRACK=kill

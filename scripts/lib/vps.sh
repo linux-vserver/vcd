@@ -18,51 +18,36 @@
 
 : ${_HAVE_PATHCONFIG:?"Internal error: no pathconfig in vps.sh"}
 
+[ -z "${_HAVE_LIB_FS}" ]   && source ${_LIB_FS}
 [ -z "${_HAVE_LIB_UTIL}" ] && source ${_LIB_UTIL}
-
-vps.config() {
-# $1 - subcommand
-# $2 - configuration key
-	[ -z "${VNAME}" ] && util.error "vps.config: VNAME missing"
-	
-	local subcmd=$1
-	local key=$2
-	
-	[ -z "${subcmd}" ] && util.error "vps.config: missing argument <subcmd>"
-	
-	case ${subcmd} in
-		get)
-			[ -z "${key}" ] && util.error "vps.config: missing argument <key>"
-			${_VCONFIG} -G -n ${VNAME} -k ${key}
-			;;
-		
-		list)
-			if [ -z "${key}" ]; then
-				${_VCONFIG} -L
-			else
-				${_VCONFIG} -L | grep "^${key}"
-			fi
-			;;
-		
-		*)
-			util.error "vps.config: unknown subcommand '${subcmd}'"
-	esac
-}
 
 vps.loadconfig() {
 	[ -z "${VNAME}" ] && util.error "vps.loadconfig: VNAME missing"
 	
+	: ${VDIRBASE:=${__VDIRBASE}}
+	: ${VCONFDIR:=${__PKGCONFDIR}/${VNAME}}
+	
+	if [ ! -e ${VCONFDIR}/context.conf ]; then
+		util.error "vps.loadconfig: cannot find configuration for '${VNAME}'"
+	fi
+	
+	source ${VCONFDIR}/context.conf
+	
 	# sanity checks
-	VDIR=$(vps.config get namespace.root)
-	VX_INIT=$(vps.config get vps.init)
-	VX_XID=$(vps.config get context.id)
+	local needed="VX_XID,VX_INIT"
 	
-	: ${VDIR:=${__VDIRBASE}/${VNAME}}
+	for i in ${needed}; do
+		if [ -z "$(eval echo \$${i})" ]; then
+			util.error "vps.loadconfig: missing configuration for ${i}"
+		fi
+	done
 	
-	[ -z "${VX_INIT}" ] && util.error "vps.loadconfig: missing configuration for vps.init"
-	[ -z "${VX_XID}" ] && util.error "vps.loadconfig: missing configuration for context.id"
+	# defaults
+	: ${VDIR:=${VDIRBASE}/${VNAME}}
+	: ${VX_TIMEOUT_KILL:=30}
+	: ${VX_SHELL:=/bin/bash}
 	
-	if [ ! -d ${VDIR} ]; then
+	if [ ! -d "${VDIR}" ]; then
 		util.error "vps.loadconfig: cannot find installation for '${VNAME}'"
 	fi
 }
@@ -138,8 +123,8 @@ vps.network() {
 	
 	case ${subcmd} in
 		setup)
-			vps.config get net.addr | while read line; do
-				${_VNCONTEXT} -A -n ${VX_XID} -a ${line}
+			for i in ${NX_ADDR[@]}; do
+				${_VNCONTEXT} -A -n ${VX_XID} -a ${i}
 			done
 			;;
 		
@@ -180,11 +165,9 @@ vps.limit() {
 	
 	case ${subcmd} in
 		set)
-			for i in $(vps.config list limit.); do
-				res=${i/limit.}
-				limit=$(vps.config get ${i})
-				
-				[ -z "${limit}" ] && continue
+			for i in ${VX_LIMIT[@]}; do
+				res=${i/=*}
+				limit=${i/*=}
 				
 				${_VLIMIT} -S -r ${res} -l ${limit} -x ${VX_XID}
 			done
@@ -198,18 +181,15 @@ vps.limit() {
 vps.sched() {
 # $1 - subcommand
 	local subcmd=$1
-	local sched
 	
 	[ -z "${subcmd}" ] && util.error "vps.sched: missing argument <subcmd>"
 	[ -z "${VX_XID}" ] && util.error "vps.sched: VX_XID missing"
 	
 	case ${subcmd} in
 		set)
-			sched=$(vps.config get context.sched)
+			[ -z "${VX_SCHED}" ] && return 0
 			
-			[ -z "${sched}" ] && return 0
-			
-			${_VSCHED} -S -b ${sched} -x ${VX_XID}
+			${_VSCHED} -S -b $(util.array_to_list ${VX_SCHED[@]}) -x ${VX_XID}
 			;;
 		
 		*)
@@ -220,7 +200,7 @@ vps.sched() {
 vps.uname() {
 # $1 - subcommand
 	local subcmd=$1
-	local uts name
+	local names
 	
 	[ -z "${subcmd}" ] && util.error "vps.uname: missing argument <subcmd>"
 	[ -z "${VX_XID}" ] && util.error "vps.uname: VX_XID missing"
@@ -230,14 +210,9 @@ vps.uname() {
 		set)
 			${_VUNAME} -S -n CONTEXT=${VNAME} -x ${VX_XID}
 			
-			for i in $(vps.config list uts.); do
-				uts=${i/uts.}
-				name=$(vps.config get ${i})
-				
-				[ -z "${name}" ] && continue
-				
-				${_VUNAME} -S -n ${uts}=${name} -x ${VX_XID}
-			done
+			[ -z "${VX_UNAME}" ] && return 0
+			
+			${_VUNAME} -S -n $(util.array_to_list ${VX_UNAME[@]}) -x ${VX_XID}
 			;;
 		
 		*)
@@ -248,27 +223,23 @@ vps.uname() {
 vps.flags() {
 # $1 - subcommand
 	local subcmd=$1
-	local bcaps ccaps flags
+	local names
 	
 	[ -z "${subcmd}" ] && util.error "vps.flags: missing argument <subcmd>"
 	[ -z "${VX_XID}" ] && util.error "vps.flags: VX_XID missing"
 	
 	case ${subcmd} in
 		set)
-			bcaps=$(vps.config get context.bcapabilities)
-			ccaps=$(vps.config get context.ccapabilities)
-			flags=$(vps.config get context.flags)
-			
-			if [ ! -z "${bcaps}" ]; then
-				${_VFLAGS} -S -b ${bcaps} -x ${VX_XID}
+			if [ ! -z "${VX_BCAPS}" ]; then
+				${_VFLAGS} -S -b $(util.array_to_list ${VX_BCAPS[@]}) -x ${VX_XID}
 			fi
 			
-			if [ ! -z "${ccaps}" ]; then
-				${_VFLAGS} -S -c ${ccaps} -x ${VX_XID}
+			if [ ! -z "${VX_CCAPS}" ]; then
+				${_VFLAGS} -S -c $(util.array_to_list ${VX_CCAPS[@]}) -x ${VX_XID}
 			fi
 			
-			if [ ! -z "${flags}" ]; then
-				${_VFLAGS} -S -f ${flags} -x ${VX_XID}
+			if [ ! -z "${VX_FLAGS}" ]; then
+				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}) -x ${VX_XID}
 			fi
 			;;
 		
@@ -285,7 +256,7 @@ vps.init() {
 	pushd ${VDIR} >/dev/null
 	
 	case ${VX_INIT} in
-		sysvinit)
+		sysvinit|init|plain)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
 			${_VEXEC} -cfi -n ${VX_XID} -x ${VX_XID} -- /sbin/init
 			;;
@@ -325,7 +296,7 @@ vps.halt() {
 	pushd ${VDIR} >/dev/null
 	
 	case ${VX_INIT} in
-		sysvinit)
+		sysvinit|init|plain)
 			${_VFLAGS} -S -f REBOOT_KILL -x ${VX_XID}
 			
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
@@ -374,13 +345,9 @@ vps.login() {
 	[ -z "${VX_XID}" ]  && util.error "vps.login: VX_XID missing"
 	[ -z "${VDIR}" ]    && util.error "vps.login: VDIR missing"
 	
-	local shell=$(vps.config get vps.shell)
-	
-	: ${shell:=/bin/bash}
-	
 	pushd ${VDIR} >/dev/null
 	${_VNAMESPACE} -E -x ${VX_XID} -- \
-	${_VLOGIN} -n ${VX_XID} -x ${VX_XID} -- ${shell}
+	${_VLOGIN} -n ${VX_XID} -x ${VX_XID} -- ${VX_SHELL}
 	popd >/dev/null
 }
 
@@ -392,26 +359,21 @@ vps.kill() {
 
 vps.mount() {
 # $1 - mount rootfs (optional)
-	local fstab=$(vps.config get namespace.fstab)
-	local mtab=$(vps.config get namespace.mtab)
+	local fstab mtab
 	
-	fstab_tmp=$(mktemp)
-	mtab_tmp=$(mktemp)
+	fstab=$(fs.best_file ${VCONFDIR}/init/fstab \
+	                     ${__PKGCONFDIR}/.defaults/init/fstab \
+	                     ${__PKGDATADEFAULTSDIR}/fstab)
 	
-	if [ -n "${fstab}" ]; then
-		echo ${fstab} > ${fstab_tmp}
-	else
-		cat ${__PKGCONFDIR}/fstab > ${fstab_tmp}
-	fi
-	
-	if [ -n "${mtab}" ]; then
-		echo ${mtab} > ${fstab_tmp}
-	else
-		cat ${__PKGCONFDIR}/mtab > ${mtab_tmp}
-	fi
+	mtab=$(fs.best_file ${VCONFDIR}/init/mtab \
+	                    ${__PKGCONFDIR}/.defaults/init/mtab \
+	                    ${__PKGDATADEFAULTSDIR}/mtab)
 	
 	[ -z "${VDIR}" ]   && util.error "vps.mount: VDIR missing"
 	[ -z "${VX_XID}" ] && util.error "vps.mount: VX_XID missing"
+	
+	[ -z "${fstab}" ] && util.error "vps.mount: cannot find fstab"
+	[ -z "${mtab}" ]  && util.error "vps.mount: cannot find mtab"
 	
 	if [ "$1" == "root" ]; then
 		${_VNAMESPACE} -E -x ${VX_XID} -- \
@@ -419,10 +381,14 @@ vps.mount() {
 	else
 		pushd ${VDIR} >/dev/null
 		
-		cp ${mtab_tmp} etc/mtab
+		if [ -n "${mtab}" ]; then
+			cp ${mtab} etc/mtab
+		else
+			: > etc/mtab
+		fi
 		
 		${_VNAMESPACE} -E -x ${VX_XID} -- \
-		${_VMOUNT} -M -f ${fstab_tmp} -m etc/mtab
+		${_VMOUNT} -M -f ${fstab} -m etc/mtab
 		
 		popd >/dev/null
 	fi
@@ -431,12 +397,21 @@ vps.mount() {
 }
 
 vps.umount() {
-	[ -z "${VDIR}" ]   && util.error "vps.mount: VDIR missing"
+	local fstab
+	
+	fstab=$(fs.best_file ${VCONFDIR}/init/fstab \
+	                     ${__PKGCONFDIR}/.defaults/init/fstab \
+	                     ${__PKGDATADEFAULTSDIR}/fstab)
+	
 	[ -z "${VX_XID}" ] && util.error "vps.umount: VX_XID missing"
 	
+	[ -z "${fstab}" ] && util.error "vps.umount: cannot find fstab"
+	
 	pushd ${VDIR} >/dev/null
+	
 	${_VNAMESPACE} -E -x ${VX_XID} -- \
-	${_VMOUNT} -U -m etc/mtab
+	${_VMOUNT} -U -f ${fstab} -m etc/mtab
+	
 	popd >/dev/null
 }
 
