@@ -192,7 +192,7 @@ migrate:
 				struct stat st;
 				if (stat("/dev/console", &st) == -1) {
 					vu_printf("Failed to stat /dev/console:  %s\n", strerror(errno));
-				} else if (!S_ISCHR(st.st_mode)) {
+				} else if (S_ISCHR(st.st_mode)) {
 					int fd = open("/dev/console", O_RDWR); // O_NOCTTY);
 					if (fd < 0) vu_printf("Failed to open /dev/console:  %s\n", strerror(errno));
 					if (fd > 0) dup2(fd, 0);
