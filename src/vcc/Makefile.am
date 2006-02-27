@@ -27,4 +27,5 @@ noinst_HEADERS = commands.h
 sbin_PROGRAMS = vcc
 
 vcc_SOURCES = main.c \
+              login.c \
               start.c

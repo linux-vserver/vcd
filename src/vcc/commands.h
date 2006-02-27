@@ -35,8 +35,10 @@ extern int vcc_interactive;
 
 /* main prototypes */
 void start_main(int argc, char **argv);
+void login_main(int argc, char **argv);
 
 /* usage prototypes */
 void start_usage(int rc);
+void login_usage(int rc);
 
 #endif

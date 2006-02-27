@@ -35,6 +35,7 @@ static const char *rcsid = "$Id$";
 int vcc_interactive = 0;
 
 vcc_command_t commands[] = {
+	{ "login", login_main, login_usage },
 	{ "start", start_main, start_usage },
 	{ NULL,    NULL,       NULL },
 };
