@@ -26,6 +26,4 @@ libvc_a_SOURCES = cfg.c \
                   lists.c \
                   misc.c \
                   msg.c \
-                  ns.c \
-                  nx.c \
-                  vx.c
+                  str.c

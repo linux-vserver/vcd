@@ -19,74 +19,65 @@
  ***************************************************************************/
 
 #include <stdlib.h>
-#include <wait.h>
 #include <errno.h>
+#include <ctype.h>
 #include <arpa/inet.h>
-#include <lucid/sys.h>
 
 #include "vc.h"
 
-int vc_nx_exists(nid_t nid)
+uint64_t vc_str_to_rlim(char *str)
 {
-	struct nx_info info;
+	if (str == NULL)
+		return CRLIM_KEEP;
 	
-	return nx_get_info(nid, &info) == -1 ? 0 : 1;
+	if (strcmp(str, "inf") == 0)
+		return CRLIM_INFINITY;
+	
+	if (strcmp(str, "keep") == 0)
+		return CRLIM_KEEP;
+	
+	return atoi(str);
 }
 
-int vc_nx_new(nid_t nid)
+char *vc_rlim_to_str(uint64_t lim)
 {
-	pid_t pid;
-	int status;
+	char *buf;
 	
-	struct nx_create_flags flags = {
-		.flags = NXF_PERSISTANT,
-	};
+	if (lim == CRLIM_INFINITY)
+		vc_asprintf(&buf, "%s", "inf");
 	
-	switch((pid = fork())) {
-		case -1:
-			return -1;
-		
-		case 0:
-			if (nx_create(nid, &flags) == -1)
-				exit(errno);
-			
-			exit(EXIT_SUCCESS);
-		
-		default:
-			if (waitpid(pid, &status, 0) == -1)
-				return -1;
-			
-			if (WIFEXITED(status)) {
-				if (WEXITSTATUS(status) == EXIT_SUCCESS)
-					return 0;
-				else {
-					errno = WEXITSTATUS(status);
-					return -1;
-				}
-			}
-			
-			if (WIFSIGNALED(status))
-				kill(getpid(), WTERMSIG(status));
-	}
+	vc_asprintf(&buf, "%d", lim);
 	
-	return 0;
+	return buf;
 }
 
-int vc_nx_release(nid_t nid)
+uint64_t vc_str_to_dlim(char *str)
 {
-	struct nx_flags flags = {
-		.flags = 0,
-		.mask  = NXF_PERSISTANT,
-	};
+	if (str == NULL)
+		return CDLIM_KEEP;
 	
-	if (nx_set_flags(nid, &flags) == -1)
-		return -1;
+	if (strcmp(str, "inf") == 0)
+		return CDLIM_INFINITY;
 	
-	return 0;
+	if (strcmp(str, "keep") == 0)
+		return CDLIM_KEEP;
+	
+	return atoi(str);
 }
 
-static inline
-int _parse_cidr(char *cidr, uint32_t *ip, uint32_t *mask)
+char *vc_dlim_to_str(uint64_t lim)
+{
+	char *buf;
+	
+	if (lim == CDLIM_INFINITY)
+		vc_asprintf(&buf, "%s", "inf");
+	
+	vc_asprintf(&buf, "%d", lim);
+	
+	return buf;
+}
+
+int vc_str_to_addr(char *str, uint32_t *ip, uint32_t *mask)
 {
 	struct in_addr ib;
 	char *addr_ip, *addr_mask;
@@ -94,7 +85,7 @@ int _parse_cidr(char *cidr, uint32_t *ip, uint32_t *mask)
 	*ip   = 0;
 	*mask = 0;
 	
-	addr_ip   = strtok(cidr, "/");
+	addr_ip   = strtok(str, "/");
 	addr_mask = strtok(NULL, "/");
 	
 	if (addr_ip == 0)
@@ -131,32 +122,34 @@ int _parse_cidr(char *cidr, uint32_t *ip, uint32_t *mask)
 	return 0;
 }
 
-int vc_nx_add_addr(nid_t nid, char *cidr)
+int vc_str_to_fstab(char *str, char **src, char **dst, char **type, char **data)
 {
-	struct nx_addr addr;
+	*src = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	if (*str == '\0') goto error;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
 	
-	addr.type  = NXA_TYPE_IPV4;
-	addr.count = 1;
+	*dst = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	if (*str == '\0') goto error;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
 	
-	if (_parse_cidr(cidr, &addr.ip[0], &addr.mask[0]) == -1) {
-		errno = EINVAL;
-		return -1;
-	}
+	*type = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	if (*str == '\0') goto error;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
 	
-	if (nx_add_addr(nid, &addr) == -1)
-		return -1;
+	*data = str;
+	while (!isspace(*str) && *str != '\0') ++str;
+	*str++ = '\0';
+	while (isspace(*str)) ++str;
 	
 	return 0;
-}
-
-int vc_nx_rem_addr(nid_t nid, char *cidr)
-{
-	struct nx_addr addr;
 	
-	addr.type  = NXA_TYPE_ANY;
-	
-	if (nx_rem_addr(nid, &addr) == -1)
-		return -1;
-	
-	return 0;
+error:
+	errno = EINVAL;
+	return -1;
 }

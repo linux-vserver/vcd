@@ -37,14 +37,11 @@ enum {
 typedef struct {
 	char *key;
 	int  type;
-	char *file;
 } vc_cfg_node_t;
 
 extern vc_cfg_node_t vc_cfg_map[];
 
 int vc_cfg_get_type(char *key);
-int vc_cfg_get_file(char *key, char **file);
-
 int vc_cfg_istype(char *key, int type);
 
 #define vc_cfg_isbool(key) vc_cfg_istype(key, VC_CFG_BOOL_T)
@@ -52,8 +49,6 @@ int vc_cfg_istype(char *key, int type);
 #define vc_cfg_isstr(key)  vc_cfg_istype(key, VC_CFG_STR_T)
 #define vc_cfg_islist(key) vc_cfg_istype(key, VC_CFG_LIST_T)
 
-int vc_cfg_get_xid (char *name, xid_t *xid);
-int vc_cfg_get_name(xid_t xid, char **name);
 int vc_cfg_get_bool(char *name, char *key, int *value);
 int vc_cfg_set_bool(char *name, char *key, int value);
 int vc_cfg_get_int (char *name, char *key, int *value);
@@ -62,6 +57,19 @@ int vc_cfg_get_str (char *name, char *key, char **value);
 int vc_cfg_set_str (char *name, char *key, char *value);
 int vc_cfg_get_list(char *name, char *key, char **value);
 int vc_cfg_set_list(char *name, char *key, char *value);
+
+/* lists.c */
+extern const flist64_t vc_bcaps_list[];
+extern const flist64_t vc_ccaps_list[];
+extern const flist64_t vc_cflags_list[];
+extern const flist32_t vc_vhiname_list[];
+extern const flist32_t vc_iattr_list[];
+extern const flist32_t vc_rlimit_list[];
+extern const flist64_t vc_nflags_list[];
+extern const flist32_t vc_sched_list[];
+
+/* misc.c */
+int vc_secure_chdir(int rootfd, int cwdfd, char *dir);
 
 /* msg.c */
 #define vc_vsnprintf _lucid_vsnprintf
@@ -91,39 +99,13 @@ void vc_abortp(const char *fmt, /*args*/ ...);
 #define vc_abortf(fmt, ...)  vc_abort ("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 #define vc_abortfp(fmt, ...) vc_abortp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 
-/* lists.c */
-extern const flist64_t vc_bcaps_list[];
-extern const flist64_t vc_ccaps_list[];
-extern const flist64_t vc_cflags_list[];
-extern const flist32_t vc_vhiname_list[];
-extern const flist32_t vc_iattr_list[];
-extern const flist32_t vc_rlimit_list[];
-extern const flist64_t vc_nflags_list[];
-extern const flist32_t vc_sched_list[];
-
-/* misc.c */
-int vc_secure_chdir(int rootfd, int cwdfd, char *dir);
-pid_t vc_waitpid(pid_t pid);
-
-/* ns.c */
-int vc_ns_new(xid_t xid);
-int vc_str_to_fstab(char *str, char **src, char **dst, char **type, char **data);
-
-/* nx.c */
-int vc_nx_exists(nid_t nid);
-int vc_nx_new(nid_t nid);
-int vc_nx_release(nid_t nid);
-int vc_nx_add_addr(nid_t nid, char *cidr);
-int vc_nx_rem_addr(nid_t nid, char *cidr);
-
-#define VC_SECURE_NFLAGS 0
-
-/* vx.c */
-int vc_vx_exists(xid_t xid);
-int vc_vx_new(xid_t xid);
-int vc_vx_release(xid_t xid);
+/* str.c */
 uint64_t vc_str_to_rlim(char *str);
-char *vc_rlim_to_str(uint64_t lim);
+char    *vc_rlim_to_str(uint64_t lim);
+uint64_t vc_str_to_dlim(char *str);
+char    *vc_dlim_to_str(uint64_t lim);
+int      vc_str_to_addr(char *str, uint32_t *ip, uint32_t *mask);
+int      vc_str_to_fstab(char *str, char **src, char **dst, char **type, char **data);
 
 #define VC_INSECURE_BCAPS ( \
 	(1<<CAP_LINUX_IMMUTABLE) | \
@@ -149,5 +131,7 @@ char *vc_rlim_to_str(uint64_t lim);
 
 #define VC_SECURE_CFLAGS ( \
 	VXF_HIDE_NETIF )
+
+#define VC_SECURE_NFLAGS 0
 
 #endif

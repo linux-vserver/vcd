@@ -22,7 +22,6 @@
 #include <errno.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <wait.h>
 
 #include "vc.h"
 
@@ -78,24 +77,4 @@ err:
 	vc_fchroot(rootfd);
 	errno = errno_orig;
 	return -1;
-}
-
-pid_t vc_waitpid(pid_t pid)
-{
-	int status;
-	
-	if (waitpid(pid, &status, 0) == -1)
-		return -1;
-	
-	if (WIFEXITED(status)) {
-		if (WEXITSTATUS(status) != EXIT_SUCCESS) {
-			errno = WEXITSTATUS(status);
-			return -2;
-		}
-	}
-	
-	if (WIFSIGNALED(status))
-		kill(getpid(), WTERMSIG(status));
-	
-	return pid;
 }
