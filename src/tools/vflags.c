@@ -167,6 +167,10 @@ int main(int argc, char *argv[])
 		/* convert given descending list to flags using the pristine copy */
 		list_list2flags(&blink, clmod, &caps.bcaps, &caps.bmask);
 		
+		/* syscall */
+		if (vx_set_caps(opts.xid, &caps) == -1)
+			PEXIT("Failed to set capabilities", EXIT_COMMAND);
+				
 ccaps:
 		if (opts.ccaps == 0)
 			goto cflags;
