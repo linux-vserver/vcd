@@ -113,7 +113,7 @@ getxid:
 	if (vx_get_iattr(&iattr) == -1)
 		vc_errp("vx_get_iattr");
 	
-	if (iattr.mask & IATTR_XID)
+	if (iattr.mask & IATTR_TAG)
 		vc_printf("%d\n", iattr.xid);
 	
 	goto out;
@@ -125,11 +125,11 @@ setxid:
 	if (vx_get_iattr(&iattr) == -1)
 		vc_errp("vx_get_iattr");
 	
-	if (iattr.mask & IATTR_XID) {
+	if (iattr.mask & IATTR_TAG) {
 		iattr.xid = atoi(argv[optind]);
 		
-		iattr.flags |= IATTR_XID;
-		iattr.mask  |= IATTR_XID;
+		iattr.flags |= IATTR_TAG;
+		iattr.mask  |= IATTR_TAG;
 		
 		if (vx_set_iattr(&iattr) == -1)
 			vc_errp("vx_set_iattr");

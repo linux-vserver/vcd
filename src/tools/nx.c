@@ -71,6 +71,8 @@ int main(int argc, char *argv[])
 		.mask  = 0,
 	};
 	
+	struct nx_addr addr;
+	
 	uint64_t mask;
 	
 #define CASE_GOTO(ID, P) case ID: nid = atoi(optarg); goto P; break
@@ -146,7 +148,13 @@ addaddr:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (vc_nx_add_addr(nid, argv[i]) == -1)
+		addr.type  = NXA_TYPE_IPV4;
+		addr.count = 1;
+		
+		if (vc_str_to_addr(argv[i], &addr.ip[0], &addr.mask[0]) == -1)
+			vc_errp("vc_str_to_addr");
+		
+		if (nx_add_addr(nid, &addr) == -1)
 			vc_errp("nx_add_addr");
 	}
 	
@@ -157,7 +165,13 @@ remaddr:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (vc_nx_rem_addr(nid, argv[i]) == -1)
+		addr.type  = NXA_TYPE_IPV4;
+		addr.count = 1;
+		
+		if (vc_str_to_addr(argv[i], &addr.ip[0], &addr.mask[0]) == -1)
+			vc_errp("vc_str_to_addr");
+		
+		if (nx_rem_addr(nid, &addr) == -1)
 			vc_errp("nx_rem_addr");
 	}
 	
