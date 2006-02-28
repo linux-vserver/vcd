@@ -1,27 +1,23 @@
-/***************************************************************************
- *   Copyright 2005-2006 by the vserver-utils team                         *
- *   See AUTHORS for details                                               *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
+// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #ifndef _LIBVC_VC_H
 #define _LIBVC_VC_H
 
-#include <stdarg.h>
 #include <vserver.h>
 #include <lucid/flist.h>
 #include <lucid/printf.h>
@@ -39,15 +35,16 @@ typedef struct {
 	int  type;
 } vc_cfg_node_t;
 
-extern vc_cfg_node_t vc_cfg_map[];
+extern vc_cfg_node_t vc_cfg_map_global[];
+extern vc_cfg_node_t vc_cfg_map_local[];
 
-int vc_cfg_get_type(char *key);
-int vc_cfg_istype(char *key, int type);
+int vc_cfg_get_type(char *name, char *key);
+int vc_cfg_istype(char *name, char *key, int type);
 
-#define vc_cfg_isbool(key) vc_cfg_istype(key, VC_CFG_BOOL_T)
-#define vc_cfg_isint(key)  vc_cfg_istype(key, VC_CFG_INT_T)
-#define vc_cfg_isstr(key)  vc_cfg_istype(key, VC_CFG_STR_T)
-#define vc_cfg_islist(key) vc_cfg_istype(key, VC_CFG_LIST_T)
+#define vc_cfg_isbool(name, key) vc_cfg_istype(name, key, VC_CFG_BOOL_T)
+#define vc_cfg_isint(name, key)  vc_cfg_istype(name, key, VC_CFG_INT_T)
+#define vc_cfg_isstr(name, key)  vc_cfg_istype(name, key, VC_CFG_STR_T)
+#define vc_cfg_islist(name, key) vc_cfg_istype(name, key, VC_CFG_LIST_T)
 
 int vc_cfg_get_bool(char *name, char *key, int *value);
 int vc_cfg_set_bool(char *name, char *key, int value);

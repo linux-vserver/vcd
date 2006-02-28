@@ -1,8 +1,7 @@
-## Copyright 2005 The vserver-utils Developers
-## See AUTHORS for details
+## Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
 ##
 ## This program is free software; you can redistribute it and/or modify
-## it under the terms of the GNU General Public License as published by  *
+## it under the terms of the GNU General Public License as published by
 ## the Free Software Foundation; either version 2 of the License, or
 ## (at your option) any later version.
 ##
@@ -24,11 +23,9 @@ LDADD = $(top_builddir)/src/libvc/libvc.a \
 
 noinst_HEADERS = tools.h
 
-pkglibbindir = $(pkglibdir)/bin
-
-pkglibbin_PROGRAMS = dx \
-                     ix \
-                     ns \
-                     nx \
-                     vr \
-                     vx
+sbin_PROGRAMS = dx \
+                ix \
+                ns \
+                nx \
+                vr \
+                vx

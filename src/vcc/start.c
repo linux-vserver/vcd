@@ -1,22 +1,19 @@
-/***************************************************************************
- *   Copyright 2005 by the vserver-utils team                              *
- *   See AUTHORS for details                                               *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
+// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
 #include <sys/mount.h>
@@ -25,6 +22,7 @@
 #include <wait.h>
 #include <ctype.h>
 #include <vserver.h>
+#include <limits.h>
 #include <lucid/argv.h>
 #include <lucid/mmap.h>
 #include <lucid/open.h>
@@ -46,6 +44,7 @@
 static char *start_rcsid = "$Id$";
 static xid_t start_xid   = 0;
 static char *start_name  = NULL;
+static char *start_vdir  = NULL;
 
 void start_usage(int rc)
 {
@@ -166,18 +165,18 @@ void start_setup_context(void)
 	if (vx_get_rlimit_mask(&rlimit_mask) == -1)
 		vc_abortp("vx_get_rlimit_mask");
 	
-	for (i = 0; vc_cfg_map[i].key; i++) {
-		if (strncmp(vc_cfg_map[i].key, "limit.", 6) != 0)
+	for (i = 0; vc_cfg_map_local[i].key; i++) {
+		if (strncmp(vc_cfg_map_local[i].key, "limit.", 6) != 0)
 			continue;
 		
-		buf = 1 + strchr(vc_cfg_map[i].key, '.');
+		buf = 1 + strchr(vc_cfg_map_local[i].key, '.');
 		
 		if (flist32_getval(vc_rlimit_list, buf, &buf32)) {
 			vc_warn("cannot find ID for limit '%s'", buf);
 			continue;
 		}
 		
-		if (vc_cfg_get_list(start_name, vc_cfg_map[i].key, &buf) == -1)
+		if (vc_cfg_get_list(start_name, vc_cfg_map_local[i].key, &buf) == -1)
 			continue;
 		
 		if ((rlimit_mask.minimum   & buf32) != buf32 &&
@@ -190,17 +189,17 @@ void start_setup_context(void)
 		rlimit.id = flist32_mask2val(buf32);
 		
 		if ((p = strsep(&buf, "\n")) == NULL)
-			vc_abort("invalid configuration for limit '%s'", vc_cfg_map[i].key);
+			vc_abort("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
 		else
 			rlimit.minimum = vc_str_to_rlim(p);
 		
 		if ((p = strsep(&buf, "\n")) == NULL)
-			vc_abort("invalid configuration for limit '%s'", vc_cfg_map[i].key);
+			vc_abort("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
 		else
 			rlimit.softlimit = vc_str_to_rlim(p);
 		
 		if ((p = strsep(&buf, "\n")) == NULL)
-			vc_abort("invalid configuration for limit '%s'", vc_cfg_map[i].key);
+			vc_abort("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
 		else
 			rlimit.maximum = vc_str_to_rlim(p);
 		
@@ -211,11 +210,11 @@ void start_setup_context(void)
 	/* 5) context scheduler */
 	
 	/* 6) context vhi names */
-	for (i = 0; vc_cfg_map[i].key; i++) {
-		if (strncmp(vc_cfg_map[i].key, "vhi.", 4) != 0)
+	for (i = 0; vc_cfg_map_local[i].key; i++) {
+		if (strncmp(vc_cfg_map_local[i].key, "vhi.", 4) != 0)
 			continue;
 		
-		buf = 1 + strchr(vc_cfg_map[i].key, '.');
+		buf = 1 + strchr(vc_cfg_map_local[i].key, '.');
 		
 		if (flist32_getval(vc_vhiname_list, buf, &buf32)) {
 			vc_warn("cannot find ID for vhi name '%s'", buf);
@@ -224,7 +223,7 @@ void start_setup_context(void)
 		
 		vhiname.field = flist32_mask2val(buf32);
 		
-		if (vc_cfg_get_list(start_name, vc_cfg_map[i].key, &buf) == -1)
+		if (vc_cfg_get_list(start_name, vc_cfg_map_local[i].key, &buf) == -1)
 			continue;
 		
 		strncpy(vhiname.name, buf, VHILEN-1);
@@ -318,44 +317,29 @@ void start_setup_namespace(void)
 	if ((rootfd = open("/",  O_RDONLY|O_DIRECTORY)) == -1)
 		vc_abortp("open(rootfd)");
 	
-	if (vc_cfg_get_str(start_name, "ns.root", &buf) == -1) {
-		vc_asprintf(&buf, "%s/%s", __VDIRBASE, start_name);
-		vdirfd = open(buf, O_RDONLY|O_DIRECTORY);
-		free(buf);
-	}
-	
-	else
-		vdirfd = open(buf, O_RDONLY|O_DIRECTORY);
-	
-	if (vdirfd == -1)
+	if ((vdirfd = open(start_vdir, O_RDONLY|O_DIRECTORY)) == -1)
 		vc_abortp("open(vdirfd)");
 	
 	/* 2) setup initial mtab */
-	size_t len;
-	
 	if (vc_cfg_get_str(start_name, "ns.mtab", &buf) == -1)
-		buf = mmap_private(__PKGCONFDIR "/mtab", &len);
-	
-	if (buf == NULL)
-		vc_abort("default mtab could not be found");
+		if (vc_cfg_get_str(NULL, "ns.mtab", &buf) == -1)
+			vc_abort("default mtab could not be found");
 	
 	if (vc_secure_chdir(rootfd, vdirfd, "/etc") == -1)
 		vc_abortp("vc_secure_chdir");
 	
-	int mtabfd = open_trunc("mtab");
+	int mtabfd;
 	
-	if (mtabfd == -1)
+	if ((mtabfd = open_trunc("mtab")) == -1)
 		vc_abortp("open_trunc(mtab)");
 	
-	if (write(mtabfd, buf, len) == -1)
+	if (write(mtabfd, buf, strlen(buf)) == -1)
 		vc_abortp("write(mtab)");
 	
 	/* 3) mount fstab entries */
 	if (vc_cfg_get_str(start_name, "ns.fstab", &buf) == -1)
-		buf = mmap_private(__PKGCONFDIR "/fstab", &len);
-	
-	if (buf == NULL)
-		vc_abort("default fstab could not be found");
+		if (vc_cfg_get_str(NULL, "ns.fstab", &buf) == -1)
+			vc_abort("default fstab could not be found");
 	
 	while ((p = strsep(&buf, "\n")) != 0) {
 		while (isspace(*p)) ++p;
@@ -398,8 +382,6 @@ void start_setup_namespace(void)
 		vc_dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, data);
 	}
 	
-	close(mtabfd);
-	
 	/* 4) remount vdir at root */
 	if (vc_secure_chdir(rootfd, vdirfd, "/") == -1)
 		vc_abortp("vc_secure_chdir");
@@ -410,10 +392,17 @@ void start_setup_namespace(void)
 	/* 5) set namespace */
 	if (vx_set_namespace(start_xid) == -1)
 		vc_abortp("vx_set_namespace");
+	
+	/* 6) cleanup */
+	close(mtabfd);
+	close(vdirfd);
+	close(rootfd);
 }
 
 void start_guest_init(void)
 {
+	char *buf;
+	
 	/* 1) migrate to context/namespace */
 	if (nx_migrate(start_xid) == -1)
 		vc_abortp("nx_migrate");
@@ -425,23 +414,8 @@ void start_guest_init(void)
 		vc_abortp("vx_migrate");
 	
 	/* 2) chdir to vdir */
-	int vdirfd;
-	char *buf;
-	
-	if (vc_cfg_get_str(start_name, "ns.root", &buf) == -1) {
-		vc_asprintf(&buf, "%s/%s", __VDIRBASE, start_name);
-		vdirfd = open(buf, O_RDONLY|O_DIRECTORY);
-		free(buf);
-	}
-	
-	else
-		vdirfd = open(buf, O_RDONLY|O_DIRECTORY);
-	
-	if (vdirfd == -1)
-		vc_abortp("open(vdirfd)");
-	
-	if (fchdir(vdirfd) == -1)
-		vc_abortp("fchdir(vdirfd)");
+	if (chdir(start_vdir) == -1)
+		vc_abortp("chdir(vdir)");
 	
 	/* 3) guest init */
 	pid_t pid;
@@ -529,7 +503,19 @@ void start_main(int argc, char *argv[])
 	
 	/* 0a) load configuration */
 	if (vc_cfg_get_int(start_name, "vx.id", (int *) &start_xid) == -1)
-		vc_errp("vc_cfg_get_int(vx.id)");
+		vc_abortp("vc_cfg_get_int(vx.id)");
+	
+	char *buf;
+	char vdir[PATH_MAX];
+	
+	if (vc_cfg_get_str(start_name, "ns.root", &buf) != -1)
+		vc_snprintf(vdir, PATH_MAX, "%s", buf);
+	else if (vc_cfg_get_str(NULL, "ns.base", &buf) != -1)
+		vc_snprintf(vdir, PATH_MAX, "%s/%s", buf, start_name);
+	else
+		vc_snprintf(vdir, PATH_MAX, "%s/%s", __VDIRBASE, start_name);
+	
+	start_vdir = vdir;
 	
 	/* 0b) setup signal handlers */
 	signal(SIGHUP,  start_sighandler);

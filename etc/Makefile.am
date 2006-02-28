@@ -18,11 +18,8 @@
 
 include $(top_srcdir)/m4/pathconfig.am
 
-nobase_pkgdata_DATA = examples/vservers.rc
+pkgconf_DATA = ns.fstab \
+               ns.mtab \
+               procfs.unhide
 
-pkgconf_DATA = fstab \
-               mtab \
-               procfs.conf
-
-EXTRA_DIST = $(nobase_pkgdata_DATA) \
-             $(pkgconf_DATA)
+EXTRA_DIST = $(pkgconf_DATA)

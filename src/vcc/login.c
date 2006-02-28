@@ -1,22 +1,19 @@
-/***************************************************************************
- *   Copyright 2005 by the vserver-utils team                              *
- *   See AUTHORS for details                                               *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
+// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
 #include <sys/mount.h>
@@ -26,10 +23,8 @@
 #include <termios.h>
 #include <pty.h>
 #include <sys/ioctl.h>
+#include <limits.h>
 #include <lucid/argv.h>
-#include <lucid/mmap.h>
-#include <lucid/open.h>
-#include <lucid/sys.h>
 
 #include "vc.h"
 
@@ -50,7 +45,7 @@ struct terminal {
 
 static struct terminal t;
 
-static char *login_rcsid = "$Id: start.c 112 2006-02-21 16:27:58Z hollow $";
+static char *login_rcsid = "$Id$";
 static xid_t login_xid   = 0;
 static char *login_name  = NULL;
 
@@ -289,23 +284,18 @@ void login_main(int argc, char *argv[])
 		vc_abortp("Failed to open new pseudo terminal");
 	
 	/* 4) chroot to vdir */
-	int vdirfd;
 	char *buf;
+	char vdir[PATH_MAX];
 	
-	if (vc_cfg_get_str(login_name, "ns.root", &buf) == -1) {
-		vc_asprintf(&buf, "%s/%s", __VDIRBASE, login_name);
-		vdirfd = open(buf, O_RDONLY|O_DIRECTORY);
-		free(buf);
-	}
-	
+	if (vc_cfg_get_str(login_name, "ns.root", &buf) != -1)
+		vc_snprintf(vdir, PATH_MAX, "%s", buf);
+	else if (vc_cfg_get_str(NULL, "ns.base", &buf) != -1)
+		vc_snprintf(vdir, PATH_MAX, "%s/%s", buf, login_name);
 	else
-		vdirfd = open(buf, O_RDONLY|O_DIRECTORY);
+		vc_snprintf(vdir, PATH_MAX, "%s/%s", __VDIRBASE, login_name);
 	
-	if (vdirfd == -1)
-		vc_abortp("open(vdirfd)");
-	
-	if (fchdir(vdirfd) == -1)
-		vc_abortp("fchdir(vdirfd)");
+	if (chdir(vdir) == -1)
+		vc_abortp("chdir(vdir)");
 	
 	if (chroot(".") == -1)
 		vc_abortp("chroot");
