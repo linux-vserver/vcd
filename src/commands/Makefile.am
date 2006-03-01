@@ -17,14 +17,10 @@
 
 INCLUDES = -I$(top_srcdir)/src/libvc
 
-LDADD = $(top_builddir)/src/libvc/libvc.a \
-        -lucid \
-        -lvserver
-
 noinst_HEADERS = commands.h
 
-sbin_PROGRAMS = vcc
+noinst_LIBRARIES = libcommands.a
 
-vcc_SOURCES = main.c \
-              login.c \
-              start.c
+libcommands_a_SOURCES = map.c \
+                        login.c \
+                        start.c

@@ -38,6 +38,8 @@ typedef struct {
 extern vc_cfg_node_t vc_cfg_map_global[];
 extern vc_cfg_node_t vc_cfg_map_local[];
 
+int vc_cfg_get_locals(int *n, char ***locals);
+
 int vc_cfg_get_type(char *name, char *key);
 int vc_cfg_istype(char *name, char *key, int type);
 

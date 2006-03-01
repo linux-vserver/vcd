@@ -22,6 +22,8 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <errno.h>
+#include <ctype.h>
+#include <dirent.h>
 
 #include <lucid/mmap.h>
 #include <lucid/open.h>
@@ -61,6 +63,7 @@ vc_cfg_node_t vc_cfg_map_local[] = {
 	{ "vhi.release",       VC_CFG_STR_T  },
 	{ "vhi.sysname",       VC_CFG_STR_T  },
 	{ "vhi.version",       VC_CFG_STR_T  },
+	{ "vps.parent",        VC_CFG_STR_T  },
 	{ "vps.shell",         VC_CFG_STR_T  },
 	{ "vps.timeout",       VC_CFG_INT_T  },
 	{ "vx.bcaps",          VC_CFG_LIST_T },
@@ -74,15 +77,36 @@ vc_cfg_node_t vc_cfg_map_local[] = {
 static
 size_t _cfg_readkey(char *name, char *key, char **buf)
 {
+	size_t len;
+	char *buf2, *p;
+	
 	char path[PATH_MAX];
+	struct stat sb;
 	
 	if (name == NULL)
 		vc_snprintf(path, PATH_MAX, "%s/%s", __PKGCONFDIR, key);
-	else
+	
+	else if (strlen(name) < 1)
+		return 0;
+	
+	else {
 		vc_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, key);
 	
-	size_t len;
-	char *buf2;
+		if (lstat(path, &sb) == -1 && strcmp(key, "vps.parent") != 0) {
+			len = _cfg_readkey(name, "vps.parent", &buf2);
+			
+			if (len == 0)
+				return 0;
+			
+			p = buf2;
+			
+			while (isalnum(*p)) p++;
+			*p = '\0';
+			
+			return _cfg_readkey(buf2, key, buf);
+		}
+	}
+	
 	buf2 = mmap_private(path, &len);
 	
 	if (buf2 == NULL || len == 0)
@@ -150,6 +174,83 @@ int _cfg_writekey(char *name, char *key, char *value)
 		return -1;
 	
 	return 0;
+}
+
+static
+int _cfg_locals_filter(const struct dirent *dir)
+{
+	if (strcmp(dir->d_name, ".")  == 0 ||
+	    strcmp(dir->d_name, "..") == 0)
+		return 0;
+	
+	int cwdfd, cfgfd, entfd;
+	int rc = 0;
+	
+	if ((cwdfd = open(".", O_RDONLY|O_DIRECTORY)) == -1)
+		return 0;
+	
+	if ((cfgfd = open(__PKGCONFDIR, O_RDONLY|O_DIRECTORY)) == -1)
+		goto out1;
+	
+	if (fchdir(cfgfd) == -1)
+		goto out2;
+	
+	if ((entfd = open(dir->d_name, O_RDONLY|O_DIRECTORY)) == -1)
+		goto out3;
+	
+	close(entfd);
+	rc = 1;
+	
+out3:
+	fchdir(cwdfd);
+out2:
+	close(cfgfd);
+out1:
+	close(cwdfd);
+	return rc;
+}
+
+/* list all roots of local maps */
+int vc_cfg_get_locals(int *n, char ***locals)
+{
+	int dirc;
+	struct dirent **dirlist;
+	char **buf;
+	
+	dirc = scandir(__PKGCONFDIR, &dirlist, _cfg_locals_filter, alphasort);
+	
+	if (dirc == -1)
+		return -1;
+	
+	buf = (char **) calloc(dirc + 1, sizeof(char *));
+	
+	if (!buf)
+		return -1;
+	
+	int i, len;
+	
+	for (i = 0; i < dirc; i++) {
+		len    = strlen(dirlist[i]->d_name);
+		buf[i] = malloc(len + 1);
+		
+		if (!buf[i])
+			goto err;
+		
+		memset(buf[i], '\0', len + 1);
+		memcpy(buf[i], dirlist[i]->d_name, len);
+	}
+	
+	*n = i;
+	*locals = buf;
+	
+	return 0;
+	
+err:
+	while (i > 0)
+		free(buf[i--]);
+	
+	free(buf);
+	return -1;
 }
 
 int vc_cfg_get_type(char *name, char *key)

@@ -15,27 +15,28 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCC_COMMANDS_H
-#define _VCC_COMMANDS_H
+#ifndef _VC_COMMANDS_H
+#define _VC_COMMANDS_H
 
 /* command types */
-typedef void (*COMMAND)(int, char **);
-typedef void (*COMMANDH)(int);
+typedef void (*CMDM)(int, char **);
+typedef void (*CMDH)(int);
 
 typedef struct {
-	char     *name;
-	COMMAND  func;
-	COMMANDH help;
-} vcc_command_t;
-
-extern int vcc_interactive;
+	char *name;
+	CMDM main;
+	CMDH help;
+} vc_cmd_t;
 
 /* main prototypes */
 void start_main(int argc, char **argv);
 void login_main(int argc, char **argv);
 
 /* usage prototypes */
-void start_usage(int rc);
-void login_usage(int rc);
+void start_help(int rc);
+void login_help(int rc);
+
+/* command map */
+extern vc_cmd_t CMDS[];
 
 #endif

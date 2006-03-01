@@ -49,7 +49,7 @@ static char *login_rcsid = "$Id$";
 static xid_t login_xid   = 0;
 static char *login_name  = NULL;
 
-void login_usage(int rc)
+void login_help(int rc)
 {
 	vc_printf("login: Start a virtual server.\n"
 	          "usage: login <name>\n"
@@ -249,7 +249,7 @@ void login_main(int argc, char *argv[])
 	VC_INIT_ARGV0
 	
 	if (argc < 2)
-		login_usage(EXIT_FAILURE);
+		login_help(EXIT_FAILURE);
 	
 	login_name = argv[1];
 	

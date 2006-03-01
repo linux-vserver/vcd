@@ -46,7 +46,7 @@ static xid_t start_xid   = 0;
 static char *start_name  = NULL;
 static char *start_vdir  = NULL;
 
-void start_usage(int rc)
+void start_help(int rc)
 {
 	vc_printf("start: Start a virtual server.\n"
 	          "usage: start <name>\n"
@@ -497,7 +497,7 @@ void start_main(int argc, char *argv[])
 	VC_INIT_ARGV0
 	
 	if (argc < 2)
-		start_usage(EXIT_FAILURE);
+		start_help(EXIT_FAILURE);
 	
 	start_name = argv[1];
 	

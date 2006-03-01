@@ -15,6 +15,17 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = libvc \
-          tools \
-          vcc
+SUBDIRS = commands \
+          libvc \
+          tools
+
+INCLUDES = -I$(top_srcdir)/src/libvc \
+           -I$(top_srcdir)/src/commands
+
+LDADD = $(top_builddir)/src/commands/libcommands.a \
+        $(top_builddir)/src/libvc/libvc.a \
+        -lucid \
+        -lvserver
+
+sbin_PROGRAMS = vcc \
+                vcs
