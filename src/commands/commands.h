@@ -26,7 +26,10 @@ typedef struct {
 	char *name;
 	CMDM main;
 	CMDH help;
+	int interactive;
 } vc_cmd_t;
+
+int do_command(int argc, char **argv, char **data);
 
 /* main prototypes */
 void start_main(int argc, char **argv);

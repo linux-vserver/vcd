@@ -21,6 +21,6 @@ noinst_HEADERS = commands.h
 
 noinst_LIBRARIES = libcommands.a
 
-libcommands_a_SOURCES = map.c \
+libcommands_a_SOURCES = main.c \
                         login.c \
                         start.c

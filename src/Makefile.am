@@ -28,4 +28,5 @@ LDADD = $(top_builddir)/src/commands/libcommands.a \
         -lvserver
 
 sbin_PROGRAMS = vcc \
+                vcd \
                 vcs

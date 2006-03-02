@@ -28,22 +28,7 @@
 #include "vc.h"
 #include "commands.h"
 
-static const char *rcsid = "$Id: main.c 124 2006-02-28 14:58:02Z hollow $";
-
-static
-void do_command(int argc, char **argv)
-{
-	int i;
-	
-	/* search command list */
-	for (i = 0; CMDS[i].name; i++) {
-		if (strcasecmp(CMDS[i].name, argv[0]) == 0)
-			CMDS[i].main(argc, argv);
-	}
-	
-	vc_warn("%s: Function not supported", argv[0]);
-	exit(EXIT_FAILURE);
-}
+static const char *rcsid = "$Id$";
 
 int main(int argc, char *argv[])
 {
@@ -68,7 +53,7 @@ int main(int argc, char *argv[])
 	while (1) {
 		vc_printf("vcs[%d]> ", status);
 		
-		len = io_readline(STDIN_FILENO, &line);
+		len = io_read_eol(STDIN_FILENO, &line);
 		
 		if (len == -1)
 			vc_errp("vc_readline");
@@ -106,7 +91,7 @@ int main(int argc, char *argv[])
 						break;
 					
 					case 0:
-						do_command(ac, av);
+						do_command(ac, av, NULL);
 						break;
 					
 					default:

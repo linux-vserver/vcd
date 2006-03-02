@@ -23,32 +23,17 @@
 
 static const char *rcsid = "$Id$";
 
-static
-void do_command(int argc, char **argv)
-{
-	int i;
-	
-	/* search command list */
-	for (i = 0; CMDS[i].name; i++) {
-		if (strcasecmp(CMDS[i].name, argv[0]) == 0)
-			CMDS[i].main(argc, argv);
-	}
-	
-	vc_warn("%s: Function not supported", argv[0]);
-	exit(EXIT_FAILURE);
-}
-
 int main(int argc, char *argv[])
 {
 	VC_INIT_ARGV0
 	
 	if (argc < 2) {
 		char *cmd = "help";
-		do_command(1, &cmd);
+		do_command(1, &cmd, NULL);
 	}
-		
+	
 	else
-		do_command(argc-1, argv+1);
+		do_command(argc-1, argv+1, NULL);
 	
 	return EXIT_SUCCESS;
 }

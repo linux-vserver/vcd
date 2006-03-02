@@ -31,7 +31,7 @@
 #define VROOT_CLR_DEV 0x5601
 #endif
 
-static const char *rcsid = "$Id: dx.c 105 2006-02-08 12:45:56Z hollow $";
+static const char *rcsid = "$Id$";
 
 static
 struct option long_opts[] = {

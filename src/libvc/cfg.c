@@ -40,6 +40,9 @@ vc_cfg_node_t vc_cfg_map_global[] = {
 	{ "ns.fstab",          VC_CFG_STR_T  },
 	{ "ns.mtab",           VC_CFG_STR_T  },
 	{ "procfs.unhide",     VC_CFG_LIST_T  },
+	{ "vcd.ip",            VC_CFG_STR_T  },
+	{ "vcd.port",          VC_CFG_INT_T  },
+	{ NULL,                0 },
 };
 
 /* local (per vserver) configurtion nodes */
