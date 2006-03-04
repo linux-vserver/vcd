@@ -237,10 +237,14 @@ vps.flags() {
 				${_VFLAGS} -S -c $(util.array_to_list ${VX_CCAPS[@]}) -x ${VX_XID}
 			fi
 			if [ ! -z "${VX_FLAGS}" ]; then
-				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}),STATE_SETUP -x ${VX_XID}
+				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTANT -x ${VX_XID}
 			fi
 			;;
 		
+		run)
+			${_VFLAGS} -S -f "~PERSISTANT,~STATE_SETUP" -x ${VX_XID}
+			${_VNFLAGS} -S -f "~PERSISTANT,~STATE_SETUP" -n ${VX_XID}
+			;;
 		*)
 			util.error "vps.flags: unknown subcommand '${subcmd}'"
 	esac

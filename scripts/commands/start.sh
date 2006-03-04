@@ -110,5 +110,6 @@ start.main() {
 	vps.init
 	
 	STATETRACK=done
+	vps.flags run
 	vps.unlock
 }
