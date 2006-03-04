@@ -18,7 +18,7 @@
 #include <stdlib.h>
 #include <vserver.h>
 #include <sys/ioctl.h>
-#include <libowfat/open.h>
+#include <lucid/open.h>
 
 #include "vc.h"
 #include "tools.h"

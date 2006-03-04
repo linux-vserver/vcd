@@ -169,7 +169,7 @@ create:
 	goto out;
 
 migrate:
-	if (vx_migrate(xid) == -1)
+	if (vx_migrate(xid, NULL) == -1)
 		vc_errp("vx_migrate");
 	
 	if (argc > optind+1)
