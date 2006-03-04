@@ -189,7 +189,7 @@ error:
 static
 struct mntspec *load_fstab(const char *file)
 {
-/*	FILE *f;
+	FILE *f;
 
 	if ((f = setmntent(file ? file : "./etc/fstab", "r")))
 	{
@@ -217,7 +217,7 @@ struct mntspec *load_fstab(const char *file)
 		}
 		endmntent(f);
 		return first;
-	} */
+	}
 	return NULL;
 }
 

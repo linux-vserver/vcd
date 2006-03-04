@@ -31,6 +31,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
+#include <limits.h>
 #include <errno.h>
 #include <pty.h>
 #include <vserver.h>
@@ -41,12 +42,13 @@
 #define NAME  "vlogin"
 #define DESCR "Context Login"
 
-#define SHORT_OPTS "n:x:"
+#define SHORT_OPTS "n:x:N"
 
 struct options {
 	GLOBAL_OPTS;
 	nid_t nid;
 	xid_t xid;
+	bool namespace;
 };
 
 #define TS_RESET 0
@@ -70,6 +72,7 @@ void cmd_help()
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
+	       "    -N            Also change namespace\n"
 	       "    -n <xid>      Network Context ID\n"
 	       "    -x <xid>      Context ID\n"
 	       "\n",
@@ -283,6 +286,10 @@ int main(int argc, char *argv[])
 				opts.xid = (xid_t) atoi(optarg);
 				break;
 			
+			case 'N':
+				opts.namespace = 1;
+				break;
+
 			DEFAULT_GETOPT
 		}
 	}
@@ -290,7 +297,19 @@ int main(int argc, char *argv[])
 	if (opts.xid == 0)
 		EXIT("Invalid xid", EXIT_USAGE);
 	
-	/* TODO: also change namespace? */
+	/* change namespace */
+	if (opts.namespace) {
+		char cwd[PATH_MAX];
+		
+		if (getcwd(cwd, PATH_MAX) == NULL)
+			PEXIT("Failed to get cwd", EXIT_COMMAND);
+		
+		if (vx_enter_namespace(opts.xid) == -1)
+			PEXIT("Failed to enter namespace", EXIT_COMMAND);
+		
+		if (chdir(cwd) == -1)
+			PEXIT("Failed to restore cwd", EXIT_COMMAND);
+	}
 	
 	/* enter context */
 	if (opts.nid > 1 && nx_migrate(opts.nid) == -1)
@@ -317,18 +336,16 @@ int main(int argc, char *argv[])
 	if (chroot(".") == -1)
 		PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 	
-	pid_t pid;
-	pid = fork();
-	
-	/* setup some signal handlers */
-	signal(SIGINT, signal_handler);
-	signal(SIGCHLD, signal_handler);
-	signal(SIGWINCH, signal_handler);
-	
+	pid_t pid = fork();
+
 	if (pid == -1)
 		PEXIT("Failed to fork new pseudo terminal", EXIT_COMMAND);
 	
 	if (pid == 0) {
+		sleep(0);
+		
+		signal(SIGWINCH, signal_handler);
+
 		/* we don't need the master side of the terminal */
 		close(t.fd);
 		
@@ -347,15 +364,21 @@ int main(int argc, char *argv[])
 		
 		/* check shell */
 		if (argc > optind) {
+			VPRINTF(&opts, "Executing shell '%s'\n", argv[optind]);
 			if (execv(argv[optind], argv+optind) == -1) {
 				PEXIT("Failed to execute shell", EXIT_COMMAND);
 			}
-		}
-		else {
+		} else {
+			VPRINTF(&opts, "Executing default shell '%s'\n", "/bin/sh");
 			if (execl("/bin/sh", "/bin/sh", "-l", NULL) == -1) {
 				PEXIT("Failed to execute default shell", EXIT_COMMAND);
 			}
 		}
+	} else {
+		/* setup some signal handlers */
+		signal(SIGINT, signal_handler);
+		signal(SIGCHLD, signal_handler);
+		signal(SIGWINCH, signal_handler);
 	}
 	
 	/* save terminals pid */

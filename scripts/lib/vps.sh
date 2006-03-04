@@ -101,9 +101,7 @@ vps.context() {
 	case ${subcmd} in
 		setup)
 			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTANT,STATE_SETUP
-			${_VNFLAGS} -G -m -n ${VX_XID}
 			${_VCONTEXT}  -C -x ${VX_XID} -f PERSISTANT,STATE_SETUP
-			${_VFLAGS} -G -m -x ${VX_XID}
 			;;
 		
 		release)
@@ -128,7 +126,6 @@ vps.network() {
 			for i in ${NX_ADDR[@]}; do
 				${_VNCONTEXT} -A -n ${VX_XID} -a ${i}
 			done
-			${_VNFLAGS} -G -m -n ${VX_XID}
 			;;
 		
 		*)
@@ -146,13 +143,11 @@ vps.namespace() {
 	case ${subcmd} in
 		new)
 			${_VNAMESPACE} -N -x ${VX_XID}
-			${_VFLAGS} -G -m -x ${VX_XID}
 			;;
 		
 		enter)
 			[ -z "$1" ] && util.error "vps.namespace: missing argument <command>"
 			${_VNAMESPACE} -E -x ${VX_XID} -- "$@"
-			${_VFLAGS} -G -m -x ${VX_XID}
 			;;
 		
 		*)
@@ -238,15 +233,12 @@ vps.flags() {
 			if [ ! -z "${VX_BCAPS}" ]; then
 				${_VFLAGS} -S -b $(util.array_to_list ${VX_BCAPS[@]}) -x ${VX_XID}
 			fi
-			${_VFLAGS} -G -m -x ${VX_XID}
 			if [ ! -z "${VX_CCAPS}" ]; then
 				${_VFLAGS} -S -c $(util.array_to_list ${VX_CCAPS[@]}) -x ${VX_XID}
 			fi
-			${_VFLAGS} -G -m -x ${VX_XID}
 			if [ ! -z "${VX_FLAGS}" ]; then
 				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}),STATE_SETUP -x ${VX_XID}
 			fi
-			${_VFLAGS} -G -m -x ${VX_XID}
 			;;
 		
 		*)
@@ -260,8 +252,6 @@ vps.init() {
 	[ -z "${VDIR}" ]    && util.error "vps.init: VDIR missing"
 	
 	pushd ${VDIR} >/dev/null
-	${_VFLAGS} -G -m -x ${VX_XID}
-	${_VNFLAGS} -G -m -n ${VX_XID}
 	case ${VX_INIT} in
 		sysvinit|init|plain)
 			${_VNAMESPACE} -E -x ${VX_XID} -- \
@@ -291,8 +281,6 @@ vps.init() {
 			util.error "vps.init: unknown init style"
 			;;
 	esac
-	${_VFLAGS} -G -m -x ${VX_XID}
-	${_VNFLAGS} -G -m -n ${VX_XID}
 	popd >/dev/null
 }
 
@@ -400,7 +388,6 @@ vps.mount() {
 		
 		popd >/dev/null
 	fi
-	${_VFLAGS} -G -m -x ${VX_XID}
 	return 0
 }
 
@@ -419,7 +406,6 @@ vps.umount() {
 	
 	${_VNAMESPACE} -E -x ${VX_XID} -- \
 	${_VMOUNT} -U -f ${fstab} -m etc/mtab
-	${_VFLAGS} -G -m -x ${VX_XID}
 	popd >/dev/null
 }
 

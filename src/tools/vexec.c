@@ -168,7 +168,7 @@ migrate:
 				if (vx_set_flags(opts.xid, &flags) == -1)
 					PEXIT("Failed to set context flags", EXIT_COMMAND);
 			}
-			vu_printf("Migrating with mflags=%lx\n", mflags.flags);
+			DEBUGF("Migrating with mflags=%lx\n", mflags.flags);
 			if (vx_migrate(opts.xid, &mflags) == -1)
 				PEXIT("Failed to migrate to context", EXIT_COMMAND);
 			
@@ -184,10 +184,10 @@ migrate:
 			// TODO: change TTY and stdin/out to something sensible for the guest!
 			// -- check for /dev/console or /dev/tty in the guest's root
 			if (opts.init) {
-				vu_printf("Preparing for switching stdin to /dev/console...\n");
+				VPRINTF(&opts, "Preparing for switching stdin to %s...\n", "/dev/console");
 				struct stat st;
 				if (stat("/dev/console", &st) == -1) {
-					vu_printf("Failed to stat /dev/console:  %s\n", strerror(errno));
+					perror("Failed to stat /dev/console");
 				} else if (S_ISCHR(st.st_mode)) {
 					int fd = open("/dev/console", O_RDWR); // O_NOCTTY);
 					if (fd < 0) vu_printf("Failed to open /dev/console:  %s\n", strerror(errno));
@@ -196,7 +196,7 @@ migrate:
 					if (fd >= 0 && fd != 2) dup2(fd, 2);
 					if (fd > 2) close(fd);
 				} else
-					vu_printf("Cannot use /dev/console as it's not a character device.\n");
+					vu_dprintf(STDERR_FILENO, "Cannot use /dev/console as it's not a character device.\n");
 			}
 
 			if(execvp(argv[optind], argv+optind) == -1)

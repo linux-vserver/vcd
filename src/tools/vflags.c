@@ -209,8 +209,8 @@ int main(int argc, char *argv[])
 			}
 			/* syscall */
 			if (bmask || caps.cmask) {
-				VPRINTF(&opts, "BCaps = %x, old  = %x\n", caps.bcaps, obcaps);
-				VPRINTF(&opts, "CCaps = %x, mask = %x\n", caps.ccaps, caps.cmask);
+				DEBUGF("BCaps = %.16lx, old  = %.16lx\n", caps.bcaps, obcaps);
+				DEBUGF("CCaps = %.16lx, mask = %.16lx\n", caps.ccaps, caps.cmask);
 				if (vx_set_caps(opts.xid, &caps) == -1)
 					PEXIT("Failed to set context capabilities", EXIT_COMMAND);
 			}
@@ -243,23 +243,22 @@ int main(int argc, char *argv[])
 			if (vx_get_flags(opts.xid, &flags) == -1)
 				PEXIT("Failed to get context flags", EXIT_COMMAND);
 			
-			VPRINTF(&opts, "Flage = %x, mask = %x\n", flags.flags, flags.mask);
-			VPRINTF(&opts, "BCaps = %x\n", caps.bcaps);
-			VPRINTF(&opts, "CCaps = %x, mask = %x\n", caps.ccaps, caps.cmask);
+			VPRINTF(&opts, "Flage = %.16lx\n", flags.flags);
+			VPRINTF(&opts, "BCaps = %.16lx\n", caps.bcaps);
+			VPRINTF(&opts, "CCaps = %.16lx\n", caps.ccaps);
 			
 			if (opts.compact) {
 				bool b = 0;
-				vu_printf("BCAPS=%lx  CCAPS=%lx  FLAGS=%lx\n", caps.bcaps, caps.ccaps, flags.flags);
-				vu_printf("BCAPS = ");
+				vu_printf("BCAPS =");
 				list_foreach(bp, i)
 					if ((caps.bcaps & *(uint64_t*)(bp->node+i)->data) == *(uint64_t*)(bp->node+i)->data)
 						vu_printf("%s%s", b++ ? "," : " ", (char *)(bp->node+i)->key);
-				vu_printf("\nCCAPS = ");
+				vu_printf("\nCCAPS =");
 				b = 0;
 				list_foreach(cp, i)
 					if (caps.ccaps & *(uint64_t*)(cp->node+i)->data)
 						vu_printf("%s%s", b++ ? "," : " ", (char *)(cp->node+i)->key);
-				vu_printf("\nFLAGS = ");
+				vu_printf("\nFLAGS =");
 				b = 0;
 				list_foreach(fp, i)
 					if (flags.flags & *(uint64_t*)(fp->node+i)->data)

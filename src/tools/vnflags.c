@@ -165,11 +165,11 @@ int main(int argc, char *argv[])
 			/* iterate through each list and print matching keys */
 			if (opts.compact) {
 				int b = 0;
-				vu_printf("NCAPS = ");
+				vu_printf("NCAPS =");
 				list_foreach(cp, i)
 					if (caps.caps & *(uint64_t*)(cp->node+i)->data)
 						vu_printf("%s%s", b++ ? "," : " ", (char *)(cp->node+i)->key);
-				vu_printf("\nFLAGS = ");
+				vu_printf("\nFLAGS =");
 				b = 0;
 				list_foreach(fp, i)
 					if (flags.flags & *(uint64_t*)(fp->node+i)->data)

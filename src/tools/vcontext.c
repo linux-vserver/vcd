@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 				
 				/* validate descending list */
 				if (list_validate_flag(&link, clmod) == -1)
-					PEXIT("List validation failed", EXIT_USAGE);
+					PEXIT("List validation failed for FLAGS", EXIT_USAGE);
 			
 				/* convert given descending list to flags using the pristine copy */
 				list_list2flags(&link, clmod, &create_flags.flags, &fmask);
@@ -196,7 +196,7 @@ int main(int argc, char *argv[])
 
 				/* validate descending list */
 				if (list_validate_flag(&link, clmod) == -1)
-					PEXIT("List validation failed", EXIT_USAGE);
+					PEXIT("List validation failed for BCAPS", EXIT_USAGE);
 				/* convert given descending list to flags using the pristine copy */
 				list_list2flags(&link, clmod, &caps.bcaps, &caps.cmask);
 
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
 				link.d = opts.ccaps;
 				/* validate descending list */
 				if (list_validate_flag(&link, clmod) == -1)
-					PEXIT("List validation failed", EXIT_USAGE);
+					PEXIT("List validation failed for CCAPS", EXIT_USAGE);
 				/* convert given descending list to flags using the pristine copy */
 				list_list2flags(&link, clmod, &caps.ccaps, &caps.cmask);
 

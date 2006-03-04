@@ -37,6 +37,7 @@
 
 #include "printf.h"
 #include "tools.h"
+#include "sys.h"
 
 #define NAME  "vnamespace"
 #define DESCR "Filesystem Namespace Manager"
