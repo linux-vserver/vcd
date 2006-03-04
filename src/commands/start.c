@@ -15,6 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <stdlib.h>
 #include <sys/mount.h>
 #include <fcntl.h>
@@ -56,21 +60,6 @@ void start_help(int rc)
 	exit(rc);
 }
 
-static
-void start_sighandler(int sig)
-{
-	signal(sig, SIG_DFL);
-	
-	switch(sig) {
-		case SIGABRT:
-			exit(EXIT_FAILURE);
-		
-		default:
-			kill(getpid(), sig);
-			break;
-	}
-}
-
 void start_setup_context(void)
 {
 	int i;
@@ -79,7 +68,7 @@ void start_setup_context(void)
 	uint32_t buf32;
 	uint64_t buf64;
 	
-	/* 1) setup syscall data */
+	/* 0) setup syscall data */
 	struct vx_create_flags create_flags = {
 		.flags = VXF_PERSISTANT,
 	};
@@ -119,20 +108,20 @@ void start_setup_context(void)
 	
 	switch (pid) {
 		case -1:
-			vc_abortp("clone");
+			vc_errp("clone");
 		
 		case 0:
 			if (vx_create(start_xid, &create_flags) == -1)
-				vc_abortp("vx_create(%d)", start_xid);
+				vc_errp("vx_create(%d)", start_xid);
 			
-			_exit(0);
+			exit(0);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
-				vc_abortp("waitpid");
+				vc_errp("waitpid");
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				vc_abort("start_setup_context failed");
+				vc_err("start_setup_context failed");
 			
 			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
@@ -143,27 +132,27 @@ void start_setup_context(void)
 	
 	if (vc_cfg_get_list(start_name, "vx.bcaps", &buf) != -1)
 		if (flist64_parse(buf, vc_bcaps_list, &caps.bcaps, &mask, '~', '\n') == -1)
-			vc_abortp("flist64_parse(bcaps)");
+			vc_errp("flist64_parse(bcaps)");
 	
 	/* 2b) custom ccaps */
 	if (vc_cfg_get_list(start_name, "vx.ccaps", &buf) != -1)
 		if (flist64_parse(buf, vc_ccaps_list, &caps.ccaps, &caps.cmask, '~', '\n') == -1)
-			vc_abortp("flist64_parse(ccaps)");
+			vc_errp("flist64_parse(ccaps)");
 	
 	if (vx_set_caps(start_xid, &caps) == -1)
-		vc_abortp("vx_set_caps");
+		vc_errp("vx_set_caps");
 	
 	/* 3) custom cflags */
 	if (vc_cfg_get_list(start_name, "vx.flags", &buf) != -1)
 		if (flist64_parse(buf, vc_cflags_list, &cflags.flags, &cflags.mask, '~', '\n') == -1)
-			vc_abortp("flist64_parse(cflags)");
+			vc_errp("flist64_parse(cflags)");
 	
 	if (vx_set_flags(start_xid, &cflags) == -1)
-		vc_abortp("vx_set_flags");
+		vc_errp("vx_set_flags");
 	
 	/* 4) context rlimits */
 	if (vx_get_rlimit_mask(&rlimit_mask) == -1)
-		vc_abortp("vx_get_rlimit_mask");
+		vc_errp("vx_get_rlimit_mask");
 	
 	for (i = 0; vc_cfg_map_local[i].key; i++) {
 		if (strncmp(vc_cfg_map_local[i].key, "limit.", 6) != 0)
@@ -189,22 +178,22 @@ void start_setup_context(void)
 		rlimit.id = flist32_mask2val(buf32);
 		
 		if ((p = strsep(&buf, "\n")) == NULL)
-			vc_abort("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
+			vc_err("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
 		else
 			rlimit.minimum = vc_str_to_rlim(p);
 		
 		if ((p = strsep(&buf, "\n")) == NULL)
-			vc_abort("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
+			vc_err("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
 		else
 			rlimit.softlimit = vc_str_to_rlim(p);
 		
 		if ((p = strsep(&buf, "\n")) == NULL)
-			vc_abort("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
+			vc_err("invalid configuration for limit '%s'", vc_cfg_map_local[i].key);
 		else
 			rlimit.maximum = vc_str_to_rlim(p);
 		
 		if (vx_set_rlimit(start_xid, &rlimit) == -1)
-			vc_abortp("vc_set_rlimit(%d)", rlimit.id);
+			vc_errp("vc_set_rlimit(%d)", rlimit.id);
 	}
 	
 	/* 5) context scheduler */
@@ -230,7 +219,7 @@ void start_setup_context(void)
 		vhiname.name[VHILEN-1] = '\0';
 		
 		if (vx_set_vhi_name(start_xid, &vhiname) == -1)
-			vc_abortp("vx_set_vhi_name(%d)", vhiname.field);
+			vc_errp("vx_set_vhi_name(%d)", vhiname.field);
 	}
 	
 	vhiname.field = VHIN_CONTEXT;
@@ -239,14 +228,14 @@ void start_setup_context(void)
 	vhiname.name[VHILEN-1] = '\0';
 	
 	if (vx_set_vhi_name(start_xid, &vhiname) == -1)
-		vc_abortp("vx_set_vhi_name(%d)", vhiname.field);
+		vc_errp("vx_set_vhi_name(%d)", vhiname.field);
 }
 
 void start_setup_network(void)
 {
 	char *buf, *p;
 	
-	/* 1) setup syscall data */
+	/* 0) setup syscall data */
 	struct nx_create_flags create_flags = {
 		.flags = NXF_PERSISTANT,
 	};
@@ -258,40 +247,40 @@ void start_setup_network(void)
 	
 	struct nx_addr addr;
 	
-	/* 2) create network context */
+	/* 1) create network context */
 	int status;
 	pid_t pid = fork();
 	
 	switch (pid) {
 		case -1:
-			vc_abortp("clone");
+			vc_errp("clone");
 		
 		case 0:
 			if (nx_create(start_xid, &create_flags) == -1)
-				vc_abortp("nx_create(%s)", start_name);
+				vc_errp("nx_create(%s)", start_name);
 			
 			_exit(0);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
-				vc_abortp("waitpid");
+				vc_errp("waitpid");
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				vc_abort("start_setup_context failed");
+				vc_err("start_setup_context failed");
 			
 			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
 	}
 	
-	/* 3) network context flags */
+	/* 2) network context flags */
 	if (vc_cfg_get_list(start_name, "nx.flags", &buf) != -1)
 		if (flist64_parse(buf, vc_nflags_list, &nflags.flags, &nflags.mask, '~', '\n') == -1)
-			vc_abortp("flist64_parse(nflags)");
+			vc_errp("flist64_parse(nflags)");
 	
 	if (nx_set_flags(start_xid, &nflags) == -1)
-		vc_abortp("nx_set_flags");
+		vc_errp("nx_set_flags");
 	
-	/* 4) network context addrs */
+	/* 3) network context addrs */
 	if (vc_cfg_get_list(start_name, "nx.addr", &buf) != -1) {
 		while ((p = strsep(&buf, "\n")) != NULL) {
 			addr.type  = NXA_TYPE_IPV4;
@@ -315,31 +304,31 @@ void start_setup_namespace(void)
 	int vdirfd;
 	
 	if ((rootfd = open("/",  O_RDONLY|O_DIRECTORY)) == -1)
-		vc_abortp("open(rootfd)");
+		vc_errp("open(rootfd)");
 	
 	if ((vdirfd = open(start_vdir, O_RDONLY|O_DIRECTORY)) == -1)
-		vc_abortp("open(vdirfd)");
+		vc_errp("open(vdirfd)");
 	
 	/* 2) setup initial mtab */
 	if (vc_cfg_get_str(start_name, "ns.mtab", &buf) == -1)
 		if (vc_cfg_get_str(NULL, "ns.mtab", &buf) == -1)
-			vc_abort("default mtab could not be found");
+			vc_err("default mtab could not be found");
 	
 	if (vc_secure_chdir(rootfd, vdirfd, "/etc") == -1)
-		vc_abortp("vc_secure_chdir");
+		vc_errp("vc_secure_chdir");
 	
 	int mtabfd;
 	
 	if ((mtabfd = open_trunc("mtab")) == -1)
-		vc_abortp("open_trunc(mtab)");
+		vc_errp("open_trunc(mtab)");
 	
 	if (write(mtabfd, buf, strlen(buf)) == -1)
-		vc_abortp("write(mtab)");
+		vc_errp("write(mtab)");
 	
 	/* 3) mount fstab entries */
 	if (vc_cfg_get_str(start_name, "ns.fstab", &buf) == -1)
 		if (vc_cfg_get_str(NULL, "ns.fstab", &buf) == -1)
-			vc_abort("default fstab could not be found");
+			vc_err("default fstab could not be found");
 	
 	while ((p = strsep(&buf, "\n")) != 0) {
 		while (isspace(*p)) ++p;
@@ -350,17 +339,17 @@ void start_setup_namespace(void)
 		char *src, *dst, *type, *data;
 		
 		if (vc_str_to_fstab(p, &src, &dst, &type, &data) == -1)
-			vc_abortp("vc_str_to_fstab");
+			vc_errp("vc_str_to_fstab");
 		
 		if (vc_secure_chdir(rootfd, vdirfd, dst) == -1)
-			vc_abortp("vc_secure_chdir");
+			vc_errp("vc_secure_chdir");
 		
 		pid_t pid;
 		int status;
 		
 		switch((pid = fork())) {
 			case -1:
-				vc_abortp("fork");
+				vc_errp("fork");
 			
 			case 0:
 				if (execl(__MOUNT, __MOUNT, "-n", "-t", type, "-o", data, src, ".", NULL) == -1)
@@ -370,10 +359,10 @@ void start_setup_namespace(void)
 			
 			default:
 				if (waitpid(pid, &status, 0) == -1)
-					vc_abortp("waitpid");
+					vc_errp("waitpid");
 				
 				if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-					vc_abortp("mount");
+					vc_errp("mount");
 				
 				if (WIFSIGNALED(status))
 					kill(getpid(), WTERMSIG(status));
@@ -384,14 +373,14 @@ void start_setup_namespace(void)
 	
 	/* 4) remount vdir at root */
 	if (vc_secure_chdir(rootfd, vdirfd, "/") == -1)
-		vc_abortp("vc_secure_chdir");
+		vc_errp("vc_secure_chdir");
 	
 	if (mount(".", "/", NULL, MS_BIND|MS_REC, NULL) == -1)
-		vc_abortp("mount");
+		vc_errp("mount");
 	
 	/* 5) set namespace */
 	if (vx_set_namespace(start_xid) == -1)
-		vc_abortp("vx_set_namespace");
+		vc_errp("vx_set_namespace");
 	
 	/* 6) cleanup */
 	close(mtabfd);
@@ -401,101 +390,125 @@ void start_setup_namespace(void)
 
 void start_guest_init(void)
 {
+	int waitchild = 1;
+	char *init;
+	
+	struct vx_migrate_flags migrate_flags = {
+		.flags = 0,
+	};
+	
+	struct vx_flags cflags = {
+		.flags = 0,
+		.mask  = 0,
+	};
+	
+	int ac;
+	char **av;
+	
 	char *buf;
 	
-	/* 1) migrate to context/namespace */
-	if (nx_migrate(start_xid) == -1)
-		vc_abortp("nx_migrate");
+	/* 0) load configuration */
+	if (vc_cfg_get_str(start_name, "init.style", &init) == -1)
+		vc_errp("vc_cfg_get_str(init.style)");
 	
-	if (vx_enter_namespace(start_xid) == -1)
-		vc_abortp("vx_enter_namespace");
+	/* 0a) SysV init */
+	if (strcmp(init, "sysvinit") == 0 ||
+	    strcmp(init, "init")     == 0 ||
+	    strcmp(init, "plain")    == 0) {
+		cflags.flags |= VXF_INFO_INIT;
+		cflags.mask  |= VXF_INFO_INIT;
+		
+		if (vx_set_flags(start_xid, &cflags) == -1)
+			vc_errp("vx_set_flags");
+		
+		if (argv_parse("/sbin/init", &ac, &av) == -1)
+			vc_errp("argv_parse");
+		
+		migrate_flags.flags = VXM_SET_INIT|VXM_SET_REAPER;
+		waitchild = 0;
+	}
 	
-	if (vx_migrate(start_xid) == -1)
-		vc_abortp("vx_migrate");
+	/* 0b) rescue shell */
+	else if (strcmp(init, "rescue") == 0) {
+		if (vc_cfg_get_str(start_name, "rescue.shell", &buf) == -1)
+			buf = "/bin/sh";
 	
-	/* 2) chdir to vdir */
-	if (chdir(start_vdir) == -1)
-		vc_abortp("chdir(vdir)");
+		if (argv_parse(buf, &ac, &av) == -1)
+			vc_errp("argv_parse");
+	}
 	
-	/* 3) guest init */
+	/* 0c) invalid init style */
+	else
+		vc_err("unknown init style: %s", init);
+	
 	pid_t pid;
 	int status;
 	
-	if (vc_cfg_get_str(start_name, "init.style", &buf) == -1)
-		vc_abortp("vc_cfg_get_str(init.style)");
-	
-	/* 4a) plain SysV init */
-	if (strcmp(buf, "sysvinit") == 0 ||
-	    strcmp(buf, "init") == 0 ||
-	    strcmp(buf, "plain") == 0) {
-		signal(SIGCHLD, SIG_IGN);
+	switch ((pid = fork())) {
+		case -1:
+			vc_errp("fork");
 		
-		switch (vfork()) {
-			case -1:
-				vc_abortp("clone");
+		case 0:
+			if (waitchild == 0) {
+				close(STDIN_FILENO);
+				close(STDOUT_FILENO);
+				close(STDERR_FILENO);
+			}
 			
-			case 0:
-				if (chroot(".") == -1)
-					vc_abortp("chroot");
-				
-				/* TODO: vx_set_initpid(start_xid, getpid()); */
-				
-				if (execl("/sbin/init", "/sbin/init", NULL) == -1)
-					vc_abortp("execl");
+			vc_printf("pid1: %d\n", getpid());
 			
-			default:
-				break;
-		}
+			/* 1) migrate to context/namespace */
+			if (nx_migrate(start_xid) == -1)
+				vc_errp("nx_migrate");
+			
+			if (vx_enter_namespace(start_xid) == -1)
+				vc_errp("vx_enter_namespace");
+			
+			if (vx_migrate(start_xid, &migrate_flags) == -1)
+				vc_errp("vx_migrate");
+			
+			vc_printf("pid2: %d\n", getpid());
+			
+			/* 2) chroot to vdir */
+			if (chroot(start_vdir) == -1)
+				vc_errp("chroot");
+			
+			if (execv(av[0], av) == -1)
+				vc_errp("execv");
+		
+		default:
+			/* to wait or not to wait!? */
+			switch (waitpid(pid, &status, waitchild == 0 ? WNOHANG : 0)) {
+				case -1:
+					vc_errp("waitpid");
+				
+				case 0:
+					break;
+				
+				default:
+					if (WIFEXITED(status))
+						exit(WEXITSTATUS(status));
+					
+					if (WIFSIGNALED(status))
+						kill(getpid(), WTERMSIG(status));
+			}
 	}
 	
-	/* 4b) rescue shell */
-	else if (strcmp(buf, "rescue") == 0) {
-		int ac;
-		char **av;
-		
-		if (vc_cfg_get_str(start_name, "rescue.shell", &buf) == -1) {
-			if (argv_parse("/bin/sh", &ac, &av) == -1)
-				vc_abortp("argv_parse");
-		}
-		
-		else {
-			if (argv_parse(buf, &ac, &av) == -1)
-				vc_abortp("argv_parse");
-		}
-		
-		switch ((pid = fork())) {
-			case -1:
-				vc_abortp("fork");
-			
-			case 0:
-				if (chroot(".") == -1)
-					vc_abortp("chroot");
-				
-				if (execvp(av[0], av) == -1)
-					vc_abortp("execvp");
-			
-			default:
-				if (waitpid(pid, &status, 0) == -1)
-					vc_abortp("waitpid");
-				
-				if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-					abort();
-				
-				if (WIFSIGNALED(status))
-					kill(getpid(), WTERMSIG(status));
-		}
+	/* we should not get here */
+	exit(EXIT_FAILURE);
+}
+
+void start_sighandler(int sig)
+{
+	switch (sig) {
+		case SIGSEGV:
+			SIGSEGV_MSG(start);
+			break;
 	}
-	
-	/* 4c) invalid init style */
-	else
-		vc_abort("unknown init style: %s", buf);
-	
 }
 
 void start_main(int argc, char *argv[])
 {
-	VC_INIT_ARGV0
-	
 	if (argc < 2)
 		start_help(EXIT_FAILURE);
 	
@@ -503,7 +516,7 @@ void start_main(int argc, char *argv[])
 	
 	/* 0a) load configuration */
 	if (vc_cfg_get_int(start_name, "vx.id", (int *) &start_xid) == -1)
-		vc_abortp("vc_cfg_get_int(vx.id)");
+		vc_errp("vc_cfg_get_int(vx.id)");
 	
 	char *buf;
 	char vdir[PATH_MAX];
@@ -518,12 +531,11 @@ void start_main(int argc, char *argv[])
 	start_vdir = vdir;
 	
 	/* 0b) setup signal handlers */
-	signal(SIGHUP,  start_sighandler);
-	signal(SIGINT,  start_sighandler);
-	signal(SIGQUIT, start_sighandler);
-	signal(SIGABRT, start_sighandler);
 	signal(SIGSEGV, start_sighandler);
-	signal(SIGTERM, start_sighandler);
+	signal(SIGHUP,  SIG_IGN);
+	signal(SIGINT,  SIG_IGN);
+	signal(SIGQUIT, SIG_IGN);
+	signal(SIGTERM, SIG_IGN);
 	
 	pid_t pid;
 	int status;
@@ -539,46 +551,26 @@ void start_main(int argc, char *argv[])
 	
 	switch (pid) {
 		case -1:
-			vc_abortp("clone");
+			vc_errp("clone");
 		
 		case 0:
 			start_setup_namespace();
-			_exit(0);
+			exit(EXIT_SUCCESS);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
-				vc_abortp("waitpid");
+				vc_errp("waitpid");
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				vc_abort("start_setup_namespace failed");
+				vc_err("start_setup_namespace failed");
 			
 			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
 	}
 	
 	/* 4) guest startup */
-	pid = fork();
+	start_guest_init();
 	
-	switch (pid) {
-		case -1:
-			vc_abortp("clone");
-		
-		case 0:
-			start_guest_init();
-			_exit(0);
-		
-		default:
-			if (waitpid(pid, &status, 0) == -1)
-				vc_abortp("waitpid");
-			
-			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				vc_abort("start_guest_init failed");
-			
-			if (WIFSIGNALED(status))
-				kill(getpid(), WTERMSIG(status));
-	}
-	
-	/* 5) cleanup */
 	struct vx_flags cflags = {
 		.flags = 0,
 		.mask  = VXF_PERSISTANT,
@@ -589,11 +581,8 @@ void start_main(int argc, char *argv[])
 		.mask  = NXF_PERSISTANT,
 	};
 	
-	if (vx_set_flags(start_xid, &cflags) == -1)
-		vc_abortp("vx_set_flags");
-	
-	if (nx_set_flags(start_xid, &nflags) == -1)
-		vc_abortp("nx_set_flags");
+	vx_set_flags(start_xid, &cflags);
+	nx_set_flags(start_xid, &nflags);
 	
 	exit(EXIT_SUCCESS);
 }

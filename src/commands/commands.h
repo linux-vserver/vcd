@@ -42,4 +42,23 @@ void login_help(int rc);
 /* command map */
 extern vc_cmd_t CMDS[];
 
+#define SIGSEGV_MSG(CMD) do { \
+	vc_warn("Segmentation Fault - you probably found a bug.\n" \
+	        "\n" \
+	        "You can help fixing it by following these instructions:\n" \
+	        " * install the GNU Debugger (http://www.gnu.org/software/gdb)\n" \
+	        " * compile %s with CFLAGS=\"-g -ggdb3\"\n" \
+	        " * enter gdb with \"gdb --args %s %s <your args>\"\n" \
+	        " * type \"run\" and wait for SIGSEGV to occur\n" \
+	        " * type \"bt full\" to get a backtrace\n", \
+	        " * send a bug report with the full output of gdb attached\n" \
+	        "   to %s\n" \
+	        "\n" \
+	        "Thanks for your help!\n", \
+	        PACKAGE_NAME, \
+	        vc_argv0, \
+	        #CMD, \
+	        PACKAGE_BUGREPORT); \
+} while(0)
+
 #endif

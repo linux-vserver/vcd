@@ -269,7 +269,7 @@ void login_main(int argc, char *argv[])
 	if (vx_enter_namespace(login_xid) == -1)
 		vc_abortp("vx_enter_namespace");
 	
-	if (vx_migrate(login_xid) == -1)
+	if (vx_migrate(login_xid, NULL) == -1)
 		vc_abortp("vx_migrate");
 	
 	/* 2) set terminal to raw mode */
