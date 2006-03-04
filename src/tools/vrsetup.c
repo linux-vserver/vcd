@@ -44,14 +44,11 @@
 #define VROOT_INC_USE 0x56FE
 #define VROOT_DEC_USE 0x56FF
 
-struct commands {
-	bool clear;
-	bool decr;
-	bool incr;
-	bool setup;
-};
+typedef enum { VRSET_NONE, VRSET_DECR, VRSET_INCR, VRSET_SETUP, VRSET_CLEAR } command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	char *root;
 	char *realroot;
 };
@@ -62,6 +59,7 @@ void cmd_help()
 	vu_printf("Usage: %s <command> <rootdev> [<realrootdev>]\n"
 	       "\n"
 	       "Available commands:\n"
+	       GLOBAL_HELP
 	       "    -C            Clear device\n"
 	       "    -D            Decrement device usage\n"
 	       "    -I            Increment device usage\n"
@@ -74,20 +72,17 @@ void cmd_help()
 int main(int argc, char *argv[])
 {
 	/* init program data */
-	struct commands cmds = {
-		.clear = false,
-		.decr  = false,
-		.incr  = false,
-		.setup = false,
-	};
-	
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
+		.cmd      = VRSET_NONE,
 		.root     = NULL,
 		.realroot = NULL,
 	};
 	
 	int c;
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -97,19 +92,31 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'C':
-				cmds.clear = true;
+				if (opts.cmd != VRSET_NONE)
+					cmd_help();
+				else
+					opts.cmd = VRSET_CLEAR;
 				break;
 			
 			case 'D':
-				cmds.decr = true;
+				if (opts.cmd != VRSET_NONE)
+					cmd_help();
+				else
+					opts.cmd = VRSET_DECR;
 				break;
 			
 			case 'I':
-				cmds.incr = true;
+				if (opts.cmd != VRSET_NONE)
+					cmd_help();
+				else
+					opts.cmd = VRSET_INCR;
 				break;
 			
 			case 'S':
-				cmds.setup = true;
+				if (opts.cmd != VRSET_NONE)
+					cmd_help();
+				else
+					opts.cmd = VRSET_SETUP;
 				break;
 			
 			DEFAULT_GETOPT
@@ -121,56 +128,45 @@ int main(int argc, char *argv[])
 		EXIT("<rootdev> missing", EXIT_USAGE);
 	
 	opts.root = argv[optind];
-	
-	/* check for real root dev */
-	if (cmds.setup && argc < optind + 2)
-		EXIT("<realrootdev> missing", EXIT_COMMAND)
-	
-	if (cmds.setup)
-		opts.realroot = argv[optind+1];
-	
 	int rootfd = open(opts.root, O_RDONLY, 0);
-	
 	if (rootfd == -1)
 		PEXIT("Failed to open <rootdev>", EXIT_COMMAND);
-	
-	if (cmds.clear) {
-		if (ioctl(rootfd, VROOT_CLR_DEV, 0) == -1)
-			PEXIT("Failed to clear device", EXIT_COMMAND);
+
+	switch (opts.cmd) {
+		case VRSET_SETUP: {
+			if (argc < optind + 2)
+				EXIT("<realrootdev> missing", EXIT_COMMAND);
+			opts.realroot = argv[optind+1];
+			int realrootfd = open(opts.realroot, O_RDONLY, 0);
+			
+			if (realrootfd == -1)
+				PEXIT("Failed to open <realrootdev>", EXIT_COMMAND);
+			
+			if (ioctl(rootfd, VROOT_SET_DEV, (void *)realrootfd) == -1)
+				PEXIT("Failed to decrement device usage", EXIT_COMMAND);
+			
+			close(realrootfd);
+			break;
+		}
+		case VRSET_DECR:
+			if (ioctl(rootfd, VROOT_DEC_USE, 0) == -1)
+				PEXIT("Failed to decrement device usage", EXIT_COMMAND);
+			break;
+
+		case VRSET_INCR:
+			if (ioctl(rootfd, VROOT_INC_USE, 0) == -1)
+				PEXIT("Failed to increment device usage", EXIT_COMMAND);
+			break;
 		
-		goto out;
+		case VRSET_CLEAR:
+			if (ioctl(rootfd, VROOT_CLR_DEV, 0) == -1)
+				PEXIT("Failed to clear device", EXIT_COMMAND);
+			break;
+
+		default:
+			cmd_help();
 	}
 	
-	if (cmds.decr) {
-		if (ioctl(rootfd, VROOT_DEC_USE, 0) == -1)
-			PEXIT("Failed to decrement device usage", EXIT_COMMAND);
-		
-		goto out;
-	}
-	
-	if (cmds.incr) {
-		if (ioctl(rootfd, VROOT_INC_USE, 0) == -1)
-			PEXIT("Failed to increment device usage", EXIT_COMMAND);
-		
-		goto out;
-	}
-	
-	if (cmds.setup) {
-		int realrootfd = open(opts.realroot, O_RDONLY, 0);
-		
-		if (realrootfd == -1)
-			PEXIT("Failed to open <realrootdev>", EXIT_COMMAND);
-		
-		if (ioctl(rootfd, VROOT_SET_DEV, (void *)realrootfd) == -1)
-			PEXIT("Failed to decrement device usage", EXIT_COMMAND);
-		
-		close(realrootfd);
-		
-		goto out;
-	}
-	
-out:
 	close(rootfd);
-	
 	exit(EXIT_SUCCESS);
 }

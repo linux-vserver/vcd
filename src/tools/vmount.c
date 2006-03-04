@@ -25,6 +25,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <mntent.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <ctype.h>
@@ -45,7 +46,7 @@
 #define NAME  "vmount"
 #define DESCR "Filesystem Manager"
 
-#define SHORT_OPTS "MUf:m:r:n"
+#define SHORT_OPTS "LMURf:m:r:n"
 
 /* sys/mount.h does not define MS_REC! */
 #ifndef MS_REC
@@ -57,15 +58,19 @@
 #define MNT_DETACH 0x00000002
 #endif
 
-struct commands {
-	bool mount;
-	bool umount;
-};
+typedef enum {
+	VMNT_LIST = 0,   	/* List mountpoints */
+	VMNT_MOUNT = 1,  	/* Mount fstab entries */
+	VMNT_UMOUNT = 2, 	/* Unmount fstab entries */
+	VMNT_RMOUNT = 3 	/* Rbind/Move mount guest's root to / */
+} command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	char *fstab;
 	char *mtab;
-	char *rbind;
+	char *groot;
 	bool nomtab;
 };
 
@@ -73,8 +78,9 @@ struct mntspec {
 	char *source;
 	char *target;
 	char *vfstype;
-	unsigned long flags;
-	char *data;
+	char *options;
+	int pass;
+	struct mntspec *next;
 };
 
 int cwd_fd;
@@ -83,16 +89,19 @@ int root_fd;
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	vu_printf("Usage: %s <command> <opts>*\n"
 	            "\n"
 	            "Available commands:\n"
+	            "    -L            List mountpoints\n"
 	            "    -M            Mount vserver filesystems\n"
 	            "    -U            Unmount vserver filesystems\n"
+	            "    -R            Remount guest's root to /\n"
 	            "\n"
 	            "Available options:\n"
+		    GLOBAL_HELP
 	            "    -f <file>     Use fstab <file>\n"
 	            "    -m <file>     Use mtab <file>\n"
-	            "    -r <path>     Remount <path> to /\n"
+	            "    -r <path>     Path to guest's root (defaults to '.')\n"
 	            "    -n            Do not update mtab\n"
 	            "\n",
 	       NAME);
@@ -158,13 +167,9 @@ int update_mtab(struct mntspec *fsent, struct options *opts)
 	if (flock(mtab_fd, LOCK_EX) == -1)
 		goto error;
 	
-	if (fsent->vfstype == 0)
-		fsent->vfstype = "none";
-	
-	if (fsent->data == 0)
-		fsent->data = "defaults";
-	
-	vu_asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target, fsent->vfstype, fsent->data);
+	vu_asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target,
+		fsent->vfstype ? fsent->vfstype : "none",
+		fsent->options ? fsent->options : "defaults");
 	
 	if (write(mtab_fd, line, strlen(line)) == -1)
 		goto error;
@@ -182,56 +187,57 @@ error:
 }
 
 static
-int parse_fsent(struct mntspec *fsent, char *fstab_line)
+struct mntspec *load_fstab(const char *file)
 {
-	/* ignore leading whitespace characters */
-	while (isspace(*fstab_line)) ++fstab_line;
-	
-	/* ignore comments and empty lines */
-	if (*fstab_line == '#' || *fstab_line == '\0')
-		return 1;
-	
-#define GET_STRING(PTR,ALLOW_EOL) \
-	PTR = fstab_line; \
-	while (!isspace(*fstab_line) && *fstab_line != '\0') ++fstab_line; \
-	if (!ALLOW_EOL && *fstab_line == '\0') return -1; \
-	*fstab_line++ = '\0'; \
-	while (isspace(*fstab_line)) ++fstab_line;
+/*	FILE *f;
 
-	/* get column entries */
-	GET_STRING(fsent->source, false)
-	GET_STRING(fsent->target, false)
-	GET_STRING(fsent->vfstype, false)
-	GET_STRING(fsent->data, true)
-	
-#undef GET_STRING
-
-	return 0;
+	if ((f = setmntent(file ? file : "./etc/fstab", "r")))
+	{
+		struct mntent *line;
+		struct mntspec *last = NULL;
+		struct mntspec *first = NULL;
+		int n = 0;
+		while ((line = getmntent(f))) {
+			struct mntspec *tmp = malloc(sizeof(struct mntspec));
+			if (tmp == NULL)
+				continue;
+			tmp->target = strdup(line->mnt_dir);
+			tmp->source = strdup(line->mnt_fsname);
+			tmp->options = strdup(line->mnt_opts);
+			tmp->vfstype = strdup(line->mnt_type);
+			tmp->pass = line->mnt_passno;
+			tmp->next = NULL;
+			if (first && last)
+				last->next = tmp;
+			else {
+				last = tmp;
+				first = tmp;
+			}
+			n++;
+		}
+		endmntent(f);
+		return first;
+	} */
+	return NULL;
 }
 
 static
-int mount_fsent(struct mntspec *fsent, struct options *opts)
+int mount_root(struct options *opts)
 {
 	char cwd[PATH_MAX];
 	
 	if (getcwd(cwd, PATH_MAX) == NULL)
 		goto error;
 	
-	if (secure_chdir(fsent->target) == -1)
+	if (secure_chdir(opts->groot) == -1)
 		goto skip;
 	
-		char mcwd[PATH_MAX];
-		if (getcwd(mcwd, PATH_MAX) == NULL)
-			goto error;
-		vu_printf("Mounting2 '%s' on '%s', type '%s' from '%s'\n", fsent->source, fsent->target, fsent->vfstype, mcwd);
+	VPRINTF(opts, "Remounting guest's root '%s' to /\n", opts->groot);
 
-	if (mount(fsent->source, "/", fsent->vfstype, fsent->flags, fsent->data) == -1)
+	if (mount(opts->groot, "/", NULL, MS_BIND|MS_REC, NULL) == -1)
 		goto error;
 	
 	chdir(cwd);
-	
-	if (!opts->nomtab && update_mtab(fsent, opts) == -1)
-		perror("Failed to update mtab");
 	
 	return 0;
 	
@@ -254,18 +260,17 @@ int mount_fs(struct mntspec *fsent, struct options *opts)
 		goto skip;
 	
 	/* fork ps */
-	pid_t pid;
 	int c;
-	pid = fork();
+	pid_t pid = fork();
 
 	if (pid == 0) {
 		char mcwd[PATH_MAX];
 		if (getcwd(mcwd, PATH_MAX) == NULL)
 			goto error;
-		vu_printf("Mounting '%s' on '%s', type '%s' from '%s'\n", fsent->source, fsent->target, fsent->vfstype, mcwd);
+		VPRINTF(opts, "Mounting '%s' on '%s', type '%s' from '%s'\n", fsent->source, fsent->target, fsent->vfstype, mcwd);
 		// mount source target -t fs -o opts
-		if (fsent->data && fsent->data[0] != '\0') {
-			if (execl("/bin/mount", "mount", fsent->source, ".", "-t", fsent->vfstype, "-n", "-o", fsent->data, (char*)NULL) == -1)
+		if (fsent->options && fsent->options[0]) {
+			if (execl("/bin/mount", "mount", fsent->source, ".", "-t", fsent->vfstype, "-n", "-o", fsent->options, (char*)NULL) == -1)
 				PEXIT("Failed to start mount", EXIT_COMMAND);
 		} else {
 			// If there are no options, don't provide empty argument to mount
@@ -295,7 +300,7 @@ skip:
 }
 
 static
-int umount_fsent(struct mntspec *fsent)
+int umount_fs(struct mntspec *fsent, struct options *opts)
 {
 	char cwd[PATH_MAX];
 	
@@ -309,6 +314,7 @@ int umount_fsent(struct mntspec *fsent)
 	if (secure_chdir(fsent->target) == -1)
 		goto skip;
 	
+	VPRINTF(opts, "Unmounting '%s' \n", fsent->target);
 	if (umount2(".", MNT_FORCE|MNT_DETACH) == -1) {
 		if (errno == ENOENT)
 			goto skip;
@@ -329,22 +335,20 @@ skip:
 
 int main(int argc, char *argv[])
 {
-	/* init program data */
-	struct commands cmds = {
-		.mount  = false,
-		.umount = false,
-	};
-	
 	struct options opts = {
-		.fstab  = 0,
-		.mtab   = 0,
-		.rbind  = 0,
+		GLOBAL_OPTS_INIT,
+		.cmd    = VMNT_LIST,
+		.fstab  = NULL,
+		.mtab   = NULL,
+		.groot  = NULL,
 		.nomtab = false,
 	};
 	
 	bool ok = true, passed = false;
 	int c;
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -354,11 +358,19 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'M':
-				cmds.mount = true;
+				opts.cmd = VMNT_MOUNT;
 				break;
 			
 			case 'U':
-				cmds.umount = true;
+				opts.cmd = VMNT_UMOUNT;
+				break;
+			
+			case 'L':
+				opts.cmd = VMNT_LIST;
+				break;
+			
+			case 'R':
+				opts.cmd = VMNT_RMOUNT;
 				break;
 			
 			case 'f':
@@ -370,7 +382,7 @@ int main(int argc, char *argv[])
 				break;
 			
 			case 'r':
-				opts.rbind = optarg;
+				opts.groot = optarg;
 				break;
 			
 			case 'n':
@@ -388,146 +400,73 @@ int main(int argc, char *argv[])
 	if ((root_fd = open("/", O_RDONLY|O_DIRECTORY)) == -1)
 		PEXIT("Failed to get file descriptor for root", EXIT_COMMAND);
 	
-	if (cmds.mount) {
-		if (opts.fstab == 0)
-			goto rbind;
-		
-		int fstab_fd;
-		off_t fstab_len;
-		char *fstab_buf;
-		char *fstab_line;
-		
-		/* open fstab */
-		fstab_fd = open(opts.fstab, O_RDONLY);
-		
-		if (fstab_fd == -1)
-			PEXIT("Failed to open fstab", EXIT_COMMAND);
-		
-		/* get fstab size */
-		fstab_len = lseek(fstab_fd, 0, SEEK_END);
-		
-		if (fstab_len == -1)
-			PEXIT("Failed to get fstab size", EXIT_COMMAND);
-		
-		if (lseek(fstab_fd, 0, SEEK_SET) == -1)
-			PEXIT("Failed to set file descriptor for fstab", EXIT_COMMAND);
-		
-		/* save fstab to a buffer */
-		fstab_buf = (char *) malloc(fstab_len+1);
-		
-		if (read(fstab_fd, fstab_buf, fstab_len) != fstab_len)
-			PEXIT("Failed to read fstab", EXIT_COMMAND);
-		
-		fstab_buf[fstab_len+1] = '\0';
-		close(fstab_fd);
-		
-		/* iterate through fstab and mount appropriate entries */
-		while ((fstab_line = strsep(&fstab_buf, "\n")) != 0) {
-			// TODO: replace parse_fsent() with something that forks to /bin/mount to do the mount operation
-			struct mntspec fsent;
-			
-			switch (parse_fsent(&fsent, fstab_line)) {
-				case -1:
-					vu_printf("Failed to parse fstab line:\n%s\n", fstab_line);
-					break;
-				
-				case 0:
-					if (mount_fs(&fsent, &opts) == -1)
-						ok = false;
-					else
-						passed = true;
-					break;
-				
-				default:
-					break;
+	switch (opts.cmd) {
+		case VMNT_MOUNT: {
+			/* Mount fstab content */
+			struct mntspec *fstab = load_fstab(opts.fstab);
+			while (fstab) {
+				if (mount_fs(fstab, &opts) == -1)
+					ok = false;
+				else
+					passed = true;
+				struct mntspec *tmp = fstab;
+				fstab = fstab->next;
+				free(tmp->source);
+				free(tmp->target);
+				free(tmp->vfstype);
+				free(tmp->options);
+				free(tmp);
 			}
+			break;
 		}
-		
-		free(fstab_buf);
-		
-rbind:
-		if (opts.rbind == 0)
-			goto out;
-		
-		/* remount <path> at / */
-		struct mntspec rbindent = {
-			.source  = opts.rbind,
-			.target  = "/",
-			.vfstype = 0,
-			.flags   = MS_BIND|MS_REC,
-			.data    = 0,
-		};
-		
-		if (mount_fsent(&rbindent, &opts) == -1)
-			ok = false;
-		else
-			passed = true;
-		
-		goto out;
+		case VMNT_UMOUNT: {
+			/* Unmount fstab content */
+			struct mntspec *mtab = load_fstab(opts.mtab);
+			while (mtab) {
+				if (umount_fs(mtab, &opts) == -1)
+					ok = false;
+				else
+					passed = true;
+				struct mntspec *tmp = mtab;
+				mtab = mtab->next;
+				free(tmp->source);
+				free(tmp->target);
+				free(tmp->vfstype);
+				free(tmp->options);
+				free(tmp);
+			}
+			
+			if (opts.mtab)
+				truncate(opts.mtab, 0);
+			break;
+		}
+		case VMNT_RMOUNT: {
+			/* Remount guest's root to / */
+			if (mount_root(&opts) == -1)
+				ok = false;
+			else
+				passed = true;
+			break;
+		}
+		default: {
+			/* List mounted filesystems */
+			struct mntspec *mtab = load_fstab(opts.mtab);
+			while (mtab) {
+				vu_printf("%s\t%s\t%s\t%s\n", mtab->source, mtab->target, mtab->vfstype, mtab->options);
+				struct mntspec *tmp = mtab;
+				mtab = mtab->next;
+				free(tmp->source);
+				free(tmp->target);
+				free(tmp->vfstype);
+				free(tmp->options);
+				free(tmp);
+			}
+			break;
+		}
 	}
 	
-	if (cmds.umount) {
-		if (opts.mtab == 0)
-			goto out;
-		
-		int mtab_fd;
-		off_t mtab_len;
-		char *mtab_buf;
-		char *mtab_line;
-		
-		/* open mtab */
-		mtab_fd = open(opts.mtab, O_RDONLY);
-		
-		if (mtab_fd == -1)
-			PEXIT("Failed to open mtab", EXIT_COMMAND);
-		
-		/* get mtab size */
-		mtab_len = lseek(mtab_fd, 0, SEEK_END);
-		
-		if (mtab_len == -1)
-			PEXIT("Failed to get mtab size", EXIT_COMMAND);
-		
-		if (lseek(mtab_fd, 0, SEEK_SET) == -1)
-			PEXIT("Failed to set file descriptor for mtab", EXIT_COMMAND);
-		
-		/* save mtab to a buffer */
-		mtab_buf = (char *) malloc(mtab_len+1);
-		
-		if (read(mtab_fd, mtab_buf, mtab_len) != mtab_len)
-			PEXIT("Failed to read mtab", EXIT_COMMAND);
-		
-		mtab_buf[mtab_len+1] = '\0';
-		close(mtab_fd);
-		
-		/* iterate through mtab and umount appropriate entries */
-		while ((mtab_line = strsep(&mtab_buf, "\n")) != 0) {
-			struct mntspec fsent;
-			
-			switch (parse_fsent(&fsent, mtab_line)) {
-				case -1:
-					vu_printf("Failed to parse mtab line:\n%s\n", mtab_line);
-					break;
-				
-				case 0:
-					if (umount_fsent(&fsent) == -1)
-						ok = false;
-					else
-						passed = true;
-					break;
-				
-				default:
-					break;
-			}
-		}
-		
-		free(mtab_buf);
-		truncate(opts.mtab, 0);
-		
-		goto out;
-	}
-	
-	cmd_help();
 	goto out;
+	cmd_help();
 	
 out:
 	if (ok)

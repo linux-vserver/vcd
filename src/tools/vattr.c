@@ -36,22 +36,20 @@
 #include <errno.h>
 #include <vserver.h>
 
-#include <linux/vserver/inode.h>
-
 #include "printf.h"
 #include "tools.h"
+#include "vlist.h"
 
 #define NAME  "vattr"
 #define DESCR "File Attribute Manager"
 
 #define SHORT_OPTS "SGacdf:lrx:"
 
-struct commands {
-	bool set;
-	bool get;
-};
+typedef enum { VATTR_NONE, VATTR_GET, VATTR_SET } command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	bool all;
 	bool cross;
 	bool dirent;
@@ -63,13 +61,9 @@ struct options {
 };
 
 /* init program data */
-struct commands cmds = {
-	.get = false,
-	.set = false,
-};
-
-/* init program data */
 struct options opts = {
+	GLOBAL_OPTS_INIT,
+	.cmd     = VATTR_NONE,
 	.all     = false,
 	.cross   = false,
 	.dirent  = false,
@@ -92,6 +86,7 @@ void cmd_help()
 	       "    -G            Get file attributes\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -a            Process entries starting with a dot\n"
 	       "    -c            Do not cross filesystems\n"
 	       "    -d            Process directory entries instead of contents\n"
@@ -124,7 +119,7 @@ int do_iattr(char *file, struct stat *sb, char *display, char *src)
 	/* set filename */
 	iattr.filename = file;
 	
-	if (cmds.set) {
+	if (opts.cmd == VATTR_SET) {
 		const char clmod = '~'; // clear flag modifier
 		
 		if (opts.flags == 0)
@@ -156,8 +151,8 @@ set_iattr:
 		iattr.xid = opts.xid;
 		
 		if (opts.xid != 0) {
-			iattr.flags |= IATTR_XID;
-			iattr.mask  |= IATTR_XID;
+			iattr.flags |= IATTR_TAG;
+			iattr.mask  |= IATTR_TAG;
 		}
 		
 		/* syscall */
@@ -210,7 +205,7 @@ set_iattr:
 			}
 		}
 		
-		if (iattr.mask & IATTR_XID)
+		if (iattr.mask & IATTR_TAG)
 			vu_snprintf(ptr, 7, " %5d", iattr.xid);
 		else
 			vu_snprintf(ptr, 7, " noxid");
@@ -364,7 +359,7 @@ int process_file(char *path)
 		return 1;
 	}
 
-	if (opts.dirent || !S_ISDIR(st.st_mode || cmds.set)) {
+	if (opts.dirent || !S_ISDIR(st.st_mode || opts.cmd == VATTR_SET)) {
 		/* First operate on the file/folder itself if either:
 		 * - It's not a directory
 		 * - Even dires should be processed
@@ -381,7 +376,7 @@ int process_file(char *path)
 
 	// If we need to recurse, do it
 	if (S_ISDIR(st.st_mode) &&
-	   ((cmds.set && opts.recurse) || (!cmds.set && !opts.dirent))) {
+	   ((opts.cmd == VATTR_SET && opts.recurse) || (!opts.cmd == VATTR_GET && !opts.dirent))) {
 		rc = walk_tree(path, 0);
 	}
 	
@@ -397,6 +392,8 @@ int main(int argc, char *argv[])
 	int errcnt = 0;
 	const char delim = ','; // list delimiter
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -406,11 +403,17 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'S':
-				cmds.set = true;
+				if (opts.cmd != VATTR_NONE)
+					cmd_help();
+				else
+					opts.cmd = VATTR_SET;
 				break;
 			
 			case 'G':
-				cmds.get = true;
+				if (opts.cmd != VATTR_NONE)
+					cmd_help();
+				else
+					opts.cmd = VATTR_GET;
 				break;
 			
 			case 'a':

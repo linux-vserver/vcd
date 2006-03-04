@@ -30,22 +30,20 @@
 #include <strings.h>
 #include <vserver.h>
 
-#include <linux/vserver/limit_cmd.h>
-
 #include "printf.h"
 #include "tools.h"
+#include "vlist.h"
 
 #define NAME  "vlimit"
 #define DESCR "Context Resource Limit Manager"
 
 #define SHORT_OPTS "SGx:r:l:"
 
-struct commands {
-	bool set;
-	bool get;
-};
+typedef enum { VLIMIT_NONE, VLIMIT_GET, VLIMIT_SET } command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	xid_t xid;
 	uint32_t rid;
 	list_t *limit;
@@ -61,6 +59,7 @@ void cmd_help()
 	       "    -G            Get resource limits\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -x <xid>      Context ID\n"
 	       "    -r <res>      Use specified resource\n"
 	       "    -l <limit>    Set limit specified in <limit>\n"
@@ -78,13 +77,9 @@ void cmd_help()
 
 int main(int argc, char *argv[])
 {
-	/* init program data */
-	struct commands cmds = {
-		.set = 0,
-		.get = 0,
-	};
-	
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
+		.cmd   = VLIMIT_NONE,
 		.xid   = 0,
 		.rid   = 0,
 		.limit = 0,
@@ -104,7 +99,9 @@ int main(int argc, char *argv[])
 	int c;
 	list_node_t *rnode; // resource id search result
 	const char delim = ','; // list delimiter
-	
+
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -114,11 +111,17 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'S':
-				cmds.set = true;
+				if (opts.cmd != VLIMIT_NONE)
+					cmd_help();
+				else
+					opts.cmd = VLIMIT_SET;
 				break;
 			
 			case 'G':
-				cmds.get = true;
+				if (opts.cmd != VLIMIT_NONE)
+					cmd_help();
+				else
+					opts.cmd = VLIMIT_GET;
 				break;
 			
 			case 'x':
@@ -141,58 +144,54 @@ int main(int argc, char *argv[])
 	if ((rlimit.id = opts.rid) == 0)
 		EXIT("Invalid resource", EXIT_USAGE);
 	
-	if (cmds.set) {
-		if (opts.rid == 0 || opts.limit == 0)
-			PEXIT("No resource limit specified", EXIT_USAGE);
-		
-		/* let's make a pointer to prevent unreadable code */
-		list_node_t *lnode = (opts.limit)->node;
-		
-#define SETLIMIT(LIMIT) {                           \
-		if (strlen(lnode->key) != 0) {              \
-			if (strcasecmp(lnode->key, "inf") == 0) \
-				LIMIT = CRLIM_INFINITY;             \
-			else LIMIT = atoi(lnode->key);          \
-		}                                           \
-		lnode++;                                    \
+	switch (opts.cmd) {
+		case VLIMIT_GET: {
+			/* syscall */
+			if (vx_get_rlimit(opts.xid, &rlimit) == -1)
+				PEXIT("Failed to get resource limits", EXIT_COMMAND);
+			
+#define PRINTLIMIT(LIMIT, SUFFIX) { \
+	if (LIMIT == CRLIM_INFINITY) \
+		vu_printf("inf" SUFFIX); \
+	else \
+		vu_printf("%llu" SUFFIX, LIMIT); \
 }
+			/* print list parser compliant MSH value */
+			PRINTLIMIT(rlimit.minimum, ",")
+			PRINTLIMIT(rlimit.softlimit,  ",")
+			PRINTLIMIT(rlimit.maximum, "\n")
+#undef PRINTLIMIT
+			break;
+		}
+		case VLIMIT_SET: {
+			if (opts.rid == 0 || opts.limit == 0)
+				PEXIT("No resource limit specified", EXIT_USAGE);
 		
-		/* set MSH values */
-		SETLIMIT(rlimit.minimum)
-		SETLIMIT(rlimit.softlimit)
-		SETLIMIT(rlimit.maximum)
+			/* let's make a pointer to prevent unreadable code */
+			list_node_t *lnode = (opts.limit)->node;
 		
+#define SETLIMIT(LIMIT) { \
+	if (strlen(lnode->key) != 0) { \
+		if (strcasecmp(lnode->key, "inf") == 0) \
+			LIMIT = CRLIM_INFINITY; \
+		else LIMIT = atoi(lnode->key); \
+	} \
+	lnode++; \
+}
+			/* set MSH values */
+			SETLIMIT(rlimit.minimum)
+			SETLIMIT(rlimit.softlimit)
+			SETLIMIT(rlimit.maximum)
 #undef SETLIMIT
 		
-		/* syscall */
-		if (vx_set_rlimit(opts.xid, &rlimit) == -1)
-			PEXIT("Failed to set resource limits", EXIT_COMMAND);
+			/* syscall */
+			if (vx_set_rlimit(opts.xid, &rlimit) == -1)
+				PEXIT("Failed to set resource limits", EXIT_COMMAND);
 		
-		goto out;
+			break;
+		}
+		default:
+			cmd_help();
 	}
-	
-	if (cmds.get) {
-		/* syscall */
-		if (vx_get_rlimit(opts.xid, &rlimit) == -1)
-			PEXIT("Failed to get resource limits", EXIT_COMMAND);
-
-#define PRINTLIMIT(LIMIT, SUFFIX) {                        \
-		if (LIMIT == CRLIM_INFINITY) vu_printf("inf" SUFFIX); \
-		else vu_printf("%llu" SUFFIX, LIMIT);                 \
-}
-		
-		/* print list parser compliant MSH value */
-		PRINTLIMIT(rlimit.minimum, ",")
-		PRINTLIMIT(rlimit.softlimit,  ",")
-		PRINTLIMIT(rlimit.maximum, "\n")
-
-#undef PRINTLIMIT
-		
-		goto out;
-	}
-	
-	cmd_help();
-	
-out:
 	exit(EXIT_SUCCESS);
 }

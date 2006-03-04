@@ -26,8 +26,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <linux/vserver/cvirt_cmd.h>
-
 #include "printf.h"
 #include "node.h"
 #include "map.h"

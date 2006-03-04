@@ -30,20 +30,20 @@
 
 #include "printf.h"
 #include "tools.h"
+#include "vlist.h"
 
 #define NAME  "vnflags"
 #define DESCR "Network Context Flag/Capability Manager"
 
-#define SHORT_OPTS "SGLn:c:f:"
+#define SHORT_OPTS "SGLn:c:f:m"
 
-struct commands {
-	bool set;
-	bool get;
-	bool list;
-};
+typedef enum { VNFLAG_NONE, VNFLAG_GET, VNFLAG_SET, VNFLAG_LIST } command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	nid_t nid;
+	bool compact;
 	list_t *caps;
 	list_t *flags;
 };
@@ -59,6 +59,7 @@ void cmd_help()
 	       "    -L            List available capabilities/flags\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -n <nid>      Network context ID\n"
 	       "    -c <list>     Set capabilities described in <list>\n"
 	       "    -f <list>     Set flags described in <list>\n"
@@ -73,16 +74,13 @@ void cmd_help()
 int main(int argc, char *argv[])
 {
 	/* init program data */
-	struct commands cmds = {
-		.set  = false,
-		.get  = false,
-		.list = false,
-	};
-	
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
+		.cmd   = VNFLAG_NONE,
 		.nid   = 0,
 		.caps  = 0,
 		.flags = 0,
+		.compact = 0,
 	};
 	
 	/* init syscall data */
@@ -104,6 +102,8 @@ int main(int argc, char *argv[])
 	const char delim = ','; // list delimiter
 	const char clmod = '~'; // clear flag modifier
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -113,15 +113,24 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'S':
-				cmds.set = true;
+				if (opts.cmd != VNFLAG_NONE)
+					cmd_help();
+				else
+					opts.cmd = VNFLAG_SET;
 				break;
 			
 			case 'G':
-				cmds.get = true;
+				if (opts.cmd != VNFLAG_NONE)
+					cmd_help();
+				else
+					opts.cmd = VNFLAG_GET;
 				break;
 			
 			case 'L':
-				cmds.list = true;
+				if (opts.cmd != VNFLAG_NONE)
+					cmd_help();
+				else
+					opts.cmd = VNFLAG_LIST;
 				break;
 			
 			case 'n':
@@ -135,89 +144,103 @@ int main(int argc, char *argv[])
 			case 'f':
 				opts.flags = list_parse_list(optarg, delim);
 				break;
-			
+				
+			case 'm':
+				opts.compact = 1;
+				break;
+				
 			DEFAULT_GETOPT
 		}
 	}
 
-	if (cmds.set) {
-		if (opts.caps == 0)
-			goto nflags;
+	switch (opts.cmd) {
+		case VNFLAG_GET:
+			/* syscall */
+			if (nx_get_caps(opts.nid, &caps) == -1)
+				PEXIT("Failed to get context capabilities", EXIT_COMMAND);
+			
+			if (nx_get_flags(opts.nid, &flags) == -1)
+				PEXIT("Failed to get context flags", EXIT_COMMAND);
+			
+			/* iterate through each list and print matching keys */
+			if (opts.compact) {
+				int b = 0;
+				vu_printf("NCAPS = ");
+				list_foreach(cp, i)
+					if (caps.caps & *(uint64_t*)(cp->node+i)->data)
+						vu_printf("%s%s", b++ ? "," : " ", (char *)(cp->node+i)->key);
+				vu_printf("\nFLAGS = ");
+				b = 0;
+				list_foreach(fp, i)
+					if (flags.flags & *(uint64_t*)(fp->node+i)->data)
+						vu_printf("%s%s", b++ ? "," : " ", (char *)(fp->node+i)->key);
+				vu_printf("\n");
+			} else {
+				list_foreach(cp, i) {
+					if (caps.caps & *(uint64_t*)(cp->node+i)->data)
+						vu_printf("C: %s\n", (char *)(cp->node+i)->key);
+				}
+			
+				list_foreach(fp, i) {
+					if (flags.flags & *(uint64_t*)(fp->node+i)->data)
+						vu_printf("F: %s\n", (char *)(fp->node+i)->key);
+				}
+			}
+			break;
 		
-		list_link_t clink = {
-			.p = cp,
-			.d = opts.caps,
-		};
-		
-		/* validate descending lists */
-		if (list_validate_flag(&clink, clmod) == -1)
-			PEXIT("List validation failed", EXIT_USAGE);
-		
-		/* convert given descending lists to flags using the pristine copies */
-		list_list2flags(&clink, clmod, &caps.caps, &caps.mask);
-		
-		/* syscall */
-		if (nx_set_caps(opts.nid, &caps) == -1)
-			PEXIT("Failed to set network context capabilities", EXIT_COMMAND);
-		
+		case VNFLAG_SET: {
+			if (opts.caps == 0)
+				goto nflags;
+			
+			list_link_t clink = {
+				.p = cp,
+				.d = opts.caps,
+			};
+			
+			/* validate descending lists */
+			if (list_validate_flag(&clink, clmod) == -1)
+				PEXIT("List validation failed", EXIT_USAGE);
+			
+			/* convert given descending lists to flags using the pristine copies */
+			list_list2flags(&clink, clmod, &caps.caps, &caps.mask);
+			
+			/* syscall */
+			if (nx_set_caps(opts.nid, &caps) == -1)
+				PEXIT("Failed to set network context capabilities", EXIT_COMMAND);
+			
 nflags:
-		if (opts.flags == 0)
-			EXIT("No capabilities/flags specified", EXIT_USAGE);
-		
-		list_link_t flink = {
-			.p = fp,
-			.d = opts.flags,
-		};
-		
-		/* validate descending list */
-		if (list_validate_flag(&flink, clmod) == -1)
-			PEXIT("List validation failed", EXIT_USAGE);
-		
-		/* convert given descending list to flags using the pristine copy */
-		list_list2flags(&flink, clmod, &flags.flags, &flags.mask);
-		
-		/* syscall */
-		if (nx_set_flags(opts.nid, &flags) == -1)
-			PEXIT("Failed to set context flags", EXIT_COMMAND);
-		
-		goto out;
-	}
-	
-	if (cmds.get) {
-		/* syscall */
-		if (nx_get_caps(opts.nid, &caps) == -1)
-			PEXIT("Failed to get context capabilities", EXIT_COMMAND);
-		
-		if (nx_get_flags(opts.nid, &flags) == -1)
-			PEXIT("Failed to get context flags", EXIT_COMMAND);
-		
-		/* iterate through each list and print matching keys */
-		list_foreach(cp, i) {
-			if (caps.caps & *(uint64_t*)(cp->node+i)->data)
+			if (opts.flags == 0)
+				EXIT("No capabilities/flags specified", EXIT_USAGE);
+			
+			list_link_t flink = {
+				.p = fp,
+				.d = opts.flags,
+			};
+			
+			/* validate descending list */
+			if (list_validate_flag(&flink, clmod) == -1)
+				PEXIT("List validation failed", EXIT_USAGE);
+			
+			/* convert given descending list to flags using the pristine copy */
+			list_list2flags(&flink, clmod, &flags.flags, &flags.mask);
+			
+			/* syscall */
+			if (nx_set_flags(opts.nid, &flags) == -1)
+				PEXIT("Failed to set context flags", EXIT_COMMAND);
+			break;
+		}
+		case VNFLAG_LIST:
+			/* iterate through each list and print all keys */
+			list_foreach(cp, i)
 				vu_printf("C: %s\n", (char *)(cp->node+i)->key);
-		}
-		
-		list_foreach(fp, i) {
-			if (flags.flags & *(uint64_t*)(fp->node+i)->data)
+			
+			list_foreach(fp, i)
 				vu_printf("F: %s\n", (char *)(fp->node+i)->key);
-		}
+			break;
 		
-		goto out;
+		default:
+			cmd_help();
 	}
 	
-	if (cmds.list) {
-		/* iterate through each list and print all keys */
-		list_foreach(cp, i)
-			vu_printf("C: %s\n", (char *)(cp->node+i)->key);
-		
-		list_foreach(fp, i)
-			vu_printf("F: %s\n", (char *)(fp->node+i)->key);
-		
-		goto out;
-	}
-	
-	cmd_help();
-	
-out:
 	exit(EXIT_SUCCESS);
 }

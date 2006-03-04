@@ -31,6 +31,7 @@
 
 #include "printf.h"
 #include "tools.h"
+#include "vlist.h"
 
 #define NAME  "vsched"
 #define DESCR "Context CPU Limit Manager"
@@ -38,6 +39,7 @@
 #define SHORT_OPTS "x:b:"
 
 struct options {
+	GLOBAL_OPTS;
 	xid_t xid;
 	list_t *bucket;
 };
@@ -47,6 +49,7 @@ void cmd_help()
 	vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -x <xid>      Context ID\n"
 	       "    -b <bucket>   Set bucket described in <bucket>\n"
 	       "\n"
@@ -65,6 +68,7 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
 		.xid    = 0,
 		.bucket = 0,
 	};
@@ -77,13 +81,17 @@ int main(int argc, char *argv[])
 		.tokens        = 0,
 		.tokens_min    = 0,
 		.tokens_max    = 0,
-		.priority_bias = 0,
+		.prio_bias     = 0,
+		.cpu_id        = 0,
+		.bucket_id     = 0,
 	};
 	
 	int c;
 	const char delim   = ','; // list delimiter
 	const char kvdelim = '='; // key/value delimiter
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -150,7 +158,13 @@ int main(int argc, char *argv[])
 				sched.tokens_max = value;
 			
 			if (strcasecmp(key, "PRIO_BIAS") == 0)
-				sched.priority_bias = value;
+				sched.prio_bias = value;
+		
+			if (strcasecmp(key, "CPU_ID") == 0)
+				sched.cpu_id = value;
+
+			if (strcasecmp(key, "BUCKET_ID") == 0)
+				sched.bucket_id = value;
 			
 			/* set scheduler mask */
 			sched.set_mask |= mask;

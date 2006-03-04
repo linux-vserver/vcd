@@ -31,21 +31,23 @@
 
 #include "printf.h"
 #include "tools.h"
+#include "vlist.h"
 
 #define NAME  "vcontext"
 #define DESCR "Context Manager"
 
-#define SHORT_OPTS "CIMx:f:"
+#define SHORT_OPTS "CIMx:f:c:b:m"
 
-struct commands {
-	bool create;
-	bool info;
-	bool migrate;
-};
+typedef enum { VCTX_NONE, VCTX_CREATE, VCTX_INFO, VCTX_MIGRATE } command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	xid_t xid;
 	list_t *flags;
+	list_t *bcaps;
+	list_t *ccaps;
+	list_t *mflags;
 };
 
 static inline
@@ -59,8 +61,12 @@ void cmd_help()
 	       "    -M            Migrate to an existing context\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -x <xid>      Context ID\n"
 	       "    -f <list>     Set flags described in <list>\n"
+	       "    -b <list>     Set bcaps described in <list>\n"
+	       "    -c <list>     Set ccaps described in <list>\n"
+/*	       "    -m <list>     Set migration flags described in <list>\n" */
 	       "\n"
 	       "Flag list format string:\n"
 	       "    <list> = [~]<flag>,[~]<flag>,...\n"
@@ -73,31 +79,20 @@ void cmd_help()
 
 int main(int argc, char *argv[])
 {
-	/* init program data */
-	struct commands cmds = {
-		.create   = false,
-		.info     = false,
-		.migrate  = false,
-	};
-	
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
+		.cmd   = VCTX_NONE,
 		.xid   = (~0U),
-		.flags = 0,
-	};
-	
-	/* init syscall data */
-	struct vx_create_flags create_flags = {
 		.flags = 0,
 	};
 	
 	struct vx_info info;
 	
-	/* init flags list */
-	list_t *cp = cflags_list_init();
-	
 	int c;
 	const char delim = ','; // list delimiter
 	const char clmod = '~'; // clear flag modifier
+	
+	DEBUGF("%s: starting ...\n", NAME);
 	
 	/* parse command line */
 	while (1) {
@@ -108,15 +103,24 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'C':
-				cmds.create = true;
+				if (opts.cmd != VCTX_NONE)
+					cmd_help();
+				else
+					opts.cmd = VCTX_CREATE;
 				break;
 			
 			case 'I':
-				cmds.info = true;
+				if (opts.cmd != VCTX_NONE)
+					cmd_help();
+				else
+					opts.cmd = VCTX_INFO;
 				break;
 			
 			case 'M':
-				cmds.migrate = true;
+				if (opts.cmd != VCTX_NONE)
+					cmd_help();
+				else
+					opts.cmd = VCTX_MIGRATE;
 				break;
 			
 			case 'x':
@@ -127,60 +131,138 @@ int main(int argc, char *argv[])
 				opts.flags = list_parse_list(optarg, delim);
 				break;
 			
+			case 'c':
+				opts.ccaps = list_parse_list(optarg, delim);
+				break;
+				
+			case 'b':
+				opts.bcaps = list_parse_list(optarg, delim);
+				break;
+				
+			case 'm':
+				opts.mflags = list_parse_list(optarg, delim);
+				break;
+			
 			DEFAULT_GETOPT
 		}
 	}
-	
-	if (cmds.create) {
-		if (opts.flags == 0)
-			goto create;
+
+	switch (opts.cmd) {
+		case VCTX_CREATE: {
+			struct vx_create_flags create_flags = {
+				.flags = VXF_STATE_SETUP,
+			};
+			if (opts.flags) {
+				/* init flags list */
+				list_t *cp = cflags_list_init();
+
+				list_link_t link = {
+					.p = cp,
+					.d = opts.flags,
+				};
+				uint64_t fmask = 0;
+				
+				/* validate descending list */
+				if (list_validate_flag(&link, clmod) == -1)
+					PEXIT("List validation failed", EXIT_USAGE);
+			
+				/* convert given descending list to flags using the pristine copy */
+				list_list2flags(&link, clmod, &create_flags.flags, &fmask);
+				create_flags.flags |= VXF_STATE_SETUP;
+			}
+			
+			/* syscall */
+			if (vx_create(opts.xid, &create_flags) == -1)
+				PEXIT("Failed to create context", EXIT_COMMAND);
+			
+			/* Set as default values those used by util-vserver */
+			if (opts.ccaps == NULL) opts.ccaps = list_parse_list("SET_UTSNAME,RAW_ICMP", delim);
+			if (opts.bcaps == NULL) opts.bcaps = list_parse_list("CHOWN,DAC_OVERRIDE,DAC_READ_SEARCH,"
+					"FOWNER,FSETID,FS_MASK,KILL,SETGID,SETUID,NET_BIND_SERVICE,SYS_CHROOT,"
+					"SYS_PTRACE,SYS_BOOT,SYS_TTY_CONFIG,LEASE,SYS_ADMIN", delim);
+			if (opts.ccaps || opts.bcaps) {
+				struct vx_caps caps = {
+					.bcaps = 0,
+					.ccaps = 0,
+					.cmask = 0,
+				};
+				list_t *bp = bcaps_list_init();
+				list_t *cp = ccaps_list_init();
+				
+				list_link_t link = {
+					.p = bp,
+					.d = opts.bcaps,
+				};
+
+				/* validate descending list */
+				if (list_validate_flag(&link, clmod) == -1)
+					PEXIT("List validation failed", EXIT_USAGE);
+				/* convert given descending list to flags using the pristine copy */
+				list_list2flags(&link, clmod, &caps.bcaps, &caps.cmask);
+
+				link.p = cp;
+				link.d = opts.ccaps;
+				/* validate descending list */
+				if (list_validate_flag(&link, clmod) == -1)
+					PEXIT("List validation failed", EXIT_USAGE);
+				/* convert given descending list to flags using the pristine copy */
+				list_list2flags(&link, clmod, &caps.ccaps, &caps.cmask);
+
+				/* Finally set the caps */
+				if (vx_set_caps(opts.xid, &caps) == -1)
+					PEXIT("Failed to set context capabilities", EXIT_COMMAND);
+			}
+			if (argc > optind) {
+				struct vx_flags flags = {
+					.flags = 0,
+					.mask  = VXF_STATE_SETUP,
+				};
+				if (vx_set_flags(opts.xid, &flags) == -1)
+					PEXIT("Failed to set context flags", EXIT_COMMAND);
+			}
+			break;
+		}
+		case VCTX_MIGRATE: {
+			struct vx_migrate_flags migrate_flags = {
+				.flags = 0,
+			};
+
+			if (opts.mflags) {
+				/* init flags list */
+				list_t *mp = mflags_list_init();
+				
+				list_link_t link = {
+					.p = mp,
+					.d = opts.mflags,
+				};
+				uint64_t fmask = 0;
+				
+				/* validate descending list */
+				if (list_validate_flag(&link, clmod) == -1)
+					PEXIT("List validation failed", EXIT_USAGE);
+				
+				/* convert given descending list to flags using the pristine copy */
+				list_list2flags(&link, clmod, &migrate_flags.flags, &fmask);
+			}
+			/* syscall */
+			if (vx_migrate(opts.xid, &migrate_flags) == -1)
+				PEXIT("Failed to migrate to context", EXIT_COMMAND);
+			break;
+		}
+		case VCTX_INFO: {
+			/* syscall */
+			if (vx_get_info(opts.xid, &info) == -1)
+				PEXIT("Failed to get context information", EXIT_COMMAND);
 		
-		list_link_t link = {
-			.p = cp,
-			.d = opts.flags,
-		};
+			vu_printf("Context ID: %d\n", info.xid);
+			vu_printf("Init PID: %d\n", info.initpid);
 		
-		/* validate descending list */
-		if (list_validate_flag(&link, clmod) == -1)
-			PEXIT("List validation failed", EXIT_USAGE);
-		
-		/* vx_create_flags has no mask member
-		 * so we create a dumb one */
-		uint64_t mask = 0;
-		
-		/* convert given descending list to flags using the pristine copy */
-		list_list2flags(&link, clmod, &create_flags.flags, &mask);
-		
-create:
-		/* syscall */
-		if (vx_create(opts.xid, &create_flags) == -1)
-			PEXIT("Failed to create context", EXIT_COMMAND);
-		
-		goto load;
+			goto out;
+		}
+		default:
+			cmd_help();
 	}
 	
-	if (cmds.migrate) {
-		/* syscall */
-		if (vx_migrate(opts.xid) == -1)
-			PEXIT("Failed to migrate to context", EXIT_COMMAND);
-		
-		goto load;
-	}
-	
-	if (cmds.info) {
-		/* syscall */
-		if (vx_get_info(opts.xid, &info) == -1)
-			PEXIT("Failed to get context information", EXIT_COMMAND);
-		
-		vu_printf("Context ID: %d\n", info.xid);
-		vu_printf("Init PID: %d\n", info.initpid);
-		
-		goto out;
-	}
-	
-	cmd_help();
-	
-load:
 	if (argc > optind)
 		execvp(argv[optind], argv+optind);
 	

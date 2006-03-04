@@ -48,14 +48,11 @@
 #define CLONE_NEWNS 0x00020000
 #endif
 
-struct commands {
-	bool cleanup;
-	bool enter;
-	bool new;
-	bool set;
-};
+typedef enum { VNS_NONE, VNS_CLEAR, VNS_ENTER, VNS_NEW, VNS_SET } command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	bool force_clean;
 	xid_t xid;
 };
@@ -72,6 +69,7 @@ void cmd_help()
 	       "    -S            Make current namespace the namespace of current context\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -x <xid>      Context ID\n"
 	       "\n",
 	       NAME);
@@ -81,14 +79,9 @@ void cmd_help()
 int main(int argc, char *argv[])
 {
 	/* init program data */
-	struct commands cmds = {
-		.cleanup = false,
-		.enter   = false,
-		.new     = false,
-		.set     = false,
-	};
-	
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
+		.cmd         = VNS_NONE,
 		.force_clean = false,
 		.xid         = 0,
 	};
@@ -97,7 +90,9 @@ int main(int argc, char *argv[])
 	pid_t pid; /* sys_clone */
 	int status; /* waitpid */
 	char cwd[PATH_MAX]; /* chdir */
-	
+
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -107,19 +102,31 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'C':
-				cmds.cleanup = true;
+				if (opts.cmd != VNS_NONE)
+					cmd_help();
+				else
+					opts.cmd = VNS_CLEAR;
 				break;
 			
 			case 'E':
-				cmds.enter = true;
+				if (opts.cmd != VNS_NONE)
+					cmd_help();
+				else
+					opts.cmd = VNS_ENTER;
 				break;
 			
 			case 'N':
-				cmds.new = true;
+				if (opts.cmd != VNS_NONE)
+					cmd_help();
+				else
+					opts.cmd = VNS_NEW;
 				break;
 			
 			case 'S':
-				cmds.set = true;
+				if (opts.cmd != VNS_NONE)
+					cmd_help();
+				else
+					opts.cmd = VNS_SET;
 				break;
 			
 			case 'f':
@@ -133,73 +140,66 @@ int main(int argc, char *argv[])
 			DEFAULT_GETOPT
 		}
 	}
-	
-	if (cmds.cleanup) {
-		if (!opts.force_clean)
-			SEXIT("You don't want this. Really. (Use -f if you are sure)", EXIT_USAGE);
+
+	switch (opts.cmd) {
+		case VNS_CLEAR:
+			if (!opts.force_clean)
+				SEXIT("You don't want this. Really. (Use -f if you are sure)", EXIT_USAGE);
 		
-		if (vx_cleanup_namespace() == -1)
-			PEXIT("Failed to cleanup namespace", EXIT_COMMAND);
+			if (vx_cleanup_namespace() == -1)
+				PEXIT("Failed to cleanup namespace", EXIT_COMMAND);
+			break;
 		
-		goto out;
-	}
-	
-	if (cmds.enter) {
-		if (getcwd(cwd, PATH_MAX) == NULL)
-			PEXIT("Failed to get cwd", EXIT_COMMAND);
+		case VNS_ENTER:
+			if (getcwd(cwd, PATH_MAX) == NULL)
+				PEXIT("Failed to get cwd", EXIT_COMMAND);
 		
-		if (vx_enter_namespace(opts.xid) == -1)
-			PEXIT("Failed to enter namespace", EXIT_COMMAND);
+			if (vx_enter_namespace(opts.xid) == -1)
+				PEXIT("Failed to enter namespace", EXIT_COMMAND);
 		
-		if (chdir(cwd) == -1)
-			PEXIT("Failed to restore cwd", EXIT_COMMAND);
+			if (chdir(cwd) == -1)
+				PEXIT("Failed to restore cwd", EXIT_COMMAND);
 		
-		goto load;
-	}
-	
-	if (cmds.new) {
-		signal(SIGCHLD, SIG_DFL);
+			if (argc > optind)
+				execvp(argv[optind], argv+optind);
+			break;
 		
-		pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0);
+		case VNS_NEW: {
+			signal(SIGCHLD, SIG_DFL);
 		
-		switch(pid) {
-			case -1:
-				PEXIT("Failed to create new namespace", EXIT_COMMAND);
+			pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0);
+		
+			switch(pid) {
+				case -1:
+					PEXIT("Failed to create new namespace", EXIT_COMMAND);
 			
-			case 0:
-				if (vx_set_namespace(opts.xid) == -1)
-					PEXIT("Failed to set namespace", EXIT_COMMAND);
-				goto out;
+				case 0:
+					if (vx_set_namespace(opts.xid) == -1)
+						PEXIT("Failed to set namespace", EXIT_COMMAND);
+					break;
 			
-			default:
-				if (waitpid(pid, &status, 0) == -1)
-					PEXIT("Failed to wait for child", EXIT_COMMAND);
+				default:
+					if (waitpid(pid, &status, 0) == -1)
+						PEXIT("Failed to wait for child", EXIT_COMMAND);
 			
-				if (WIFEXITED(status))
-					exit(WEXITSTATUS(status));
+					if (WIFEXITED(status))
+						exit(WEXITSTATUS(status));
 				
-				if (WIFSIGNALED(status)) {
-				 vu_printf("Child interrupted by signal; following...\n");
-					kill(getpid(), WTERMSIG(status));
-					exit(1);
-				}
+					if (WIFSIGNALED(status)) {
+						vu_printf("Child interrupted by signal; following...\n");
+						kill(getpid(), WTERMSIG(status));
+						exit(1);
+					}
+			}
+			break;
 		}
+		case VNS_SET:
+			if (vx_set_namespace(opts.xid) == -1)
+				PEXIT("Failed to set namespace", EXIT_COMMAND);
+			break;
+		default:
+			cmd_help();
 	}
 	
-	if (cmds.set) {
-		if (vx_set_namespace(opts.xid) == -1)
-			PEXIT("Failed to set namespace", EXIT_COMMAND);
-		
-		goto out;
-	}
-	
-	cmd_help();
-	goto out;
-	
-load:
-	if (argc > optind)
-		execvp(argv[optind], argv+optind);
-	
-out:
 	exit(EXIT_SUCCESS);
 }

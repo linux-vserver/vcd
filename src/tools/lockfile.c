@@ -46,6 +46,7 @@
 #define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 struct options {
+	GLOBAL_OPTS;
 	char *lockfile;
 	char *syncpipe;
 	int timeout;
@@ -53,6 +54,7 @@ struct options {
 
 /* init program data */
 struct options opts = {
+	GLOBAL_OPTS_INIT,
 	.lockfile = NULL,
 	.syncpipe = NULL,
 	.timeout  = 300,
@@ -64,6 +66,7 @@ void cmd_help()
 	vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -l <file>     Lock file\n"
 	       "    -s <fifo>     Sync pipe\n"
 	       "    -t <sec>      Timeout\n"
@@ -93,6 +96,8 @@ int main(int argc, char *argv[])
 {
 	int c;
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);

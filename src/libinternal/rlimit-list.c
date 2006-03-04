@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright 2005 by the vserver-utils team                              *
+ *   Copyright 2005 The libvserver Team                                    *
  *   See AUTHORS for details                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -22,65 +22,39 @@
 #include <config.h>
 #endif
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <stdlib.h>
 #include <vserver.h>
+#include "vlist.h"
 
-#include "printf.h"
-#include "tools.h"
+#include <sys/resource.h>
+#include <stdlib.h>
 
-#define NAME  "vinfo"
-#define DESCR "VServer information"
+LIST_DATA_ALLOC_TYPE(rlimit, uint64_t)
 
-#define SHORT_OPTS "v"
-
-struct options {
-	GLOBAL_OPTS;
-};
-
-void cmd_help()
+/*!
+ * @brief Macro for rlimit list allocation
+ * @ingroup list_defaults
+ */
+#define LIST_ADD_RLIMIT(TYPE, VALUE) \
+list_set(p->node+(i++), \
+         list_key_alloc(#VALUE), \
+         rlimit_list_data_alloc(TYPE ## _ ## VALUE));
+	
+list_t *rlimit_list_init(void)
 {
-	vu_printf("Usage: %s <opts>\n"
-	       "\n"
-	       "Available options:\n"
-	       GLOBAL_HELP
-	       "\n",
-	       NAME);
-	exit(EXIT_SUCCESS);
-}
-
-int main(int argc, char *argv[])
-{
-	/* init program data */
-	struct options opts = {
-		GLOBAL_OPTS_INIT,
-	};
+	list_t *p = list_alloc(9);
 	
-	int c;
+	int i = 0;
+	/* TODO: check if we miss sth */
+	LIST_ADD_RLIMIT(RLIMIT, RSS)
+	LIST_ADD_RLIMIT(RLIMIT, NPROC)
+	LIST_ADD_RLIMIT(RLIMIT, NOFILE)
+	LIST_ADD_RLIMIT(RLIMIT, MEMLOCK)
+	LIST_ADD_RLIMIT(RLIMIT, AS)
 	
-	DEBUGF("%s: starting ...\n", NAME);
-
-	/* parse command line */
-	while (1) {
-		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
-		if (c == -1) break;
-		
-		switch (c) {
-			GLOBAL_CMDS_GETOPT
-			
-			DEFAULT_GETOPT
-		}
-	}
+	LIST_ADD_RLIMIT(VLIMIT, NSOCK)
+	LIST_ADD_RLIMIT(VLIMIT, OPENFD)
+	LIST_ADD_RLIMIT(VLIMIT, ANON)
+	LIST_ADD_RLIMIT(VLIMIT, SHMEM)
 	
-	int version;
-	
-	if((version = vs_get_version()) == -1)
-		PEXIT("Failed to get VServer interface version", EXIT_COMMAND);
-	
-	vu_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
-	
-	exit(EXIT_SUCCESS);
+	return p;
 }

@@ -33,9 +33,6 @@
 #include <sys/wait.h>
 #include <vserver.h>
 
-#include <linux/vserver/context.h>
-#include <linux/vserver/network.h>
-
 #include "printf.h"
 #include "tools.h"
 
@@ -47,6 +44,7 @@
 #define HUNK_SIZE 0x4000
 
 struct options {
+	GLOBAL_OPTS;
 	bool shownid;
 	bool showxid;
 	nid_t nid;
@@ -67,6 +65,7 @@ void cmd_help()
 	vu_printf("Usage: %s <opts>* -- <ps args>*\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -n <nid>      Network Context ID\n"
 	       "    -N            Display network context ID\n"
 	       "    -x <xid>      Context ID\n"
@@ -281,6 +280,7 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
 		.shownid = false,
 		.showxid = false,
 		.nid    = 0,
@@ -288,7 +288,9 @@ int main(int argc, char *argv[])
 	};
 	
 	int c;
-	
+
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -340,7 +342,7 @@ int main(int argc, char *argv[])
 		//if (vx_enter_namespace(opts.xid) == -1)
 		//	PEXIT("Failed to enter namespace", EXIT_COMMAND);
 		
-		if (vx_migrate(opts.xid) == -1)
+		if (vx_migrate(opts.xid, NULL) == -1)
 			PEXIT("Failed to migrate to context", EXIT_COMMAND);
 		
 		int fd = open("/dev/null", O_RDONLY, 0);

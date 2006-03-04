@@ -38,13 +38,11 @@
 
 #define SHORT_OPTS "GLSk:n:"
 
-struct commands {
-	bool get;
-	bool list;
-	bool set;
-};
+typedef enum { VCFG_NONE, VCFG_LIST, VCFG_GET, VCFG_SET } command_t;
 
 struct options {
+	GLOBAL_OPTS;
+	command_t cmd;
 	char *name;
 	char *key;
 };
@@ -60,6 +58,7 @@ void cmd_help()
 	       "    -S            Set configuration value\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -n <name>     VServer name\n"
 	       "    -k <key>      Configuration key\n"
 	       "\n",
@@ -69,19 +68,16 @@ void cmd_help()
 
 int main(int argc, char *argv[])
 {
-	/* init program data */
-	struct commands cmds = {
-		.get  = false,
-		.list = false,
-		.set  = false,
-	};
-	
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
+		.cmd  = VCFG_NONE,
 		.name = NULL,
 		.key  = NULL,
 	};
 	
 	int c;
+	
+	DEBUGF("%s: starting ...\n", NAME);
 	
 	/* parse command line */
 	while (1) {
@@ -92,15 +88,24 @@ int main(int argc, char *argv[])
 			GLOBAL_CMDS_GETOPT
 			
 			case 'G':
-				cmds.get = true;
+				if (opts.cmd != VCFG_NONE)
+					cmd_help();
+				else
+					opts.cmd = VCFG_GET;
 				break;
 			
 			case 'L':
-				cmds.list = true;
+				if (opts.cmd != VCFG_NONE)
+					cmd_help();
+				else
+					opts.cmd = VCFG_LIST;
 				break;
 			
 			case 'S':
-				cmds.set = true;
+				if (opts.cmd != VCFG_NONE)
+					cmd_help();
+				else
+					opts.cmd = VCFG_SET;
 				break;
 			
 			case 'n':
@@ -115,55 +120,61 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	if (cmds.get) {
-		if (opts.name == NULL)
-			EXIT("<name> missing", EXIT_USAGE);
+	switch (opts.cmd) {
+		case VCFG_GET: {
+			if (opts.name == NULL)
+				EXIT("<name> missing", EXIT_USAGE);
 		
-		if (opts.key == NULL)
-			EXIT("<key> missing", EXIT_USAGE);
+			if (opts.key == NULL)
+				EXIT("<key> missing", EXIT_USAGE);
 		
-		if (vconfig_isbool(opts.key) == 0) {
-			int buf = vconfig_get_bool(opts.name, opts.key);
+			if (vconfig_isbool(opts.key) == 0) {
+				int buf = vconfig_get_bool(opts.name, opts.key);
 			
-			if (buf != -1) {
-				if (buf == 1)
-				 vu_printf("true\n");
-				else
-				 vu_printf("false\n");
+				if (buf != -1) {
+					if (buf == 1)
+						vu_printf("true\n");
+					else
+						vu_printf("false\n");
+				}
 			}
-		}
 		
-		if (vconfig_isint(opts.key) == 0) {
-			int buf = vconfig_get_int(opts.name, opts.key);
-			if (buf != -1)
-			 vu_printf("%d\n", buf);
-		}
+			if (vconfig_isint(opts.key) == 0) {
+				int buf = vconfig_get_int(opts.name, opts.key);
+				if (buf != -1)
+					vu_printf("%d\n", buf);
+			}
 		
-		if (vconfig_isstr(opts.key) == 0) {
-			char *buf = vconfig_get_str(opts.name, opts.key);
+			if (vconfig_isstr(opts.key) == 0) {
+				char *buf = vconfig_get_str(opts.name, opts.key);
 			
-			if (buf != NULL) {
-			 vu_printf("%s\n", buf);
-				free(buf);
+				if (buf != NULL) {
+					vu_printf("%s\n", buf);
+					free(buf);
+				}
 			}
-		}
 		
-		if (vconfig_islist(opts.key) == 0) {
-			char *buf = vconfig_get_list(opts.name, opts.key);
+			if (vconfig_islist(opts.key) == 0) {
+				char *buf = vconfig_get_list(opts.name, opts.key);
 			
-			if (buf != NULL) {
-			 vu_printf("%s\n", buf);
-				free(buf);
+				if (buf != NULL) {
+					vu_printf("%s\n", buf);
+					free(buf);
+				}
 			}
+			break;
 		}
-	}
-	
-	if (cmds.list) {
-		vconfig_print_nodes();
-	}
-	
-	if (cmds.set) {
-		return -1;
+		case VCFG_LIST: {
+			vconfig_print_nodes();
+			break;
+		}
+		case VCFG_SET: {
+			vu_printf("SET command not implemented\n");
+			return -1;
+			break;
+		}
+		default:
+			cmd_help();
 	}
 	
 	return EXIT_SUCCESS;

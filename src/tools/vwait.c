@@ -37,6 +37,7 @@
 #define SHORT_OPTS "x:"
 
 struct options {
+	GLOBAL_OPTS;
 	xid_t xid;
 };
 
@@ -46,6 +47,7 @@ void cmd_help()
 	vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -x <xid>      Context ID\n"
 	       "\n",
 	       NAME);
@@ -56,6 +58,7 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
 		.xid = 0,
 	};
 	
@@ -67,6 +70,8 @@ int main(int argc, char *argv[])
 	
 	int c;
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);

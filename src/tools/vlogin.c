@@ -44,6 +44,7 @@
 #define SHORT_OPTS "n:x:"
 
 struct options {
+	GLOBAL_OPTS;
 	nid_t nid;
 	xid_t xid;
 };
@@ -68,6 +69,7 @@ void cmd_help()
 	vu_printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -n <xid>      Network Context ID\n"
 	       "    -x <xid>      Context ID\n"
 	       "\n",
@@ -256,12 +258,15 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
 		.nid = 0,
 		.xid = 0,
 	};
 	
 	int c;
-	
+
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -291,7 +296,7 @@ int main(int argc, char *argv[])
 	if (opts.nid > 1 && nx_migrate(opts.nid) == -1)
 		PEXIT("Failed to migrate to network context", EXIT_COMMAND);
 	
-	if (vx_migrate(opts.xid) == -1)
+	if (vx_migrate(opts.xid, NULL) == -1)
 		PEXIT("Failed to migrate to context", EXIT_COMMAND);
 	
 	/* set terminal to raw mode */

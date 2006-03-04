@@ -33,11 +33,9 @@
 #include <vserver.h>
 #include <errno.h>
 
-#include <linux/vserver/context.h>
-#include <linux/vserver/network.h>
-
 #include "printf.h"
 #include "tools.h"
+#include "sys.h"
 
 #define NAME  "vexec"
 #define DESCR "Execute in vserver context"
@@ -45,6 +43,7 @@
 #define SHORT_OPTS "cfin:x:"
 
 struct options {
+	GLOBAL_OPTS;
 	bool chroot;
 	bool fork;
 	bool init;
@@ -58,6 +57,7 @@ void cmd_help()
 	vu_printf("Usage: %s <opts>* -- <command> <args>*\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -c            chroot to current working directory\n"
 	       "    -f            Fork into background\n"
 	       "    -i            Set init PID\n"
@@ -72,6 +72,7 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
 		.chroot = false,
 		.fork   = false,
 		.init   = false,
@@ -79,20 +80,15 @@ int main(int argc, char *argv[])
 		.xid    = 0,
 	};
 	
-	/* init syscall data */
-	struct vx_flags flags = {
+	struct vx_migrate_flags mflags = {
 		.flags = 0,
-		.mask  = VXF_STATE_SETUP,
 	};
-	
-	struct nx_flags nflags = {
-		.flags = 0,
-		.mask  = NXF_STATE_SETUP,
-	};
-	
+
 	int c;
 	pid_t pid = 0; /* sys_clone */
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
@@ -111,9 +107,7 @@ int main(int argc, char *argv[])
 			
 			case 'i':
 				opts.init = true;
-				flags.flags |= VXF_INFO_INIT;
-				flags.mask  |= VXF_INFO_INIT;
-				flags.mask  |= VXF_STATE_INIT;
+				mflags.flags |= VXM_SET_INIT | VXM_SET_REAPER;
 				break;
 			
 			case 'n':
@@ -150,25 +144,23 @@ int main(int argc, char *argv[])
 			if (opts.xid == 1)
 				goto migrate;
 			
-			/* syscall */
-			if (!opts.init) {
-				if (opts.nid > 1)
-					if (nx_set_flags(opts.nid, &nflags) == -1)
-						PEXIT("Failed to set network context flags", EXIT_COMMAND);
-				
-				if (vx_set_flags(opts.xid, &flags) == -1)
-					PEXIT("Failed to set context flags", EXIT_COMMAND);
-			}
-			
 migrate:
 			if (opts.nid > 1)
 				if (nx_migrate(opts.nid) == -1)
 					PEXIT("Failed to migrate to network context", EXIT_COMMAND);
 			
-			if (vx_migrate(opts.xid) == -1)
-				PEXIT("Failed to migrate to context", EXIT_COMMAND);
-			
 			if (opts.init) {
+				/* init syscall data */
+				struct vx_flags flags = {
+					.flags = VXF_INFO_INIT,
+					.mask  = VXF_STATE_SETUP | VXF_INFO_INIT,
+				};
+				
+				struct nx_flags nflags = {
+					.flags = 0,
+					.mask  = NXF_STATE_SETUP,
+				};
+
 				if (opts.nid > 1)
 					if (nx_set_flags(opts.nid, &nflags) == -1)
 						PEXIT("Failed to set network context flags", EXIT_COMMAND);
@@ -176,6 +168,9 @@ migrate:
 				if (vx_set_flags(opts.xid, &flags) == -1)
 					PEXIT("Failed to set context flags", EXIT_COMMAND);
 			}
+			vu_printf("Migrating with mflags=%lx\n", mflags.flags);
+			if (vx_migrate(opts.xid, &mflags) == -1)
+				PEXIT("Failed to migrate to context", EXIT_COMMAND);
 			
 			/* chroot to cwd */
 			if (opts.chroot) {
@@ -185,6 +180,7 @@ migrate:
 				if (chroot(".") == -1)
 					PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 			}
+			
 			// TODO: change TTY and stdin/out to something sensible for the guest!
 			// -- check for /dev/console or /dev/tty in the guest's root
 			if (opts.init) {

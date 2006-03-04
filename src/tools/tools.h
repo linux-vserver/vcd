@@ -18,7 +18,11 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-#define GLOBAL_CMDS "hV"
+#define GLOBAL_CMDS "hVv"
+
+#define GLOBAL_OPTS bool verbose
+
+#define GLOBAL_OPTS_INIT .verbose = false
 
 #define GLOBAL_CMDS_GETOPT \
 case 'h': \
@@ -28,6 +32,14 @@ case 'h': \
 case 'V': \
 	CMD_VERSION(NAME, DESCR); \
 	break; \
+\
+case 'v': \
+	opts.verbose = true; \
+	break; \
+
+#define GLOBAL_HELP "    -h            Display this help message\n" \
+	"    -V            Display vserver-utils version\n" \
+	"    -v            Enable verbose output\n"
 
 #define DEFAULT_GETOPT \
 default: \
@@ -57,6 +69,13 @@ default: \
 #define EXIT_USAGE   1
 #define EXIT_COMMAND 2
 #define EXIT_OPTS    3
+
+#define VPRINTF(opts, fmt, ...) if ((opts)->verbose) vu_printf(fmt , __VA_ARGS__ )
+#ifdef DEBUG
+#define DEBUGF(fmt, ...) vu_printf("DEBUG: " fmt , __VA_ARGS__ )
+#else
+#define DEBUGF(fmt, ...)
+#endif
 
 #define EXIT(MSG,RC) { \
 	vu_printf(MSG"; try '%s -h' for more information\n", argv[0]); \

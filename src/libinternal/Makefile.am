@@ -19,8 +19,12 @@
 INCLUDES = -I$(top_srcdir) \
            -I$(top_builddir)/src
 
-noinst_HEADERS = printf.h
+noinst_HEADERS = printf.h vlist.h syscall.h sys.h
 
 noinst_LIBRARIES = libinternal.a
 
-libinternal_a_SOURCES = printf.c
+libinternal_a_SOURCES = printf.c list.c sys_clone.c \
+	bcaps-list.c cflags-list.c nflags-list.c \
+	sched-list.c ccaps-list.c iattr-list.c \
+	rlimit-list.c vhi-list.c mflags-list.c
+

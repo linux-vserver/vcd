@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright 2005 by the vserver-utils team                              *
+ *   Copyright 2005 The libvserver Team                                    *
  *   See AUTHORS for details                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -22,65 +22,32 @@
 #include <config.h>
 #endif
 
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <stdlib.h>
 #include <vserver.h>
+#include "vlist.h"
 
-#include "printf.h"
-#include "tools.h"
+#include <stdlib.h>
 
-#define NAME  "vinfo"
-#define DESCR "VServer information"
+LIST_DATA_ALLOC_TYPE(nflags, uint64_t)
 
-#define SHORT_OPTS "v"
-
-struct options {
-	GLOBAL_OPTS;
-};
-
-void cmd_help()
+/*!
+ * @brief Macro for nflags list allocation
+ * @ingroup list_defaults
+ */
+#define LIST_ADD_NFLAG(TYPE, VALUE) \
+list_set(p->node+(i++), \
+         list_key_alloc(#VALUE), \
+         nflags_list_data_alloc(TYPE ## _ ## VALUE));
+	
+list_t *nflags_list_init(void)
 {
-	vu_printf("Usage: %s <opts>\n"
-	       "\n"
-	       "Available options:\n"
-	       GLOBAL_HELP
-	       "\n",
-	       NAME);
-	exit(EXIT_SUCCESS);
-}
-
-int main(int argc, char *argv[])
-{
-	/* init program data */
-	struct options opts = {
-		GLOBAL_OPTS_INIT,
-	};
+	list_t *p = list_alloc(3);
 	
-	int c;
+	int i = 0;
+	LIST_ADD_NFLAG(NXF, STATE_SETUP)
+	LIST_ADD_NFLAG(NXF, SC_HELPER)
+	LIST_ADD_NFLAG(NXF, PERSISTANT)
+/*	LIST_ADD_NFLAG(NXF, ONE_TIME)
+	LIST_ADD_NFLAG(NXF, INIT_SET) */
 	
-	DEBUGF("%s: starting ...\n", NAME);
-
-	/* parse command line */
-	while (1) {
-		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
-		if (c == -1) break;
-		
-		switch (c) {
-			GLOBAL_CMDS_GETOPT
-			
-			DEFAULT_GETOPT
-		}
-	}
-	
-	int version;
-	
-	if((version = vs_get_version()) == -1)
-		PEXIT("Failed to get VServer interface version", EXIT_COMMAND);
-	
-	vu_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
-	
-	exit(EXIT_SUCCESS);
+	return p;
 }

@@ -38,6 +38,7 @@
 #define SHORT_OPTS "x:p:s:"
 
 struct options {
+	GLOBAL_OPTS;
 	xid_t xid;
 	int32_t pid;
 	int32_t sig;
@@ -49,6 +50,7 @@ void cmd_help()
 	vu_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
+	       GLOBAL_HELP
 	       "    -x <xid>      Context ID\n"
 	       "    -p <pid>      Process ID\n"
 	       "    -s <sig>      Signal (see signal(7))\n"
@@ -61,6 +63,7 @@ int main(int argc, char *argv[])
 {
 	/* init program data */
 	struct options opts = {
+		GLOBAL_OPTS_INIT,
 		.xid = 0,
 		.pid = 0,
 		.sig = SIGKILL,
@@ -74,6 +77,8 @@ int main(int argc, char *argv[])
 	
 	int c;
 	
+	DEBUGF("%s: starting ...\n", NAME);
+
 	/* parse command line */
 	while (1) {
 		c = getopt(argc, argv, GLOBAL_CMDS SHORT_OPTS);
