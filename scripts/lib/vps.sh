@@ -346,8 +346,7 @@ vps.login() {
 	[ -z "${VDIR}" ]    && util.error "vps.login: VDIR missing"
 	
 	pushd ${VDIR} >/dev/null
-	${_VNAMESPACE} -E -x ${VX_XID} -- \
-	${_VLOGIN} -n ${VX_XID} -x ${VX_XID} -- ${VX_SHELL}
+	${_VLOGIN} -N -n ${VX_XID} -x ${VX_XID} -- ${VX_SHELL}
 	popd >/dev/null
 }
 
