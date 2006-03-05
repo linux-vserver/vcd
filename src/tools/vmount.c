@@ -209,10 +209,9 @@ struct mntspec *load_fstab(const char *file)
 			tmp->next = NULL;
 			if (first && last)
 				last->next = tmp;
-			else {
-				last = tmp;
+			else
 				first = tmp;
-			}
+			last = tmp;
 			n++;
 		}
 		endmntent(f);
@@ -292,7 +291,7 @@ int mount_fs(struct mntspec *fsent, struct options *opts)
 	return 0;
 	
 error:
-	vu_printf("Mount failed for '%s' type '%s'", fsent->target, fsent->vfstype);
+	vu_printf("Mount failed for '%s' type '%s': %s\n", fsent->target, fsent->vfstype, strerror(errno));
 	return -1;
 	
 skip:

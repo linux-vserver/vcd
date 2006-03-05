@@ -32,6 +32,7 @@
 #include <sys/wait.h>
 #include <vserver.h>
 #include <errno.h>
+#include <sys/ioctl.h>
 
 #include "printf.h"
 #include "tools.h"
@@ -168,9 +169,6 @@ migrate:
 				if (vx_set_flags(opts.xid, &flags) == -1)
 					PEXIT("Failed to set context flags", EXIT_COMMAND);
 			}
-			DEBUGF("Migrating with mflags=%lx\n", mflags.flags);
-			if (vx_migrate(opts.xid, &mflags) == -1)
-				PEXIT("Failed to migrate to context", EXIT_COMMAND);
 			
 			/* chroot to cwd */
 			if (opts.chroot) {
@@ -181,6 +179,10 @@ migrate:
 					PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 			}
 			
+			DEBUGF("Migrating with mflags=%lx\n", mflags.flags);
+			if (vx_migrate(opts.xid, &mflags) == -1)
+				PEXIT("Failed to migrate to context", EXIT_COMMAND);
+			
 			// TODO: change TTY and stdin/out to something sensible for the guest!
 			// -- check for /dev/console or /dev/tty in the guest's root
 			if (opts.init) {
@@ -190,11 +192,16 @@ migrate:
 					perror("Failed to stat /dev/console");
 				} else if (S_ISCHR(st.st_mode)) {
 					int fd = open("/dev/console", O_RDWR); // O_NOCTTY);
-					if (fd < 0) vu_printf("Failed to open /dev/console:  %s\n", strerror(errno));
-					if (fd > 0) dup2(fd, 0);
-					if (fd >= 0 && fd != 1) dup2(fd, 1);
-					if (fd >= 0 && fd != 2) dup2(fd, 2);
-					if (fd > 2) close(fd);
+					if (fd < 0) {
+						vu_dprintf(STDERR_FILENO, "Failed to open /dev/console:  %s\n", strerror(errno));
+					} else {
+						ioctl(0, TIOCNOTTY, 0);
+						if (fd != STDIN_FILENO)  dup2(fd, STDIN_FILENO);
+						if (fd != STDOUT_FILENO) dup2(fd, STDOUT_FILENO);
+						if (fd != STDERR_FILENO) dup2(fd, STDERR_FILENO);
+						if (fd != STDIN_FILENO && fd != STDERR_FILENO && fd != STDOUT_FILENO)
+							close(fd);
+					}
 				} else
 					vu_dprintf(STDERR_FILENO, "Cannot use /dev/console as it's not a character device.\n");
 			}

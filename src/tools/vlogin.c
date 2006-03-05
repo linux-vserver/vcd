@@ -310,6 +310,13 @@ int main(int argc, char *argv[])
 		if (chdir(cwd) == -1)
 			PEXIT("Failed to restore cwd", EXIT_COMMAND);
 	}
+
+	/* chroot to cwd */
+	if (chdir(".") == -1)
+		PEXIT("Failed to chdir to cwd", EXIT_COMMAND);
+	
+	if (chroot(".") == -1)
+		PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 	
 	/* enter context */
 	if (opts.nid > 1 && nx_migrate(opts.nid) == -1)
@@ -328,13 +335,6 @@ int main(int argc, char *argv[])
 	
 	if (openpty(&t.fd, &slave, NULL, NULL, NULL) == -1)
 		PEXIT("Failed to open new pseudo terminal", EXIT_COMMAND);
-	
-	/* chroot to cwd */
-	if (chdir(".") == -1)
-		PEXIT("Failed to chdir to cwd", EXIT_COMMAND);
-	
-	if (chroot(".") == -1)
-		PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 	
 	pid_t pid = fork();
 
