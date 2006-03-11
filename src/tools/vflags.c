@@ -188,6 +188,8 @@ int main(int argc, char *argv[])
 				if (list_validate_flag(&blink, clmod) == -1)
 					PEXIT("List validation failed", EXIT_USAGE);
 		
+				caps.bcaps = 0;
+				bmask = 0;
 				/* convert given descending list to flags using the pristine copy */
 				list_list2flags(&blink, clmod, &caps.bcaps, &bmask);
 				if (!opts.reset)
@@ -209,8 +211,8 @@ int main(int argc, char *argv[])
 			}
 			/* syscall */
 			if (bmask || caps.cmask) {
-				DEBUGF("BCaps = %.16lx, old  = %.16lx\n", caps.bcaps, obcaps);
-				DEBUGF("CCaps = %.16lx, mask = %.16lx\n", caps.ccaps, caps.cmask);
+				DEBUGF("BCaps = %.16llx, old  = %.16llx\n", caps.bcaps, obcaps);
+				DEBUGF("CCaps = %.16llx, mask = %.16llx\n", caps.ccaps, caps.cmask);
 				if (vx_set_caps(opts.xid, &caps) == -1)
 					PEXIT("Failed to set context capabilities", EXIT_COMMAND);
 			}
@@ -243,9 +245,9 @@ int main(int argc, char *argv[])
 			if (vx_get_flags(opts.xid, &flags) == -1)
 				PEXIT("Failed to get context flags", EXIT_COMMAND);
 			
-			VPRINTF(&opts, "Flage = %.16lx\n", flags.flags);
-			VPRINTF(&opts, "BCaps = %.16lx\n", caps.bcaps);
-			VPRINTF(&opts, "CCaps = %.16lx\n", caps.ccaps);
+			VPRINTF(&opts, "Flags = %.16llx\n", flags.flags);
+			VPRINTF(&opts, "BCaps = %.16llx\n", caps.bcaps);
+			VPRINTF(&opts, "CCaps = %.16llx\n", caps.ccaps);
 			
 			if (opts.compact) {
 				bool b = 0;

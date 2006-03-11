@@ -179,7 +179,7 @@ migrate:
 					PEXIT("Failed to chroot to cwd", EXIT_COMMAND);
 			}
 			
-			DEBUGF("Migrating with mflags=%lx\n", mflags.flags);
+			DEBUGF("Migrating with mflags=%llx\n", mflags.flags);
 			if (vx_migrate(opts.xid, &mflags) == -1)
 				PEXIT("Failed to migrate to context", EXIT_COMMAND);
 			
@@ -191,7 +191,7 @@ migrate:
 				if (stat("/dev/console", &st) == -1) {
 					perror("Failed to stat /dev/console");
 				} else if (S_ISCHR(st.st_mode)) {
-					int fd = open("/dev/console", O_RDWR); // O_NOCTTY);
+					int fd = open("/dev/console", O_RDWR | O_NOCTTY);
 					if (fd < 0) {
 						vu_dprintf(STDERR_FILENO, "Failed to open /dev/console:  %s\n", strerror(errno));
 					} else {

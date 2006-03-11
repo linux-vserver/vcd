@@ -44,10 +44,14 @@ struct options {
 	GLOBAL_OPTS;
 	command_t cmd;
 	xid_t xid;
-	list_t *flags;
-	list_t *bcaps;
-	list_t *ccaps;
-	list_t *mflags;
+	uint64_t flags;
+	uint64_t fmask;
+	uint64_t bcaps;
+	uint64_t bmask;
+	uint64_t ccaps;
+	uint64_t cmask;
+	uint64_t mflags;
+	uint64_t mmask;
 };
 
 static inline
@@ -66,7 +70,7 @@ void cmd_help()
 	       "    -f <list>     Set flags described in <list>\n"
 	       "    -b <list>     Set bcaps described in <list>\n"
 	       "    -c <list>     Set ccaps described in <list>\n"
-/*	       "    -m <list>     Set migration flags described in <list>\n" */
+	       "    -m <list>     Set migration flags described in <list>\n"
 	       "\n"
 	       "Flag list format string:\n"
 	       "    <list> = [~]<flag>,[~]<flag>,...\n"
@@ -77,20 +81,49 @@ void cmd_help()
 	exit(EXIT_SUCCESS);
 }
 
+#define delim ',' // list delimiter
+#define clmod '~' // clear flag modifier
+
+int calc_caps(const char*lst, list_t *vals, uint64_t *flags, uint64_t *fmask)
+{
+	list_link_t link = {
+		.p = vals,
+		.d = list_parse_list(lst, delim),
+	};
+	
+	/* validate descending list */
+	if (list_validate_flag(&link, clmod) == -1)
+		return -1;
+	
+	/* convert given descending list to flags using the pristine copy */
+	list_list2flags(&link, clmod, flags, fmask);
+	return 0;
+}
+
 int main(int argc, char *argv[])
 {
 	struct options opts = {
 		GLOBAL_OPTS_INIT,
-		.cmd   = VCTX_NONE,
-		.xid   = (~0U),
-		.flags = 0,
+		.cmd    = VCTX_NONE,
+		.xid    = (~0U),
+		.flags  = 0,
+		.fmask  = 0,
+		.ccaps  = 0,
+		.cmask  = 0,
+		.bcaps  = 0,
+		.bmask  = 0,
+		.mflags = 0,
+		.mmask  = 0,
 	};
 	
 	struct vx_info info;
 	
+	list_t *fp = cflags_list_init();
+	list_t *bp = bcaps_list_init();
+	list_t *cp = ccaps_list_init();
+	list_t *mp = mflags_list_init();
+	
 	int c;
-	const char delim = ','; // list delimiter
-	const char clmod = '~'; // clear flag modifier
 	
 	DEBUGF("%s: starting ...\n", NAME);
 	
@@ -128,19 +161,23 @@ int main(int argc, char *argv[])
 				break;
 			
 			case 'f':
-				opts.flags = list_parse_list(optarg, delim);
+				if (calc_caps(optarg, fp, &opts.flags, &opts.fmask) == -1)
+					PEXIT("List validation failed for FLAGS", EXIT_USAGE);
 				break;
 			
 			case 'c':
-				opts.ccaps = list_parse_list(optarg, delim);
+				if (calc_caps(optarg, cp, &opts.ccaps, &opts.cmask) == -1)
+					PEXIT("List validation failed for CCAPS", EXIT_USAGE);
 				break;
 				
 			case 'b':
-				opts.bcaps = list_parse_list(optarg, delim);
+				if (calc_caps(optarg, bp, &opts.bcaps, &opts.bmask) == -1)
+					PEXIT("List validation failed for BCAPS", EXIT_USAGE);
 				break;
 				
 			case 'm':
-				opts.mflags = list_parse_list(optarg, delim);
+				if (calc_caps(optarg, mp, &opts.mflags, &opts.mmask) == -1)
+					PEXIT("List validation failed for MFLAGS", EXIT_USAGE);
 				break;
 			
 			DEFAULT_GETOPT
@@ -150,68 +187,37 @@ int main(int argc, char *argv[])
 	switch (opts.cmd) {
 		case VCTX_CREATE: {
 			struct vx_create_flags create_flags = {
-				.flags = VXF_STATE_SETUP,
+				.flags = VXF_STATE_SETUP | opts.flags,
 			};
-			if (opts.flags) {
-				/* init flags list */
-				list_t *cp = cflags_list_init();
-
-				list_link_t link = {
-					.p = cp,
-					.d = opts.flags,
-				};
-				uint64_t fmask = 0;
-				
-				/* validate descending list */
-				if (list_validate_flag(&link, clmod) == -1)
-					PEXIT("List validation failed for FLAGS", EXIT_USAGE);
-			
-				/* convert given descending list to flags using the pristine copy */
-				list_list2flags(&link, clmod, &create_flags.flags, &fmask);
-				create_flags.flags |= VXF_STATE_SETUP;
-			}
 			
 			/* syscall */
 			if (vx_create(opts.xid, &create_flags) == -1)
 				PEXIT("Failed to create context", EXIT_COMMAND);
 			
 			/* Set as default values those used by util-vserver */
-			if (opts.ccaps == NULL) opts.ccaps = list_parse_list("SET_UTSNAME,RAW_ICMP", delim);
-			if (opts.bcaps == NULL) opts.bcaps = list_parse_list("CHOWN,DAC_OVERRIDE,DAC_READ_SEARCH,"
+			uint64_t defcaps;
+			uint64_t defmcaps;
+			struct vx_caps caps = {
+				.bcaps = 0,
+				.ccaps = 0,
+				.cmask = 0,
+			};
+
+			if (calc_caps("SET_UTSNAME,RAW_ICMP", cp, &defcaps, &defmcaps) == -1)
+				PEXIT("List validation failed for default CCAPS", EXIT_USAGE);
+			caps.ccaps = (opts.ccaps & opts.cmask) | (defcaps & defmcaps & ~opts.cmask);
+			caps.cmask = opts.cmask | defmcaps;
+			
+			if (calc_caps("CHOWN,DAC_OVERRIDE,DAC_READ_SEARCH,"
 					"FOWNER,FSETID,FS_MASK,KILL,SETGID,SETUID,NET_BIND_SERVICE,SYS_CHROOT,"
-					"SYS_PTRACE,SYS_BOOT,SYS_TTY_CONFIG,LEASE,SYS_ADMIN", delim);
-			if (opts.ccaps || opts.bcaps) {
-				struct vx_caps caps = {
-					.bcaps = 0,
-					.ccaps = 0,
-					.cmask = 0,
-				};
-				list_t *bp = bcaps_list_init();
-				list_t *cp = ccaps_list_init();
-				
-				list_link_t link = {
-					.p = bp,
-					.d = opts.bcaps,
-				};
-
-				/* validate descending list */
-				if (list_validate_flag(&link, clmod) == -1)
-					PEXIT("List validation failed for BCAPS", EXIT_USAGE);
-				/* convert given descending list to flags using the pristine copy */
-				list_list2flags(&link, clmod, &caps.bcaps, &caps.cmask);
-
-				link.p = cp;
-				link.d = opts.ccaps;
-				/* validate descending list */
-				if (list_validate_flag(&link, clmod) == -1)
-					PEXIT("List validation failed for CCAPS", EXIT_USAGE);
-				/* convert given descending list to flags using the pristine copy */
-				list_list2flags(&link, clmod, &caps.ccaps, &caps.cmask);
-
-				/* Finally set the caps */
-				if (vx_set_caps(opts.xid, &caps) == -1)
-					PEXIT("Failed to set context capabilities", EXIT_COMMAND);
-			}
+					"SYS_PTRACE,SYS_BOOT,SYS_TTY_CONFIG,LEASE", bp, &defcaps, &defmcaps) == -1)
+				PEXIT("List validation failed for default BCAPS", EXIT_USAGE);
+			caps.bcaps = (opts.bcaps & opts.bmask) | (defcaps & defmcaps & ~opts.bmask);
+			
+			/* Finally set the caps */
+			if (vx_set_caps(opts.xid, &caps) == -1)
+				PEXIT("Failed to set context capabilities", EXIT_COMMAND);
+			
 			if (argc > optind) {
 				struct vx_flags flags = {
 					.flags = 0,
@@ -224,26 +230,9 @@ int main(int argc, char *argv[])
 		}
 		case VCTX_MIGRATE: {
 			struct vx_migrate_flags migrate_flags = {
-				.flags = 0,
+				.flags = opts.mflags,
 			};
 
-			if (opts.mflags) {
-				/* init flags list */
-				list_t *mp = mflags_list_init();
-				
-				list_link_t link = {
-					.p = mp,
-					.d = opts.mflags,
-				};
-				uint64_t fmask = 0;
-				
-				/* validate descending list */
-				if (list_validate_flag(&link, clmod) == -1)
-					PEXIT("List validation failed", EXIT_USAGE);
-				
-				/* convert given descending list to flags using the pristine copy */
-				list_list2flags(&link, clmod, &migrate_flags.flags, &fmask);
-			}
 			/* syscall */
 			if (vx_migrate(opts.xid, &migrate_flags) == -1)
 				PEXIT("Failed to migrate to context", EXIT_COMMAND);

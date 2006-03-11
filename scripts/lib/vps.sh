@@ -100,8 +100,16 @@ vps.context() {
 	
 	case ${subcmd} in
 		setup)
+			VCTX_ARGS="-x ${VX_XID}"
+			[ ! -z "${VX_BCAPS}" ] && VCTX_ARGS="${VCTX_ARGS} -b $(util.array_to_list ${VX_BCAPS[@]})"
+			[ ! -z "${VX_CCAPS}" ] && VCTX_ARGS="${VCTX_ARGS} -c $(util.array_to_list ${VX_CCAPS[@]})"
+			if [ ! -z "${VX_FLAGS}" ]; then
+				VCTX_ARGS="${VCTX_ARGS} -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTANT,STATE_SETUP"
+			else
+				VCTX_ARGS="${VCTX_ARGS} -f PERSISTANT,STATE_SETUP"
+			fi
 			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTANT,STATE_SETUP
-			${_VCONTEXT}  -C -x ${VX_XID} -f PERSISTANT,STATE_SETUP
+			${_VCONTEXT} -C ${VCTX_ARGS}
 			;;
 		
 		release)
@@ -230,15 +238,15 @@ vps.flags() {
 	
 	case ${subcmd} in
 		set)
-			if [ ! -z "${VX_BCAPS}" ]; then
-				${_VFLAGS} -S -b $(util.array_to_list ${VX_BCAPS[@]}) -x ${VX_XID}
-			fi
-			if [ ! -z "${VX_CCAPS}" ]; then
-				${_VFLAGS} -S -c $(util.array_to_list ${VX_CCAPS[@]}) -x ${VX_XID}
-			fi
-			if [ ! -z "${VX_FLAGS}" ]; then
-				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTANT -x ${VX_XID}
-			fi
+#			if [ ! -z "${VX_BCAPS}" ]; then
+#				${_VFLAGS} -S -b $(util.array_to_list ${VX_BCAPS[@]}) -x ${VX_XID}
+#			fi
+#			if [ ! -z "${VX_CCAPS}" ]; then
+#				${_VFLAGS} -S -c $(util.array_to_list ${VX_CCAPS[@]}) -x ${VX_XID}
+#			fi
+#			if [ ! -z "${VX_FLAGS}" ]; then
+#				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTANT -x ${VX_XID}
+#			fi
 			;;
 		
 		run)
