@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <wait.h>
+#include <errno.h>
 #include <syslog.h>
 #include <lucid/io.h>
 
@@ -33,8 +34,16 @@ vc_cmd_t CMDS[] = {
 
 int do_command(int argc, char **argv, char **data)
 {
-	int i, status;
+	int i, status, found = 0;
 	pid_t pid;
+	
+	/* lookup command */
+	for (i = 0; CMDS[i].name; i++)
+		if (strcasecmp(CMDS[i].name, argv[0]) == 0)
+			found = 1;
+	
+	if (!found)
+		return -2;
 	
 	if(data == NULL) {
 		switch((pid = fork())) {
@@ -92,7 +101,7 @@ int do_command(int argc, char **argv, char **data)
 				
 				close(pfd[0]);
 				
-				if (waitpid(pid, &status, 0) == -1)
+				if (waitpid(pid, &status, 0) == -1 && errno != ECHILD)
 					return -1;
 				else if (WIFEXITED(status) && WEXITSTATUS(status) == EXIT_SUCCESS)
 					return EXIT_SUCCESS;
@@ -104,4 +113,3 @@ int do_command(int argc, char **argv, char **data)
 	/* we should never get here */
 	return -1;
 }
-

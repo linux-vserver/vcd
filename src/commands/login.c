@@ -171,19 +171,19 @@ void terminal_activity(void)
 	
 	/* terminal died or strange things happened */
 	if (len == -1)
-		vc_abortp("Failed to read from terminal");
+		vc_errp("Failed to read from terminal");
 	
 	/* get the current terminal settings */
 	if (tcgetattr(t.fd, &t.term) == -1)
-		vc_abortp("Failed to get terminal attributes");
+		vc_errp("Failed to get terminal attributes");
 	
 	/* set the current terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSANOW, &t.term) == -1)
-		vc_abortp("Failed to set terminal attributes");
+		vc_errp("Failed to set terminal attributes");
 	
 	/* write activity to user */
 	if (write(STDOUT_FILENO, buf, len) == -1)
-		vc_abortp("Failed to write to stdout");
+		vc_errp("Failed to write to stdout");
 }
 
 /* copy user activity to terminal */
@@ -198,11 +198,11 @@ void user_activity(void)
 	
 	/* the user process died or strange thins happened */
 	if (len == -1)
-		vc_abortp("Failed to read from stdin");
+		vc_errp("Failed to read from stdin");
 	
 	/* write activity to terminal */
 	if (write(t.fd, buf, len) == -1)
-		vc_abortp("Failed to write to terminal");
+		vc_errp("Failed to write to terminal");
 }
 
 static
@@ -221,7 +221,7 @@ void login_sighandler(int sig)
 		/* terminal died */
 		case SIGCHLD:
 			if (wait(&status) == -1)
-				vc_abortp("waitpid");
+				vc_errp("waitpid");
 			
 			if (WIFEXITED(status))
 				exit(WEXITSTATUS(status));
@@ -234,9 +234,6 @@ void login_sighandler(int sig)
 			signal(SIGWINCH, login_sighandler);
 			terminal_redraw();
 			break;
-		
-		case SIGABRT:
-			exit(EXIT_FAILURE);
 		
 		default:
 			kill(getpid(), sig);
@@ -255,7 +252,7 @@ void login_main(int argc, char *argv[])
 	
 	/* 0) load configuration */
 	if (vc_cfg_get_int(login_name, "vx.id", (int *) &login_xid) == -1)
-		vc_abortp("vc_cfg_get_int(vx.id)");
+		vc_errp("vc_cfg_get_int(vx.id)");
 	
 	char *shell;
 	
@@ -264,24 +261,24 @@ void login_main(int argc, char *argv[])
 	
 	/* 1) migrate to context/namespace */
 	if (nx_migrate(login_xid) == -1)
-		vc_abortp("nx_migrate");
+		vc_errp("nx_migrate");
 	
 	if (vx_enter_namespace(login_xid) == -1)
-		vc_abortp("vx_enter_namespace");
+		vc_errp("vx_enter_namespace");
 	
 	if (vx_migrate(login_xid, NULL) == -1)
-		vc_abortp("vx_migrate");
+		vc_errp("vx_migrate");
 	
 	/* 2) set terminal to raw mode */
 	atexit(terminal_atexit);
 	if (terminal_raw() == -1)
-		vc_abortp("Failed to set terminal to raw mode");
+		vc_errp("Failed to set terminal to raw mode");
 	
 	/* 3) fork new pseudo terminal */
 	int slave;
 	
 	if (openpty(&t.fd, &slave, NULL, NULL, NULL) == -1)
-		vc_abortp("Failed to open new pseudo terminal");
+		vc_errp("Failed to open new pseudo terminal");
 	
 	/* 4) chroot to vdir */
 	char *buf;
@@ -295,10 +292,10 @@ void login_main(int argc, char *argv[])
 		vc_snprintf(vdir, PATH_MAX, "%s/%s", __VDIRBASE, login_name);
 	
 	if (chdir(vdir) == -1)
-		vc_abortp("chdir(vdir)");
+		vc_errp("chdir(vdir)");
 	
 	if (chroot(".") == -1)
-		vc_abortp("chroot");
+		vc_errp("chroot");
 	
 	/* 5) fork new terminal */
 	pid_t pid;
@@ -309,7 +306,7 @@ void login_main(int argc, char *argv[])
 	signal(SIGWINCH, login_sighandler);
 	
 	if (pid == -1)
-		vc_abortp("Failed to fork new pseudo terminal");
+		vc_errp("Failed to fork new pseudo terminal");
 	
 	if (pid == 0) {
 		/* we don't need the master side of the terminal */
@@ -319,7 +316,7 @@ void login_main(int argc, char *argv[])
 		setsid();
 		
 		if (ioctl(slave, TIOCSCTTY, NULL) == -1)
-			vc_abortp("Failed to set controlling terminal");
+			vc_errp("Failed to set controlling terminal");
 		
 		dup2(slave, 0);
 		dup2(slave, 1);
@@ -332,10 +329,10 @@ void login_main(int argc, char *argv[])
 		char **av;
 		
 		if (argv_parse(shell, &ac, &av) == -1)
-			vc_abortp("Invalid shell");
+			vc_errp("Invalid shell");
 		
 		if (execvp(av[0], av) == -1)
-			vc_abortp("execvp");
+			vc_errp("execvp");
 	}
 	
 	/* save terminals pid */
@@ -358,7 +355,7 @@ void login_main(int argc, char *argv[])
 		/* wait for something to happen */
 		while (select(n + 1, &rfds, NULL, NULL, NULL) == -1) {
 			if (errno == EINTR || errno == EAGAIN) continue;
-			vc_abortp("Failed to select");
+			vc_errp("Failed to select");
 		}
 		
 		if (FD_ISSET(STDIN_FILENO, &rfds))

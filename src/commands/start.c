@@ -108,17 +108,17 @@ void start_setup_context(void)
 	
 	switch (pid) {
 		case -1:
-			vc_errp("clone");
+			vc_errp("fork");
 		
 		case 0:
 			if (vx_create(start_xid, &create_flags) == -1)
 				vc_errp("vx_create(%d)", start_xid);
 			
-			exit(0);
+			exit(EXIT_SUCCESS);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
-				vc_errp("waitpid");
+				vc_errp("waitpid1");
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 				vc_err("start_setup_context failed");
@@ -253,17 +253,17 @@ void start_setup_network(void)
 	
 	switch (pid) {
 		case -1:
-			vc_errp("clone");
+			vc_errp("fork");
 		
 		case 0:
 			if (nx_create(start_xid, &create_flags) == -1)
 				vc_errp("nx_create(%s)", start_name);
 			
-			_exit(0);
+			exit(EXIT_SUCCESS);
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
-				vc_errp("waitpid");
+				vc_errp("waitpid2");
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 				vc_err("start_setup_context failed");
@@ -359,7 +359,7 @@ void start_setup_namespace(void)
 			
 			default:
 				if (waitpid(pid, &status, 0) == -1)
-					vc_errp("waitpid");
+					vc_errp("waitpid3");
 				
 				if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 					vc_errp("mount");
@@ -455,23 +455,19 @@ void start_guest_init(void)
 				close(STDERR_FILENO);
 			}
 			
-			vc_printf("pid1: %d\n", getpid());
-			
-			/* 1) migrate to context/namespace */
-			if (nx_migrate(start_xid) == -1)
-				vc_errp("nx_migrate");
-			
+			/* 1) chroot to vdir */
 			if (vx_enter_namespace(start_xid) == -1)
 				vc_errp("vx_enter_namespace");
 			
-			if (vx_migrate(start_xid, &migrate_flags) == -1)
-				vc_errp("vx_migrate");
-			
-			vc_printf("pid2: %d\n", getpid());
-			
-			/* 2) chroot to vdir */
 			if (chroot(start_vdir) == -1)
 				vc_errp("chroot");
+			
+			/* 2) migrate to context */
+			if (nx_migrate(start_xid) == -1)
+				vc_errp("nx_migrate");
+			
+			if (vx_migrate(start_xid, &migrate_flags) == -1)
+				vc_errp("vx_migrate");
 			
 			if (execv(av[0], av) == -1)
 				vc_errp("execv");
@@ -480,7 +476,7 @@ void start_guest_init(void)
 			/* to wait or not to wait!? */
 			switch (waitpid(pid, &status, waitchild == 0 ? WNOHANG : 0)) {
 				case -1:
-					vc_errp("waitpid");
+					vc_errp("waitpid4");
 				
 				case 0:
 					break;
@@ -559,7 +555,7 @@ void start_main(int argc, char *argv[])
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
-				vc_errp("waitpid");
+				vc_errp("waitpid5");
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 				vc_err("start_setup_namespace failed");
