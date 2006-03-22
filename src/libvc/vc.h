@@ -88,15 +88,11 @@ void vc_warn  (const char *fmt, /*args*/ ...);
 void vc_warnp (const char *fmt, /*args*/ ...);
 void vc_err   (const char *fmt, /*args*/ ...);
 void vc_errp  (const char *fmt, /*args*/ ...);
-void vc_abort (const char *fmt, /*args*/ ...);
-void vc_abortp(const char *fmt, /*args*/ ...);
 
 #define vc_warnf(fmt, ...)   vc_warn  ("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 #define vc_warnfp(fmt, ...)  vc_warnp ("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 #define vc_errf(fmt, ...)    vc_err   ("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 #define vc_errfp(fmt, ...)   vc_errp  ("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
-#define vc_abortf(fmt, ...)  vc_abort ("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
-#define vc_abortfp(fmt, ...) vc_abortp("%s(): " fmt, __FUNCTION__, ## __VA_ARGS__)
 
 /* str.c */
 uint64_t vc_str_to_rlim(char *str);

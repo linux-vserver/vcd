@@ -67,27 +67,3 @@ void vc_errp(const char *fmt, /*args*/ ...)
 	
 	exit(EXIT_FAILURE);
 }
-
-void vc_abort(const char *fmt, /*args*/ ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	
-	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
-	vc_vdprintf(STDERR_FILENO, fmt, ap);
-	vc_dprintf(STDERR_FILENO, "\n");
-	
-	abort();
-}
-
-void vc_abortp(const char *fmt, /*args*/ ...)
-{
-	va_list ap;
-	va_start(ap, fmt);
-	
-	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
-	vc_vdprintf(STDERR_FILENO, fmt, ap);
-	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
-	
-	abort();
-}
