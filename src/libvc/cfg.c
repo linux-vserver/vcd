@@ -19,14 +19,17 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#include <fcntl.h>
 #include <limits.h>
 #include <errno.h>
 #include <ctype.h>
 #include <dirent.h>
-
+#include <sys/stat.h>
 #include <lucid/mmap.h>
 #include <lucid/open.h>
+
+#define __USE_GNU
+#include <fcntl.h>
+#undef __USE_GNU
 
 #include "pathconfig.h"
 #include "vc.h"

@@ -19,12 +19,14 @@
 #include <config.h>
 #endif
 
+#include <unistd.h>
 #include <stdlib.h>
 #include <sys/mount.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <wait.h>
 #include <ctype.h>
+#include <string.h>
 #include <vserver.h>
 #include <limits.h>
 #include <lucid/argv.h>

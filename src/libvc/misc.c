@@ -18,7 +18,10 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <unistd.h>
+
+#define __USE_GNU
 #include <fcntl.h>
+#undef __USE_GNU
 
 #include "vc.h"
 

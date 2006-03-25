@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <errno.h>
+#include <string.h>
 #include <strings.h>
 #include <arpa/inet.h>
 #include <vserver.h>
