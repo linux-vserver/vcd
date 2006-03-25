@@ -18,6 +18,7 @@
 #define _GNU_SOURCE
 #include <string.h>
 
+#include <unistd.h>
 #include <stdlib.h>
 #include <strings.h>
 #include <wait.h>

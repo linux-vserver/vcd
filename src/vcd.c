@@ -19,8 +19,9 @@
 #include <config.h>
 #endif
 
-#include <string.h>
+#include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <strings.h>
 #include <wait.h>
 #include <sys/poll.h>
@@ -34,6 +35,10 @@
 #include "commands.h"
 
 static const char *rcsid = "$Id$";
+
+char *users = NULL;
+int auth = 0;
+int sfd;
 
 struct request_t {
 	char *str;
@@ -65,7 +70,50 @@ struct request_t {
 #define VCDR_KEY_FAIL     299
 #define VCDR_EXIT_SUCCESS 300
 #define VCDR_EXIT_FAIL    301
+#define VCDR_CMD_INVALID  398
 #define VCDR_CMD_FAIL     399
+
+int do_helo(int argc, char **argv)
+{
+	return VCDR_CMD_FAIL;
+}
+
+int do_passwd(int argc, char **argv)
+{
+	return VCDR_CMD_FAIL;
+}
+
+int do_set(int argc, char **argv, int fd)
+{
+	return VCDR_CMD_FAIL;
+}
+
+int do_get(int argc, char **argv, char **data)
+{
+	return VCDR_CMD_FAIL;
+}
+
+int do_call(int argc, char **argv, char **data)
+{
+	int rc;
+	char *buf;
+	
+	rc = do_command(argc, argv, &buf);
+	
+	if (rc == -1)
+		return VCDR_CMD_FAIL;
+	
+	if (rc == -2)
+		return VCDR_CMD_INVALID;
+	
+	*data = buf;
+	
+	if (rc == EXIT_SUCCESS)
+		return VCDR_EXIT_SUCCESS;
+	
+	else
+		return VCDR_EXIT_FAIL;
+}
 
 int str_to_request(char *str)
 {
@@ -76,6 +124,36 @@ int str_to_request(char *str)
 			return REQ[i].id;
 	
 	return 0;
+}
+
+int handle_request(int fd, char *line, char **data)
+{
+	int req, ac;
+	char **av = NULL;
+	
+	*data = NULL;
+	
+	argv_parse(line, &ac, &av);
+	
+	req = str_to_request(av[0]);
+	ac--; av++;
+	
+	switch (req) {
+		case VCD_HELO:   return do_helo(ac, av);
+		case VCD_PASSWD: return do_passwd(ac, av);
+		case VCD_SET:    return do_set(ac, av, fd);
+		case VCD_GET:    return do_get(ac, av, data);
+		case VCD_CALL:   return do_call(ac, av, data);
+		
+		case VCD_BYE:
+			return -2;
+			
+		default:
+			return VCDR_REQ_INVALID;
+	}
+	
+	/* we should never get here */
+	return VCDR_REQ_INVALID;
 }
 
 void return_code(int fd, int status, int len)
@@ -103,53 +181,6 @@ out:
 	*data = NULL;
 }
 
-int handle_request(int fd, char *line, char **data)
-{
-	int req, ac;
-	char **av = NULL;
-	
-	*data = NULL;
-	
-	argv_parse(line, &ac, &av);
-	req = str_to_request(av[0]);
-	
-	int rc;
-	char *buf;
-	
-	switch (req) {
-		case VCD_HELO:
-		case VCD_PASSWD:
-		case VCD_SET:
-		case VCD_GET:
-			return VCDR_REQ_INVALID;
-		
-		case VCD_CALL:
-			rc = do_command(ac-1, av+1, &buf);
-			
-			if (rc == -1)
-				return VCDR_CMD_FAIL;
-			
-			*data = buf;
-			
-			if (rc == EXIT_SUCCESS)
-				return VCDR_EXIT_SUCCESS;
-			
-			else
-				return VCDR_EXIT_FAIL;
-		
-		case VCD_BYE:
-			close(fd);
-			_exit(EXIT_SUCCESS);
-			
-		default:
-			return VCDR_REQ_INVALID;
-	}
-	
-	/* we should never get here */
-	return VCDR_REQ_INVALID;
-}
-
-
 void handle_client(int fd)
 {
 	/* 1) say hello */
@@ -164,13 +195,15 @@ void handle_client(int fd)
 		len = io_read_eol(fd, &line);
 		
 		if (len == -1)
-			_exit(EXIT_FAILURE);
+			_exit(0);
 		
 		if (len < 1)
 			rc = VCDR_REQ_INVALID;
-		
 		else
 			rc = handle_request(fd, line, &data);
+		
+		if (rc == -2)
+			_exit(0);
 		
 		if (data == NULL)
 			len = 0;
@@ -183,11 +216,21 @@ void handle_client(int fd)
 	}
 }
 
-void sighandler(int sig)
+void exit_handler(void)
+{
+	close(sfd);
+}
+
+void signal_handler(int sig, siginfo_t *info, void *uctx)
 {
 	int status;
 	
 	switch (sig) {
+		case SIGTERM:
+			close(sfd);
+			kill(getpid(), SIGTERM);
+			break;
+		
 		case SIGCHLD:
 			wait(&status);
 			break;
@@ -238,17 +281,33 @@ int main(int argc, char *argv[])
 	close(STDOUT_FILENO);
 	close(STDERR_FILENO);
 	
-	/* 2f) signal handler */
-	signal(SIGCHLD, sighandler);
+	/* 2f) signal handlers */
+	struct sigaction act;
+	
+	act.sa_sigaction = signal_handler;
+	act.sa_flags     = SA_SIGINFO|SA_RESETHAND;
+	
+	sigaction(SIGTERM, &act, NULL);
+	
+	act.sa_sigaction = SIG_IGN;
+	
+	sigaction(SIGQUIT, &act, NULL);
+	sigaction(SIGHUP,  &act, NULL);
+	sigaction(SIGINT,  &act, NULL);
+	
+	act.sa_flags      = SA_NOCLDWAIT;
+	
+	sigaction(SIGCHLD, &act, NULL);
 	
 	/* 3) open listen socket */
-	int sfd;
 	struct sockaddr_in addr;
 	
 	if ((sfd = socket(PF_INET, SOCK_STREAM, 0)) == -1) {
 		syslog(LOG_ERR, "socket: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
+	
+	atexit(exit_handler);
 	
 	memset(&addr, 0, sizeof(struct sockaddr_in));
 	
@@ -269,16 +328,14 @@ int main(int argc, char *argv[])
 	/* 4) wait for connections */
 	int cfd;
 	
+	struct sockaddr_in client;
+	socklen_t clientlen = sizeof(client);
+	
 	while (1) {
-		struct sockaddr_in client;
-		socklen_t clientlen = sizeof(client);
-		
 		if ((cfd = accept(sfd, (struct sockaddr *) &client, &clientlen)) == -1) {
 			syslog(LOG_ERR, "accept: %s", strerror(errno));
 			exit(EXIT_FAILURE);
 		}
-		
-		syslog(LOG_INFO, "New connection from %s", inet_ntoa(addr.sin_addr));
 		
 		switch (fork()) {
 			case -1:
@@ -286,6 +343,12 @@ int main(int argc, char *argv[])
 				break;
 			
 			case 0:
+				signal(SIGTERM, SIG_DFL);
+				signal(SIGQUIT, SIG_DFL);
+				signal(SIGHUP,  SIG_DFL);
+				signal(SIGINT,  SIG_DFL);
+				signal(SIGCHLD, SIG_DFL);
+				
 				handle_client(cfd);
 			
 			default:

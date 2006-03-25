@@ -17,7 +17,8 @@
 
 SUBDIRS = commands \
           libvc \
-          tools
+          tools \
+          vcheck
 
 INCLUDES = -I$(top_srcdir)/src/libvc \
            -I$(top_srcdir)/src/commands
@@ -25,7 +26,8 @@ INCLUDES = -I$(top_srcdir)/src/libvc \
 LDADD = $(top_builddir)/src/commands/libcommands.a \
         $(top_builddir)/src/libvc/libvc.a \
         -lucid \
-        -lvserver
+        -lvserver \
+        -lutil
 
 sbin_PROGRAMS = vcc \
                 vcd \
