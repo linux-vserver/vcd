@@ -15,14 +15,16 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <unistd.h>
 #include <stdlib.h>
-#include <errno.h>
+#include <stdio.h>
 #include <string.h>
-#include <strings.h>
-#include <arpa/inet.h>
 #include <vserver.h>
 
-#include "vc.h"
 #include "tools.h"
 
 static const char *rcsid = "$Id$";
@@ -37,20 +39,48 @@ struct option long_opts[] = {
 	{ NULL,        0, 0, 0 },
 };
 
+static
+uint64_t str_to_dlim(char *str)
+{
+	if (str == NULL)
+		return CDLIM_KEEP;
+	
+	if (strcmp(str, "inf") == 0)
+		return CDLIM_INFINITY;
+	
+	if (strcmp(str, "keep") == 0)
+		return CDLIM_KEEP;
+	
+	return atoi(str);
+}
+
+static
+char *dlim_to_str(uint64_t lim)
+{
+	char *buf;
+	
+	if (lim == CDLIM_INFINITY)
+		asprintf(&buf, "%s", "inf");
+	
+	asprintf(&buf, "%lld", lim);
+	
+	return buf;
+}
+
 static inline
 void usage(int rc)
 {
-	vc_printf("Usage:\n\n"
-	          "dx -add-path  <xid> <path>\n"
-	          "   -rem-path  <xid> <path>\n"
-	          "   -set-limit <xid> <path> <su>,<st>,<iu>,<it>,<rr>\n"
-	          "   -get-limit <xid> <path>\n");
+	printf("Usage:\n\n"
+	       "dx -add-path  <xid> <path>\n"
+	       "   -rem-path  <xid> <path>\n"
+	       "   -set-limit <xid> <path> <su>,<st>,<iu>,<it>,<rr>\n"
+	       "   -get-limit <xid> <path>\n");
 	exit(rc);
 }
 
 int main(int argc, char *argv[])
 {
-	VC_INIT_ARGV0
+	INIT_ARGV0
 	
 	int c, i;
 	xid_t xid = 0;
@@ -99,7 +129,7 @@ addpath:
 	base.filename = argv[optind];
 	
 	if (vx_add_dlimit(xid, &base) == -1)
-		vc_errp("vx_add_dlimit");
+		perr("vx_add_dlimit");
 	
 	goto out;
 	
@@ -110,7 +140,7 @@ rempath:
 	base.filename = argv[optind];
 	
 	if (vx_rem_dlimit(xid, &base) == -1)
-		vc_errp("vx_rem_dlimit");
+		perr("vx_rem_dlimit");
 	
 	goto out;
 	
@@ -149,7 +179,7 @@ setlimit:
 		goto usage;
 	
 	if (vx_set_dlimit(xid, &dlimit) == -1)
-		vc_errp("vx_set_dlimit");
+		perr("vx_set_dlimit");
 	
 	goto out;
 	
@@ -160,12 +190,12 @@ getlimit:
 	dlimit.filename = argv[optind];
 	
 	if (vx_get_dlimit(xid, &dlimit) == -1)
-		vc_errp("vx_get_dlimit");
+		perr("vx_get_dlimit");
 	
 #define LIM2OUT(LIM, DELIM) do { \
-	if (LIM == CDLIM_INFINITY) vc_printf("%s", "inf"); \
-	else vc_printf("%d", LIM); \
-	vc_printf("%c", DELIM); \
+	if (LIM == CDLIM_INFINITY) printf("%s", "inf"); \
+	else printf("%d", LIM); \
+	printf("%c", DELIM); \
 } while(0)
 	
 	LIM2OUT(dlimit.space_used,   ',');

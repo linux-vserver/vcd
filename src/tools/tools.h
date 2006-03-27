@@ -16,6 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <getopt.h>
+#include <lucid/flist.h>
 
 #define COMMON_LONG_OPTS \
 	{ "help",    0, 0, 0x01 }, \
@@ -23,8 +24,28 @@
 
 #define COMMON_GETOPT_CASES \
 	case 0x01: usage(EXIT_SUCCESS); break; \
-	case 0x02: vc_printf("%s\n", rcsid); exit(EXIT_SUCCESS); break;
+	case 0x02: printf("%s\n", rcsid); exit(EXIT_SUCCESS); break;
 
 #define DEFAULT_GETOPT_CASES default: usage(EXIT_FAILURE); break;
 
 #define GETOPT(VAL) ((VAL = getopt_long_only(argc, argv, "", long_opts, NULL)) != -1)
+
+/* msg.c */
+#define INIT_ARGV0 argv0 = argv[0];
+
+extern const char *argv0;
+
+void warn  (const char *fmt, /*args*/ ...);
+void pwarn (const char *fmt, /*args*/ ...);
+void err   (const char *fmt, /*args*/ ...);
+void perr  (const char *fmt, /*args*/ ...);
+
+/* lists.c */
+extern const flist64_t bcaps_list[];
+extern const flist64_t ccaps_list[];
+extern const flist64_t cflags_list[];
+extern const flist32_t vhiname_list[];
+extern const flist32_t iattr_list[];
+extern const flist32_t rlimit_list[];
+extern const flist64_t nflags_list[];
+extern const flist32_t sched_list[];

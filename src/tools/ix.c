@@ -15,13 +15,16 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <unistd.h>
 #include <stdlib.h>
-#include <errno.h>
+#include <stdio.h>
 #include <string.h>
-#include <arpa/inet.h>
 #include <vserver.h>
 
-#include "vc.h"
 #include "tools.h"
 
 static const char *rcsid = "$Id$";
@@ -39,7 +42,7 @@ struct option long_opts[] = {
 static inline
 void usage(int rc)
 {
-	vc_printf("Usage:\n\n"
+	printf("Usage:\n\n"
 	          "ix -get-attr <file>\n"
 	          "   -set-attr <file> <list>\n"
 	          "   -get-xid  <file>\n"
@@ -49,7 +52,7 @@ void usage(int rc)
 
 int main(int argc, char *argv[])
 {
-	VC_INIT_ARGV0
+	INIT_ARGV0
 	
 	int c;
 	char *file, *buf;
@@ -84,13 +87,13 @@ int main(int argc, char *argv[])
 	
 getattr:
 	if (vx_get_iattr(&iattr) == -1)
-		vc_errp("vx_get_iattr");
+		perr("vx_get_iattr");
 	
-	if (flist32_tostr(vc_iattr_list, iattr.flags & iattr.mask, &buf, ',') == -1)
-		vc_errp("flist32_tostr");
+	if (flist32_tostr(iattr_list, iattr.flags & iattr.mask, &buf, ',') == -1)
+		perr("flist32_tostr");
 	
 	if (strlen(buf) > 0)
-		vc_printf("%s\n", buf);
+		printf("%s\n", buf);
 	
 	free(buf);
 	goto out;
@@ -99,20 +102,20 @@ setattr:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist32_parse(argv[optind], vc_iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
-		vc_errp("flist32_parse");
+	if (flist32_parse(argv[optind], iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
+		perr("flist32_parse");
 	
 	if (vx_set_iattr(&iattr) == -1)
-		vc_errp("vx_set_iattr");
+		perr("vx_set_iattr");
 	
 	goto out;
 	
 getxid:
 	if (vx_get_iattr(&iattr) == -1)
-		vc_errp("vx_get_iattr");
+		perr("vx_get_iattr");
 	
 	if (iattr.mask & IATTR_TAG)
-		vc_printf("%d\n", iattr.xid);
+		printf("%d\n", iattr.xid);
 	
 	goto out;
 	
@@ -121,7 +124,7 @@ setxid:
 		goto usage;
 	
 	if (vx_get_iattr(&iattr) == -1)
-		vc_errp("vx_get_iattr");
+		perr("vx_get_iattr");
 	
 	if (iattr.mask & IATTR_TAG) {
 		iattr.xid = atoi(argv[optind]);
@@ -130,13 +133,13 @@ setxid:
 		iattr.mask  |= IATTR_TAG;
 		
 		if (vx_set_iattr(&iattr) == -1)
-			vc_errp("vx_set_iattr");
+			perr("vx_set_iattr");
 		
 		goto out;
 	}
 	
 	else
-		vc_err("%s: IATTR_XID not available", iattr.filename);
+		err("%s: IATTR_XID not available", iattr.filename);
 	
 	goto out;
 	

@@ -15,14 +15,17 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
-#include <vserver.h>
+#include <stdio.h>
 #include <wait.h>
 #include <lucid/sys.h>
+#include <vserver.h>
 
-#include "vc.h"
 #include "tools.h"
 
 /* dietlibc does not define CLONE_NEWNS */
@@ -44,7 +47,7 @@ struct option long_opts[] = {
 static inline
 void usage(int rc)
 {
-	vc_printf("Usage:\n\n"
+	printf("Usage:\n\n"
 	          "ns -create  <xid>\n"
 	          "   -migrate <xid> -- <program> <args>*\n"
 	          "   -cleanup <xid>\n");
@@ -53,7 +56,7 @@ void usage(int rc)
 
 int main(int argc, char *argv[])
 {
-	VC_INIT_ARGV0
+	INIT_ARGV0
 	
 	int c, status;
 	xid_t xid = 0;
@@ -81,17 +84,17 @@ int main(int argc, char *argv[])
 create:
 	switch((pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0))) {
 		case -1:
-			vc_errp("clone");
+			perr("clone");
 		
 		case 0:
 			if (vx_set_namespace(xid) == -1)
-				vc_errp("vx_set_namespace");
+				perr("vx_set_namespace");
 			
 			goto out;
 		
 		default:
 			if (waitpid(pid, &status, 0) == -1)
-				vc_errp("waitpid");
+				perr("waitpid");
 			
 			if (WIFEXITED(status))
 				exit(WEXITSTATUS(status));
@@ -104,7 +107,7 @@ create:
 	
 migrate:
 	if (vx_enter_namespace(xid) == -1)
-		vc_errp("vx_enter_namespace");
+		perr("vx_enter_namespace");
 	
 	if (argc > optind+1)
 		execvp(argv[optind+1], argv+optind+1);
@@ -113,10 +116,10 @@ migrate:
 	
 cleanup:
 	if (xid != 0 && vx_enter_namespace(xid) == -1)
-			vc_errp("vx_enter_namespace");
+			perr("vx_enter_namespace");
 	
 	if (vx_cleanup_namespace() == -1)
-		vc_errp("vx_cleanup_namespace");
+		perr("vx_cleanup_namespace");
 	
 	goto out;
 	

@@ -15,13 +15,17 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
 #include <stdlib.h>
-#include <vserver.h>
+#include <stdio.h>
 #include <sys/ioctl.h>
 #include <lucid/open.h>
+#include <vserver.h>
 
-#include "vc.h"
 #include "tools.h"
 
 #ifndef VROOT_SET_DEV
@@ -45,7 +49,7 @@ struct option long_opts[] = {
 static inline
 void usage(int rc)
 {
-	vc_printf("Usage:\n\n"
+	printf("Usage:\n\n"
 	          "vr -set-dev   <dev> <realdev>\n"
 	          "   -clear-dev <dev>\n");
 	exit(rc);
@@ -53,7 +57,7 @@ void usage(int rc)
 
 int main(int argc, char *argv[])
 {
-	VC_INIT_ARGV0
+	INIT_ARGV0
 	
 	int c, fd;
 	char *dev;
@@ -84,15 +88,15 @@ setdev:
 	fd = open_read(dev);
 	
 	if (fd == -1)
-		vc_errp("open_read");
+		perr("open_read");
 	
 	int realfd = open_read(argv[optind]);
 	
 	if (realfd == -1)
-		vc_errp("open_read");
+		perr("open_read");
 	
 	if (ioctl(fd, VROOT_SET_DEV, (void *)realfd) == -1)
-		vc_errp("ioctl");
+		perr("ioctl");
 	
 	close(realfd);
 	close(fd);
@@ -103,10 +107,10 @@ cleardev:
 	fd = open_read(dev);
 	
 	if (fd == -1)
-		vc_errp("open_read");
+		perr("open_read");
 	
 	if (ioctl(fd, VROOT_CLR_DEV, 0) == -1)
-		vc_errp("ioctl");
+		perr("ioctl");
 	
 	close(fd);
 	

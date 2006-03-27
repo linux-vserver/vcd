@@ -15,10 +15,7 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)/src/libvc
-
-LDADD = $(top_builddir)/src/libvc/libvc.a \
-        -lucid \
+LDADD = -lucid \
         -lvserver
 
 noinst_HEADERS = tools.h
@@ -29,3 +26,10 @@ sbin_PROGRAMS = dx \
                 nx \
                 vr \
                 vx
+
+dx_SOURCES = dx.c msg.c
+ix_SOURCES = ix.c msg.c lists.c
+ns_SOURCES = ns.c msg.c
+nx_SOURCES = nx.c msg.c lists.c
+vr_SOURCES = vr.c msg.c
+vx_SOURCES = vx.c msg.c lists.c

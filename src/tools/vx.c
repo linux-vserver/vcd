@@ -15,14 +15,17 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
-#include <strings.h>
 #include <signal.h>
 #include <vserver.h>
 
-#include "vc.h"
 #include "tools.h"
 
 static const char *rcsid = "$Id$";
@@ -48,10 +51,38 @@ struct option long_opts[] = {
 	{ NULL,        0, 0, 0 },
 };
 
+static
+uint64_t str_to_rlim(char *str)
+{
+	if (str == NULL)
+		return CRLIM_KEEP;
+	
+	if (strcmp(str, "inf") == 0)
+		return CRLIM_INFINITY;
+	
+	if (strcmp(str, "keep") == 0)
+		return CRLIM_KEEP;
+	
+	return atoi(str);
+}
+
+static
+char *rlim_to_str(uint64_t lim)
+{
+	char *buf;
+	
+	if (lim == CRLIM_INFINITY)
+		asprintf(&buf, "%s", "inf");
+	
+	asprintf(&buf, "%lld", lim);
+	
+	return buf;
+}
+
 static inline
 void usage(int rc)
 {
-	vc_printf("Usage:\n\n"
+	printf("Usage:\n\n"
 	          "vx -create    <xid> [<list>] [-- <program> <args>*]\n"
 	          "   -migrate   <xid> -- <program> <args>*\n"
 	          "   -set-bcaps <xid> <list>\n"
@@ -72,7 +103,7 @@ void usage(int rc)
 
 int main(int argc, char *argv[])
 {
-	VC_INIT_ARGV0
+	INIT_ARGV0
 	
 	int c, i;
 	xid_t xid = 0;
@@ -160,11 +191,11 @@ int main(int argc, char *argv[])
 	
 create:
 	if (argc > optind && strcmp(argv[optind], "--") != 0)
-		if (flist64_parse(argv[optind], vc_cflags_list, &cf.flags, &mask, '~', ',') == -1)
-			vc_errp("flist64_parse");
+		if (flist64_parse(argv[optind], cflags_list, &cf.flags, &mask, '~', ',') == -1)
+			perr("flist64_parse");
 	
 	if (vx_create(xid, &cf) == -1)
-		vc_errp("vx_create");
+		perr("vx_create");
 	
 	if (argc > optind+1)
 		execvp(argv[optind+1], argv+optind+1);
@@ -173,7 +204,7 @@ create:
 
 migrate:
 	if (vx_migrate(xid, NULL) == -1)
-		vc_errp("vx_migrate");
+		perr("vx_migrate");
 	
 	if (argc > optind+1)
 		execvp(argv[optind+1], argv+optind+1);
@@ -184,11 +215,11 @@ setbcaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], vc_bcaps_list, &caps.bcaps, &mask, '~', ',') == -1)
-		vc_errp("flist64_parse");
+	if (flist64_parse(argv[optind], bcaps_list, &caps.bcaps, &mask, '~', ',') == -1)
+		perr("flist64_parse");
 	
 	if (vx_set_caps(xid, &caps) == -1)
-		vc_errp("vx_set_caps");
+		perr("vx_set_caps");
 	
 	goto out;
 	
@@ -196,11 +227,11 @@ setccaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], vc_ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
-		vc_errp("flist64_parse");
+	if (flist64_parse(argv[optind], ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
+		perr("flist64_parse");
 	
 	if (vx_set_caps(xid, &caps) == -1)
-		vc_errp("vx_set_caps");
+		perr("vx_set_caps");
 	
 	goto out;
 	
@@ -208,11 +239,11 @@ setflags:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], vc_cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-		vc_errp("flist64_parse");
+	if (flist64_parse(argv[optind], cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+		perr("flist64_parse");
 	
 	if (vx_set_flags(xid, &flags) == -1)
-		vc_errp("vx_set_flags");
+		perr("vx_set_flags");
 	
 	goto out;
 	
@@ -226,8 +257,8 @@ setlimit:
 		if (buf == NULL)
 			goto usage;
 		
-		if (flist32_getval(vc_rlimit_list, buf, &rlimit.id) == -1)
-			vc_errp("flist32_getval");
+		if (flist32_getval(rlimit_list, buf, &rlimit.id) == -1)
+			perr("flist32_getval");
 		
 		rlimit.id = flist32_mask2val(rlimit.id);
 		
@@ -236,20 +267,20 @@ setlimit:
 		if ((buf = strtok(NULL, ",")) == NULL)
 			goto usage;
 		else
-			rlimit.minimum = vc_str_to_rlim(buf);
+			rlimit.minimum = str_to_rlim(buf);
 		
 		if ((buf = strtok(NULL, ",")) == NULL)
 			goto usage;
 		else
-			rlimit.softlimit = vc_str_to_rlim(buf);
+			rlimit.softlimit = str_to_rlim(buf);
 		
 		if ((buf = strtok(NULL, ",")) == NULL)
 			goto usage;
 		else
-			rlimit.maximum = vc_str_to_rlim(buf);
+			rlimit.maximum = str_to_rlim(buf);
 		
 		if (vx_set_rlimit(xid, &rlimit) == -1)
-			vc_errp("vx_set_rlimit");
+			perr("vx_set_rlimit");
 	}
 	
 	goto out;
@@ -264,8 +295,8 @@ setsched:
 		if (buf == NULL)
 			goto usage;
 		
-		if (flist32_getval(vc_sched_list, buf, &sched.set_mask) == -1)
-			vc_errp("flist32_getval");
+		if (flist32_getval(sched_list, buf, &sched.set_mask) == -1)
+			perr("flist32_getval");
 		
 		buf = strtok(NULL, "=");
 		
@@ -299,7 +330,7 @@ setsched:
 		}
 		
 		if (vx_set_sched(xid, &sched) == -1)
-			vc_errp("vx_set_sched");
+			perr("vx_set_sched");
 	}
 	
 	goto out;
@@ -314,8 +345,8 @@ setvhi:
 		if (buf == NULL)
 			goto usage;
 		
-		if (flist32_getval(vc_vhiname_list, buf, &vhiname.field) == -1)
-			vc_errp("flist32_getval");
+		if (flist32_getval(vhiname_list, buf, &vhiname.field) == -1)
+			perr("flist32_getval");
 		
 		buf = strtok(NULL, "=");
 		
@@ -326,43 +357,43 @@ setvhi:
 		vhiname.name[VHILEN-1] = '\0';
 		
 		if (vx_set_vhi_name(xid, &vhiname) == -1)
-			vc_errp("vx_set_vhi_name");
+			perr("vx_set_vhi_name");
 	}
 	
 	goto out;
 	
 getbcaps:
 	if (vx_get_caps(xid, &caps) == -1)
-		vc_errp("vx_get_caps");
+		perr("vx_get_caps");
 	
-	if (flist64_tostr(vc_bcaps_list, caps.bcaps, &buf, '\n') == -1)
-		vc_errp("flist64_tostr");
+	if (flist64_tostr(bcaps_list, caps.bcaps, &buf, '\n') == -1)
+		perr("flist64_tostr");
 	
-	vc_printf("%s", buf);
+	printf("%s", buf);
 	free(buf);
 	
 	goto out;
 	
 getccaps:
 	if (vx_get_caps(xid, &caps) == -1)
-		vc_errp("vx_get_caps");
+		perr("vx_get_caps");
 	
-	if (flist64_tostr(vc_ccaps_list, caps.ccaps, &buf, '\n') == -1)
-		vc_errp("flist64_tostr");
+	if (flist64_tostr(ccaps_list, caps.ccaps, &buf, '\n') == -1)
+		perr("flist64_tostr");
 	
-	vc_printf("%s", buf);
+	printf("%s", buf);
 	free(buf);
 	
 	goto out;
 	
 getflags:
 	if (vx_get_flags(xid, &flags) == -1)
-		vc_errp("vx_get_flags");
+		perr("vx_get_flags");
 	
-	if (flist64_tostr(vc_cflags_list, flags.flags, &buf, '\n') == -1)
-		vc_errp("flist64_tostr");
+	if (flist64_tostr(cflags_list, flags.flags, &buf, '\n') == -1)
+		perr("flist64_tostr");
 	
-	vc_printf("%s", buf);
+	printf("%s", buf);
 	free(buf);
 	
 	goto out;
@@ -372,22 +403,22 @@ getlimit:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (flist32_getval(vc_rlimit_list, argv[i], &rlimit.id) == -1)
-			vc_errp("flist32_getval");
+		if (flist32_getval(rlimit_list, argv[i], &rlimit.id) == -1)
+			perr("flist32_getval");
 		
 		if (vx_get_rlimit(xid, &rlimit) == -1)
-			vc_errp("vx_get_rlimit");
+			perr("vx_get_rlimit");
 		
-		buf = vc_rlim_to_str(rlimit.minimum);
-		vc_printf("%s,", buf);
+		buf = rlim_to_str(rlimit.minimum);
+		printf("%s,", buf);
 		free(buf);
 		
-		buf = vc_rlim_to_str(rlimit.softlimit);
-		vc_printf("%s,", buf);
+		buf = rlim_to_str(rlimit.softlimit);
+		printf("%s,", buf);
 		free(buf);
 		
-		buf = vc_rlim_to_str(rlimit.maximum);
-		vc_printf("%s\n", buf);
+		buf = rlim_to_str(rlimit.maximum);
+		printf("%s\n", buf);
 		free(buf);
 	}
 	
@@ -398,20 +429,20 @@ getvhi:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (flist32_getval(vc_vhiname_list, argv[i], &vhiname.field) == -1)
-			vc_errp("flist32_getval");
+		if (flist32_getval(vhiname_list, argv[i], &vhiname.field) == -1)
+			perr("flist32_getval");
 		
 		if (vx_get_vhi_name(xid, &vhiname) == -1)
-			vc_errp("vx_get_vhi_name");
+			perr("vx_get_vhi_name");
 		
-		vc_printf("%s=%s\n", argv[i], vhiname.name);
+		printf("%s=%s\n", argv[i], vhiname.name);
 	}
 	
 	goto out;
 	
 wait:
 	if (vx_wait(xid, &wait_opts) == -1)
-		vc_errp("vx_wait");
+		perr("vx_wait");
 	
 	goto out;
 	
@@ -425,7 +456,7 @@ kill:
 		goto usage;
 	
 	if (vx_kill(xid, &kill_opts) == -1)
-		vc_errp("vx_kill");
+		perr("vx_kill");
 	
 	goto out;
 	

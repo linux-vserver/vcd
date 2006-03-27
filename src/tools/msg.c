@@ -15,56 +15,63 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <stdio.h>
 #include <errno.h>
 #include <string.h>
 
-#include "vc.h"
+#include "tools.h"
 
 /* save argv[0] for error functions below */
-const char *vc_argv0;
+const char *argv0;
 
 /* warnings */
-void vc_warn(const char *fmt, /*args*/ ...)
+void warn(const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
-	vc_vdprintf(STDERR_FILENO, fmt, ap);
-	vc_dprintf(STDERR_FILENO, "\n");
+	dprintf(STDERR_FILENO, "%s: ", argv0);
+	vdprintf(STDERR_FILENO, fmt, ap);
+	dprintf(STDERR_FILENO, "\n");
 }
 
-void vc_warnp(const char *fmt, /*args*/ ...)
+void warnp(const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
-	vc_vdprintf(STDERR_FILENO, fmt, ap);
-	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	dprintf(STDERR_FILENO, "%s: ", argv0);
+	vdprintf(STDERR_FILENO, fmt, ap);
+	dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
 }
 
-void vc_err(const char *fmt, /*args*/ ...)
+void err(const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
-	vc_vdprintf(STDERR_FILENO, fmt, ap);
-	vc_dprintf(STDERR_FILENO, "\n");
+	dprintf(STDERR_FILENO, "%s: ", argv0);
+	vdprintf(STDERR_FILENO, fmt, ap);
+	dprintf(STDERR_FILENO, "\n");
 	
 	exit(EXIT_FAILURE);
 }
 
-void vc_errp(const char *fmt, /*args*/ ...)
+void perr(const char *fmt, /*args*/ ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
 	
-	vc_dprintf(STDERR_FILENO, "%s: ", vc_argv0);
-	vc_vdprintf(STDERR_FILENO, fmt, ap);
-	vc_dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	dprintf(STDERR_FILENO, "%s: ", argv0);
+	vdprintf(STDERR_FILENO, fmt, ap);
+	dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
 	
 	exit(EXIT_FAILURE);
 }
