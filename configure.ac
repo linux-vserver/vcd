@@ -30,7 +30,7 @@ AM_MAINTAINER_MODE
 
 # Checks for programs.
 AC_PROG_CC
-AC_PROG_RANLIB
+AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -39,9 +39,17 @@ AC_VU_CHECK_PROG(SED, sed)
 AC_VU_CHECK_PROG(MOUNT, mount)
 
 # Checks for libraries.
-AC_VU_DIETLIBC
-AC_VU_LIBVSERVER
-AC_VU_LUCID
+AC_LIBVSERVER([1 2])
+
+if test "$libvserver_found" = "no"; then
+  AC_MSG_ERROR([libvserver not found.  Please read the documentation.])
+fi
+
+AC_LUCID([0])
+
+if test "$lucid_found" = "no"; then
+  AC_MSG_ERROR([lucid not found.  Please read the documentation.])
+fi
 
 # Checks for header files.
 
@@ -76,9 +84,8 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  etc/Makefile
-                 src/commands/Makefile
-                 src/libvc/Makefile
                  src/tools/Makefile
+                 src/vcd/Makefile
                  src/Makefile])
 
 AC_OUTPUT
