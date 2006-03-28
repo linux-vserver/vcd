@@ -15,28 +15,15 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_LOG_H
-#define _VCD_LOG_H
-
-#include <errno.h>
-#include <syslog.h>
-
-#define LOGWARN(MSG) do { \
-	syslog(LOG_WARNING, MSG); \
-} while(0)
-
-#define LOGPWARN(MSG) do { \
-	syslog(LOG_WARNING, MSG ": %s", strerror(errno)); \
-} while(0)
-
-#define LOGERR(MSG) do { \
-	syslog(LOG_ERR, MSG); \
-	exit(EXIT_FAILURE); \
-} while(0)
-
-#define LOGPERR(MSG) do { \
-	syslog(LOG_ERR, MSG ": %s", strerror(errno)); \
-	exit(EXIT_FAILURE); \
-} while(0)
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+
+#include "xmlrpc.h"
+
+#include "methods.h"
+
+void register_methods(XMLRPC_SERVER xmlrpc_server)
+{
+	XMLRPC_ServerRegisterMethod(xmlrpc_server, "hello", hello_callback);
+}

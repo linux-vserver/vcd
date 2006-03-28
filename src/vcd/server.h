@@ -15,28 +15,9 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_LOG_H
-#define _VCD_LOG_H
+#ifndef _VCD_SERVER_H
+#define _VCD_SERVER_H
 
-#include <errno.h>
-#include <syslog.h>
-
-#define LOGWARN(MSG) do { \
-	syslog(LOG_WARNING, MSG); \
-} while(0)
-
-#define LOGPWARN(MSG) do { \
-	syslog(LOG_WARNING, MSG ": %s", strerror(errno)); \
-} while(0)
-
-#define LOGERR(MSG) do { \
-	syslog(LOG_ERR, MSG); \
-	exit(EXIT_FAILURE); \
-} while(0)
-
-#define LOGPERR(MSG) do { \
-	syslog(LOG_ERR, MSG ": %s", strerror(errno)); \
-	exit(EXIT_FAILURE); \
-} while(0)
+void server_main(char *ip, int port);
 
 #endif

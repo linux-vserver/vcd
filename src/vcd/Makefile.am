@@ -15,6 +15,26 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+INCLUDES = -I$(top_srcdir)/src/libhttpd \
+           -I$(top_srcdir)/src/libxmlrpc
+
+METHODS_H = methods/methods.h
+
+METHODS_C = methods/methods.c \
+            methods/hello.c
+
+noinst_HEADERS = collector.h \
+                 log.h \
+                 server.h \
+                 $(METHODS_H)
+
 sbin_PROGRAMS = vcd
 
-vcd_SOURCES = main.c
+vcd_SOURCES = main.c \
+              collector.c \
+              server.c \
+              $(METHODS_C)
+
+vcd_LDADD = $(top_builddir)/src/libhttpd/libhttpd.a \
+            $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
+            -lexpat

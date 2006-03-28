@@ -15,12 +15,12 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)/src/libvc
+lib_LIBRARIES = libhttpd.a
 
-noinst_HEADERS = commands.h
+noinst_HEADERS = httpd.h \
+                 httpd_priv.h
 
-noinst_LIBRARIES = libcommands.a
-
-libcommands_a_SOURCES = main.c \
-                        login.c \
-                        start.c
+libhttpd_a_SOURCES = api.c \
+                     ip_acl.c \
+                     protocol.c \
+                     version.c

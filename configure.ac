@@ -52,6 +52,7 @@ if test "$lucid_found" = "no"; then
 fi
 
 # Checks for header files.
+AC_CHECK_HEADERS(stdarg.h)
 
 # Checks for typedefs, structures, and compiler characteristics.
 
@@ -84,6 +85,8 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  etc/Makefile
+                 src/libhttpd/Makefile
+                 src/libxmlrpc/Makefile
                  src/tools/Makefile
                  src/vcd/Makefile
                  src/Makefile])

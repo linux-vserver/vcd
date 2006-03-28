@@ -15,6 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -26,16 +30,8 @@
 #include <sys/wait.h>
 
 #include "log.h"
-
-void collector_main(void)
-{
-	while(1) sleep(1);
-}
-
-void server_main(void)
-{
-	while(1) sleep(1);
-}
+#include "collector.h"
+#include "server.h"
 
 int main(int argc, char **argv)
 {
@@ -88,7 +84,7 @@ int main(int argc, char **argv)
 		LOGPERR("fork(server)");
 	
 	case 0:
-		server_main();
+		server_main("0.0.0.0", 13386);
 	
 	default:
 		pid = waitpid(server, &status, WNOHANG);
