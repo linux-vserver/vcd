@@ -16,18 +16,16 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-include $(top_srcdir)/m4/pathconfig.am
+INCLUDES = -I$(top_srcdir) \
+           -I$(top_srcdir)/src/libinternal \
+           -I$(top_srcdir)/src/libvconfig \
+           -I$(top_builddir)/src
 
-nobase_pkgdata_DATA = examples/context.conf \
-                      examples/vservers.rc
+LDADD = $(top_builddir)/src/libinternal/libinternal.a \
+        $(top_builddir)/src/libvconfig/libvconfig.a \
+        -lvserver
 
-pkgconf_DATA = fstab \
-               mtab \
-               procfs.conf
+noinst_HEADERS = test.h
 
-install-pkgconfdir:
-	$(mkinstalldirs) -m 755 $(DESTDIR)$(pkgconfdir)
-	$(mkinstalldirs) -m 755 $(DESTDIR)$(pkgconfdir)/.defaults
+sbin_PROGRAMS = cow
 
-EXTRA_DIST = $(nobase_pkgdata_DATA) \
-             $(pkgconf_DATA)

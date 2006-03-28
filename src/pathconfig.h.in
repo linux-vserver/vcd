@@ -60,3 +60,5 @@
 #define _VUNAME __SBINDIR "/vuname"
 #define _VWAIT __SBINDIR "/vwait"
 #define _XIDOF __SBINDIR "/xidof"
+
+#define _COW __SBINDIR "/cow"

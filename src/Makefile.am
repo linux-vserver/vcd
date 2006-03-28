@@ -18,7 +18,8 @@
 
 SUBDIRS = libinternal \
           libvconfig \
-          tools
+          tools \
+          test
 
 include $(top_srcdir)/m4/pathconfig.am
 

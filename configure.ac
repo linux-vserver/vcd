@@ -76,6 +76,7 @@ AC_CONFIG_FILES([Makefile
                  src/libinternal/Makefile
                  src/libvconfig/Makefile
                  src/tools/Makefile
+                 src/test/Makefile
                  src/Makefile])
 
 AC_OUTPUT
