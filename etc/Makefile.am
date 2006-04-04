@@ -18,8 +18,6 @@
 
 include $(top_srcdir)/m4/pathconfig.am
 
-pkgconf_DATA = ns.fstab \
-               ns.mtab \
-               procfs.unhide
+pkgconf_DATA = vcd.conf
 
 EXTRA_DIST = $(pkgconf_DATA)
