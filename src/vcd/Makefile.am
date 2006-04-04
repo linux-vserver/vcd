@@ -15,7 +15,8 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)/src/libhttpd \
+INCLUDES = -I$(top_srcdir)/src/lucid \
+           -I$(top_srcdir)/src/libconfuse \
            -I$(top_srcdir)/src/libxmlrpc
 
 METHODS_H = methods/methods.h
@@ -23,7 +24,8 @@ METHODS_H = methods/methods.h
 METHODS_C = methods/methods.c \
             methods/hello.c
 
-noinst_HEADERS = collector.h \
+noinst_HEADERS = cfg.h \
+                 collector.h \
                  log.h \
                  server.h \
                  $(METHODS_H)
@@ -35,6 +37,7 @@ vcd_SOURCES = main.c \
               server.c \
               $(METHODS_C)
 
-vcd_LDADD = $(top_builddir)/src/libhttpd/libhttpd.a \
+vcd_LDADD = $(top_builddir)/src/lucid/libucid.a \
+            $(top_builddir)/src/libconfuse/libconfuse.a \
             $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
             -lexpat

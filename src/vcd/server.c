@@ -24,94 +24,344 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/time.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <lucid/io.h>
 
-#include "httpd.h"
+#include "pathconfig.h"
+
+#include "confuse.h"
 #include "xmlrpc.h"
 
 #include "log.h"
+#include "cfg.h"
 #include "server.h"
 
 #include "methods/methods.h"
 
 static XMLRPC_SERVER xmlrpc_server;
 
+typedef struct {
+	int id;
+	char *desc;
+} httpd_status_t;
+
+httpd_status_t http_status_codes[] = {
+	{ 100, "Continue" },
+	{ 101, "Switching Protocols" },
+	{ 200, "OK" },
+	{ 201, "Created" },
+	{ 202, "Accepted" },
+	{ 203, "Non-Authoritative Information" },
+	{ 204, "No Content" },
+	{ 205, "Reset Content" },
+	{ 206, "Partial Content" },
+	{ 300, "Multiple Choices" },
+	{ 301, "Moved Permanently" },
+	{ 302, "Found" },
+	{ 303, "See Other" },
+	{ 304, "Not Modified" },
+	{ 305, "Use Proxy" },
+	{ 307, "Temporary Redirect" },
+	{ 400, "Bad Request" },
+	{ 401, "Unauthorized" },
+	{ 402, "Payment Required" },
+	{ 403, "Forbidden" },
+	{ 404, "Not Found" },
+	{ 405, "Method Not Allowed" },
+	{ 406, "Not Acceptable" },
+	{ 407, "Proxy Authentication Required" },
+	{ 408, "Request Timeout" },
+	{ 409, "Conflict" },
+	{ 410, "Gone" },
+	{ 411, "Length Required" },
+	{ 412, "Precondition Failed" },
+	{ 413, "Request Entity Too Large" },
+	{ 414, "Request-URI Too Long" },
+	{ 415, "Unsupported Media Type" },
+	{ 416, "Requested Range Not Satisfiable" },
+	{ 417, "Expectation Failed" },
+	{ 500, "Internal Server Error" },
+	{ 501, "Not Implemented" },
+	{ 502, "Bad Gateway" },
+	{ 503, "Service Unavailable" },
+	{ 504, "Gateway Timeout" },
+	{ 505, "HTTP Version Not Supported" },
+	{ 0,   NULL }
+};
+
 static
-void handle_rpc2(httpd *httpd_server)
+int httpd_read_line(int fd, char **line)
+{
+	int chunks = 1, idx = 0;
+	char *buf = malloc(chunks * CHUNKSIZE + 1);
+	char c;
+
+	for (;;) {
+		switch(read(fd, &c, 1)) {
+			case -1:
+				return -1;
+			
+			case 0:
+				return -2;
+			
+			default:
+				if (c == '\r')
+					break;
+				
+				if (c == '\n')
+					goto out;
+				
+				if (idx >= chunks * CHUNKSIZE) {
+					chunks++;
+					buf = realloc(buf, chunks * CHUNKSIZE + 1);
+				}
+				
+				buf[idx++] = c;
+				break;
+		}
+	}
+	
+out:
+	buf[idx] = '\0';
+	*line = buf;
+	return strlen(buf);
+}
+
+static
+void httpd_send_headers(int fd, int id, size_t clen)
+{
+	static int headers_sent = 0;
+	int i;
+	
+	if (headers_sent == 1)
+		return;
+	
+	headers_sent = 1;
+	
+	for (i = 0;; i++) {
+		if (http_status_codes[i].id == 0) {
+			id = 500;
+			i  = 0;
+			continue;
+		}
+		
+		if (http_status_codes[i].id == id)
+			goto send;
+	}
+	
+send:
+	dprintf(fd, "HTTP/1.1 %d %s\r\n", http_status_codes[i].id,
+	        http_status_codes[i].desc);
+	dprintf(fd, "Server: VServer Control Daemon\r\n");
+	dprintf(fd, "Connection: close\r\n");
+	
+	if (clen > 0) {
+		dprintf(fd, "Content-Length: %d\r\n", clen);
+		dprintf(fd, "Content-Type: text/xml\r\n");
+	}
+	
+	dprintf(fd, "\r\n");
+}
+
+static
+int handle_request(char *req, char **res)
 {
 	XMLRPC_REQUEST request, response;
 	char *buf;
 	
-	size_t len = strlen(httpd_server->fullRequest);
-	request = XMLRPC_REQUEST_FromXML(httpd_server->fullRequest, len, NULL);
+	size_t len = strlen(req);
+	request = XMLRPC_REQUEST_FromXML(req, len, NULL);
 	
-	if (!request) {
-		httpdEndRequest(httpd_server);
-		return;
-	}
+	if (!request)
+		return -1;
 	
 	/* create a response struct */
 	response = XMLRPC_RequestNew();
 	XMLRPC_RequestSetRequestType(response, xmlrpc_request_response);
 	
-	/* call server method with client request and assign the response to our response struct */
-	XMLRPC_RequestSetData(response, XMLRPC_ServerCallMethod(xmlrpc_server, request, NULL));
+	/* call requested method and fill response struct */
+	XMLRPC_RequestSetData(response,
+	                      XMLRPC_ServerCallMethod(xmlrpc_server, request, NULL));
 	
-	/* be courteous. reply in same vocabulary/manner as the request. */
-	XMLRPC_RequestSetOutputOptions(response, XMLRPC_RequestGetOutputOptions(request) );
+	/* reply in same vocabulary/manner as the request */
+	XMLRPC_RequestSetOutputOptions(response,
+	                               XMLRPC_RequestGetOutputOptions(request));
 	
 	/* serialize server response as XML */
 	buf = XMLRPC_REQUEST_ToXML(response, 0);
 	
-	if (buf) {
-		httpdPrintf(httpd_server, buf);
-		free(buf);
-	}
+	if (buf)
+		*res = buf;
 	
 	XMLRPC_RequestFree(request, 1);
 	XMLRPC_RequestFree(response, 1);
 	
-	httpdEndRequest(httpd_server);
-	
-	return;
+	return 0;
 }
 
-void server_main(char *ip, int port)
+static
+void handle_client(int cfd)
 {
-	httpd         *httpd_server;
+	int rc, id = 0, clen = 0, first_line = 1;
+	char *line = NULL, *req = NULL, *res = NULL;
+	
+	while (1) {
+		rc = httpd_read_line(cfd, &line);
+		
+		if (rc == -2)
+			id = 400;
+		
+		else if (rc == -1)
+			goto close;
+		
+		else if (first_line) {
+			if (rc == 0)
+				free(line);
+			
+			else if (strncmp(line, "POST", 4) != 0)
+				id = 501;
+			
+			else if (strncmp(line + 5, "/RPC2", 5) != 0)
+				id = 404;
+			
+			else {
+				free(line);
+				first_line = 0;
+			}
+		}
+		
+		else {
+			if (rc == 0) {
+				free(line);
+				break;
+			}
+			
+			else if (strncmp(line, "Content-Length: ", 16) != 0)
+				free(line);
+			
+			else {
+				clen = atoi(line + 16);
+				free(line);
+			}
+		}
+		
+		if (id > 0) {
+			free(line);
+			httpd_send_headers(cfd, id, 0);
+			goto close;
+		}
+	}
+	
+	if (clen <= 0) {
+		httpd_send_headers(cfd, 400, 0);
+		goto close;
+	}
+	
+	rc = io_read_len(cfd, &req, clen);
+	
+	if (rc == -1)
+		goto close;
+	
+	if (rc != clen) {
+		httpd_send_headers(cfd, 400, 0);
+		goto close;
+	}
+	
+	rc = handle_request(req, &res);
+	
+	free(req);
+	
+	if (rc == -1)
+		httpd_send_headers(cfd, 400, 0);
+	
+	else if (res == NULL)
+		httpd_send_headers(cfd, 500, 0);
+	
+	else {
+		clen = strlen(res);
+		httpd_send_headers(cfd, 200, clen);
+		write(cfd, res, clen);
+		free(res);
+	}
+	
+close:
+	close(cfd);
+	exit(0);
+}
+
+void server_main(void)
+{
+	cfg_t *cfg, *cfg_listen;
+	int sfd, cfd;
+	struct sockaddr_in addr;
+	
+	/* opn connection to syslog */
+	openlog("vcd/server", LOG_CONS|LOG_PID, LOG_DAEMON);
+	
+	/* load configuration */
+	cfg = cfg_init(CFG, CFGF_NOCASE);
+	
+	switch (cfg_parse(cfg, __PKGCONFDIR "/vcd.conf")) {
+	case CFG_FILE_ERROR:
+		LOGPERR("vcd.conf");
+	
+	case CFG_PARSE_ERROR:
+		LOGERR("vcd.conf: parse error");
+	
+	default:
+		break;
+	}
+	
+	cfg_listen = cfg_getsec(cfg, "listen");
 	
 	/* setup xmlrpc server */
 	xmlrpc_server = XMLRPC_ServerCreate();
-	
 	register_methods(xmlrpc_server);
 	
-	/* Ensure that PIPE signals are either handled or ignored.
-	** If a client connection breaks while the server is using
-	** it then the application will be sent a SIGPIPE.  If we
-	** don't handle it then it'll terminate the server. */
-	signal(SIGPIPE, SIG_IGN);
+	/* ignore some standard signals */
+	signal(SIGHUP,  SIG_IGN);
+	signal(SIGINT,  SIG_IGN);
+	signal(SIGCHLD, SIG_IGN);
 	
-	/* create httpd server */
-	httpd_server = httpdCreate(ip, port);
+	/* setup listen socket */
+	sfd = socket(AF_INET, SOCK_STREAM, 0);
 	
-	if (!httpd_server)
-		LOGPERR("httpdCreate");
+	if (sfd == -1)
+		LOGPERR("socket");
 	
-	/* setup XMLRPC handler */
-	httpdAddCContent(httpd_server, "/", "RPC2", HTTP_FALSE, NULL, handle_rpc2);
+	memset(&addr, 0, sizeof(struct sockaddr_in));
 	
-	while(1) {
-		if (httpdGetConnection(httpd_server, NULL) == -1) {
-			LOGPWARN("httpdGetConnection");
-			continue;
-		}
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htonl(cfg_getint(cfg_listen, "port"));
+	
+	if (!inet_pton(AF_INET, cfg_getstr(cfg_listen, "host"), &addr.sin_addr)) {
+		LOGWARN("invalid listen host. using fallback");
+		inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+	}
+	
+	if (bind(sfd, (struct sockaddr *) &addr,
+	    sizeof(struct sockaddr_in)) == -1)
+		LOGPERR("bind");
+	
+	if (listen(sfd, cfg_getint(cfg_listen, "backlog")) == -1)
+		LOGPERR("listen");
+	
+	while (1) {
+		cfd = accept(sfd, NULL, 0);
 		
-		if(httpdReadRequest(httpd_server) < 0)
-			httpdEndRequest(httpd_server);
+		switch (fork()) {
+		case -1:
+			LOGPWARN("accept");
+			break;
 		
-		else {
-			httpdProcessRequest(httpd_server);
-			httpdEndRequest(httpd_server);
+		case 0:
+			close(sfd);
+			handle_client(cfd);
+			break;
+		
+		default:
+			break;
 		}
 	}
 }

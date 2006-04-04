@@ -21,10 +21,8 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
-#include <syslog.h>
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -50,7 +48,7 @@ int main(int argc, char **argv)
 		exit(EXIT_SUCCESS);
 	}
 	
-	openlog(argv[0], LOG_CONS|LOG_PID, LOG_DAEMON);
+	openlog("vcd/master", LOG_CONS|LOG_PID, LOG_DAEMON);
 	
 	umask(0);
 	setsid();
@@ -67,13 +65,16 @@ int main(int argc, char **argv)
 		LOGPERR("fork(collector)");
 	
 	case 0:
+		sleep(1);
 		collector_main();
 	
 	default:
 		pid = waitpid(collector, &status, WNOHANG);
 		
-		if (pid > 0 || (pid == -1 && errno == ECHILD))
-			LOGERR("unexpected death of controller");
+		if (pid > 0 || (pid == -1 && errno == ECHILD)) {
+			LOGWARN("unexpected death of controller");
+			kill(0, SIGTERM);
+		}
 		
 		if (pid == -1)
 			LOGPERR("waitpid(controller)");
@@ -84,13 +85,16 @@ int main(int argc, char **argv)
 		LOGPERR("fork(server)");
 	
 	case 0:
-		server_main("0.0.0.0", 13386);
+		sleep(1);
+		server_main();
 	
 	default:
 		pid = waitpid(server, &status, WNOHANG);
 		
-		if (pid > 0 || (pid == -1 && errno == ECHILD))
-			LOGERR("unexpected death of server");
+		if (pid > 0 || (pid == -1 && errno == ECHILD)) {
+			LOGWARN("unexpected death of server");
+			kill(0, SIGTERM);
+		}
 		
 		if (pid == -1)
 			LOGPERR("waitpid(server)");
@@ -101,16 +105,19 @@ wait:
 	
 	if (pid == -1) {
 		if (errno == ECHILD)
-			LOGERR("unexpected death of all children");
-		else
+			LOGERR("death of all children. following.");
+		else {
 			LOGPWARN("waitpid()");
-			goto wait; /* loop? */
+			goto wait;
+		}
 	}
 	
-	if (pid > 0) {
-		LOGWARN("unexpected death of child. following..");
-		kill(0, SIGTERM);
-	}
+	else if (pid == collector)
+		LOGWARN("collector died. following.");
 	
-	return EXIT_FAILURE; /* never get here */
+	else if (pid == server)
+		LOGWARN("server died. following.");
+	
+	kill(0, SIGTERM);
+	return EXIT_FAILURE;
 }

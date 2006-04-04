@@ -15,9 +15,33 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_SERVER_H
-#define _VCD_SERVER_H
+#ifndef _VCD_CFG_H
+#define _VCD_CFG_H
 
-void server_main(void);
+#include "confuse.h"
+
+static cfg_opt_t _CFG_listen[] = {
+	CFG_STR("type", "socket",            CFGF_NONE),
+	CFG_STR("bind", "/var/run/vcd.sock", CFGF_NONE),
+	CFG_END()
+};
+
+static cfg_opt_t _CFG_group[] = {
+	CFG_STR_LIST("methods", NULL, CFGF_NONE),
+	CFG_END()
+};
+
+static cfg_opt_t _CFG_user[] = {
+	CFG_STR("group",  NULL, CFGF_NONE),
+	CFG_STR("passwd", NULL, CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t CFG[] = {
+	CFG_SEC("listen",    _CFG_listen,    CFGF_NONE),
+	CFG_SEC("group",     _CFG_group,     CFGF_MULTI|CFGF_TITLE),
+	CFG_SEC("user",      _CFG_user,      CFGF_MULTI|CFGF_TITLE),
+	CFG_END()
+};
 
 #endif
