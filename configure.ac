@@ -30,6 +30,7 @@ AM_MAINTAINER_MODE
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_LEX
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -43,12 +44,6 @@ AC_LIBVSERVER([1 2])
 
 if test "$libvserver_found" = "no"; then
   AC_MSG_ERROR([libvserver not found.  Please read the documentation.])
-fi
-
-AC_LUCID([0])
-
-if test "$lucid_found" = "no"; then
-  AC_MSG_ERROR([lucid not found.  Please read the documentation.])
 fi
 
 # Checks for header files.
@@ -85,8 +80,9 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  etc/Makefile
-                 src/libhttpd/Makefile
+                 src/libconfuse/Makefile
                  src/libxmlrpc/Makefile
+                 src/lucid/Makefile
                  src/tools/Makefile
                  src/vcd/Makefile
                  src/Makefile])

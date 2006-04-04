@@ -15,7 +15,7 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-lib_LIBRARIES = libxmlrpc.a
+noinst_LIBRARIES = libxmlrpc.a
 
 noinst_HEADERS = base64.h \
                  encodings.h \

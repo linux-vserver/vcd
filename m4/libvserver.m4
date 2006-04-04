@@ -46,7 +46,11 @@ ac_libvserver_api_minor=LIBVSERVER_API_MINOR
 			
 		fi
 		
-		AC_MSG_RESULT([$ac_libvserver_api_major.$ac_libvserver_api_minor])
+		if test "x$libvserver_found" = "yes" ; then 
+			AC_MSG_RESULT([$ac_libvserver_api_major.$ac_libvserver_api_minor])
+		else
+			AC_MSG_RESULT([no])
+		fi
 	fi
 	
 	AC_LANG_POP
