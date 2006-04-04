@@ -21,8 +21,6 @@
 
 #include <unistd.h>
 
-#include "collector.h"
-
 void collector_main(void)
 {
 	while (1)

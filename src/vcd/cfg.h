@@ -21,8 +21,9 @@
 #include "confuse.h"
 
 static cfg_opt_t _CFG_listen[] = {
-	CFG_STR("type", "socket",            CFGF_NONE),
-	CFG_STR("bind", "/var/run/vcd.sock", CFGF_NONE),
+	CFG_STR("host",    "127.0.0.1", CFGF_NONE),
+	CFG_INT("port",    13386,       CFGF_NONE),
+	CFG_INT("backlog", 20,          CFGF_NONE),
 	CFG_END()
 };
 

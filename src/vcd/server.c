@@ -26,16 +26,15 @@
 #include <signal.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <lucid/io.h>
 
 #include "pathconfig.h"
 
+#include "lucid.h"
 #include "confuse.h"
 #include "xmlrpc.h"
 
 #include "log.h"
 #include "cfg.h"
-#include "server.h"
 
 #include "methods/methods.h"
 
@@ -200,6 +199,8 @@ int handle_request(char *req, char **res)
 	return 0;
 }
 
+#define NOREPLACE(NEW) id == 0 ? NEW : id
+
 static
 void handle_client(int cfd)
 {
@@ -207,28 +208,28 @@ void handle_client(int cfd)
 	char *line = NULL, *req = NULL, *res = NULL;
 	
 	while (1) {
+		if (line != NULL)
+			free(line);
+		
 		rc = httpd_read_line(cfd, &line);
 		
 		if (rc == -2)
-			id = 400;
+			id = NOREPLACE(400);
 		
 		else if (rc == -1)
 			goto close;
 		
 		else if (first_line) {
 			if (rc == 0)
-				free(line);
+				continue;
+			else
+				first_line = 0;
 			
-			else if (strncmp(line, "POST", 4) != 0)
-				id = 501;
+			if (strncmp(line, "POST", 4) != 0)
+				id = NOREPLACE(501);
 			
 			else if (strncmp(line + 5, "/RPC2", 5) != 0)
-				id = 404;
-			
-			else {
-				free(line);
-				first_line = 0;
-			}
+				id = NOREPLACE(404);
 		}
 		
 		else {
@@ -237,20 +238,14 @@ void handle_client(int cfd)
 				break;
 			}
 			
-			else if (strncmp(line, "Content-Length: ", 16) != 0)
-				free(line);
-			
-			else {
+			else if (strncmp(line, "Content-Length: ", 16) == 0)
 				clen = atoi(line + 16);
-				free(line);
-			}
 		}
-		
-		if (id > 0) {
-			free(line);
-			httpd_send_headers(cfd, id, 0);
-			goto close;
-		}
+	}
+	
+	if (id > 0) {
+		httpd_send_headers(cfd, id, 0);
+		goto close;
 	}
 	
 	if (clen <= 0) {
@@ -293,10 +288,12 @@ close:
 void server_main(void)
 {
 	cfg_t *cfg, *cfg_listen;
+	int port;
+	char *host;
 	int sfd, cfd;
 	struct sockaddr_in addr;
 	
-	/* opn connection to syslog */
+	/* open connection to syslog */
 	openlog("vcd/server", LOG_CONS|LOG_PID, LOG_DAEMON);
 	
 	/* load configuration */
@@ -315,6 +312,9 @@ void server_main(void)
 	
 	cfg_listen = cfg_getsec(cfg, "listen");
 	
+	port = cfg_getint(cfg_listen, "port");
+	host = cfg_getstr(cfg_listen, "host");
+	
 	/* setup xmlrpc server */
 	xmlrpc_server = XMLRPC_ServerCreate();
 	register_methods(xmlrpc_server);
@@ -330,12 +330,12 @@ void server_main(void)
 	if (sfd == -1)
 		LOGPERR("socket");
 	
-	memset(&addr, 0, sizeof(struct sockaddr_in));
+	bzero(&addr, sizeof(addr));
 	
 	addr.sin_family = AF_INET;
-	addr.sin_port   = htonl(cfg_getint(cfg_listen, "port"));
+	addr.sin_port   = htons(port);
 	
-	if (!inet_pton(AF_INET, cfg_getstr(cfg_listen, "host"), &addr.sin_addr)) {
+	if (!inet_pton(AF_INET, host, &addr.sin_addr)) {
 		LOGWARN("invalid listen host. using fallback");
 		inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
 	}
@@ -361,6 +361,7 @@ void server_main(void)
 			break;
 		
 		default:
+			close(cfd);
 			break;
 		}
 	}

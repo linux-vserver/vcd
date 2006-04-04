@@ -25,9 +25,7 @@ METHODS_C = methods/methods.c \
             methods/hello.c
 
 noinst_HEADERS = cfg.h \
-                 collector.h \
                  log.h \
-                 server.h \
                  $(METHODS_H)
 
 sbin_PROGRAMS = vcd
