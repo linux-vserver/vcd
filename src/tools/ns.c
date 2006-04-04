@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <wait.h>
-#include <lucid/sys.h>
 #include <vserver.h>
 
 #include "tools.h"

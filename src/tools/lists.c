@@ -21,7 +21,6 @@
 
 #include <stdlib.h>
 #include <vserver.h>
-#include <lucid/flist.h>
 
 #include "tools.h"
 

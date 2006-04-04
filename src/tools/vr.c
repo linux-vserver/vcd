@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/ioctl.h>
-#include <lucid/open.h>
 #include <vserver.h>
 
 #include "tools.h"
