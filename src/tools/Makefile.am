@@ -26,6 +26,7 @@ sbin_PROGRAMS = dx \
                 ix \
                 ns \
                 nx \
+                vlogin \
                 vr \
                 vx
 
@@ -33,5 +34,7 @@ dx_SOURCES = dx.c msg.c
 ix_SOURCES = ix.c msg.c lists.c
 ns_SOURCES = ns.c msg.c
 nx_SOURCES = nx.c msg.c lists.c
+vlogin_SOURCES = vlogin.c msg.c
+vlogin_LDADD = $(LDADD) -lutil
 vr_SOURCES = vr.c msg.c
 vx_SOURCES = vx.c msg.c lists.c
