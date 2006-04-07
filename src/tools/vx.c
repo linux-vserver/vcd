@@ -148,9 +148,9 @@ int main(int argc, char *argv[])
 		.name  = "",
 	};
 	
-	struct vx_wait_opts wait_opts = {
-		.a = 0,
-		.b = 0,
+	struct vx_wait_result wait_result = {
+		.reboot_cmd = 0,
+		.exit_code  = 0,
 	};
 	
 	struct vx_kill_opts kill_opts = {
@@ -308,7 +308,15 @@ setsched:
 				sched.fill_rate = atoi(buf);
 				break;
 			
+			case VXSM_FILL_RATE2:
+				sched.fill_rate = atoi(buf);
+				break;
+			
 			case VXSM_INTERVAL:
+				sched.interval = atoi(buf);
+				break;
+			
+			case VXSM_INTERVAL2:
 				sched.interval = atoi(buf);
 				break;
 			
@@ -326,6 +334,14 @@ setsched:
 			
 			case VXSM_PRIO_BIAS:
 				sched.prio_bias = atoi(buf);
+				break;
+			
+			case VXSM_CPU_ID:
+				sched.cpu_id = atoi(buf);
+				break;
+			
+			case VXSM_BUCKET_ID:
+				sched.bucket_id = atoi(buf);
 				break;
 		}
 		
@@ -441,8 +457,11 @@ getvhi:
 	goto out;
 	
 wait:
-	if (vx_wait(xid, &wait_opts) == -1)
+	if (vx_wait(xid, &wait_result) == -1)
 		perr("vx_wait");
+	
+	printf("reboot_cmd: %d\n", wait_result.reboot_cmd);
+	printf("exit_code:  %d\n", wait_result.exit_code);
 	
 	goto out;
 	
