@@ -15,17 +15,20 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#ifndef _METHODS_AUTH_H
+#define _METHODS_AUTH_H
+
+#include <stdint.h>
 
 #include "xmlrpc.h"
 
-#include "methods.h"
+/* capabilities */
+#define VCD_CAP_VXDB_GET 0x00000001
+#define VCD_CAP_VXDB_SET 0x00000002
+#define VCD_CAP_ADMIN    0x80000000
 
-void registry_init(XMLRPC_SERVER s)
-{
-	/* vxdb */
-	XMLRPC_ServerRegisterMethod(s, "vxdb.get", m_vxdb_get);
-	XMLRPC_ServerRegisterMethod(s, "vxdb.set", m_vxdb_set);
-}
+int auth_isvalid(XMLRPC_VALUE auth);
+int auth_capable(XMLRPC_VALUE auth, uint64_t cap);
+int auth_vxowner(XMLRPC_VALUE auth, char *name);
+
+#endif

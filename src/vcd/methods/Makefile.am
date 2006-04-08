@@ -19,9 +19,16 @@ INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libxmlrpc \
            -I$(top_srcdir)/src/vcd
 
+M_VXDB = vxdb/get.c \
+         vxdb/set.c
+
+METHODS = $(M_VXDB)
+
 noinst_LIBRARIES = libmethods.a
 
-noinst_HEADERS = methods.h
+noinst_HEADERS = auth.h \
+                 methods.h
 
-libmethods_a_SOURCES = methods.c \
-                       hello.c
+libmethods_a_SOURCES = auth.c \
+                       methods.c \
+                       $(METHODS)

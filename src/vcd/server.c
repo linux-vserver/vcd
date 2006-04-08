@@ -364,7 +364,7 @@ void server_main(void)
 	
 	/* setup xmlrpc server */
 	xmlrpc_server = XMLRPC_ServerCreate();
-	register_methods(xmlrpc_server);
+	registry_init(xmlrpc_server);
 	
 	/* setup some standard signals */
 	signal(SIGHUP,  SIG_IGN);

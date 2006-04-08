@@ -20,10 +20,10 @@
 
 #include "xmlrpc.h"
 
-void register_methods(XMLRPC_SERVER xmlrpc_server);
-int  user_valid_auth(XMLRPC_VALUE auth);
+void registry_init(XMLRPC_SERVER s);
 
-/* callbacks */
-XMLRPC_VALUE hello_callback(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+/* vxdb */
+XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+XMLRPC_VALUE m_vxdb_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
 
 #endif

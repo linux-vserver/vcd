@@ -15,34 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
+#ifndef _METHODS_VXDB_H
+#define _METHODS_VXDB_H
+
+char *vxdb_get(char *name, char *key);
+int   vxdb_set(char *name, char *key, char *value);
+
 #endif
-
-#include "xmlrpc.h"
-
-#include "methods.h"
-
-XMLRPC_VALUE hello_callback(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
-{
-	XMLRPC_VALUE request, auth, params;
-	XMLRPC_VALUE response;
-	
-	char buf[128];
-	const char *name;
-	
-	request = XMLRPC_RequestGetData(r);
-	auth    = XMLRPC_VectorRewind(request);
-	params  = XMLRPC_VectorNext(request);
-	
-	if (!user_valid_auth(auth))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
-	
-	name = XMLRPC_VectorGetStringWithID(params, "name");
-	snprintf(buf, sizeof(buf), "hello %s", name ? name : "stranger");
-	
-	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString(NULL, buf, 0));
-	
-	return response;
-}
