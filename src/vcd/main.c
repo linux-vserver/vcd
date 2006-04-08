@@ -27,15 +27,54 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include "pathconfig.h"
+#include "confuse.h"
 #include "log.h"
+
+static cfg_opt_t CFG_OPTS[] = {
+	CFG_STR("listen-host",    "127.0.0.1", CFGF_NONE),
+	CFG_INT("listen-port",    13386,       CFGF_NONE),
+	CFG_INT("max-clients",    20,          CFGF_NONE),
+	CFG_INT("client-timeout", 30,          CFGF_NONE),
+	CFG_END()
+};
+
+cfg_t *cfg;
 
 void collector_main(void);
 void server_main(void);
 
 int main(int argc, char **argv)
 {
+	char *cfg_file = NULL;
 	pid_t pid, server, collector;
 	int status;
+	
+	/* load configuration */
+	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
+	
+	if (argc > 2) {
+		printf("Usage: vcd [<configfile>]\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	if (argc > 1)
+		cfg_file = argv[1];
+	else
+		cfg_file = __SYSCONFDIR "/vcd.conf";
+	
+	switch (cfg_parse(cfg, cfg_file)) {
+	case CFG_FILE_ERROR:
+		perror("cfg_parse");
+		exit(EXIT_FAILURE);
+	
+	case CFG_PARSE_ERROR:
+		printf("cfg_parse: parse error");
+		exit(EXIT_FAILURE);
+	
+	default:
+		break;
+	}
 	
 	/* fork to background */
 	switch (fork()) {

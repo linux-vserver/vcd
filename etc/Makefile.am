@@ -16,8 +16,6 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-include $(top_srcdir)/m4/pathconfig.am
-
-pkgconf_DATA = vcd.conf
+sysconf_DATA = vcd.conf
 
 EXTRA_DIST = $(pkgconf_DATA)

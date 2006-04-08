@@ -34,6 +34,6 @@ install-data-hook: install-vdirbase install-misc
 install-vdirbase:
 	$(mkinstalldirs) -m 000 $(DESTDIR)$(vdirbase)
 
-install-vdirbase:
+install-misc:
 	$(mkinstalldirs) -m 000 $(DESTDIR)/var/lib/vserver
 	$(mkinstalldirs) -m 000 $(DESTDIR)/var/lock/vservers

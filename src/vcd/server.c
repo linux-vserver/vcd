@@ -34,12 +34,10 @@
 #include "xmlrpc.h"
 
 #include "log.h"
-#include "cfg.h"
-
 #include "methods/methods.h"
 
+extern cfg_t *cfg;
 static XMLRPC_SERVER xmlrpc_server;
-static cfg_t *cfg, *cfg_listen, *cfg_server;
 static int cfd, num_clients;
 
 typedef struct {
@@ -224,7 +222,7 @@ void client_signal_handler(int sig)
 static
 void handle_client(int cfd)
 {
-	int timeout = cfg_getint(cfg_server, "timeout");
+	int timeout = cfg_getint(cfg, "client-timeout");
 	int rc, id = 0, clen = 0, first_line = 1;
 	char *line = NULL, *req = NULL, *res = NULL;
 	
@@ -359,27 +357,10 @@ void server_main(void)
 	/* open connection to syslog */
 	openlog("vcd/server", LOG_CONS|LOG_PID, LOG_DAEMON);
 	
-	/* load configuration */
-	cfg = cfg_init(CFG, CFGF_NOCASE);
+	port = cfg_getint(cfg, "listen-port");
+	host = cfg_getstr(cfg, "listen-host");
 	
-	switch (cfg_parse(cfg, __PKGCONFDIR "/vcd.conf")) {
-	case CFG_FILE_ERROR:
-		LOGPERR("vcd.conf");
-	
-	case CFG_PARSE_ERROR:
-		LOGERR("vcd.conf: parse error");
-	
-	default:
-		break;
-	}
-	
-	cfg_listen = cfg_getsec(cfg, "listen");
-	cfg_server = cfg_getsec(cfg, "server");
-	
-	port = cfg_getint(cfg_listen, "port");
-	host = cfg_getstr(cfg_listen, "host");
-	
-	max_clients = cfg_getint(cfg_server, "max-clients");
+	max_clients = cfg_getint(cfg, "max-clients");
 	
 	/* setup xmlrpc server */
 	xmlrpc_server = XMLRPC_ServerCreate();
@@ -411,7 +392,7 @@ void server_main(void)
 	    sizeof(struct sockaddr_in)) == -1)
 		LOGPERR("bind");
 	
-	if (listen(sfd, cfg_getint(cfg_listen, "backlog")) == -1)
+	if (listen(sfd, 20) == -1)
 		LOGPERR("listen");
 	
 	/* wait and create a new child for each connection */
