@@ -42,14 +42,15 @@ void warn(const char *fmt, /*args*/ ...)
 	dprintf(STDERR_FILENO, "\n");
 }
 
-void warnp(const char *fmt, /*args*/ ...)
+void pwarn(const char *fmt, /*args*/ ...)
 {
+	char *errstr = strerror(errno);
 	va_list ap;
 	va_start(ap, fmt);
 	
 	dprintf(STDERR_FILENO, "%s: ", argv0);
 	vdprintf(STDERR_FILENO, fmt, ap);
-	dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	dprintf(STDERR_FILENO, ": %s\n", errstr);
 }
 
 void err(const char *fmt, /*args*/ ...)
@@ -66,12 +67,13 @@ void err(const char *fmt, /*args*/ ...)
 
 void perr(const char *fmt, /*args*/ ...)
 {
+	char *errstr = strerror(errno);
 	va_list ap;
 	va_start(ap, fmt);
 	
 	dprintf(STDERR_FILENO, "%s: ", argv0);
 	vdprintf(STDERR_FILENO, fmt, ap);
-	dprintf(STDERR_FILENO, ": %s\n", strerror(errno));
+	dprintf(STDERR_FILENO, ": %s\n", errstr);
 	
 	exit(EXIT_FAILURE);
 }
