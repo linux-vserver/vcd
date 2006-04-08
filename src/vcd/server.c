@@ -39,6 +39,8 @@
 #include "methods/methods.h"
 
 static XMLRPC_SERVER xmlrpc_server;
+static cfg_t *cfg, *cfg_listen, *cfg_server;
+static int cfd, num_clients;
 
 typedef struct {
 	int id;
@@ -138,6 +140,7 @@ void httpd_send_headers(int fd, int id, size_t clen)
 	
 	headers_sent = 1;
 	
+	/* find description */
 	for (i = 0;; i++) {
 		if (http_status_codes[i].id == 0) {
 			id = 500;
@@ -169,6 +172,7 @@ int handle_request(char *req, char **res)
 	XMLRPC_REQUEST request, response;
 	char *buf;
 	
+	/* parse XML */
 	size_t len = strlen(req);
 	request = XMLRPC_REQUEST_FromXML(req, len, NULL);
 	
@@ -199,80 +203,127 @@ int handle_request(char *req, char **res)
 	return 0;
 }
 
+static
+void client_signal_handler(int sig)
+{
+	switch (sig) {
+	case SIGTERM:
+		httpd_send_headers(cfd, 503, 0);
+		close(cfd);
+		exit(EXIT_FAILURE);
+	
+	case SIGALRM:
+		httpd_send_headers(cfd, 408, 0);
+		close(cfd);
+		exit(EXIT_FAILURE);
+	}
+}
+
 #define NOREPLACE(NEW) id == 0 ? NEW : id
 
 static
 void handle_client(int cfd)
 {
+	int timeout = cfg_getint(cfg_server, "timeout");
 	int rc, id = 0, clen = 0, first_line = 1;
 	char *line = NULL, *req = NULL, *res = NULL;
 	
+	/* setup some standard signals */
+	signal(SIGHUP,  SIG_IGN);
+	signal(SIGINT,  SIG_IGN);
+	signal(SIGTERM, client_signal_handler);
+	
+	/* timeout */
+	signal(SIGALRM, client_signal_handler);
+	alarm(timeout);
+	
+	/* parse request header */
 	while (1) {
 		if (line != NULL)
 			free(line);
 		
 		rc = httpd_read_line(cfd, &line);
 		
+		/* EOF before EOL */
 		if (rc == -2)
 			id = NOREPLACE(400);
 		
+		/* unknown error */
 		else if (rc == -1)
 			goto close;
 		
+		/* parse request line */
 		else if (first_line) {
 			if (rc == 0)
 				continue;
 			else
 				first_line = 0;
 			
+			/* only support POST request */
 			if (strncmp(line, "POST", 4) != 0)
 				id = NOREPLACE(501);
 			
+			/* only support requests via /RPC2 */
 			else if (strncmp(line + 5, "/RPC2", 5) != 0)
 				id = NOREPLACE(404);
 		}
 		
+		/* parse additional headers */
 		else {
 			if (rc == 0) {
 				free(line);
 				break;
 			}
 			
+			/* we need to know Content-Length */
 			else if (strncmp(line, "Content-Length: ", 16) == 0)
 				clen = atoi(line + 16);
 		}
 	}
 	
+	/* remove timeout */
+	alarm(0);
+	signal(SIGALRM, SIG_DFL);
+	
+	/* an error occured and id was set */
 	if (id > 0) {
 		httpd_send_headers(cfd, id, 0);
 		goto close;
 	}
 	
+	/* no XMLRPC request was sent */
 	if (clen <= 0) {
 		httpd_send_headers(cfd, 400, 0);
 		goto close;
 	}
 	
+	/* get XMLRPC request */
 	rc = io_read_len(cfd, &req, clen);
 	
+	/* connection died? */
 	if (rc == -1)
 		goto close;
 	
+	/* invalid request length */
 	if (rc != clen) {
 		httpd_send_headers(cfd, 400, 0);
 		goto close;
 	}
 	
+	/* handle request */
 	rc = handle_request(req, &res);
 	
 	free(req);
 	
+	/* invalid XML */
 	if (rc == -1)
 		httpd_send_headers(cfd, 400, 0);
 	
+	/* somehow the response didn't build */
 	else if (res == NULL)
 		httpd_send_headers(cfd, 500, 0);
 	
+	/* send response */
 	else {
 		clen = strlen(res);
 		httpd_send_headers(cfd, 200, clen);
@@ -285,12 +336,24 @@ close:
 	exit(0);
 }
 
+static
+void server_signal_handler(int sig)
+{
+	switch (sig) {
+	case SIGCHLD:
+		num_clients--;
+		break;
+	
+	case SIGTERM:
+		kill(0, SIGTERM);
+		exit(EXIT_FAILURE);
+	}
+}
+
 void server_main(void)
 {
-	cfg_t *cfg, *cfg_listen;
-	int port;
+	int port, sfd, i, max_clients;
 	char *host;
-	int sfd, cfd;
 	struct sockaddr_in addr;
 	
 	/* open connection to syslog */
@@ -311,18 +374,22 @@ void server_main(void)
 	}
 	
 	cfg_listen = cfg_getsec(cfg, "listen");
+	cfg_server = cfg_getsec(cfg, "server");
 	
 	port = cfg_getint(cfg_listen, "port");
 	host = cfg_getstr(cfg_listen, "host");
+	
+	max_clients = cfg_getint(cfg_server, "max-clients");
 	
 	/* setup xmlrpc server */
 	xmlrpc_server = XMLRPC_ServerCreate();
 	register_methods(xmlrpc_server);
 	
-	/* ignore some standard signals */
+	/* setup some standard signals */
 	signal(SIGHUP,  SIG_IGN);
 	signal(SIGINT,  SIG_IGN);
-	signal(SIGCHLD, SIG_IGN);
+	signal(SIGTERM, server_signal_handler);
+	signal(SIGCHLD, server_signal_handler);
 	
 	/* setup listen socket */
 	sfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -347,12 +414,24 @@ void server_main(void)
 	if (listen(sfd, cfg_getint(cfg_listen, "backlog")) == -1)
 		LOGPERR("listen");
 	
+	/* wait and create a new child for each connection */
 	while (1) {
 		cfd = accept(sfd, NULL, 0);
 		
+		if (cfd == -1) {
+			LOGPWARN("accept");
+			continue;
+		}
+		
+		if (num_clients >= max_clients) {
+			httpd_send_headers(cfd, 503, 0);
+			close(cfd);
+			continue;
+		}
+		
 		switch (fork()) {
 		case -1:
-			LOGPWARN("accept");
+			LOGPWARN("fork");
 			break;
 		
 		case 0:
@@ -361,6 +440,7 @@ void server_main(void)
 			break;
 		
 		default:
+			num_clients++;
 			close(cfd);
 			break;
 		}

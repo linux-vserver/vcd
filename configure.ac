@@ -84,6 +84,7 @@ AC_CONFIG_FILES([Makefile
                  src/libxmlrpc/Makefile
                  src/lucid/Makefile
                  src/tools/Makefile
+                 src/vcd/methods/Makefile
                  src/vcd/Makefile
                  src/Makefile])
 

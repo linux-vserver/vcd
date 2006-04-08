@@ -22,20 +22,20 @@
 #include <syslog.h>
 
 #define LOGWARN(MSG) do { \
-	syslog(LOG_WARNING, MSG); \
+	syslog(LOG_ERR, "%s(): %s", __FUNCTION__, MSG); \
 } while(0)
 
 #define LOGPWARN(MSG) do { \
-	syslog(LOG_WARNING, MSG ": %s", strerror(errno)); \
+	syslog(LOG_ERR, "%s(): %s: %s", __FUNCTION__, MSG, strerror(errno)); \
 } while(0)
 
 #define LOGERR(MSG) do { \
-	syslog(LOG_ERR, MSG); \
+	syslog(LOG_ERR, "%s(): %s", __FUNCTION__, MSG); \
 	exit(EXIT_FAILURE); \
 } while(0)
 
 #define LOGPERR(MSG) do { \
-	syslog(LOG_ERR, MSG ": %s", strerror(errno)); \
+	syslog(LOG_ERR, "%s(): %s: %s", __FUNCTION__, MSG, strerror(errno)); \
 	exit(EXIT_FAILURE); \
 } while(0)
 

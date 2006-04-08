@@ -27,6 +27,12 @@ static cfg_opt_t _CFG_listen[] = {
 	CFG_END()
 };
 
+static cfg_opt_t _CFG_server[] = {
+	CFG_INT("timeout",     30, CFGF_NONE),
+	CFG_INT("max-clients",  2, CFGF_NONE),
+	CFG_END()
+};
+
 static cfg_opt_t _CFG_group[] = {
 	CFG_STR_LIST("methods", NULL, CFGF_NONE),
 	CFG_END()
@@ -40,6 +46,7 @@ static cfg_opt_t _CFG_user[] = {
 
 cfg_opt_t CFG[] = {
 	CFG_SEC("listen",    _CFG_listen,    CFGF_NONE),
+	CFG_SEC("server",    _CFG_server,    CFGF_NONE),
 	CFG_SEC("group",     _CFG_group,     CFGF_MULTI|CFGF_TITLE),
 	CFG_SEC("user",      _CFG_user,      CFGF_MULTI|CFGF_TITLE),
 	CFG_END()
