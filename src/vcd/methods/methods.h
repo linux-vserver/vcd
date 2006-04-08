@@ -21,8 +21,9 @@
 #include "xmlrpc.h"
 
 void register_methods(XMLRPC_SERVER xmlrpc_server);
+int  user_valid_auth(XMLRPC_VALUE auth);
 
-XMLRPC_VALUE hello_callback(XMLRPC_SERVER server, XMLRPC_REQUEST request,
-                            void* userData);
+/* callbacks */
+XMLRPC_VALUE hello_callback(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
 
 #endif

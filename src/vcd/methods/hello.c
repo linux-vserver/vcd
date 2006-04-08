@@ -23,16 +23,26 @@
 
 #include "methods.h"
 
-XMLRPC_VALUE hello_callback(XMLRPC_SERVER server, XMLRPC_REQUEST request,
-                            void* userData)
+XMLRPC_VALUE hello_callback(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	char buf[1024];
+	XMLRPC_VALUE request, auth, params;
+	XMLRPC_VALUE response;
 	
-	XMLRPC_VALUE xParams = XMLRPC_RequestGetData(request);
-	XMLRPC_VALUE xFirstParam = XMLRPC_VectorRewind(xParams);
+	char buf[128];
+	const char *name;
 	
-	const char * name = XMLRPC_GetValueString(xFirstParam);
+	request = XMLRPC_RequestGetData(r);
+	auth    = XMLRPC_VectorRewind(request);
+	params  = XMLRPC_VectorNext(request);
 	
+	if (!user_valid_auth(auth))
+		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
+	
+	name = XMLRPC_VectorGetStringWithID(params, "name");
 	snprintf(buf, sizeof(buf), "hello %s", name ? name : "stranger");
-	return XMLRPC_CreateValueString(NULL, buf, 0);
+	
+	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString(NULL, buf, 0));
+	
+	return response;
 }

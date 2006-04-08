@@ -19,11 +19,47 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+#include <fcntl.h>
+
+#include "lucid.h"
 #include "xmlrpc.h"
 
+#include "pathconfig.h"
+
+#include "log.h"
 #include "methods.h"
 
 void register_methods(XMLRPC_SERVER xmlrpc_server)
 {
 	XMLRPC_ServerRegisterMethod(xmlrpc_server, "hello", hello_callback);
+}
+
+int user_valid_auth(XMLRPC_VALUE auth)
+{
+	SDBM *db;
+	DATUM key, val;
+	
+	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	const char *password = XMLRPC_VectorGetStringWithID(auth, "password");
+	
+	if (!username || !password)
+		return 0;
+	
+	if ((db = sdbm_open(__LOCALSTATEDIR "/users", O_RDONLY, 0)) == NULL) {
+		LOGPWARN("sdbm_open");
+		return 0;
+	}
+	
+	key.dptr  = (char *) username;
+	key.dsize = strlen(key.dptr);
+	
+	val = sdbm_fetch(db, key);
+	
+	sdbm_close(db);
+	
+	if (val.dsize > 0 && strncmp(password, val.dptr, val.dsize) == 0)
+		return 1;
+	
+	return 0;
 }
