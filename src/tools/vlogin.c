@@ -35,23 +35,6 @@
 
 #include "tools.h"
 
-static const char *rcsid = "$Id: nx.c 141 2006-03-27 21:59:30Z hollow $";
-
-static
-struct option long_opts[] = {
-	COMMON_LONG_OPTS
-	{ "xid", 1, 0, 'x' },
-	{ "nid", 1, 0, 'n' },
-	{ NULL,  0, 0, 0 },
-};
-
-static inline
-void usage(int rc)
-{
-	printf("Usage: vlogin -xid <xid> [-nid <nid>] [-- <program> <args>*]\n");
-	exit(rc);
-}
-
 struct terminal {
 	int fd;                          /* terminal file descriptor */
 	struct termios term;             /* terminal settings */
@@ -202,51 +185,11 @@ void signal_handler(int sig)
 	}
 }
 
-int main(int argc, char *argv[])
+void do_vlogin(int argc, char *argv[], int ind)
 {
-	INIT_ARGV0
-	
-	int c, i, n, slave;
-	char cwd[PATH_MAX];
-	xid_t xid = 0;
-	nid_t nid = 0;
+	int i, n, slave;
 	pid_t pid;
 	fd_set rfds;
-	
-	/* parse command line */
-	while (GETOPT(c)) {
-		switch (c) {
-			COMMON_GETOPT_CASES
-			
-			case 'x':
-				xid = atoi(optarg);
-				break;
-			
-			case 'n':
-				nid = atoi(optarg);
-				break;
-			
-			DEFAULT_GETOPT_CASES
-		}
-	}
-	
-	if (xid == 0)
-		usage(EXIT_FAILURE);
-	
-	/* chroot to cwd */
-	if (chroot(".") == -1)
-		perr("chroot");
-	
-	/* change namespace */
-	if (vx_enter_namespace(xid) == -1)
-		perr("vx_enter_namespace");
-	
-	/* enter context */
-	if (nid > 1 && nx_migrate(nid) == -1)
-		perr("nx_migrate");
-	
-	if (vx_migrate(xid, NULL) == -1)
-		perr("vx_migrate");
 	
 	/* set terminal to raw mode */
 	terminal_raw();
@@ -281,7 +224,7 @@ int main(int argc, char *argv[])
 		
 		/* check shell */
 		if (argc > optind) {
-			if (execv(argv[optind], argv+optind) == -1)
+			if (execv(argv[ind], argv+ind) == -1)
 				perr("execv");
 		} else {
 			if (execl("/bin/sh", "/bin/sh", "-l", NULL) == -1)
@@ -302,7 +245,7 @@ int main(int argc, char *argv[])
 	for (i = 0; i < argc; i++)
 		bzero(argv[i], strlen(argv[i]));
 	
-	strncpy(argv[0], "login", n);
+	strcpy(argv[0], "login");
 	
 	/* reset terminal to its original mode */
 	atexit(terminal_reset);
@@ -333,5 +276,4 @@ int main(int argc, char *argv[])
 	}
 	
 	/* never get here, signal handler exits */
-	return -1;
 }

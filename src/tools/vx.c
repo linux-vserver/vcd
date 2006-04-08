@@ -28,6 +28,8 @@
 
 #include "tools.h"
 
+void do_vlogin(int argc, char *argv[], int ind);
+
 static const char *rcsid = "$Id$";
 
 static
@@ -48,6 +50,7 @@ struct option long_opts[] = {
 	{ "get-vhi",   1, 0, 0x1C },
 	{ "kill",      1, 0, 0x1D },
 	{ "wait",      1, 0, 0x1E },
+	{ "login",     1, 0, 0x1F },
 	{ NULL,        0, 0, 0 },
 };
 
@@ -85,6 +88,7 @@ void usage(int rc)
 	printf("Usage:\n\n"
 	          "vx -create    <xid> [<list>] [-- <program> <args>*]\n"
 	          "   -migrate   <xid> -- <program> <args>*\n"
+	          "   -login     <xid> [-- <program> <args>*]\n"
 	          "   -set-bcaps <xid> <list>\n"
 	          "   -set-ccaps <xid> <list>\n"
 	          "   -set-flags <xid> <list>\n"
@@ -180,6 +184,7 @@ int main(int argc, char *argv[])
 			CASE_GOTO(0x1C, getvhi);
 			CASE_GOTO(0x1D, kill);
 			CASE_GOTO(0x1E, wait);
+			CASE_GOTO(0x1F, login);
 			
 			DEFAULT_GETOPT_CASES
 		}
@@ -208,6 +213,20 @@ migrate:
 	
 	if (argc > optind+1)
 		execvp(argv[optind+1], argv+optind+1);
+	
+	goto out;
+	
+login:
+	if (vx_enter_namespace(xid) != -1)
+		perr("vx_enter_namespace");
+	
+	if (chroot(".") == -1)
+		perr("chroot");
+	
+	if (vx_migrate(xid, NULL) == -1)
+		perr("vx_migrate");
+	
+	do_vlogin(argc, argv, optind);
 	
 	goto out;
 	
