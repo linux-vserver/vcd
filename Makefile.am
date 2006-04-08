@@ -29,10 +29,11 @@ EXTRA_DIST = pathconfig.h.in
 pathconfig.h: pathconfig.h.in
 	@SED@ $(PATHCONFIG_SCRIPT) $(srcdir)/pathconfig.h.in > ./pathconfig.h
 
-install-data-hook: install-vdirbase install-pkglockdir
+install-data-hook: install-vdirbase install-misc
 
 install-vdirbase:
 	$(mkinstalldirs) -m 000 $(DESTDIR)$(vdirbase)
 
-install-pkglockdir:
-	$(mkinstalldirs) -m 755 $(DESTDIR)$(pkglockdir)
+install-vdirbase:
+	$(mkinstalldirs) -m 000 $(DESTDIR)/var/lib/vserver
+	$(mkinstalldirs) -m 000 $(DESTDIR)/var/lock/vservers
