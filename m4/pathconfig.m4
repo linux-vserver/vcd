@@ -24,13 +24,10 @@
 # - sysconfdir
 #
 # We also set those:
-# - lockdir
 # - vdirbase
 
 AC_DEFUN([AC_VU_PATHCONFIG],
 [
-	lockdir='${localstatedir}/lock'
-	
 	AC_MSG_CHECKING([for vserver base directory])
 	AC_ARG_WITH([vdirbase],
 	            [AC_HELP_STRING([--with-vdirbase=DIR],
@@ -42,6 +39,5 @@ AC_DEFUN([AC_VU_PATHCONFIG],
 
 	vdirbase=$ac_vu_vdirbase
 	
-	AC_SUBST(lockdir)
 	AC_SUBST(vdirbase)
 ])

@@ -15,23 +15,7 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-lockdir  = @lockdir@
 vdirbase = @vdirbase@
 
-pkgincludedir = $(includedir)/vserver
-pkglockdir = $(lockdir)/vservers
-pkgconfdir = $(sysconfdir)/vservers
-
-PATHCONFIG_SCRIPT = -e 's:@BINDIR\@:$(bindir):g' \
-                    -e 's:@LIBDIR\@:$(libdir):g' \
-                    -e 's:@LOCALSTATEDIR\@:$(localstatedir):g' \
-                    -e 's:@LOCKDIR\@:$(lockdir):g' \
-                    -e 's:@MANDIR\@:$(mandir):g' \
-                    -e 's:@PKGCONFDIR\@:$(pkgconfdir):g' \
-                    -e 's:@PKGLIBDIR\@:$(pkglibdir):g' \
-                    -e 's:@PKGINCLUDEDIR\@:$(pkgincludedir):g' \
-                    -e 's:@PKGLOCKDIR\@:$(pkglockdir):g' \
-                    -e 's:@SBINDIR\@:$(sbindir):g' \
-                    -e 's:@SYSCONFDIR\@:$(sysconfdir):g' \
-                    -e 's:@VDIRBASE\@:$(vdirbase):g' \
-                    -e 's:@MOUNT\@:@MOUNT@:g'
+PATHCONFIG_SCRIPT = -e 's:@SYSCONFDIR\@:$(sysconfdir):g' \
+                    -e 's:@VDIRBASE\@:$(vdirbase):g'
