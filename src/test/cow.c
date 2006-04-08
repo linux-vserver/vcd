@@ -65,8 +65,8 @@ void cmd_help()
 	       "Available options:\n"
 	       GLOBAL_HELP
 	       "    -n <int>      Count of unified files (1-9)\n"
-	       "    -u            Test with IMMUTABLE attr\n"
-	       "    -i            Test with IUNLINK attr\n"
+	       "    -i            Test with IMMUTABLE attr\n"
+	       "    -u            Test with IUNLINK attr\n"
 	       "\n",
 	       NAME);
 	exit(EXIT_SUCCESS);
