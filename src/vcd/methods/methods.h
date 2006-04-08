@@ -22,6 +22,11 @@
 
 void registry_init(XMLRPC_SERVER s);
 
+/* auth */
+XMLRPC_VALUE m_auth_adduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+XMLRPC_VALUE m_auth_deluser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+
 /* vxdb */
 XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
 XMLRPC_VALUE m_vxdb_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);

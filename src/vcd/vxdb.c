@@ -45,7 +45,7 @@ char *vxdb_get(char *name, char *key)
 	char *buf;
 	char *db_file;
 	
-	asprintf(&db_file, "%s/vx_%s", __LOCALSTATEDIR, name);
+	asprintf(&db_file, "%s/vx/%s", __LOCALSTATEDIR, name);
 	db = sdbm_open(db_file, O_RDONLY, 0);
 	free(db_file);
 	
@@ -78,7 +78,9 @@ int vxdb_set(char *name, char *key, char *value)
 	
 	char *db_file;
 	
-	asprintf(&db_file, "%s/vx_%s", __LOCALSTATEDIR, name);
+	mkdir(__LOCALSTATEDIR "/vx", 0600);
+	
+	asprintf(&db_file, "%s/vx/%s", __LOCALSTATEDIR, name);
 	db = sdbm_open(db_file, O_RDWR|O_CREAT, 0600);
 	free(db_file);
 	

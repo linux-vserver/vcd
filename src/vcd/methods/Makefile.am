@@ -19,10 +19,17 @@ INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libxmlrpc \
            -I$(top_srcdir)/src/vcd
 
+M_AUTH = auth/adduser.c \
+         auth/deluser.c \
+         auth/getacl.c \
+         auth/moduser.c \
+         auth/setacl.c
+
 M_VXDB = vxdb/get.c \
          vxdb/set.c
 
-METHODS = $(M_VXDB)
+METHODS = $(M_AUTH) \
+          $(M_VXDB)
 
 noinst_LIBRARIES = libmethods.a
 

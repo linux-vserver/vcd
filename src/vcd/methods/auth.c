@@ -43,7 +43,7 @@ int auth_isvalid(XMLRPC_VALUE auth)
 	if (!username || !password)
 		return 0;
 	
-	if ((db = sdbm_open(__LOCALSTATEDIR "/auth_passwd", O_RDONLY, 0)) == NULL) {
+	if ((db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0)) == NULL) {
 		LOGPWARN("sdbm_open");
 		return 0;
 	}
@@ -74,7 +74,7 @@ int auth_capable(XMLRPC_VALUE auth, uint64_t cap)
 	if (!username || !password)
 		return 0;
 	
-	if ((db = sdbm_open(__LOCALSTATEDIR "/auth_acl", O_RDONLY, 0)) == NULL) {
+	if ((db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0)) == NULL) {
 		LOGPWARN("sdbm_open");
 		return 0;
 	}

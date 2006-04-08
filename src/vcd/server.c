@@ -25,6 +25,7 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/socket.h>
+#include <sys/wait.h>
 #include <arpa/inet.h>
 
 #include "pathconfig.h"
@@ -340,6 +341,7 @@ void server_signal_handler(int sig)
 	switch (sig) {
 	case SIGCHLD:
 		num_clients--;
+		wait(NULL);
 		break;
 	
 	case SIGTERM:
