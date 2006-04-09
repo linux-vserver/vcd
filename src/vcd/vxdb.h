@@ -19,6 +19,8 @@
 #define _METHODS_VXDB_H
 
 int   vxdb_validkey(char *key);
+int   vxdb_capable_get(XMLRPC_VALUE auth, char *key);
+int   vxdb_capable_set(XMLRPC_VALUE auth, char *key);
 char *vxdb_get(char *name, char *key);
 int   vxdb_set(char *name, char *key, char *value);
 

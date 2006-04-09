@@ -19,16 +19,23 @@
 #include <config.h>
 #endif
 
+#include <errno.h>
+#include <vserver.h>
+
 #include "xmlrpc.h"
 
 #include "auth.h"
 #include "vxdb.h"
+#include "xid.h"
 
-XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+XMLRPC_VALUE m_vx_status(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *name, *key, *val;
+	char *name, *val;
+	xid_t xid;
+	struct vx_info vxi = { 0, 0 };
+	int run = 1;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
@@ -38,22 +45,29 @@ XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
 	
 	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
-	key  = (char *) XMLRPC_VectorGetStringWithID(params, "key");
 	
-	if (!vxdb_validkey(key))
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	if (xid_byname(name, &xid) == -1)
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (!vxdb_capable_get(auth, key) || !auth_vxowner(auth, name))
+	if (!auth_vxowner(auth, name))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	val = vxdb_get(name, key);
+	if (vx_get_info(xid, &vxi) == -1) {
+		if (errno == ESRCH)
+			run = 0;
+		else
+			return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValuesToVector(response,
-	                         XMLRPC_CreateValueString("name", name, 0),
-	                         XMLRPC_CreateValueString("key",  key,  0),
-	                         XMLRPC_CreateValueString("val",  val,  0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("xid", xid));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueBoolean("running", run));
+	
+	if (auth_capable(auth, VCD_CAP_ADMIN) && run == 1)
+		XMLRPC_AddValueToVector(response,
+		                        XMLRPC_CreateValueInt("initpid", vxi.initpid));
 	
 	return response;
 }

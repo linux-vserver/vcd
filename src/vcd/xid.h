@@ -15,25 +15,12 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_METHODS_H
-#define _VCD_METHODS_H
+#ifndef _METHODS_XID_H
+#define _METHODS_XID_H
 
-#include "xmlrpc.h"
+#include <vserver.h>
 
-void registry_init(XMLRPC_SERVER s);
-
-/* auth */
-XMLRPC_VALUE m_auth_adduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_deluser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_getacl (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_setacl (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-
-/* vx */
-XMLRPC_VALUE m_vx_status(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-
-/* vxdb */
-XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_vxdb_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+int xid_byname(char *name, xid_t *xid);
+int xid_toname(xid_t xid, char **name);
 
 #endif

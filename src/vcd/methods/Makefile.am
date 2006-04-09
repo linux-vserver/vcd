@@ -25,17 +25,18 @@ M_AUTH = auth/adduser.c \
          auth/moduser.c \
          auth/setacl.c
 
+M_VX = vx/status.c
+
 M_VXDB = vxdb/get.c \
          vxdb/set.c
 
 METHODS = $(M_AUTH) \
+          $(M_VX) \
           $(M_VXDB)
 
 noinst_LIBRARIES = libmethods.a
 
-noinst_HEADERS = auth.h \
-                 methods.h
+noinst_HEADERS = methods.h
 
-libmethods_a_SOURCES = auth.c \
-                       methods.c \
+libmethods_a_SOURCES = methods.c \
                        $(METHODS)

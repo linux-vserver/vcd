@@ -75,9 +75,8 @@ int auth_capable(XMLRPC_VALUE auth, uint64_t cap)
 	uint64_t flags;
 	
 	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	const char *password = XMLRPC_VectorGetStringWithID(auth, "password");
 	
-	if (!username || !password)
+	if (!username)
 		return 0;
 	
 	if ((db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0)) == NULL) {
@@ -110,9 +109,8 @@ int auth_vxowner(XMLRPC_VALUE auth, char *name)
 	char *db_file;
 	
 	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	const char *password = XMLRPC_VectorGetStringWithID(auth, "password");
 	
-	if (!username || !password)
+	if (!username)
 		return 0;
 	
 	if (auth_capable(auth, VCD_CAP_ADMIN))

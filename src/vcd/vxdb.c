@@ -27,26 +27,60 @@
 #include <fcntl.h>
 
 #include "lucid.h"
+#include "xmlrpc.h"
 
 #include "log.h"
+#include "auth.h"
 #include "vxdb.h"
 
-static char *valid_keys[] = {
-	"vx.id",
-	"vx.owner",
-	NULL
+struct _valid_key {
+	char *key;
+	uint64_t getcap;
+	uint64_t setcap;
 };
 
-int vxdb_validkey(char *key)
+static struct _valid_key KEYS[] = {
+	{ NULL,       0UL, 0UL },
+	{ "vx.bcaps", 0UL, VCD_CAP_ADMIN },
+	{ "vx.ccaps", 0UL, VCD_CAP_ADMIN },
+	{ "vx.flags", 0UL, VCD_CAP_ADMIN },
+	{ NULL,       0UL, 0UL }
+};
+
+int vxdb_keyindex(char *key)
 {
 	int i;
 	
-	for (i = 0; valid_keys[i]; i++) {
-		if (strcmp(key, valid_keys[i]) == 0)
-			return 1;
-	}
+	for (i = 1; KEYS[i].key; i++)
+		if (strcmp(key, KEYS[i].key) == 0)
+			return i;
 	
 	return 0;
+}
+
+int vxdb_validkey(char *key)
+{
+	return vxdb_keyindex(key) == 0 ? 0 : 1;
+}
+
+int vxdb_capable_get(XMLRPC_VALUE auth, char *key)
+{
+	int i = vxdb_keyindex(key);
+	
+	if (i > 0)
+		return auth_capable(auth, KEYS[i].getcap);
+	else
+		return 0;
+}
+
+int vxdb_capable_set(XMLRPC_VALUE auth, char *key)
+{
+	int i = vxdb_keyindex(key);
+	
+	if (i > 0)
+		return auth_capable(auth, KEYS[i].setcap);
+	else
+		return 0;
 }
 
 char *vxdb_get(char *name, char *key)

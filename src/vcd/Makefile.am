@@ -21,18 +21,23 @@ INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libconfuse \
            -I$(top_srcdir)/src/libxmlrpc
 
-noinst_HEADERS = log.h \
-                 vxdb.h
+noinst_HEADERS = auth.h \
+                 log.h \
+                 vxdb.h \
+                 xid.h
 
 sbin_PROGRAMS = vcd
 
-vcd_SOURCES = main.c \
+vcd_SOURCES = auth.c \
               collector.c \
+              main.c \
               server.c \
-              vxdb.c
+              vxdb.c \
+              xid.c
 
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(top_builddir)/src/lucid/libucid.a \
             $(top_builddir)/src/libconfuse/libconfuse.a \
             $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
-            -lexpat
+            -lexpat \
+            -lvserver

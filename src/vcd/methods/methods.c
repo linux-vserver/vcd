@@ -25,6 +25,16 @@
 
 void registry_init(XMLRPC_SERVER s)
 {
+	/* auth */
+	XMLRPC_ServerRegisterMethod(s, "auth.adduser", m_auth_adduser);
+	XMLRPC_ServerRegisterMethod(s, "auth.deluser", m_auth_deluser);
+	XMLRPC_ServerRegisterMethod(s, "auth.getacl",  m_auth_getacl);
+	XMLRPC_ServerRegisterMethod(s, "auth.moduser", m_auth_moduser);
+	XMLRPC_ServerRegisterMethod(s, "auth.setacl",  m_auth_setacl);
+	
+	/* vx */
+	XMLRPC_ServerRegisterMethod(s, "vx.status", m_vx_status);
+
 	/* vxdb */
 	XMLRPC_ServerRegisterMethod(s, "vxdb.get", m_vxdb_get);
 	XMLRPC_ServerRegisterMethod(s, "vxdb.set", m_vxdb_set);
