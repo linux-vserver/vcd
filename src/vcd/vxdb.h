@@ -18,6 +18,7 @@
 #ifndef _METHODS_VXDB_H
 #define _METHODS_VXDB_H
 
+int   vxdb_validkey(char *key);
 char *vxdb_get(char *name, char *key);
 int   vxdb_set(char *name, char *key, char *value);
 

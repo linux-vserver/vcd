@@ -37,6 +37,18 @@ static char *valid_keys[] = {
 	NULL
 };
 
+int vxdb_validkey(char *key)
+{
+	int i;
+	
+	for (i = 0; valid_keys[i]; i++) {
+		if (strcmp(key, valid_keys[i]) == 0)
+			return 1;
+	}
+	
+	return 0;
+}
+
 char *vxdb_get(char *name, char *key)
 {
 	SDBM *db;
@@ -44,6 +56,9 @@ char *vxdb_get(char *name, char *key)
 	
 	char *buf;
 	char *db_file;
+	
+	if (!vxdb_validkey(key))
+		return errno = EINVAL, NULL;
 	
 	asprintf(&db_file, "%s/vx/%s", __LOCALSTATEDIR, name);
 	db = sdbm_open(db_file, O_RDONLY, 0);
@@ -77,6 +92,9 @@ int vxdb_set(char *name, char *key, char *value)
 	DATUM k, v;
 	
 	char *db_file;
+	
+	if (!vxdb_validkey(key))
+		return errno = EINVAL, -1;
 	
 	mkdir(__LOCALSTATEDIR "/vx", 0600);
 	
