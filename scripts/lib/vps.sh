@@ -384,7 +384,7 @@ vps.mount() {
 	
 	if [ "$1" == "root" ]; then
 		${_VNAMESPACE} -E -x ${VX_XID} -- \
-		${_VMOUNT} -M -n -r ${VDIR}
+		${_VMOUNT} -R -n -r ${VDIR}
 	else
 		pushd ${VDIR} >/dev/null
 		
