@@ -32,6 +32,12 @@
 #include "auth.h"
 #include "vxdb.h"
 
+FLIST64_START(vcd_caps_list)
+FLIST64_NODE(VCD_CAP, VXDB_GET)
+FLIST64_NODE(VCD_CAP, VXDB_SET)
+FLIST64_NODE(VCD_CAP, ADMIN)
+FLIST64_END
+
 int auth_isvalid(XMLRPC_VALUE auth)
 {
 	SDBM *db;
@@ -113,6 +119,19 @@ int auth_vxowner(XMLRPC_VALUE auth, char *name)
 		return 1;
 	
 	if (strcmp(username, vxdb_get(name, "vx.owner")) == 0)
+		return 1;
+	
+	return 0;
+}
+
+int auth_isuser(XMLRPC_VALUE auth, char *user)
+{
+	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	
+	if (!username)
+		return 0;
+	
+	if (strcmp(user, username) == 0)
 		return 1;
 	
 	return 0;

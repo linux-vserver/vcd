@@ -43,6 +43,12 @@ XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
 	key  = (char *) XMLRPC_VectorGetStringWithID(params, "key");
 	
+	if (!auth_vxowner(auth, name))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+	
+	if (!vxdb_validkey(key))
+		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
 	val = vxdb_get(name, key);
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);

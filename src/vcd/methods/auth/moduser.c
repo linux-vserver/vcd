@@ -46,14 +46,14 @@ XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isvalid(auth))
 		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
 	
-	if (!auth_capable(auth, VCD_CAP_ADMIN))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
-	
 	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
 	password = (char *) XMLRPC_VectorGetStringWithID(params, "password");
 	
 	if (!username || !password)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
+	if (!auth_capable(auth, VCD_CAP_ADMIN) && !auth_isuser(auth, username))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	mkdir(__LOCALSTATEDIR "/auth", 0600);
 	

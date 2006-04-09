@@ -47,6 +47,12 @@ XMLRPC_VALUE m_vxdb_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!name || !key || !val)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
+	if (!auth_vxowner(auth, name))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+	
+	if (!vxdb_validkey(key))
+		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
 	if (vxdb_set(name, key, val) == -1)
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	

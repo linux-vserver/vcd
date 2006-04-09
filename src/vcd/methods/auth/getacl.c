@@ -34,10 +34,12 @@ XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *username, *acl = NULL;
+	char *username, *buf, *acl = NULL;
 	
 	SDBM *db;
 	DATUM k, v;
+	
+	uint64_t flags;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
@@ -46,13 +48,13 @@ XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isvalid(auth))
 		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
 	
-	if (!auth_capable(auth, VCD_CAP_ADMIN))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
-	
 	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
 	
 	if (!username)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
+	if (!auth_capable(auth, VCD_CAP_ADMIN) && !auth_isuser(auth, username))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	mkdir(__LOCALSTATEDIR "/auth", 0600);
 	
@@ -69,9 +71,14 @@ XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	v = sdbm_fetch(db, k);
 	
 	if (v.dsize > 0) {
-		acl = malloc(v.dsize + 1);
-		bzero(acl, v.dsize + 1);
-		memcpy(acl, v.dptr, v.dsize); /* TODO: flist64_tostr */
+		buf = malloc(v.dsize + 1);
+		bzero(buf, v.dsize + 1);
+		memcpy(buf, v.dptr, v.dsize);
+		flags = strtoull(buf, NULL, 10);
+		free(buf);
+		
+		if (flist64_tostr(vcd_caps_list, flags, &acl, ',') == -1)
+			return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	
 	sdbm_close(db);

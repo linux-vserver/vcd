@@ -39,6 +39,9 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	SDBM *db;
 	DATUM k, v;
 	
+	uint64_t flags, mask;
+	char buf[21];
+	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
@@ -86,7 +89,13 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
 	
-	v.dptr  = acl; /* TODO: flist64_parse */
+	if (flist64_parse(acl, vcd_caps_list, &flags, &mask, '~', ',') == -1)
+		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
+	bzero(buf, sizeof(buf));
+	snprintf(buf, 20, "%llu", flags);
+	
+	v.dptr  = buf;
 	v.dsize = strlen(v.dptr);
 	
 	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
