@@ -19,16 +19,16 @@ INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libxmlrpc \
            -I$(top_srcdir)/src/vcd
 
-M_AUTH = auth/adduser.c \
-         auth/deluser.c \
-         auth/getacl.c \
-         auth/moduser.c \
-         auth/setacl.c
+M_AUTH = auth/auth_adduser.c \
+         auth/auth_deluser.c \
+         auth/auth_getacl.c \
+         auth/auth_moduser.c \
+         auth/auth_setacl.c
 
-M_VX = vx/status.c
+M_VX = vx/vx_status.c
 
-M_VXDB = vxdb/get.c \
-         vxdb/set.c
+M_VXDB = vxdb/vxdb_get.c \
+         vxdb/vxdb_set.c
 
 METHODS = $(M_AUTH) \
           $(M_VX) \
