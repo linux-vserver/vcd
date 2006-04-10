@@ -69,8 +69,6 @@ const char confuse_author[] = "Martin Hedenfalk <mhe@home.se>";
 
 static int cfg_parse_internal(cfg_t *cfg, int level,
                               int force_state, cfg_opt_t *force_opt);
-static cfg_value_t *cfg_setopt(cfg_t *cfg, cfg_opt_t *opt, char *value);
-
 #define STATE_CONTINUE 0
 #define STATE_EOF -1
 #define STATE_ERROR 1
@@ -475,7 +473,7 @@ static void cfg_init_defaults(cfg_t *cfg)
     }
 }
 
-static cfg_value_t *cfg_setopt(cfg_t *cfg, cfg_opt_t *opt, char *value)
+DLLIMPORT cfg_value_t *cfg_setopt(cfg_t *cfg, cfg_opt_t *opt, char *value)
 {
     cfg_value_t *val = 0;
     int b;

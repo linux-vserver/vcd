@@ -32,25 +32,27 @@ XMLRPC_VALUE m_vx_status(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *name, *val;
+	char *name;
+	
 	xid_t xid;
 	struct vx_info vxi = { 0, 0 };
+	
 	int run = 1;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_isvalid(auth))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
+	if (!auth_capable(auth, "vx.status"))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
 	
-	if (xid_byname(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
-	
 	if (!auth_vxowner(auth, name))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+	
+	if (xid_byname(name, &xid) == -1)
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
 	if (vx_get_info(xid, &vxi) == -1) {
 		if (errno == ESRCH)
@@ -64,10 +66,6 @@ XMLRPC_VALUE m_vx_status(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("xid", xid));
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueBoolean("running", run));
-	
-	if (auth_capable(auth, VCD_CAP_ADMIN) && run == 1)
-		XMLRPC_AddValueToVector(response,
-		                        XMLRPC_CreateValueInt("initpid", vxi.initpid));
 	
 	return response;
 }

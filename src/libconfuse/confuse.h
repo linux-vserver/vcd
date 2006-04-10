@@ -1103,6 +1103,8 @@ DLLIMPORT cfg_validate_callback_t cfg_set_validate_func(cfg_t *cfg,
                                                         const char *name,
                                                         cfg_validate_callback_t vf);
 
+DLLIMPORT cfg_value_t *cfg_setopt(cfg_t *cfg, cfg_opt_t *opt, char *value);
+
 #ifdef __cplusplus
 }
 #endif

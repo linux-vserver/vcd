@@ -34,7 +34,7 @@ XMLRPC_VALUE m_auth_deluser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *username, *password;
+	char *username;
 	
 	SDBM *db;
 	DATUM k;
@@ -43,19 +43,16 @@ XMLRPC_VALUE m_auth_deluser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_isvalid(auth))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
-	
-	if (!auth_capable(auth, VCD_CAP_ADMIN))
+	if (!auth_capable(auth, "auth.deluser"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
-	password = (char *) XMLRPC_VectorGetStringWithID(params, "password");
 	
-	if (!username || !password)
+	if (!username)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
+	if (!auth_exists(username))
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
 	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDWR|O_CREAT, 0600);
 	
@@ -68,17 +65,66 @@ XMLRPC_VALUE m_auth_deluser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	k.dsize = strlen(k.dptr);
 	
 	if (sdbm_delete(db, k) == -1) {
-		LOGPWARN("sdbm_delete");
 		sdbm_close(db);
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
+	
+	sdbm_close(db);
+	
+	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDWR|O_CREAT, 0600);
+	
+	if (db == NULL) {
+		LOGPWARN("sdbm_open");
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
+	
+	k.dptr  = username;
+	k.dsize = strlen(k.dptr);
+	
+	if (sdbm_delete(db, k) == -1) {
+		sdbm_close(db);
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
+	
+	sdbm_close(db);
+	
+	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDWR|O_CREAT, 0600);
+	
+	if (db == NULL) {
+		LOGPWARN("sdbm_open");
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
+	
+	k.dptr  = username;
+	k.dsize = strlen(k.dptr);
+	
+	if (sdbm_delete(db, k) == -1) {
+		sdbm_close(db);
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
+	
+	sdbm_close(db);
+	
+	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDWR|O_CREAT, 0600);
+	
+	if (db == NULL) {
+		LOGPWARN("sdbm_open");
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
+	
+	k.dptr  = username;
+	k.dsize = strlen(k.dptr);
+	
+	if (sdbm_delete(db, k) == -1) {
+		sdbm_close(db);
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	
 	sdbm_close(db);
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValuesToVector(response,
-	                         XMLRPC_CreateValueString("username", username, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
 	
 	return response;
 }

@@ -26,97 +26,68 @@
 #include <fcntl.h>
 
 #include "lucid.h"
+#include "confuse.h"
 #include "xmlrpc.h"
 
 #include "log.h"
 #include "auth.h"
-#include "vxdb.h"
 
-FLIST64_START(vcd_caps_list)
-FLIST64_NODE(VCD_CAP, VXDB_GET)
-FLIST64_NODE(VCD_CAP, VXDB_SET)
-FLIST64_NODE(VCD_CAP, ADMIN)
-FLIST64_END
+extern cfg_t *cfg;
 
 int auth_isvalid(XMLRPC_VALUE auth)
 {
 	SDBM *db;
-	DATUM key, val;
+	DATUM k, v;
 	
-	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	const char *password = XMLRPC_VectorGetStringWithID(auth, "password");
+	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
+	char *password = (char *) XMLRPC_VectorGetStringWithID(auth, "password");
 	
 	if (!username || !password)
 		return 0;
 	
-	if ((db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0)) == NULL) {
+	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0);
+	
+	if (db == NULL) {
 		LOGPWARN("sdbm_open");
 		return 0;
 	}
 	
-	key.dptr  = (char *) username;
-	key.dsize = strlen(key.dptr);
+	k.dptr  = username;
+	k.dsize = strlen(k.dptr);
 	
-	val = sdbm_fetch(db, key);
+	v = sdbm_fetch(db, k);
 	
 	sdbm_close(db);
 	
-	if (val.dsize > 0 && strncmp(password, val.dptr, val.dsize) == 0)
+	if (v.dsize > 0 && strncmp(password, v.dptr, v.dsize) == 0)
 		return 1;
 	
 	return 0;
 }
 
-int auth_capable(XMLRPC_VALUE auth, uint64_t cap)
+int auth_exists(char *username)
 {
 	SDBM *db;
-	DATUM key, val;
-	
-	uint64_t flags;
-	
-	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	DATUM k, v;
 	
 	if (!username)
 		return 0;
 	
-	if ((db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0)) == NULL) {
+	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0);
+	
+	if (db == NULL) {
 		LOGPWARN("sdbm_open");
 		return 0;
 	}
 	
-	key.dptr  = (char *) username;
-	key.dsize = strlen(key.dptr);
+	k.dptr  = username;
+	k.dsize = strlen(k.dptr);
 	
-	val = sdbm_fetch(db, key);
+	v = sdbm_fetch(db, k);
 	
 	sdbm_close(db);
 	
-	if (val.dsize > 0) {
-		flags = strtoull(val.dptr, NULL, 10);
-		
-		if (flags & cap || flags & VCD_CAP_ADMIN)
-			return 1;
-	}
-	
-	return 0;
-}
-
-int auth_vxowner(XMLRPC_VALUE auth, char *name)
-{
-	SDBM *db;
-	DATUM key, val;
-	
-	char *db_file;
-	
-	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	
-	if (!username)
-		return 0;
-	
-	if (auth_capable(auth, VCD_CAP_ADMIN))
-		return 1;
-	
-	if (strcmp(username, vxdb_get(name, "vx.owner")) == 0)
+	if (v.dsize > 0)
 		return 1;
 	
 	return 0;
@@ -124,13 +95,121 @@ int auth_vxowner(XMLRPC_VALUE auth, char *name)
 
 int auth_isuser(XMLRPC_VALUE auth, char *user)
 {
-	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
 	
-	if (!username)
+	if (!username || !auth_exists(username))
 		return 0;
 	
 	if (strcmp(user, username) == 0)
 		return 1;
+	
+	return 0;
+}
+
+int auth_isadmin(XMLRPC_VALUE auth)
+{
+	int i, m = cfg_size(cfg, "admins");
+	
+	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
+	
+	if (!username || !auth_exists(username))
+		return 0;
+	
+	for (i = 0; i < m; i++) {
+		char *admin = cfg_getnstr(cfg, "admins", i);
+		syslog(LOG_DEBUG, "admins[%d]: %s", i, admin);
+		if (strcmp(username, admin) == 0)
+			return 1;
+	}
+	
+	return 0;
+}
+
+int auth_capable(XMLRPC_VALUE auth, char *method)
+{
+	SDBM *db;
+	DATUM k, v;
+	char *buf, *bufp, *p;
+	int rc = 0;
+	
+	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
+	
+	if (!username || !auth_isvalid(auth))
+		return 0;
+	
+	if (auth_isadmin(auth))
+		return 1;
+	
+	mkdir(__LOCALSTATEDIR "/auth", 0600);
+	
+	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0);
+	
+	if (db == NULL) {
+		LOGPWARN("sdbm_open");
+		return 0;
+	}
+	
+	k.dptr  = username;
+	k.dsize = strlen(k.dptr);
+	
+	v = sdbm_fetch(db, k);
+	
+	sdbm_close(db);
+	
+	if (v.dsize > 0) {
+		bufp = buf = strndup(v.dptr, v.dsize);
+		
+		while ((p = strsep(&buf, ",")) != NULL) {
+			if (strcmp(method, p) == 0) {
+				rc = 1;
+				break;
+			}
+		}
+		
+		free(bufp);
+	}
+	
+	return rc;
+}
+
+int auth_vxowner(XMLRPC_VALUE auth, char *name)
+{
+	SDBM *db;
+	DATUM k, v;
+	char *p, *owners, *ownersp;
+	
+	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
+	
+	if (!username || !auth_isvalid(auth))
+		return 0;
+	
+	if (auth_isadmin(auth))
+		return 1;
+	
+	db = sdbm_open(__LOCALSTATEDIR "/maps/owner", O_RDONLY, 0);
+	
+	if (db == NULL) {
+		LOGPWARN("sdbm_open");
+		return 0;
+	}
+	
+	k.dptr  = (char *) name;
+	k.dsize = strlen(k.dptr);
+	
+	v = sdbm_fetch(db, k);
+	
+	sdbm_close(db);
+	
+	if (v.dsize > 0) {
+		ownersp = owners = strndup(v.dptr, v.dsize);
+		
+		while ((p = strsep(&owners, ",")) != NULL) {
+			if (strcmp(username, p) == 0)
+				return 1;
+		}
+		
+		free(ownersp);
+	}
 	
 	return 0;
 }

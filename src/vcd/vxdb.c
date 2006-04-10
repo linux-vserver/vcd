@@ -19,91 +19,214 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-
 #include "pathconfig.h"
 
+#include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <limits.h>
 
 #include "lucid.h"
+#include "confuse.h"
 #include "xmlrpc.h"
 
-#include "log.h"
 #include "auth.h"
+#include "log.h"
 #include "vxdb.h"
 
-struct _valid_key {
-	char *key;
-	uint64_t getcap;
-	uint64_t setcap;
+cfg_opt_t dlimit_OPTS[] = {
+	CFG_INT("inodes",   0, CFGF_NONE),
+	CFG_INT("space",    0, CFGF_NONE),
+	CFG_INT("reserved", 5, CFGF_NONE),
+	CFG_END()
 };
 
-static struct _valid_key KEYS[] = {
-	{ NULL,       0UL, 0UL },
-	{ "vx.bcaps", 0UL, VCD_CAP_ADMIN },
-	{ "vx.ccaps", 0UL, VCD_CAP_ADMIN },
-	{ "vx.flags", 0UL, VCD_CAP_ADMIN },
-	{ NULL,       0UL, 0UL }
+cfg_opt_t init_OPTS[] = {
+	CFG_STR("method",         "plain", CFGF_NONE),
+	CFG_INT("timeout",        30,      CFGF_NONE),
+	CFG_STR("runlevel-start", "3",     CFGF_NONE),
+	CFG_STR("runlevel-stop",  "0",     CFGF_NONE),
+	CFG_END()
 };
 
-int vxdb_keyindex(char *key)
+cfg_opt_t nx_addr_OPTS[] = {
+	CFG_STR("ip",        NULL, CFGF_NONE),
+	CFG_STR("netmask",   NULL, CFGF_NONE),
+	CFG_STR("broadcast", NULL, CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t nx_OPTS[] = {
+	CFG_STR("flags", NULL,         CFGF_NONE),
+	CFG_SEC("addr",  nx_addr_OPTS, CFGF_MULTI),
+	CFG_END()
+};
+
+cfg_opt_t rlimit_OPTS[] = {
+	CFG_INT("min",  0, CFGF_NONE),
+	CFG_INT("soft", 0, CFGF_NONE),
+	CFG_INT("max",  0, CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t sched_OPTS[] = {
+	CFG_INT("fillrate",  0, CFGF_NONE),
+	CFG_INT("fillrate2", 0, CFGF_NONE),
+	CFG_INT("interval",  0, CFGF_NONE),
+	CFG_INT("interval2", 0, CFGF_NONE),
+	CFG_INT("priobias",  0, CFGF_NONE),
+	CFG_INT("tokens",    0, CFGF_NONE),
+	CFG_INT("tokensmin", 0, CFGF_NONE),
+	CFG_INT("tokensmax", 0, CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t uts_OPTS[] = {
+	CFG_STR("domainname", NULL, CFGF_NONE),
+	CFG_STR("machine",    NULL, CFGF_NONE),
+	CFG_STR("nodename",   NULL, CFGF_NONE),
+	CFG_STR("release",    NULL, CFGF_NONE),
+	CFG_STR("sysname",    NULL, CFGF_NONE),
+	CFG_STR("version",    NULL, CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t vx_OPTS[] = {
+	CFG_STR("bcaps",  NULL, CFGF_NONE),
+	CFG_STR("ccaps",  NULL, CFGF_NONE),
+	CFG_STR("flags",  NULL, CFGF_NONE),
+	CFG_STR("fstab",  NULL, CFGF_NONE),
+	CFG_STR("mtab",   NULL, CFGF_NONE),
+	CFG_INT("nice",   0,    CFGF_NONE),
+	CFG_STR("shell",  NULL, CFGF_NONE),
+	CFG_STR("pflags", NULL, CFGF_NONE),
+	CFG_END()
+};
+
+cfg_opt_t OPTS[] = {
+	CFG_SEC("dlimit", dlimit_OPTS, CFGF_MULTI | CFGF_TITLE),
+	CFG_SEC("init",   init_OPTS,   CFGF_NONE),
+	CFG_SEC("nx",     nx_OPTS,     CFGF_NONE),
+	CFG_SEC("rlimit", rlimit_OPTS, CFGF_MULTI | CFGF_TITLE),
+	CFG_SEC("sched",  sched_OPTS,  CFGF_NONE),
+	CFG_SEC("uts",    uts_OPTS,    CFGF_NONE),
+	CFG_SEC("vx",     vx_OPTS,     CFGF_NONE),
+	CFG_END()
+};
+
+cfg_t *vxdb_open(char *name)
 {
-	int i;
+	cfg_t *cfg;
+	char cfg_file[PATH_MAX];
 	
-	for (i = 1; KEYS[i].key; i++)
-		if (strcmp(key, KEYS[i].key) == 0)
-			return i;
+	cfg = cfg_init(OPTS, CFGF_NOCASE);
+	
+	mkdir(__LOCALSTATEDIR "/vxdb", 0600);
+	
+	snprintf(cfg_file, PATH_MAX, "%s/vxdb/%s", __LOCALSTATEDIR, name);
+	
+	switch (cfg_parse(cfg, cfg_file)) {
+	case CFG_FILE_ERROR:
+		cfg_free(cfg);
+		return errno = ENOENT, NULL;
+	
+	case CFG_PARSE_ERROR:
+		cfg_free(cfg);
+		return errno = EINVAL, NULL;
+	}
+	
+	return cfg;
+}
+
+void vxdb_close(cfg_t *cfg)
+{
+	cfg_free(cfg);
+}
+
+int vxdb_closewrite(cfg_t *cfg)
+{
+	FILE *fp = fopen(cfg->filename, "w");
+	
+	if (!fp)
+		return -1;
+	
+	cfg_print(cfg, fp);
+	cfg_free(cfg);
 	
 	return 0;
 }
 
-int vxdb_validkey(char *key)
+cfg_opt_t *vxdb_lookup(cfg_t *cfg, char *key, char *title)
 {
-	return vxdb_keyindex(key) == 0 ? 0 : 1;
-}
-
-int vxdb_capable_get(XMLRPC_VALUE auth, char *key)
-{
-	int i = vxdb_keyindex(key);
+	cfg_t *sec;
+	cfg_opt_t *opt;
 	
-	if (i > 0)
-		return auth_capable(auth, KEYS[i].getcap);
-	else
-		return 0;
-}
-
-int vxdb_capable_set(XMLRPC_VALUE auth, char *key)
-{
-	int i = vxdb_keyindex(key);
+	char *p1 = strdup(key);
+	char *p2 = strchr(p1, '.');
+	*p2++ = '\0';
 	
-	if (i > 0)
-		return auth_capable(auth, KEYS[i].setcap);
+	if (title)
+		sec = cfg_gettsec(cfg, p1, title);
 	else
-		return 0;
+		sec = cfg_getsec(cfg, p1);
+	
+	if (sec == NULL || (opt = cfg_getopt(sec, p2)) == NULL)
+		return errno = ENOENT, NULL;
+	
+	return opt;
 }
 
-char *vxdb_get(char *name, char *key)
+int vxdb_addsec(cfg_t *cfg, char *key, char *title)
+{
+	int i;
+	char *p1, *p2;
+	cfg_opt_t *opt;
+	
+	p1 = strdup(key);
+	p2 = strchr(p1, '.');
+	*p2++ = '\0';
+	
+	opt = cfg_getopt(cfg, p1);
+	
+	free(p1);
+	
+	if (!opt)
+		return errno = EINVAL, -1;
+	
+	if (cfg_setopt(cfg, opt, title) == NULL)
+		return errno = EINVAL, -1;
+	
+	return 0;
+}
+
+int vxdb_capable(XMLRPC_VALUE auth, char *name, char *key, int write)
 {
 	SDBM *db;
 	DATUM k, v;
+	char *buf, *p;
+	int rc = 0;
 	
-	char *buf;
-	char *db_file;
+	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
 	
-	if (!vxdb_validkey(key))
-		return errno = EINVAL, NULL;
+	if (auth_isadmin(auth))
+		return 1;
 	
-	asprintf(&db_file, "%s/vx/%s", __LOCALSTATEDIR, name);
-	db = sdbm_open(db_file, O_RDONLY, 0);
-	free(db_file);
+	if (!username || !auth_vxowner(auth, name))
+		return 0;
+	
+	mkdir(__LOCALSTATEDIR "/vxdb", 0600);
+	
+	if (write == 0)
+		db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDONLY, 0);
+	else
+		db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDONLY, 0);
 	
 	if (db == NULL) {
 		LOGPWARN("sdbm_open");
-		return NULL;
+		return 0;
 	}
 	
-	k.dptr  = key;
+	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
 	
 	v = sdbm_fetch(db, k);
@@ -111,48 +234,17 @@ char *vxdb_get(char *name, char *key)
 	sdbm_close(db);
 	
 	if (v.dsize > 0) {
-		buf = malloc(v.dsize + 1);
-		bzero(buf, v.dsize + 1);
-		memcpy(buf, v.dptr, v.dsize);
-		return buf;
+		buf = strndup(v.dptr, v.dsize);
+		
+		for (p = strsep(&buf, ","); p; p = strsep(&buf, ",")) {
+			if (strcmp(key, p) == 0) {
+				rc = 1;
+				break;
+			}
+		}
+		
+		free(buf);
 	}
 	
-	return NULL;
-}
-
-int vxdb_set(char *name, char *key, char *value)
-{
-	SDBM *db;
-	DATUM k, v;
-	
-	char *db_file;
-	
-	if (!vxdb_validkey(key))
-		return errno = EINVAL, -1;
-	
-	mkdir(__LOCALSTATEDIR "/vx", 0600);
-	
-	asprintf(&db_file, "%s/vx/%s", __LOCALSTATEDIR, name);
-	db = sdbm_open(db_file, O_RDWR|O_CREAT, 0600);
-	free(db_file);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return -1;
-	}
-	
-	k.dptr  = key;
-	k.dsize = strlen(k.dptr);
-	
-	v.dptr  = value;
-	v.dsize = strlen(v.dptr);
-	
-	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
-		LOGPWARN("sdbm_store");
-		sdbm_close(db);
-		return -1;
-	}
-	
-	sdbm_close(db);
-	return 0;
+	return rc;
 }

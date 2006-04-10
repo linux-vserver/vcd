@@ -18,10 +18,27 @@
 #ifndef _METHODS_VXDB_H
 #define _METHODS_VXDB_H
 
-int   vxdb_validkey(char *key);
-int   vxdb_capable_get(XMLRPC_VALUE auth, char *key);
-int   vxdb_capable_set(XMLRPC_VALUE auth, char *key);
-char *vxdb_get(char *name, char *key);
-int   vxdb_set(char *name, char *key, char *value);
+#include "confuse.h"
+#include "xmlrpc.h"
+
+extern cfg_opt_t dlimit_OPTS[];
+extern cfg_opt_t init_OPTS[];
+extern cfg_opt_t nx_addr_OPTS[];
+extern cfg_opt_t nx_OPTS[];
+extern cfg_opt_t rlimit_OPTS[];
+extern cfg_opt_t sched_OPTS[];
+extern cfg_opt_t uts_OPTS[];
+extern cfg_opt_t vx_OPTS[];
+extern cfg_opt_t OPTS[];
+
+cfg_t     *vxdb_open(char *name);
+void       vxdb_close(cfg_t *cfg);
+int        vxdb_closewrite(cfg_t *cfg);
+cfg_opt_t *vxdb_lookup(cfg_t *cfg, char *key, char *title);
+int        vxdb_addsec(cfg_t *cfg, char *key, char *title);
+int        vxdb_capable(XMLRPC_VALUE auth, char *name, char *key, int write);
+
+#define vxdb_capable_read(auth, name, key)   vxdb_capable(auth, name, key, 0)
+#define vxdb_capable_write(auth, name, key)  vxdb_capable(auth, name, key, 1)
 
 #endif

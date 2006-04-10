@@ -16,19 +16,24 @@
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 INCLUDES = -I$(top_srcdir)/src/lucid \
+           -I$(top_srcdir)/src/libconfuse \
            -I$(top_srcdir)/src/libxmlrpc \
            -I$(top_srcdir)/src/vcd
 
 M_AUTH = auth/auth_adduser.c \
          auth/auth_deluser.c \
          auth/auth_getacl.c \
+         auth/auth_login.c \
          auth/auth_moduser.c \
-         auth/auth_setacl.c
+         auth/auth_setacl.c \
+         auth/auth_userinfo.c
 
 M_VX = vx/vx_status.c
 
 M_VXDB = vxdb/vxdb_get.c \
-         vxdb/vxdb_set.c
+         vxdb/vxdb_getacl.c \
+         vxdb/vxdb_set.c \
+         vxdb/vxdb_setacl.c
 
 METHODS = $(M_AUTH) \
           $(M_VX) \

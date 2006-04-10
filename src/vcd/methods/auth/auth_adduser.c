@@ -43,10 +43,7 @@ XMLRPC_VALUE m_auth_adduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_isvalid(auth))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
-	
-	if (!auth_capable(auth, VCD_CAP_ADMIN))
+	if (!auth_capable(auth, "auth.adduser"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
@@ -54,6 +51,9 @@ XMLRPC_VALUE m_auth_adduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	if (!username || !password)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
+	if (auth_exists(username))
+		return XMLRPC_UtilityCreateFault(409, "Conflict");
 	
 	mkdir(__LOCALSTATEDIR "/auth", 0600);
 	
@@ -72,15 +72,14 @@ XMLRPC_VALUE m_auth_adduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	if (sdbm_store(db, k, v, SDBM_INSERT) == -1) {
 		sdbm_close(db);
-		return XMLRPC_UtilityCreateFault(409, "Conflict");
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	
 	sdbm_close(db);
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValuesToVector(response,
-	                         XMLRPC_CreateValueString("username", username, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
 	
 	return response;
 }

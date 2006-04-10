@@ -19,6 +19,7 @@
 #include <config.h>
 #endif
 
+#include "confuse.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -28,32 +29,60 @@ XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *name, *key, *val;
+	char *name, *key, *title;
+	cfg_t *vxdb;
+	cfg_opt_t *opt;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_isvalid(auth))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
-	
-	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
-	key  = (char *) XMLRPC_VectorGetStringWithID(params, "key");
-	
-	if (!vxdb_validkey(key))
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
-	
-	if (!vxdb_capable_get(auth, key) || !auth_vxowner(auth, name))
+	if (!auth_capable(auth, "vxdb.get"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	val = vxdb_get(name, key);
+	name  = (char *) XMLRPC_VectorGetStringWithID(params, "name");
+	key   = (char *) XMLRPC_VectorGetStringWithID(params, "key");
+	title = (char *) XMLRPC_VectorGetStringWithID(params, "title");
+	
+	if (!name || !key)
+		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
+	if (!vxdb_capable_read(auth, name, key))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+	
+	if ((vxdb = vxdb_open(name)) == NULL ||
+	    (opt  = vxdb_lookup(vxdb, key, title)) == NULL)
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValuesToVector(response,
-	                         XMLRPC_CreateValueString("name", name, 0),
-	                         XMLRPC_CreateValueString("key",  key,  0),
-	                         XMLRPC_CreateValueString("val",  val,  0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("key",  key, 0));
+	
+	switch (opt->type) {
+	case CFGT_INT:
+		XMLRPC_AddValueToVector(response,
+		                        XMLRPC_CreateValueInt("value", cfg_opt_getnint(opt, 0)));
+		break;
+	
+	case CFGT_FLOAT:
+		XMLRPC_AddValueToVector(response,
+		                        XMLRPC_CreateValueDouble("value", cfg_opt_getnfloat(opt, 0)));
+		break;
+	
+	case CFGT_STR:
+		XMLRPC_AddValueToVector(response,
+		                        XMLRPC_CreateValueString("value", cfg_opt_getnstr(opt, 0), 0));
+		break;
+	
+	case CFGT_BOOL:
+		XMLRPC_AddValueToVector(response,
+		                        XMLRPC_CreateValueBoolean("value", cfg_opt_getnbool(opt, 0)));
+		break;
+	
+	default:
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	}
 	
 	return response;
 }

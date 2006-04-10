@@ -46,10 +46,7 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_isvalid(auth))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
-	
-	if (!auth_capable(auth, VCD_CAP_ADMIN))
+	if (!auth_capable(auth, "vxdb.setacl"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
@@ -58,26 +55,10 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!username || !acl)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
-	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDWR|O_CREAT, 0600);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	}
-	
-	k.dptr  = username;
-	k.dsize = strlen(k.dptr);
-	
-	v = sdbm_fetch(db, k);
-	
-	if (v.dsize < 1) {
-		sdbm_close(db);
+	if (!auth_exists(username))
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
-	}
 	
-	sdbm_close(db);
+	mkdir(__LOCALSTATEDIR "/auth", 0600);
 	
 	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDWR|O_CREAT, 0600);
 	
@@ -89,13 +70,7 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
 	
-	if (flist64_parse(acl, vcd_caps_list, &flags, &mask, '~', ',') == -1)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
-	
-	bzero(buf, sizeof(buf));
-	snprintf(buf, 20, "%llu", flags);
-	
-	v.dptr  = buf;
+	v.dptr  = acl;
 	v.dsize = strlen(v.dptr);
 	
 	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
@@ -107,8 +82,7 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValuesToVector(response,
-	                         XMLRPC_CreateValueString("username", username, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
 	
 	return response;
 }

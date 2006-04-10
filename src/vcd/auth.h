@@ -23,16 +23,11 @@
 #include "lucid.h"
 #include "xmlrpc.h"
 
-/* capabilities */
-#define VCD_CAP_VXDB_GET 0x00000001
-#define VCD_CAP_VXDB_SET 0x00000002
-#define VCD_CAP_ADMIN    0x80000000
-
-extern const flist64_t vcd_caps_list[];
-
 int auth_isvalid(XMLRPC_VALUE auth);
-int auth_capable(XMLRPC_VALUE auth, uint64_t cap);
+int auth_exists(char *username);
+int auth_isuser(XMLRPC_VALUE auth, char *user);
+int auth_isadmin(XMLRPC_VALUE auth);
+int auth_capable(XMLRPC_VALUE auth, char *method);
 int auth_vxowner(XMLRPC_VALUE auth, char *name);
-int auth_isuser (XMLRPC_VALUE auth, char *user);
 
 #endif

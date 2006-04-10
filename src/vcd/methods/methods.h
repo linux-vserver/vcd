@@ -22,18 +22,27 @@
 
 void registry_init(XMLRPC_SERVER s);
 
+#define MPROTO(NAME) \
+	XMLRPC_VALUE NAME (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+
 /* auth */
-XMLRPC_VALUE m_auth_adduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_deluser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_getacl (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_auth_setacl (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+MPROTO(m_auth_adduser);
+MPROTO(m_auth_deluser);
+MPROTO(m_auth_getacl);
+MPROTO(m_auth_login);
+MPROTO(m_auth_moduser);
+MPROTO(m_auth_setacl);
+MPROTO(m_auth_userinfo);
 
 /* vx */
-XMLRPC_VALUE m_vx_status(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+MPROTO(m_vx_status);
 
 /* vxdb */
-XMLRPC_VALUE m_vxdb_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
-XMLRPC_VALUE m_vxdb_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
+MPROTO(m_vxdb_get);
+MPROTO(m_vxdb_getacl);
+MPROTO(m_vxdb_set);
+MPROTO(m_vxdb_setacl);
+
+#undef MPROTO
 
 #endif

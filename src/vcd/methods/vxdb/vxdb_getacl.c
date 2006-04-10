@@ -24,17 +24,18 @@
 #include <string.h>
 #include <fcntl.h>
 
-#include "lucid.h"
+#include "confuse.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
 #include "log.h"
+#include "vxdb.h"
 
-XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *username, *password;
+	char *username, *acl_read = NULL, *acl_write = NULL;
 	
 	SDBM *db;
 	DATUM k, v;
@@ -43,18 +44,15 @@ XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
-	password = (char *) XMLRPC_VectorGetStringWithID(params, "password");
-	
-	if (!username || !password)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
-	
-	if (!auth_capable(auth, "auth.adduser") && !auth_isuser(auth, username))
+	if (!auth_capable(auth, "vxdb.getacl"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
+	username  = (char *) XMLRPC_VectorGetStringWithID(params, "username");
 	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDWR|O_CREAT, 0600);
+	if (!username)
+		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	
+	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDONLY, 0);
 	
 	if (db == NULL) {
 		LOGPWARN("sdbm_open");
@@ -66,25 +64,33 @@ XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	v = sdbm_fetch(db, k);
 	
-	if (v.dsize < 1) {
-		sdbm_close(db);
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
-	}
+	if (v.dsize > 0)
+		acl_read = strndup(v.dptr, v.dsize);
 	
-	v.dptr  = password;
-	v.dsize = strlen(v.dptr);
+	sdbm_close(db);
 	
-	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
-		LOGPWARN("sdbm_store");
-		sdbm_close(db);
+	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDONLY, 0);
+	
+	if (db == NULL) {
+		LOGPWARN("sdbm_open");
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
+	
+	k.dptr  = username;
+	k.dsize = strlen(k.dptr);
+	
+	v = sdbm_fetch(db, k);
+	
+	if (v.dsize > 0)
+		acl_write = strndup(v.dptr, v.dsize);
 	
 	sdbm_close(db);
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("read", acl_read, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("write", acl_write, 0));
 	
 	return response;
 }

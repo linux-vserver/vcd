@@ -34,31 +34,27 @@ XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *username, *buf, *acl = NULL;
+	char *username, *acl = NULL;
 	
 	SDBM *db;
 	DATUM k, v;
-	
-	uint64_t flags;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_isvalid(auth))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
+	if (!auth_capable(auth, "auth.getacl"))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
 	
 	if (!username)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	if (!auth_capable(auth, VCD_CAP_ADMIN) && !auth_isuser(auth, username))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+	if (!auth_exists(username))
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
-	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDWR|O_CREAT, 0600);
+	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0);
 	
 	if (db == NULL) {
 		LOGPWARN("sdbm_open");
@@ -70,24 +66,15 @@ XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	v = sdbm_fetch(db, k);
 	
-	if (v.dsize > 0) {
-		buf = malloc(v.dsize + 1);
-		bzero(buf, v.dsize + 1);
-		memcpy(buf, v.dptr, v.dsize);
-		flags = strtoull(buf, NULL, 10);
-		free(buf);
-		
-		if (flist64_tostr(vcd_caps_list, flags, &acl, ',') == -1)
-			return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	}
+	if (v.dsize > 0)
+		acl = strndup(v.dptr, v.dsize);
 	
 	sdbm_close(db);
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValuesToVector(response,
-	                         XMLRPC_CreateValueString("username", username, 0),
-	                         XMLRPC_CreateValueString("acl",      acl, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("acl", acl, 0));
 	
 	return response;
 }

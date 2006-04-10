@@ -36,6 +36,7 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_INT("listen-port",    13386,       CFGF_NONE),
 	CFG_INT("max-clients",    20,          CFGF_NONE),
 	CFG_INT("client-timeout", 30,          CFGF_NONE),
+	CFG_STR_LIST("admins",    NULL,        CFGF_NONE),
 	CFG_END()
 };
 

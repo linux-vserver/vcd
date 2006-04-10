@@ -39,7 +39,7 @@ int xid_byname(char *name, xid_t *xid)
 	char *buf;
 	char *db_file;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/map/xid", O_RDONLY, 0);
+	db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0);
 	
 	if (db == NULL) {
 		LOGPWARN("sdbm_open");
@@ -73,7 +73,7 @@ int xid_toname(xid_t xid, char **name)
 	
 	char *buf, *db_file, *xidstr;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/map/xid", O_RDONLY, 0);
+	db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0);
 	
 	if (db == NULL) {
 		LOGPWARN("sdbm_open");

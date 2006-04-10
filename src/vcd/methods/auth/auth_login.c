@@ -30,57 +30,19 @@
 #include "auth.h"
 #include "log.h"
 
-XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+XMLRPC_VALUE m_auth_login(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	XMLRPC_VALUE request, auth, params;
+	XMLRPC_VALUE request, auth;
 	XMLRPC_VALUE response;
-	char *username, *password;
-	
-	SDBM *db;
-	DATUM k, v;
+	char *username;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
-	params  = XMLRPC_VectorNext(request);
 	
-	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
-	password = (char *) XMLRPC_VectorGetStringWithID(params, "password");
-	
-	if (!username || !password)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
-	
-	if (!auth_capable(auth, "auth.adduser") && !auth_isuser(auth, username))
+	if (!auth_isvalid(auth))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
-	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDWR|O_CREAT, 0600);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	}
-	
-	k.dptr  = username;
-	k.dsize = strlen(k.dptr);
-	
-	v = sdbm_fetch(db, k);
-	
-	if (v.dsize < 1) {
-		sdbm_close(db);
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
-	}
-	
-	v.dptr  = password;
-	v.dsize = strlen(v.dptr);
-	
-	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
-		LOGPWARN("sdbm_store");
-		sdbm_close(db);
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	}
-	
-	sdbm_close(db);
+	username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
