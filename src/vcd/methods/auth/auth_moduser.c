@@ -52,6 +52,9 @@ XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_capable(auth, "auth.adduser") && !auth_isuser(auth, username))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
+	if (!auth_exists(username))
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
+	
 	mkdir(__LOCALSTATEDIR "/auth", 0600);
 	
 	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDWR|O_CREAT, 0600);
@@ -64,18 +67,10 @@ XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
 	
-	v = sdbm_fetch(db, k);
-	
-	if (v.dsize < 1) {
-		sdbm_close(db);
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
-	}
-	
 	v.dptr  = password;
 	v.dsize = strlen(v.dptr);
 	
 	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
-		LOGPWARN("sdbm_store");
 		sdbm_close(db);
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}

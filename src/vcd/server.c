@@ -357,7 +357,7 @@ void server_main(void)
 	struct sockaddr_in addr;
 	
 	/* open connection to syslog */
-	openlog("vcd/server", LOG_CONS|LOG_PID, LOG_DAEMON);
+	openlog("vcd/server", LOG_CONS|LOG_PID|LOG_PERROR, LOG_DAEMON);
 	
 	port = cfg_getint(cfg, "listen-port");
 	host = cfg_getstr(cfg, "listen-host");

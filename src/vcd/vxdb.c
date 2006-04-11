@@ -34,14 +34,16 @@
 #include "log.h"
 #include "vxdb.h"
 
-cfg_opt_t dlimit_OPTS[] = {
+static
+cfg_opt_t dlimit_VXDB[] = {
 	CFG_INT("inodes",   0, CFGF_NONE),
 	CFG_INT("space",    0, CFGF_NONE),
 	CFG_INT("reserved", 5, CFGF_NONE),
 	CFG_END()
 };
 
-cfg_opt_t init_OPTS[] = {
+static
+cfg_opt_t init_VXDB[] = {
 	CFG_STR("method",         "plain", CFGF_NONE),
 	CFG_INT("timeout",        30,      CFGF_NONE),
 	CFG_STR("runlevel-start", "3",     CFGF_NONE),
@@ -49,27 +51,31 @@ cfg_opt_t init_OPTS[] = {
 	CFG_END()
 };
 
-cfg_opt_t nx_addr_OPTS[] = {
+static
+cfg_opt_t nx_addr_VXDB[] = {
 	CFG_STR("ip",        NULL, CFGF_NONE),
 	CFG_STR("netmask",   NULL, CFGF_NONE),
 	CFG_STR("broadcast", NULL, CFGF_NONE),
 	CFG_END()
 };
 
-cfg_opt_t nx_OPTS[] = {
+static
+cfg_opt_t nx_VXDB[] = {
 	CFG_STR("flags", NULL,         CFGF_NONE),
-	CFG_SEC("addr",  nx_addr_OPTS, CFGF_MULTI),
+	CFG_SEC("addr",  nx_addr_VXDB, CFGF_MULTI),
 	CFG_END()
 };
 
-cfg_opt_t rlimit_OPTS[] = {
+static
+cfg_opt_t rlimit_VXDB[] = {
 	CFG_INT("min",  0, CFGF_NONE),
 	CFG_INT("soft", 0, CFGF_NONE),
 	CFG_INT("max",  0, CFGF_NONE),
 	CFG_END()
 };
 
-cfg_opt_t sched_OPTS[] = {
+static
+cfg_opt_t sched_VXDB[] = {
 	CFG_INT("fillrate",  0, CFGF_NONE),
 	CFG_INT("fillrate2", 0, CFGF_NONE),
 	CFG_INT("interval",  0, CFGF_NONE),
@@ -81,7 +87,8 @@ cfg_opt_t sched_OPTS[] = {
 	CFG_END()
 };
 
-cfg_opt_t uts_OPTS[] = {
+static
+cfg_opt_t uts_VXDB[] = {
 	CFG_STR("domainname", NULL, CFGF_NONE),
 	CFG_STR("machine",    NULL, CFGF_NONE),
 	CFG_STR("nodename",   NULL, CFGF_NONE),
@@ -91,7 +98,8 @@ cfg_opt_t uts_OPTS[] = {
 	CFG_END()
 };
 
-cfg_opt_t vx_OPTS[] = {
+static
+cfg_opt_t vx_VXDB[] = {
 	CFG_STR("bcaps",  NULL, CFGF_NONE),
 	CFG_STR("ccaps",  NULL, CFGF_NONE),
 	CFG_STR("flags",  NULL, CFGF_NONE),
@@ -103,14 +111,15 @@ cfg_opt_t vx_OPTS[] = {
 	CFG_END()
 };
 
-cfg_opt_t OPTS[] = {
-	CFG_SEC("dlimit", dlimit_OPTS, CFGF_MULTI | CFGF_TITLE),
-	CFG_SEC("init",   init_OPTS,   CFGF_NONE),
-	CFG_SEC("nx",     nx_OPTS,     CFGF_NONE),
-	CFG_SEC("rlimit", rlimit_OPTS, CFGF_MULTI | CFGF_TITLE),
-	CFG_SEC("sched",  sched_OPTS,  CFGF_NONE),
-	CFG_SEC("uts",    uts_OPTS,    CFGF_NONE),
-	CFG_SEC("vx",     vx_OPTS,     CFGF_NONE),
+static
+cfg_opt_t VXDB[] = {
+	CFG_SEC("dlimit", dlimit_VXDB, CFGF_MULTI | CFGF_TITLE),
+	CFG_SEC("init",   init_VXDB,   CFGF_NONE),
+	CFG_SEC("nx",     nx_VXDB,     CFGF_NONE),
+	CFG_SEC("rlimit", rlimit_VXDB, CFGF_MULTI | CFGF_TITLE),
+	CFG_SEC("sched",  sched_VXDB,  CFGF_NONE),
+	CFG_SEC("uts",    uts_VXDB,    CFGF_NONE),
+	CFG_SEC("vx",     vx_VXDB,     CFGF_NONE),
 	CFG_END()
 };
 
@@ -119,9 +128,7 @@ cfg_t *vxdb_open(char *name)
 	cfg_t *cfg;
 	char cfg_file[PATH_MAX];
 	
-	cfg = cfg_init(OPTS, CFGF_NOCASE);
-	
-	mkdir(__LOCALSTATEDIR "/vxdb", 0600);
+	cfg = cfg_init(VXDB, CFGF_NOCASE);
 	
 	snprintf(cfg_file, PATH_MAX, "%s/vxdb/%s", __LOCALSTATEDIR, name);
 	
@@ -182,6 +189,9 @@ int vxdb_addsec(cfg_t *cfg, char *key, char *title)
 	char *p1, *p2;
 	cfg_opt_t *opt;
 	
+	if (!cfg || !key || !title)
+		return errno = EINVAL, -1;
+	
 	p1 = strdup(key);
 	p2 = strchr(p1, '.');
 	*p2++ = '\0';
@@ -208,13 +218,11 @@ int vxdb_capable(XMLRPC_VALUE auth, char *name, char *key, int write)
 	
 	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
 	
-	if (auth_isadmin(auth))
-		return 1;
-	
 	if (!username || !auth_vxowner(auth, name))
 		return 0;
 	
-	mkdir(__LOCALSTATEDIR "/vxdb", 0600);
+	if (auth_isadmin(auth))
+		return 1;
 	
 	if (write == 0)
 		db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDONLY, 0);
@@ -236,7 +244,7 @@ int vxdb_capable(XMLRPC_VALUE auth, char *name, char *key, int write)
 	if (v.dsize > 0) {
 		buf = strndup(v.dptr, v.dsize);
 		
-		for (p = strsep(&buf, ","); p; p = strsep(&buf, ",")) {
+		while ((p = strsep(&buf, ",")) != NULL) {
 			if (strcmp(key, p) == 0) {
 				rc = 1;
 				break;

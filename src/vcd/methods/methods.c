@@ -23,23 +23,27 @@
 
 #include "methods.h"
 
+#define MREGISTER(NAME,FUNC)  XMLRPC_ServerRegisterMethod(s, NAME, FUNC)
+
 void registry_init(XMLRPC_SERVER s)
 {
 	/* auth */
-	XMLRPC_ServerRegisterMethod(s, "auth.adduser",  m_auth_adduser);
-	XMLRPC_ServerRegisterMethod(s, "auth.deluser",  m_auth_deluser);
-	XMLRPC_ServerRegisterMethod(s, "auth.getacl",   m_auth_getacl);
-	XMLRPC_ServerRegisterMethod(s, "auth.login",  m_auth_login);
-	XMLRPC_ServerRegisterMethod(s, "auth.moduser",  m_auth_moduser);
-	XMLRPC_ServerRegisterMethod(s, "auth.setacl",   m_auth_setacl);
-	XMLRPC_ServerRegisterMethod(s, "auth.userinfo", m_auth_userinfo);
+	MREGISTER("auth.adduser",  m_auth_adduser);
+	MREGISTER("auth.deluser",  m_auth_deluser);
+	MREGISTER("auth.getacl",   m_auth_getacl);
+	MREGISTER("auth.login",    m_auth_login);
+	MREGISTER("auth.moduser",  m_auth_moduser);
+	MREGISTER("auth.setacl",   m_auth_setacl);
+	MREGISTER("auth.userinfo", m_auth_userinfo);
 	
 	/* vx */
-	XMLRPC_ServerRegisterMethod(s, "vx.status", m_vx_status);
+	MREGISTER("vx.status", m_vx_status);
 
 	/* vxdb */
-	XMLRPC_ServerRegisterMethod(s, "vxdb.get",    m_vxdb_get);
-	XMLRPC_ServerRegisterMethod(s, "vxdb.getacl", m_vxdb_getacl);
-	XMLRPC_ServerRegisterMethod(s, "vxdb.set",    m_vxdb_set);
-	XMLRPC_ServerRegisterMethod(s, "vxdb.setacl", m_vxdb_setacl);
+	MREGISTER("vxdb.get",    m_vxdb_get);
+	MREGISTER("vxdb.getacl", m_vxdb_getacl);
+	MREGISTER("vxdb.set",    m_vxdb_set);
+	MREGISTER("vxdb.setacl", m_vxdb_setacl);
 }
+
+#undef MREGISTER

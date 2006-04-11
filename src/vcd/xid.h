@@ -22,5 +22,6 @@
 
 int xid_byname(char *name, xid_t *xid);
 int xid_toname(xid_t xid, char **name);
+int xid_isvalid(char *name, xid_t xid);
 
 #endif

@@ -117,7 +117,7 @@ int auth_isadmin(XMLRPC_VALUE auth)
 	
 	for (i = 0; i < m; i++) {
 		char *admin = cfg_getnstr(cfg, "admins", i);
-		syslog(LOG_DEBUG, "admins[%d]: %s", i, admin);
+		
 		if (strcmp(username, admin) == 0)
 			return 1;
 	}
@@ -139,8 +139,6 @@ int auth_capable(XMLRPC_VALUE auth, char *method)
 	
 	if (auth_isadmin(auth))
 		return 1;
-	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
 	
 	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0);
 	

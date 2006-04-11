@@ -25,6 +25,7 @@
 #include <fcntl.h>
 
 #include "confuse.h"
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"

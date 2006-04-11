@@ -18,9 +18,6 @@
 #ifndef _METHODS_AUTH_H
 #define _METHODS_AUTH_H
 
-#include <stdint.h>
-
-#include "lucid.h"
 #include "xmlrpc.h"
 
 int auth_isvalid(XMLRPC_VALUE auth);

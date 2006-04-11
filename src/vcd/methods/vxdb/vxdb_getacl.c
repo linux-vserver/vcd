@@ -25,6 +25,7 @@
 #include <fcntl.h>
 
 #include "confuse.h"
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -47,7 +48,7 @@ XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_capable(auth, "vxdb.getacl"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	username  = (char *) XMLRPC_VectorGetStringWithID(params, "username");
+	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
 	
 	if (!username)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");

@@ -35,26 +35,21 @@ XMLRPC_VALUE m_vx_status(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name;
 	
 	xid_t xid;
-	struct vx_info vxi = { 0, 0 };
-	
 	int run = 1;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_capable(auth, "vx.status"))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
-	
 	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
 	
-	if (!auth_vxowner(auth, name))
+	if (!auth_capable(auth, "vx.status") || !auth_vxowner(auth, name))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	if (xid_byname(name, &xid) == -1)
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (vx_get_info(xid, &vxi) == -1) {
+	if (vx_get_info(xid, NULL) == -1) {
 		if (errno == ESRCH)
 			run = 0;
 		else

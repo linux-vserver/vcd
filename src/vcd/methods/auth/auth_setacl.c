@@ -39,9 +39,6 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	SDBM *db;
 	DATUM k, v;
 	
-	uint64_t flags, mask;
-	char buf[21];
-	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);

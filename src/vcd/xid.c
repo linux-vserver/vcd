@@ -37,7 +37,7 @@ int xid_byname(char *name, xid_t *xid)
 	DATUM k, v;
 	
 	char *buf;
-	char *db_file;
+	xid_t foundxid;
 	
 	db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0);
 	
@@ -54,24 +54,27 @@ int xid_byname(char *name, xid_t *xid)
 	sdbm_close(db);
 	
 	if (v.dsize > 0) {
-		buf = malloc(v.dsize + 1);
-		bzero(buf, v.dsize + 1);
-		memcpy(buf, v.dptr, v.dsize);
-		*xid = atoi(buf);
+		buf = strndup(v.dptr, v.dsize);
+		foundxid = atoi(buf);
 		free(buf);
 	}
 	
-	return -1;
+	else
+		return errno = ESRCH, -1;
+	
+	*xid = foundxid;
+	return 0;
 }
 
 int xid_toname(xid_t xid, char **name)
 {
-	int rc = -1;
-	
 	SDBM *db;
 	DATUM k, v;
 	
-	char *buf, *db_file, *xidstr;
+	char *buf;
+	xid_t foundxid;
+	
+	*name = NULL;
 	
 	db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0);
 	
@@ -80,23 +83,49 @@ int xid_toname(xid_t xid, char **name)
 		return -1;
 	}
 	
-	asprintf(&xidstr, "%ul", xid);
-	
 	for (k = sdbm_firstkey(db); k.dsize > 0; k = sdbm_nextkey(db)) {
 		v = sdbm_fetch(db, k);
 		
-		if (strncmp(xidstr, v.dptr, v.dsize) == 0) {
-			buf = malloc(v.dsize + 1);
-			bzero(buf, v.dsize + 1);
-			memcpy(buf, v.dptr, v.dsize);
-			*name = buf;
-			rc = 0;
-			break;
+		if (v.dsize > 0) {
+			buf = strndup(v.dptr, v.dsize);
+			foundxid = atoi(buf);
+			free(buf);
+			
+			if (foundxid == xid) {
+				buf = strndup(k.dptr, k.dsize);
+				*name = buf;
+				break;
+			}
 		}
 	}
 	
-	free(xidstr);
 	sdbm_close(db);
 	
-	return rc;
+	if (*name)
+		return 0;
+	
+	return -1;
+}
+
+int xid_isvalid(char *name, xid_t xid)
+{
+	struct vx_vhi_name vhiname;
+	
+	bzero(&vhiname, sizeof(vhiname));
+	strncpy(vhiname.name, name, VHILEN);
+	
+	if (vx_get_info(xid, NULL) == -1) {
+		if (errno == ESRCH)
+			return 1;
+		else
+			return 0;
+	}
+	
+	if (vx_get_vhi_name(xid, &vhiname) == -1)
+		return 0;
+	
+	if (strcmp(name, vhiname.name) == 0)
+		return 1;
+	
+	return 0;
 }

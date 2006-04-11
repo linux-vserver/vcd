@@ -46,8 +46,6 @@ XMLRPC_VALUE m_auth_userinfo(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_capable(auth, "auth.userinfo"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
-	
 	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0);
 	
 	if (db == NULL) {
