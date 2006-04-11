@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <signal.h>
+#include <getopt.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
 
@@ -45,24 +46,46 @@ cfg_t *cfg;
 void collector_main(void);
 void server_main(void);
 
+static inline
+void usage(int rc)
+{
+	printf("Usage: vcd [<opts>*]\n\n"
+	       "\n"
+	       "Available options:\n"
+	       "   -c <file>     configuration file (default: %s/vcd.conf)\n"
+	       "   -d            debug mode (do not fork to background)\n",
+	       __LOCALSTATEDIR);
+	exit(rc);
+}
+
 int main(int argc, char **argv)
 {
-	char *cfg_file = NULL;
+	char *cfg_file = __SYSCONFDIR "/vcd.conf";
 	pid_t pid, server, collector;
-	int status;
+	int c, status, debug = 0;
+	
+	/* getopt */
+	while ((c = getopt (argc, argv, "dc:")) != -1) {
+		switch (c) {
+		case 'c':
+			cfg_file = optarg;
+			break;
+		
+		case 'd':
+			debug = 1;
+			break;
+		
+		default:
+			usage(EXIT_FAILURE);
+			break;
+		}
+	}
+	
+	if (argc > optind)
+		usage(EXIT_FAILURE);
 	
 	/* load configuration */
 	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
-	
-	if (argc > 2) {
-		printf("Usage: vcd [<configfile>]\n");
-		exit(EXIT_FAILURE);
-	}
-	
-	if (argc > 1)
-		cfg_file = argv[1];
-	else
-		cfg_file = __SYSCONFDIR "/vcd.conf";
 	
 	switch (cfg_parse(cfg, cfg_file)) {
 	case CFG_FILE_ERROR:
@@ -78,7 +101,12 @@ int main(int argc, char **argv)
 	}
 	
 	/* fork to background */
-	switch (fork()) {
+	if (debug)
+		pid = 0;
+	else
+		pid = fork();
+	
+	switch (pid) {
 	case -1:
 		perror("fork()");
 		exit(EXIT_FAILURE);
@@ -91,7 +119,7 @@ int main(int argc, char **argv)
 	}
 	
 	/* open connection to syslog */
-	openlog("vcd/master", LOG_CONS|LOG_PID, LOG_DAEMON);
+	openlog("vcd/master", LOG_CONS|LOG_PID|LOG_PERROR, LOG_DAEMON);
 	
 	/* daemon stuff */
 	umask(0);
@@ -102,11 +130,14 @@ int main(int argc, char **argv)
 	
 	close(STDIN_FILENO);
 	close(STDOUT_FILENO);
-	close(STDERR_FILENO);
 	
-	/* ignore some standard signals */
-	signal(SIGHUP,  SIG_IGN);
-	signal(SIGINT,  SIG_IGN);
+	if (!debug) {
+		close(STDERR_FILENO);
+		
+		/* ignore some standard signals */
+		signal(SIGHUP,  SIG_IGN);
+		signal(SIGINT,  SIG_IGN);
+	}
 	
 	/* start collector thread */
 	switch ((collector = fork())) {
