@@ -30,11 +30,11 @@
 #include "auth.h"
 #include "log.h"
 
-XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+XMLRPC_VALUE m_vx_setowners(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *username, *acl;
+	char *name, *owners;
 	
 	SDBM *db;
 	DATUM k, v;
@@ -43,31 +43,28 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_capable(auth, "auth.setacl"))
+	if (!auth_capable(auth, "vx.setowners"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
-	acl      = (char *) XMLRPC_VectorGetStringWithID(params, "acl");
+	name   = (char *) XMLRPC_VectorGetStringWithID(params, "username");
+	owners = (char *) XMLRPC_VectorGetStringWithID(params, "owners");
 	
-	if (!username || !acl)
+	if (!name || !owners)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	if (!auth_exists(username))
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+	mkdir(__LOCALSTATEDIR "/maps", 0600);
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
-	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDWR|O_CREAT, 0600);
+	db = sdbm_open(__LOCALSTATEDIR "/maps/owner", O_RDWR|O_CREAT, 0600);
 	
 	if (db == NULL) {
 		LOGPWARN("sdbm_open");
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	
-	k.dptr  = username;
+	k.dptr  = name;
 	k.dsize = strlen(k.dptr);
 	
-	v.dptr  = acl;
+	v.dptr  = owners;
 	v.dsize = strlen(v.dptr);
 	
 	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
@@ -79,7 +76,7 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 	
 	return response;
 }

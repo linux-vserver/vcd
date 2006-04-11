@@ -28,7 +28,11 @@ M_AUTH = auth/auth_adduser.c \
          auth/auth_setacl.c \
          auth/auth_userinfo.c
 
-M_VX = vx/vx_status.c
+M_VX = vx/vx_getname.c \
+       vx/vx_getowners.c \
+       vx/vx_getxid.c \
+       vx/vx_setowners.c \
+       vx/vx_status.c
 
 M_VXDB = vxdb/vxdb_get.c \
          vxdb/vxdb_getacl.c \
