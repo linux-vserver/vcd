@@ -35,8 +35,8 @@
 XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
-	XMLRPC_VALUE response;
-	char *username, *acl_read = NULL, *acl_write = NULL;
+	XMLRPC_VALUE response, keys_read, keys_write;
+	char *username, *p, *acl_read = NULL, *acl_write = NULL;
 	
 	SDBM *db;
 	DATUM k, v;
@@ -53,9 +53,10 @@ XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!username)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDONLY, 0);
+	if (!auth_exists(username))
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (db == NULL) {
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDONLY, 0))) {
 		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
@@ -70,9 +71,7 @@ XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	sdbm_close(db);
 	
-	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDONLY, 0);
-	
-	if (db == NULL) {
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDONLY, 0))) {
 		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
@@ -87,11 +86,21 @@ XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	sdbm_close(db);
 	
-	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	response   = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	keys_read  = XMLRPC_CreateVector("keys_read",  xmlrpc_vector_array);
+	keys_write = XMLRPC_CreateVector("keys_write", xmlrpc_vector_array);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("read", acl_read, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("write", acl_write, 0));
 	
+	while ((p = strsep(&acl_read, ",")) != NULL)
+		XMLRPC_AddValueToVector(keys_read, XMLRPC_CreateValueString(NULL, p, 0));
+	
+	XMLRPC_AddValueToVector(response, keys_read);
+	
+	while ((p = strsep(&acl_write, ",")) != NULL)
+		XMLRPC_AddValueToVector(keys_write, XMLRPC_CreateValueString(NULL, p, 0));
+	
+	XMLRPC_AddValueToVector(response, keys_write);
+		
 	return response;
 }

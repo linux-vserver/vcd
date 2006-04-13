@@ -33,7 +33,7 @@
 XMLRPC_VALUE m_auth_userinfo(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth;
-	XMLRPC_VALUE response;
+	XMLRPC_VALUE response, usernames;
 	
 	char *username;
 	
@@ -46,19 +46,20 @@ XMLRPC_VALUE m_auth_userinfo(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_capable(auth, "auth.userinfo"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0);
-	
-	if (db == NULL) {
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0))) {
 		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	
-	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_array);
+	response  = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	usernames = XMLRPC_CreateVector("usernames", xmlrpc_vector_array);
 	
 	for (k = sdbm_firstkey(db); k.dsize > 0; k = sdbm_nextkey(db)) {
 		username = strndup(k.dptr, k.dsize);
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString(NULL, username, 0));
+		XMLRPC_AddValueToVector(usernames, XMLRPC_CreateValueString(NULL, username, 0));
 	}
+	
+	XMLRPC_AddValueToVector(response, usernames);
 	
 	sdbm_close(db);
 	return response;

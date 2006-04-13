@@ -33,8 +33,8 @@
 XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
-	XMLRPC_VALUE response;
-	char *username, *acl = NULL;
+	XMLRPC_VALUE response, methods;
+	char *username, *acl = NULL, *p;
 	
 	SDBM *db;
 	DATUM k, v;
@@ -54,9 +54,7 @@ XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_exists(username))
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0);
-	
-	if (db == NULL) {
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0))) {
 		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
@@ -72,9 +70,14 @@ XMLRPC_VALUE m_auth_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	sdbm_close(db);
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	methods  = XMLRPC_CreateVector("methods", xmlrpc_vector_array);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("acl", acl, 0));
+	
+	while ((p = strsep(&acl, ",")) != NULL)
+		XMLRPC_AddValueToVector(methods, XMLRPC_CreateValueString(NULL, p, 0));
+	
+	XMLRPC_AddValueToVector(response, methods);
 	
 	return response;
 }

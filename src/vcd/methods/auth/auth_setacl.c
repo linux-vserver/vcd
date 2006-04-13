@@ -32,9 +32,13 @@
 
 XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	XMLRPC_VALUE request, auth, params;
+	XMLRPC_VALUE request, auth, params, methods;
 	XMLRPC_VALUE response;
-	char *username, *acl;
+	XMLRPC_VALUE iter;
+	char *username, *method;
+	
+	int i;
+	STRALLOC acl;
 	
 	SDBM *db;
 	DATUM k, v;
@@ -47,19 +51,15 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	username = (char *) XMLRPC_VectorGetStringWithID(params, "username");
-	acl      = (char *) XMLRPC_VectorGetStringWithID(params, "acl");
+	methods  =          XMLRPC_VectorGetValueWithID(params,  "methods");
 	
-	if (!username || !acl)
+	if (!username || !methods || XMLRPC_VectorSize(methods) < 1)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
 	if (!auth_exists(username))
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
-	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDWR|O_CREAT, 0600);
-	
-	if (db == NULL) {
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDWR|O_CREAT, 0600))) {
 		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
@@ -67,8 +67,20 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
 	
-	v.dptr  = acl;
-	v.dsize = strlen(v.dptr);
+	stralloc_init(&acl);
+	iter = XMLRPC_VectorRewind(methods);
+	
+	while (iter) {
+		method = (char *) XMLRPC_GetValueString(iter);
+		
+		stralloc_cats(&acl, method);
+		stralloc_cats(&acl, ",");
+		
+		iter = XMLRPC_VectorNext(methods);
+	}
+	
+	v.dptr  = acl.s;
+	v.dsize = acl.len - 1;
 	
 	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
 		sdbm_close(db);
@@ -76,6 +88,7 @@ XMLRPC_VALUE m_auth_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	}
 	
 	sdbm_close(db);
+	stralloc_free(&acl);
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	

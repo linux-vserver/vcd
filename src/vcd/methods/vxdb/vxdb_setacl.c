@@ -34,9 +34,13 @@
 
 XMLRPC_VALUE m_vxdb_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	XMLRPC_VALUE request, auth, params;
+	XMLRPC_VALUE request, auth, params, keys_read, keys_write;
 	XMLRPC_VALUE response;
-	char *username, *acl_read, *acl_write;
+	XMLRPC_VALUE iter;
+	char *username, *key;
+	
+	int i;
+	STRALLOC acl_read, acl_write;
 	
 	SDBM *db;
 	DATUM k, v;
@@ -48,19 +52,18 @@ XMLRPC_VALUE m_vxdb_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_capable(auth, "vxdb.getacl"))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	username  = (char *) XMLRPC_VectorGetStringWithID(params, "username");
-	acl_read  = (char *) XMLRPC_VectorGetStringWithID(params, "acl_read");
-	acl_write = (char *) XMLRPC_VectorGetStringWithID(params, "acl_write");
+	username   = (char *) XMLRPC_VectorGetStringWithID(params, "username");
+	keys_read  =          XMLRPC_VectorGetValueWithID(params,  "keys_read");
+	keys_write =          XMLRPC_VectorGetValueWithID(params,  "keys_write");
 	
 	if (!username)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	mkdir(__LOCALSTATEDIR "/vxdb", 0600);
+	if (!auth_exists(username))
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (acl_read) {
-		db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDWR|O_CREAT, 0600);
-		
-		if (db == NULL) {
+	if (keys_read) {
+		if (!(db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDWR|O_CREAT, 0600))) {
 			log_warn("sdbm_open: %s", strerror(errno));
 			return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 		}
@@ -68,8 +71,20 @@ XMLRPC_VALUE m_vxdb_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		k.dptr  = username;
 		k.dsize = strlen(k.dptr);
 		
-		v.dptr  = acl_read;
-		v.dsize = strlen(v.dptr);
+		stralloc_init(&acl_read);
+		iter = XMLRPC_VectorRewind(keys_read);
+		
+		while (iter) {
+			key = (char *) XMLRPC_GetValueString(iter);
+			
+			stralloc_cats(&acl_read, key);
+			stralloc_cats(&acl_read, ",");
+			
+			iter = XMLRPC_VectorNext(keys_read);
+		}
+		
+		v.dptr  = acl_read.s;
+		v.dsize = acl_read.len - 1;
 		
 		if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
 			sdbm_close(db);
@@ -77,12 +92,11 @@ XMLRPC_VALUE m_vxdb_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		}
 		
 		sdbm_close(db);
+		stralloc_free(&acl_read);
 	}
 	
-	if (acl_write) {
-		db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDWR|O_CREAT, 0600);
-		
-		if (db == NULL) {
+	if (keys_write) {
+		if (!(db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDWR|O_CREAT, 0600))) {
 			log_warn("sdbm_open: %s", strerror(errno));
 			return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 		}
@@ -90,8 +104,20 @@ XMLRPC_VALUE m_vxdb_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		k.dptr  = username;
 		k.dsize = strlen(k.dptr);
 		
-		v.dptr  = acl_write;
-		v.dsize = strlen(v.dptr);
+		stralloc_init(&acl_write);
+		iter = XMLRPC_VectorRewind(keys_write);
+		
+		while (iter) {
+			key = (char *) XMLRPC_GetValueString(iter);
+			
+			stralloc_cats(&acl_write, key);
+			stralloc_cats(&acl_write, ",");
+			
+			iter = XMLRPC_VectorNext(keys_write);
+		}
+		
+		v.dptr  = acl_write.s;
+		v.dsize = acl_write.len - 1;
 		
 		if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
 			sdbm_close(db);
@@ -99,6 +125,7 @@ XMLRPC_VALUE m_vxdb_setacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		}
 		
 		sdbm_close(db);
+		stralloc_free(&acl_read);
 	}
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);

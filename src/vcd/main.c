@@ -74,10 +74,8 @@ void signal_handler(int sig, siginfo_t *siginfo, void *u)
 		else if (siginfo->si_pid == server)
 			log_error("Unexpected death of server");
 		
-		else {
+		else
 			log_warn("Caught SIGCHLD for unknown PID %d", siginfo->si_pid);
-			return;
-		}
 		
 		break;
 	
@@ -230,5 +228,6 @@ int main(int argc, char **argv)
 	
 	log_info("Resuming normal operation");
 	
-	while (1) {;}
+	while (1)
+		sleep(1);
 }

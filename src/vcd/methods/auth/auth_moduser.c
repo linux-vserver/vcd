@@ -55,11 +55,7 @@ XMLRPC_VALUE m_auth_moduser(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_exists(username))
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	mkdir(__LOCALSTATEDIR "/auth", 0600);
-	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDWR|O_CREAT, 0600);
-	
-	if (db == NULL) {
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDWR|O_CREAT, 0600))) {
 		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}

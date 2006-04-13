@@ -73,22 +73,18 @@ XMLRPC_VALUE m_vxdb_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	switch (XMLRPC_GetValueType(val)) {
 	case xmlrpc_boolean:
 		cfg_opt_setnbool(opt, XMLRPC_GetValueBoolean(val), 0);
-		XMLRPC_AddValueToVector(response, val);
 		break;
 	
 	case xmlrpc_double:
 		cfg_opt_setnfloat(opt, XMLRPC_GetValueDouble(val), 0);
-		XMLRPC_AddValueToVector(response, val);
 		break;
 	
 	case xmlrpc_int:
 		cfg_opt_setnint(opt, XMLRPC_GetValueInt(val), 0);
-		XMLRPC_AddValueToVector(response, val);
 		break;
 	
 	case xmlrpc_string:
 		cfg_opt_setnstr(opt, XMLRPC_GetValueString(val), 0);
-		XMLRPC_AddValueToVector(response, val);
 		break;
 	
 	default:

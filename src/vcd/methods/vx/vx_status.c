@@ -59,7 +59,6 @@ XMLRPC_VALUE m_vx_status(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("xid", xid));
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueBoolean("running", run));
 	
 	return response;
