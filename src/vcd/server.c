@@ -39,7 +39,7 @@
 
 extern cfg_t *cfg;
 static XMLRPC_SERVER xmlrpc_server;
-static int cfd, num_clients;
+static int sfd, cfd, num_clients;
 
 typedef struct {
 	int id;
@@ -228,8 +228,6 @@ void handle_client(int cfd)
 	char *line = NULL, *req = NULL, *res = NULL;
 	
 	/* setup some standard signals */
-	signal(SIGHUP,  SIG_IGN);
-	signal(SIGINT,  SIG_IGN);
 	signal(SIGTERM, client_signal_handler);
 	
 	/* timeout */
@@ -336,7 +334,7 @@ close:
 }
 
 static
-void server_signal_handler(int sig)
+void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 {
 	switch (sig) {
 	case SIGCHLD:
@@ -345,68 +343,91 @@ void server_signal_handler(int sig)
 		break;
 	
 	case SIGTERM:
+		log_info("Caught SIGTERM -- shutting down");
+		
+		signal(SIGCHLD, SIG_IGN);
 		kill(0, SIGTERM);
+		
+		close(sfd);
+		
 		exit(EXIT_FAILURE);
 	}
 }
 
 void server_main(void)
 {
-	int port, sfd, i, max_clients;
-	char *host;
+	int port, i, max_clients;
+	char *host, peer[INET_ADDRSTRLEN];
+	socklen_t peerlen;
 	struct sockaddr_in addr;
+	struct sigaction act;
 	
-	/* open connection to syslog */
-	openlog("vcd/server", LOG_CONS|LOG_PID|LOG_PERROR, LOG_DAEMON);
+	log_init("server", 0);
+	log_info("Loading configuration");
 	
 	port = cfg_getint(cfg, "listen-port");
 	host = cfg_getstr(cfg, "listen-host");
-	
-	max_clients = cfg_getint(cfg, "max-clients");
-	
-	/* setup xmlrpc server */
-	xmlrpc_server = XMLRPC_ServerCreate();
-	registry_init(xmlrpc_server);
-	
-	/* setup some standard signals */
-	signal(SIGHUP,  SIG_IGN);
-	signal(SIGINT,  SIG_IGN);
-	signal(SIGTERM, server_signal_handler);
-	signal(SIGCHLD, server_signal_handler);
-	
-	/* setup listen socket */
-	sfd = socket(AF_INET, SOCK_STREAM, 0);
-	
-	if (sfd == -1)
-		LOGPERR("socket");
 	
 	bzero(&addr, sizeof(addr));
 	
 	addr.sin_family = AF_INET;
 	addr.sin_port   = htons(port);
 	
-	if (!inet_pton(AF_INET, host, &addr.sin_addr)) {
-		LOGWARN("invalid listen host. using fallback");
+	if (inet_pton(AF_INET, host, &addr.sin_addr) < 1) {
+		log_warn("Invalid configuration for listen-host: %s", host);
+		log_info("Using fallback listen-host: 127.0.0.1");
 		inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
 	}
 	
-	if (bind(sfd, (struct sockaddr *) &addr,
-	    sizeof(struct sockaddr_in)) == -1)
-		LOGPERR("bind");
+	max_clients = cfg_getint(cfg, "max-clients");
+	
+	/* handle these signals on our own */
+	sigfillset(&act.sa_mask);
+	
+	act.sa_flags     = SA_SIGINFO;
+	act.sa_sigaction = server_signal_handler;
+	
+	sigaction(SIGCHLD, &act, NULL);
+	
+	sigdelset(&act.sa_mask, SIGCHLD);
+	sigaction(SIGTERM, &act, NULL);
+	
+	/* setup listen socket */
+	sfd = socket(AF_INET, SOCK_STREAM, 0);
+	
+	if (sfd == -1)
+		log_error_and_die("socket: %s", strerror(errno));
+	
+	if (bind(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_in)) == -1)
+		log_error_and_die("bind: %s", strerror(errno));
 	
 	if (listen(sfd, 20) == -1)
-		LOGPERR("listen");
+		log_error_and_die("listen: %s", strerror(errno));
+	
+	/* setup xmlrpc server */
+	xmlrpc_server = XMLRPC_ServerCreate();
+	registry_init(xmlrpc_server);
+	
+	log_info("Accepting incoming connections on %s:%d", host, port);
 	
 	/* wait and create a new child for each connection */
 	while (1) {
 		cfd = accept(sfd, NULL, 0);
 		
 		if (cfd == -1) {
-			LOGPWARN("accept");
+			if (errno != EINTR)
+				log_warn("accept: %s", strerror(errno));
+			
 			continue;
 		}
 		
+		peerlen = sizeof(struct sockaddr_in);
+		getpeername(cfd, (struct sockaddr *) &addr, &peerlen);
+		inet_ntop(AF_INET, &addr.sin_addr, peer, INET_ADDRSTRLEN);
+		
 		if (num_clients >= max_clients) {
+			log_warn("Maximum number of connections reached");
+			log_info("Rejecting client from %s", peer);
 			httpd_send_headers(cfd, 503, 0);
 			close(cfd);
 			continue;
@@ -414,10 +435,11 @@ void server_main(void)
 		
 		switch (fork()) {
 		case -1:
-			LOGPWARN("fork");
+			log_warn("fork: %s", strerror(errno));
 			break;
 		
 		case 0:
+			log_info("New connection from %s", peer);
 			close(sfd);
 			handle_client(cfd);
 			break;

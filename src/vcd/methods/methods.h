@@ -35,7 +35,12 @@ MPROTO(m_auth_setacl);
 MPROTO(m_auth_userinfo);
 
 /* vx */
+MPROTO(m_vx_getowners);
+MPROTO(m_vx_restart);
+MPROTO(m_vx_setowners);
+MPROTO(m_vx_start);
 MPROTO(m_vx_status);
+MPROTO(m_vx_stop);
 
 /* vxdb */
 MPROTO(m_vxdb_get);

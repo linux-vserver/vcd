@@ -45,12 +45,8 @@ int auth_isvalid(XMLRPC_VALUE auth)
 	if (!username || !password)
 		return 0;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return 0;
-	}
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0)))
+		return log_warn("sdbm_open: %s", strerror(errno)), 0;
 	
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
@@ -73,12 +69,8 @@ int auth_exists(char *username)
 	if (!username)
 		return 0;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return 0;
-	}
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0)))
+		return log_warn("sdbm_open: %s", strerror(errno)), 0;
 	
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
@@ -140,12 +132,8 @@ int auth_capable(XMLRPC_VALUE auth, char *method)
 	if (auth_isadmin(auth))
 		return 1;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return 0;
-	}
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0)))
+		return log_warn("sdbm_open: %s", strerror(errno)), 0;
 	
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);
@@ -184,12 +172,8 @@ int auth_vxowner(XMLRPC_VALUE auth, char *name)
 	if (auth_isadmin(auth))
 		return 1;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/maps/owner", O_RDONLY, 0);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return 0;
-	}
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/maps/owner", O_RDONLY, 0)))
+		return log_warn("sdbm_open: %s", strerror(errno)), 0;
 	
 	k.dptr  = (char *) name;
 	k.dsize = strlen(k.dptr);

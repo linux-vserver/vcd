@@ -56,7 +56,7 @@ XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_read", O_RDONLY, 0);
 	
 	if (db == NULL) {
-		LOGPWARN("sdbm_open");
+		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	
@@ -73,7 +73,7 @@ XMLRPC_VALUE m_vxdb_getacl(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDONLY, 0);
 	
 	if (db == NULL) {
-		LOGPWARN("sdbm_open");
+		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	

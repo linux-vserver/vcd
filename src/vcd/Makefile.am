@@ -29,6 +29,7 @@ noinst_HEADERS = auth.h \
 sbin_PROGRAMS = vcd
 
 vcd_SOURCES = auth.c \
+              log.c \
               collector.c \
               main.c \
               server.c \

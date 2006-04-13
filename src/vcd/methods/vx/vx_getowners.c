@@ -54,7 +54,7 @@ XMLRPC_VALUE m_vx_getowners(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	db = sdbm_open(__LOCALSTATEDIR "/maps/owner", O_RDONLY, 0);
 	
 	if (db == NULL) {
-		LOGPWARN("sdbm_open");
+		log_warn("sdbm_open: %s", strerror(errno));
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	}
 	
@@ -70,7 +70,7 @@ XMLRPC_VALUE m_vx_getowners(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("username", username, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name",   name, 0));
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("owners", owners, 0));
 	
 	return response;

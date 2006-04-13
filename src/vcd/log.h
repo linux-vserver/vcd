@@ -19,24 +19,22 @@
 #define _VCD_LOG_H
 
 #include <errno.h>
-#include <syslog.h>
 
-#define LOGWARN(MSG) do { \
-	syslog(LOG_ERR, "%s(): %s", __FUNCTION__, MSG); \
-} while(0)
+#define LOG_DEBG  4
+#define LOG_INFO  3
+#define LOG_WARN  2
+#define LOG_ERR   1
 
-#define LOGPWARN(MSG) do { \
-	syslog(LOG_ERR, "%s(): %s: %s", __FUNCTION__, MSG, strerror(errno)); \
-} while(0)
+int  log_init (char *ident, int level);
 
-#define LOGERR(MSG) do { \
-	syslog(LOG_ERR, "%s(): %s", __FUNCTION__, MSG); \
-	exit(EXIT_FAILURE); \
-} while(0)
+void log_debug(char *fmt, ...);
+void log_info (char *fmt, ...);
+void log_warn (char *fmt, ...);
+void log_error(char *fmt, ...);
 
-#define LOGPERR(MSG) do { \
-	syslog(LOG_ERR, "%s(): %s: %s", __FUNCTION__, MSG, strerror(errno)); \
-	exit(EXIT_FAILURE); \
-} while(0)
+void log_debug_and_die(char *fmt, ...);
+void log_info_and_die (char *fmt, ...);
+void log_warn_and_die (char *fmt, ...);
+void log_error_and_die(char *fmt, ...);
 
 #endif

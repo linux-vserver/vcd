@@ -39,12 +39,8 @@ int xid_byname(char *name, xid_t *xid)
 	char *buf;
 	xid_t foundxid;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return -1;
-	}
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0)))
+		return log_warn("sdbm_open: %s", strerror(errno)), -1;
 	
 	k.dptr  = name;
 	k.dsize = strlen(k.dptr);
@@ -76,12 +72,8 @@ int xid_toname(xid_t xid, char **name)
 	
 	*name = NULL;
 	
-	db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0);
-	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return -1;
-	}
+	if (!(db = sdbm_open(__LOCALSTATEDIR "/maps/xid", O_RDONLY, 0)))
+		return log_warn("sdbm_open: %s", strerror(errno)), -1;
 	
 	for (k = sdbm_firstkey(db); k.dsize > 0; k = sdbm_nextkey(db)) {
 		v = sdbm_fetch(db, k);

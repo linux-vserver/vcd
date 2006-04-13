@@ -229,10 +229,8 @@ int vxdb_capable(XMLRPC_VALUE auth, char *name, char *key, int write)
 	else
 		db = sdbm_open(__LOCALSTATEDIR "/vxdb/acl_write", O_RDONLY, 0);
 	
-	if (db == NULL) {
-		LOGPWARN("sdbm_open");
-		return 0;
-	}
+	if (!db)
+		return log_warn("sdbm_open: %s", strerror(errno)), 0;
 	
 	k.dptr  = username;
 	k.dsize = strlen(k.dptr);

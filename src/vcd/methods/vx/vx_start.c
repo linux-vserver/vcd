@@ -19,45 +19,38 @@
 #include <config.h>
 #endif
 
-#include "pathconfig.h"
+#include <errno.h>
+#include <vserver.h>
 
-#include <string.h>
-#include <fcntl.h>
-
-#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "log.h"
+#include "vxdb.h"
+#include "xid.h"
 
-XMLRPC_VALUE m_vx_getxid(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+XMLRPC_VALUE m_vx_start(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	xid_t xid = 0;
 	char *name;
-	
-	SDBM *db;
-	DATUM k, v;
+	xid_t xid;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_capable(auth, "vx.getname"))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
-	
 	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
 	
-	if (!name)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	if (!auth_capable(auth, "vx.start") || !auth_vxowner(auth, name))
+		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	if (xid_byname(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
+	
+	/* do start here */
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("xid", xid));
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 	
 	return response;

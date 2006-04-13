@@ -19,6 +19,8 @@
 #include <config.h>
 #endif
 
+#include "pathconfig.h"
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,16 +30,17 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include "pathconfig.h"
 #include "confuse.h"
 #include "log.h"
 
 static cfg_opt_t CFG_OPTS[] = {
-	CFG_STR("listen-host",    "127.0.0.1", CFGF_NONE),
-	CFG_INT("listen-port",    13386,       CFGF_NONE),
-	CFG_INT("max-clients",    20,          CFGF_NONE),
-	CFG_INT("client-timeout", 30,          CFGF_NONE),
-	CFG_STR_LIST("admins",    NULL,        CFGF_NONE),
+	CFG_STR("listen-host",    "127.0.0.1",    CFGF_NONE),
+	CFG_INT("listen-port",    13386,          CFGF_NONE),
+	CFG_INT("max-clients",    20,             CFGF_NONE),
+	CFG_INT("client-timeout", 30,             CFGF_NONE),
+	CFG_STR_LIST("admins",    NULL,           CFGF_NONE),
+	CFG_STR("log-dir",        "/var/log/vcd", CFGF_NONE),
+	CFG_INT("log-level",      3,              CFGF_NONE),
 	CFG_END()
 };
 
@@ -45,6 +48,8 @@ cfg_t *cfg;
 
 void collector_main(void);
 void server_main(void);
+
+static pid_t server, collector;
 
 static inline
 void usage(int rc)
@@ -58,11 +63,53 @@ void usage(int rc)
 	exit(rc);
 }
 
+static
+void signal_handler(int sig, siginfo_t *siginfo, void *u)
+{
+	switch (sig) {
+	case SIGCHLD:
+		if (siginfo->si_pid == collector)
+			log_error("Unexpected death of collector");
+		
+		else if (siginfo->si_pid == server)
+			log_error("Unexpected death of server");
+		
+		else {
+			log_warn("Caught SIGCHLD for unknown PID %d", siginfo->si_pid);
+			return;
+		}
+		
+		break;
+	
+	case SIGINT:
+		log_info("Interrupt from keyboard -- shutting down");
+		break;
+	
+	case SIGTERM:
+		log_info("Caught SIGTERM -- shutting down");
+		break;
+	}
+	
+	signal(SIGCHLD, SIG_IGN);
+	kill(0, SIGTERM);
+	
+	exit(EXIT_FAILURE);
+}
+
+static
+void reset_signals(void)
+{
+	signal(SIGINT,  SIG_IGN);
+	signal(SIGCHLD, SIG_DFL);
+	signal(SIGTERM, SIG_DFL);
+}
+
 int main(int argc, char **argv)
 {
 	char *cfg_file = __SYSCONFDIR "/vcd.conf";
-	pid_t pid, server, collector;
+	pid_t pid = 0;
 	int c, status, debug = 0;
+	struct sigaction act;
 	
 	/* getopt */
 	while ((c = getopt (argc, argv, "dc:")) != -1) {
@@ -93,23 +140,26 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	
 	case CFG_PARSE_ERROR:
-		printf("cfg_parse: parse error");
+		dprintf(STDERR_FILENO, "cfg_parse: Parse error");
 		exit(EXIT_FAILURE);
 	
 	default:
 		break;
 	}
 	
+	/* start logging & debugging */
+	if (log_init("master", debug) == -1) {
+		perror("log_init");
+		exit(EXIT_FAILURE);
+	}
+	
 	/* fork to background */
-	if (debug)
-		pid = 0;
-	else
+	if (!debug)
 		pid = fork();
 	
 	switch (pid) {
 	case -1:
-		perror("fork()");
-		exit(EXIT_FAILURE);
+		log_error_and_die("fork: %s", strerror(errno));
 	
 	case 0:
 		break;
@@ -118,70 +168,67 @@ int main(int argc, char **argv)
 		exit(EXIT_SUCCESS);
 	}
 	
-	/* open connection to syslog */
-	openlog("vcd/master", LOG_CONS|LOG_PID|LOG_PERROR, LOG_DAEMON);
-	
 	/* daemon stuff */
 	umask(0);
 	setsid();
-	
-	if (chdir("/"))
-		LOGPERR("chdir(/)");
+	chdir("/");
 	
 	close(STDIN_FILENO);
 	close(STDOUT_FILENO);
 	
-	if (!debug) {
+	if (!debug)
 		close(STDERR_FILENO);
-		
-		/* ignore some standard signals */
-		signal(SIGHUP,  SIG_IGN);
-		signal(SIGINT,  SIG_IGN);
-	}
 	
-	/* start collector thread */
+	/* ignore some standard signals */
+	signal(SIGHUP,  SIG_IGN);
+	signal(SIGQUIT, SIG_IGN);
+	signal(SIGABRT, SIG_IGN);
+	
+	if (!debug)
+		signal(SIGINT,  SIG_IGN);
+	
+	/* handle these signals on our own */
+	sigfillset(&act.sa_mask);
+	
+	act.sa_flags     = SA_SIGINFO;
+	act.sa_sigaction = signal_handler;
+	
+	sigaction(SIGTERM, &act, NULL);
+	sigaction(SIGCHLD, &act, NULL);
+	
+	if (debug)
+		sigaction(SIGINT, &act, NULL);
+	
+	/* start threads */
+	log_info("Starting collector thread");
+	
 	switch ((collector = fork())) {
 	case -1:
-		LOGPERR("fork(collector)");
+		log_error_and_die("fork: %s", strerror(errno));
 	
 	case 0:
+		reset_signals();
 		collector_main();
 	
 	default:
 		break;
 	}
 	
-	/* start server thread */
+	log_info("Starting XMLRPC server thread");
+	
 	switch ((server = fork())) {
 	case -1:
-		LOGPERR("fork(server)");
+		log_error_and_die("fork: %s", strerror(errno));
 	
 	case 0:
+		reset_signals();
 		server_main();
 	
 	default:
 		break;
 	}
 	
-	/* our children only die due to errors */
-	pid = waitpid(0, &status, 0);
+	log_info("Resuming normal operation");
 	
-	if (pid == -1) {
-		if (errno == ECHILD)
-			LOGERR("death of all children. following.");
-		else
-			LOGPWARN("waitpid()");
-	}
-	
-	else if (pid == collector)
-		LOGWARN("collector died. following.");
-	
-	else if (pid == server)
-		LOGWARN("server died. following.");
-	
-	else
-		LOGWARN("unknown child died. following.");
-	
-	kill(0, SIGTERM);
-	return EXIT_FAILURE;
+	while (1) {;}
 }

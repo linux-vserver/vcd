@@ -19,60 +19,35 @@
 #include <config.h>
 #endif
 
-#include "pathconfig.h"
+#include <errno.h>
+#include <vserver.h>
 
-#include <string.h>
-#include <fcntl.h>
-
-#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "log.h"
+#include "vxdb.h"
+#include "xid.h"
 
-XMLRPC_VALUE m_vx_setowners(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+XMLRPC_VALUE m_vx_restart(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	XMLRPC_VALUE request, auth, params;
 	XMLRPC_VALUE response;
-	char *name, *owners;
-	
-	SDBM *db;
-	DATUM k, v;
+	char *name;
+	xid_t xid;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	if (!auth_capable(auth, "vx.setowners"))
+	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
+	
+	if (!auth_capable(auth, "vx.restart") || !auth_vxowner(auth, name))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	name   = (char *) XMLRPC_VectorGetStringWithID(params, "username");
-	owners = (char *) XMLRPC_VectorGetStringWithID(params, "owners");
+	if (xid_byname(name, &xid) == -1)
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (!name || !owners)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
-	
-	mkdir(__LOCALSTATEDIR "/maps", 0600);
-	
-	db = sdbm_open(__LOCALSTATEDIR "/maps/owner", O_RDWR|O_CREAT, 0600);
-	
-	if (db == NULL) {
-		log_warn("sdbm_open: %s", strerror(errno));
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	}
-	
-	k.dptr  = name;
-	k.dsize = strlen(k.dptr);
-	
-	v.dptr  = owners;
-	v.dsize = strlen(v.dptr);
-	
-	if (sdbm_store(db, k, v, SDBM_REPLACE) == -1) {
-		sdbm_close(db);
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	}
-	
-	sdbm_close(db);
+	/* do restart here */
 	
 	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	

@@ -37,7 +37,12 @@ void registry_init(XMLRPC_SERVER s)
 	MREGISTER("auth.userinfo", m_auth_userinfo);
 	
 	/* vx */
-	MREGISTER("vx.status", m_vx_status);
+	MREGISTER("vx.getowners", m_vx_getowners);
+	MREGISTER("vx.restart",   m_vx_restart);
+	MREGISTER("vx.setowners", m_vx_setowners);
+	MREGISTER("vx.start",     m_vx_start);
+	MREGISTER("vx.status",    m_vx_status);
+	MREGISTER("vx.stop",      m_vx_stop);
 
 	/* vxdb */
 	MREGISTER("vxdb.get",    m_vxdb_get);
