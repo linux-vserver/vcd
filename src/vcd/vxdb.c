@@ -152,13 +152,23 @@ void vxdb_close(cfg_t *cfg)
 
 int vxdb_closewrite(cfg_t *cfg)
 {
-	FILE *fp = fopen(cfg->filename, "w");
+	int fd   = open_write(cfg->filename);
+	FILE *fp = fdopen(fd, "w");
 	
-	if (!fp)
+	if (fd < 0 || !fp)
 		return -1;
+	
+	while ((flock(fd, LOCK_EX)) == -1 && errno == EINTR)
+		continue;
 	
 	cfg_print(cfg, fp);
 	cfg_free(cfg);
+	
+	while ((flock(fd, LOCK_UN)) == -1 && errno == EINTR)
+		continue;
+	
+	fclose(fp);
+	close(fd);
 	
 	return 0;
 }
