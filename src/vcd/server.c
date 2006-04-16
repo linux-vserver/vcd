@@ -262,19 +262,26 @@ void client_signal_handler(int sig)
 static
 gnutls_session_t initialize_tls_session(void)
 {
+	int rc;
 	gnutls_session_t session;
 	const int kx_prio[] = { GNUTLS_KX_ANON_DH, 0 };
 	
-	gnutls_init (&session, GNUTLS_SERVER);
-	gnutls_set_default_priority (session);
+	if ((rc = gnutls_init(&session, GNUTLS_SERVER)) < 0)
+		log_error_and_die("gnuttls_init: %s", gnutls_strerror(rc));
+	
+	gnutls_set_default_priority(session);
 	
 	if (tls_mode == TLS_ANON) {
 		gnutls_kx_set_priority(session, kx_prio);
-		gnutls_credentials_set(session, GNUTLS_CRD_ANON, anon);
+		
+		if ((rc = gnutls_credentials_set(session, GNUTLS_CRD_ANON, anon)) < 0)
+			log_error_and_die("gnuttls_credentials_set: %s", gnutls_strerror(rc));
 	}
 	
 	else if (tls_mode == TLS_X509) {
-		gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, x509);
+		if ((rc = gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, x509)) < 0)
+			log_error_and_die("gnuttls_credentials_set: %s", gnutls_strerror(rc));
+		
 		gnutls_certificate_server_set_request(session, GNUTLS_CERT_REQUEST);
 	}
 	
@@ -432,7 +439,7 @@ void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 
 void server_main(void)
 {
-	int port, i, max_clients;
+	int rc, port, i, max_clients;
 	char *host, peer[INET_ADDRSTRLEN];
 	socklen_t peerlen;
 	struct sockaddr_in host_addr, peer_addr;
@@ -448,8 +455,12 @@ void server_main(void)
 		gnutls_global_init();
 		gnutls_anon_allocate_server_credentials(&anon);
 		
-		gnutls_dh_params_init(&dh_params);
-		gnutls_dh_params_generate2(dh_params, DH_BITS);
+		if ((rc = gnutls_dh_params_init(&dh_params)) < 0)
+			log_error_and_die("gnuttls_dh_params_init: %s", gnutls_strerror(rc));
+		
+		if ((rc = gnutls_dh_params_generate2(dh_params, DH_BITS)) < 0)
+			log_error_and_die("gnuttls_dh_params_generate2: %s", gnutls_strerror(rc));
+		
 		gnutls_anon_set_server_dh_params(anon, dh_params);
 		
 		log_info("TLS with anonymous authentication configured successfully");
@@ -465,18 +476,26 @@ void server_main(void)
 			log_error_and_die("No TLS key or certificate specified");
 		
 		gnutls_global_init();
-		gnutls_certificate_allocate_credentials(&x509);
-		gnutls_certificate_set_x509_key_file(x509, cert, key, GNUTLS_X509_FMT_PEM);
 		
-		if (ca)
-			gnutls_certificate_set_x509_trust_file(x509, ca, GNUTLS_X509_FMT_PEM);
+		if ((rc = gnutls_certificate_allocate_credentials(&x509)) < 0)
+			log_error_and_die("gnuttls_certificate_allocate_credentials: %s", gnutls_strerror(rc));
 		
-		if (crl)
-			gnutls_certificate_set_x509_crl_file(x509, crl, GNUTLS_X509_FMT_PEM);
+		if ((rc = gnutls_certificate_set_x509_key_file(x509, cert, key, GNUTLS_X509_FMT_PEM)) < 0)
+			log_error_and_die("gnuttls_certificate_set_x509_key_file: %s", gnutls_strerror(rc));
+			
+		if (ca && (rc = gnutls_certificate_set_x509_trust_file(x509, ca, GNUTLS_X509_FMT_PEM)) < 0)
+			log_error_and_die("gnuttls_certificate_set_x509_trust_file: %s", gnutls_strerror(rc));
 		
-		gnutls_dh_params_init(&dh_params);
-		gnutls_dh_params_generate2(dh_params, DH_BITS);
-		gnutls_certificate_set_dh_params (x509, dh_params);
+		if (crl && (rc = gnutls_certificate_set_x509_crl_file(x509, crl, GNUTLS_X509_FMT_PEM)) < 0)
+			log_error_and_die("gnuttls_certificate_set_x509_crl_file: %s", gnutls_strerror(rc));
+		
+		if ((rc = gnutls_dh_params_init(&dh_params)) < 0)
+			log_error_and_die("gnuttls_dh_params_init: %s", gnutls_strerror(rc));
+		
+		if ((rc = gnutls_dh_params_generate2(dh_params, DH_BITS)) < 0)
+			log_error_and_die("gnuttls_dh_params_generate2: %s", gnutls_strerror(rc));
+		
+		gnutls_certificate_set_dh_params(x509, dh_params);
 		
 		log_info("TLS with X.509 authentication configured successfully");
 	}
@@ -542,7 +561,7 @@ void server_main(void)
 			log_warn("Maximum number of connections reached");
 			log_info("Rejecting client from %s:%d",
 			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
-			         ntohs (peer_addr.sin_port));
+			         ntohs(peer_addr.sin_port));
 			httpd_send_headers(503, 0);
 			close(cfd);
 			continue;
@@ -556,7 +575,7 @@ void server_main(void)
 		case 0:
 			log_info("New connection from %s, port %d",
 			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
-			         ntohs (peer_addr.sin_port));
+			         ntohs(peer_addr.sin_port));
 			close(sfd);
 			handle_client();
 			break;
