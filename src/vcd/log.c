@@ -104,12 +104,13 @@ void _log_internal(int level, char *fmt, va_list ap)
 	bzero(timestr, 64);
 	strftime(timestr, 63, "%a %b %d %H:%M:%S %Y", localtime(&curtime));
 	
-	dprintf(log_fd, "[%s] [%s] ", timestr, levelstr);
+	dprintf(log_fd, "[%s] [%5d] [%s] ", timestr, getpid(), levelstr);
 	vdprintf(log_fd, fmt, ap);
 	dprintf(log_fd, "\n");
 	
 	if (log_stderr) {
-		dprintf(STDERR_FILENO, "[%s] [%s] [%s] ", timestr, levelstr, log_ident);
+		dprintf(STDERR_FILENO, "[%s] [%5d] [%s] [%s] ",
+		        timestr, getpid(), levelstr, log_ident);
 		vdprintf(STDERR_FILENO, fmt, ap);
 		dprintf(STDERR_FILENO, "\n");
 	}
