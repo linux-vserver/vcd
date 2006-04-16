@@ -27,6 +27,7 @@
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <arpa/inet.h>
+#include <gnutls/gnutls.h>
 
 #include "pathconfig.h"
 
@@ -37,9 +38,24 @@
 #include "log.h"
 #include "methods/methods.h"
 
+#define DH_BITS 1024
+
 extern cfg_t *cfg;
+
 static XMLRPC_SERVER xmlrpc_server;
 static int sfd, cfd, num_clients;
+
+typedef enum {
+	TLS_DISABLED = 0,
+	TLS_ANON     = 1,
+	TLS_X509     = 2,
+} tls_modes_t;
+
+static tls_modes_t tls_mode = TLS_DISABLED;
+static gnutls_anon_server_credentials_t anon;
+static gnutls_certificate_credentials_t x509;
+static gnutls_dh_params_t dh_params;
+static gnutls_session_t tls_session;
 
 typedef struct {
 	int id;
@@ -91,35 +107,40 @@ httpd_status_t http_status_codes[] = {
 };
 
 static
-int httpd_read_line(int fd, char **line)
+int httpd_read_line(char **line)
 {
-	int chunks = 1, idx = 0;
+	int rc, chunks = 1, idx = 0;
 	char *buf = malloc(chunks * CHUNKSIZE + 1);
 	char c;
 
 	for (;;) {
-		switch(read(fd, &c, 1)) {
-			case -1:
-				return -1;
-			
-			case 0:
-				return -2;
-			
-			default:
-				if (c == '\r')
-					break;
-				
-				if (c == '\n')
-					goto out;
-				
-				if (idx >= chunks * CHUNKSIZE) {
-					chunks++;
-					buf = realloc(buf, chunks * CHUNKSIZE + 1);
-				}
-				
-				buf[idx++] = c;
-				break;
+		if (tls_mode == TLS_DISABLED)
+			rc = read(cfd, &c, 1);
+		else
+			rc = gnutls_record_recv(tls_session, &c, 1);
+		
+		if (rc < 0) {
+			free(buf);
+			return -1;
 		}
+		
+		if (rc == 0) {
+			idx = 0;
+			goto out;
+		}
+		
+		if (c == '\r')
+			continue;
+		
+		if (c == '\n')
+			goto out;
+		
+		if (idx >= chunks * CHUNKSIZE) {
+			chunks++;
+			buf = realloc(buf, chunks * CHUNKSIZE + 1);
+		}
+		
+		buf[idx++] = c;
 	}
 	
 out:
@@ -129,7 +150,27 @@ out:
 }
 
 static
-void httpd_send_headers(int fd, int id, size_t clen)
+int httpd_write(char *fmt, ...)
+{
+	char *buf;
+	int rc;
+	
+	va_list ap;
+	va_start(ap, fmt);
+	
+	vasprintf(&buf, fmt, ap);
+	
+	if (tls_mode == TLS_DISABLED)
+		rc = write(cfd, buf, strlen(buf));
+	else
+		rc = gnutls_record_send(tls_session, buf, strlen(buf));
+	
+	free(buf);
+	return rc;
+}
+
+static
+void httpd_send_headers(int id, size_t clen)
 {
 	static int headers_sent = 0;
 	int i;
@@ -152,17 +193,17 @@ void httpd_send_headers(int fd, int id, size_t clen)
 	}
 	
 send:
-	dprintf(fd, "HTTP/1.1 %d %s\r\n", http_status_codes[i].id,
-	        http_status_codes[i].desc);
-	dprintf(fd, "Server: VServer Control Daemon\r\n");
-	dprintf(fd, "Connection: close\r\n");
+	httpd_write("HTTP/1.1 %d %s\r\n", http_status_codes[i].id,
+	                http_status_codes[i].desc);
+	httpd_write("Server: VServer Control Daemon\r\n");
+	httpd_write("Connection: close\r\n");
 	
 	if (clen > 0) {
-		dprintf(fd, "Content-Length: %d\r\n", clen);
-		dprintf(fd, "Content-Type: text/xml\r\n");
+		httpd_write("Content-Length: %d\r\n", clen);
+		httpd_write("Content-Type: text/xml\r\n");
 	}
 	
-	dprintf(fd, "\r\n");
+	httpd_write("\r\n");
 }
 
 static
@@ -207,21 +248,44 @@ void client_signal_handler(int sig)
 {
 	switch (sig) {
 	case SIGTERM:
-		httpd_send_headers(cfd, 503, 0);
+		httpd_send_headers(503, 0);
 		close(cfd);
 		exit(EXIT_FAILURE);
 	
 	case SIGALRM:
-		httpd_send_headers(cfd, 408, 0);
+		httpd_send_headers(408, 0);
 		close(cfd);
 		exit(EXIT_FAILURE);
 	}
 }
 
+static
+gnutls_session_t initialize_tls_session(void)
+{
+	gnutls_session_t session;
+	const int kx_prio[] = { GNUTLS_KX_ANON_DH, 0 };
+	
+	gnutls_init (&session, GNUTLS_SERVER);
+	gnutls_set_default_priority (session);
+	
+	if (tls_mode == TLS_ANON) {
+		gnutls_kx_set_priority(session, kx_prio);
+		gnutls_credentials_set(session, GNUTLS_CRD_ANON, anon);
+	}
+	
+	else if (tls_mode == TLS_X509) {
+		gnutls_credentials_set(session, GNUTLS_CRD_CERTIFICATE, x509);
+		gnutls_certificate_server_set_request(session, GNUTLS_CERT_REQUEST);
+	}
+	
+	gnutls_dh_set_prime_bits(session, DH_BITS);
+	return session;
+}
+
 #define NOREPLACE(NEW) id == 0 ? NEW : id
 
 static
-void handle_client(int cfd)
+void handle_client(void)
 {
 	int timeout = cfg_getint(cfg, "client-timeout");
 	int rc, id = 0, clen = 0, first_line = 1;
@@ -234,27 +298,34 @@ void handle_client(int cfd)
 	signal(SIGALRM, client_signal_handler);
 	alarm(timeout);
 	
+	/* init TLS */
+	if (tls_mode != TLS_DISABLED) {
+		tls_session = initialize_tls_session();
+		
+		gnutls_transport_set_ptr(tls_session, (gnutls_transport_ptr_t) cfd);
+		
+		if ((rc = gnutls_handshake(tls_session)) < 0) {
+			gnutls_deinit(tls_session);
+			log_error_and_die("Handshake has failed: %s", gnutls_strerror(rc));
+		}
+	}
+	
 	/* parse request header */
 	while (1) {
 		if (line != NULL)
 			free(line);
 		
-		rc = httpd_read_line(cfd, &line);
+		rc = httpd_read_line(&line);
 		
-		/* EOF before EOL */
-		if (rc == -2)
-			id = NOREPLACE(400);
-		
-		/* unknown error */
-		else if (rc == -1)
+		if (rc == -1)
 			goto close;
+		
+		else if (rc == 0)
+			break;
 		
 		/* parse request line */
 		else if (first_line) {
-			if (rc == 0)
-				continue;
-			else
-				first_line = 0;
+			first_line = 0;
 			
 			/* only support POST request */
 			if (strncmp(line, "POST", 4) != 0)
@@ -267,13 +338,7 @@ void handle_client(int cfd)
 		
 		/* parse additional headers */
 		else {
-			if (rc == 0) {
-				free(line);
-				break;
-			}
-			
-			/* we need to know Content-Length */
-			else if (strncmp(line, "Content-Length: ", 16) == 0)
+			if (strncmp(line, "Content-Length: ", 16) == 0)
 				clen = atoi(line + 16);
 		}
 	}
@@ -284,18 +349,24 @@ void handle_client(int cfd)
 	
 	/* an error occured and id was set */
 	if (id > 0) {
-		httpd_send_headers(cfd, id, 0);
+		httpd_send_headers(id, 0);
 		goto close;
 	}
 	
 	/* no XMLRPC request was sent */
 	if (clen <= 0) {
-		httpd_send_headers(cfd, 400, 0);
+		httpd_send_headers(400, 0);
 		goto close;
 	}
 	
 	/* get XMLRPC request */
-	rc = io_read_len(cfd, &req, clen);
+	if (tls_mode == TLS_DISABLED)
+		rc = io_read_len(cfd, &req, clen);
+	
+	else {
+		req = calloc(clen + 1, sizeof(char));
+		rc  = gnutls_record_recv(tls_session, req, clen);
+	}
 	
 	/* connection died? */
 	if (rc == -1)
@@ -303,7 +374,7 @@ void handle_client(int cfd)
 	
 	/* invalid request length */
 	if (rc != clen) {
-		httpd_send_headers(cfd, 400, 0);
+		httpd_send_headers(400, 0);
 		goto close;
 	}
 	
@@ -314,22 +385,24 @@ void handle_client(int cfd)
 	
 	/* invalid XML */
 	if (rc == -1)
-		httpd_send_headers(cfd, 400, 0);
+		httpd_send_headers(400, 0);
 	
 	/* somehow the response didn't build */
 	else if (res == NULL)
-		httpd_send_headers(cfd, 500, 0);
+		httpd_send_headers(500, 0);
 	
 	/* send response */
 	else {
 		clen = strlen(res);
-		httpd_send_headers(cfd, 200, clen);
-		write(cfd, res, clen);
+		httpd_send_headers(200, clen);
+		httpd_write(res, clen);
 		free(res);
 	}
 	
 close:
+	gnutls_bye(tls_session, GNUTLS_SHUT_WR);
 	close(cfd);
+	gnutls_deinit(tls_session);
 	exit(0);
 }
 
@@ -350,6 +423,9 @@ void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 		
 		close(sfd);
 		
+		gnutls_certificate_free_credentials(x509);
+		gnutls_global_deinit();
+		
 		exit(EXIT_FAILURE);
 	}
 }
@@ -361,9 +437,49 @@ void server_main(void)
 	socklen_t peerlen;
 	struct sockaddr_in host_addr, peer_addr;
 	struct sigaction act;
+	char *ca, *crl, *cert, *key;
 	
 	log_init("server", 0);
 	log_info("Loading configuration");
+	
+	tls_mode = cfg_getint(cfg, "tls-mode");
+	
+	if (tls_mode == TLS_ANON) {
+		gnutls_global_init();
+		gnutls_anon_allocate_server_credentials(&anon);
+		
+		gnutls_dh_params_init(&dh_params);
+		gnutls_dh_params_generate2(dh_params, DH_BITS);
+		gnutls_anon_set_server_dh_params(anon, dh_params);
+		
+		log_info("TLS with anonymous authentication configured successfully");
+	}
+	
+	else if (tls_mode == TLS_X509) {
+		key  = cfg_getstr(cfg, "tls-server-key");
+		cert = cfg_getstr(cfg, "tls-server-crt");
+		crl  = cfg_getstr(cfg, "tls-server-crl");
+		ca   = cfg_getstr(cfg, "tls-ca-crt");
+		
+		if (!key || !cert)
+			log_error_and_die("No TLS key or certificate specified");
+		
+		gnutls_global_init();
+		gnutls_certificate_allocate_credentials(&x509);
+		gnutls_certificate_set_x509_key_file(x509, cert, key, GNUTLS_X509_FMT_PEM);
+		
+		if (ca)
+			gnutls_certificate_set_x509_trust_file(x509, ca, GNUTLS_X509_FMT_PEM);
+		
+		if (crl)
+			gnutls_certificate_set_x509_crl_file(x509, crl, GNUTLS_X509_FMT_PEM);
+		
+		gnutls_dh_params_init(&dh_params);
+		gnutls_dh_params_generate2(dh_params, DH_BITS);
+		gnutls_certificate_set_dh_params (x509, dh_params);
+		
+		log_info("TLS with X.509 authentication configured successfully");
+	}
 	
 	port = cfg_getint(cfg, "listen-port");
 	host = cfg_getstr(cfg, "listen-host");
@@ -442,7 +558,7 @@ void server_main(void)
 			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
 			         ntohs (peer_addr.sin_port));
 			close(sfd);
-			handle_client(cfd);
+			handle_client();
 			break;
 		
 		default:

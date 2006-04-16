@@ -41,6 +41,11 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR_LIST("admins",    NULL,           CFGF_NONE),
 	CFG_STR("log-dir",        "/var/log/vcd", CFGF_NONE),
 	CFG_INT("log-level",      3,              CFGF_NONE),
+	CFG_INT("tls-mode",       0,              CFGF_NONE),
+	CFG_STR("tls-server-key", NULL,           CFGF_NONE),
+	CFG_STR("tls-server-crt", NULL,           CFGF_NONE),
+	CFG_STR("tls-server-crl", NULL,           CFGF_NONE),
+	CFG_STR("tls-ca-crt",     NULL,           CFGF_NONE),
 	CFG_END()
 };
 

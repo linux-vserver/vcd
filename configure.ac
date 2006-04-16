@@ -46,6 +46,8 @@ if test "$libvserver_found" = "no"; then
   AC_MSG_ERROR([libvserver not found.  Please read the documentation.])
 fi
 
+AM_PATH_LIBGNUTLS(1.0.0,, AC_MSG_ERROR([libgnutls not found.]))
+
 # Checks for header files.
 AC_CHECK_HEADERS(stdarg.h)
 
