@@ -359,7 +359,7 @@ void server_main(void)
 	int port, i, max_clients;
 	char *host, peer[INET_ADDRSTRLEN];
 	socklen_t peerlen;
-	struct sockaddr_in addr;
+	struct sockaddr_in host_addr, peer_addr;
 	struct sigaction act;
 	
 	log_init("server", 0);
@@ -368,15 +368,15 @@ void server_main(void)
 	port = cfg_getint(cfg, "listen-port");
 	host = cfg_getstr(cfg, "listen-host");
 	
-	bzero(&addr, sizeof(addr));
+	bzero(&host_addr, sizeof(host_addr));
 	
-	addr.sin_family = AF_INET;
-	addr.sin_port   = htons(port);
+	host_addr.sin_family = AF_INET;
+	host_addr.sin_port   = htons(port);
 	
-	if (inet_pton(AF_INET, host, &addr.sin_addr) < 1) {
+	if (inet_pton(AF_INET, host, &host_addr.sin_addr) < 1) {
 		log_warn("Invalid configuration for listen-host: %s", host);
 		log_info("Using fallback listen-host: 127.0.0.1");
-		inet_pton(AF_INET, "127.0.0.1", &addr.sin_addr);
+		inet_pton(AF_INET, "127.0.0.1", &host_addr.sin_addr);
 	}
 	
 	max_clients = cfg_getint(cfg, "max-clients");
@@ -398,7 +398,7 @@ void server_main(void)
 	if (sfd == -1)
 		log_error_and_die("socket: %s", strerror(errno));
 	
-	if (bind(sfd, (struct sockaddr *) &addr, sizeof(struct sockaddr_in)) == -1)
+	if (bind(sfd, (struct sockaddr *) &host_addr, sizeof(struct sockaddr_in)) == -1)
 		log_error_and_die("bind: %s", strerror(errno));
 	
 	if (listen(sfd, 20) == -1)
@@ -412,7 +412,8 @@ void server_main(void)
 	
 	/* wait and create a new child for each connection */
 	while (1) {
-		cfd = accept(sfd, NULL, 0);
+		peerlen = sizeof(struct sockaddr_in);
+		cfd = accept(sfd, (struct sockaddr *) &peer_addr, &peerlen);
 		
 		if (cfd == -1) {
 			if (errno != EINTR)
@@ -421,14 +422,12 @@ void server_main(void)
 			continue;
 		}
 		
-		peerlen = sizeof(struct sockaddr_in);
-		getpeername(cfd, (struct sockaddr *) &addr, &peerlen);
-		inet_ntop(AF_INET, &addr.sin_addr, peer, INET_ADDRSTRLEN);
-		
 		if (num_clients >= max_clients) {
 			log_warn("Maximum number of connections reached");
-			log_info("Rejecting client from %s", peer);
-			httpd_send_headers(cfd, 503, 0);
+			log_info("Rejecting client from %s:%d",
+			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
+			         ntohs (peer_addr.sin_port));
+			httpd_send_headers(503, 0);
 			close(cfd);
 			continue;
 		}
@@ -439,7 +438,9 @@ void server_main(void)
 			break;
 		
 		case 0:
-			log_info("New connection from %s", peer);
+			log_info("New connection from %s, port %d",
+			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
+			         ntohs (peer_addr.sin_port));
 			close(sfd);
 			handle_client(cfd);
 			break;
