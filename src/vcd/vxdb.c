@@ -21,10 +21,12 @@
 
 #include "pathconfig.h"
 
+#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <sys/file.h>
 
 #include "lucid.h"
 #include "confuse.h"
