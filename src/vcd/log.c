@@ -26,12 +26,10 @@
 #include <string.h>
 #include <time.h>
 
-#include "confuse.h"
 #include "lucid.h"
 
+#include "cfg.h"
 #include "log.h"
-
-extern cfg_t *cfg;
 
 static int log_fd     = -1;
 static int log_level  = 3;

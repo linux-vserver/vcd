@@ -30,22 +30,31 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
-#include "confuse.h"
+#include "cfg.h"
 #include "log.h"
 
 static cfg_opt_t CFG_OPTS[] = {
-	CFG_STR("listen-host",    "127.0.0.1",    CFGF_NONE),
-	CFG_INT("listen-port",    13386,          CFGF_NONE),
-	CFG_INT("max-clients",    20,             CFGF_NONE),
-	CFG_INT("client-timeout", 30,             CFGF_NONE),
-	CFG_STR_LIST("admins",    NULL,           CFGF_NONE),
-	CFG_STR("log-dir",        "/var/log/vcd", CFGF_NONE),
-	CFG_INT("log-level",      3,              CFGF_NONE),
-	CFG_INT("tls-mode",       0,              CFGF_NONE),
-	CFG_STR("tls-server-key", NULL,           CFGF_NONE),
-	CFG_STR("tls-server-crt", NULL,           CFGF_NONE),
-	CFG_STR("tls-server-crl", NULL,           CFGF_NONE),
-	CFG_STR("tls-ca-crt",     NULL,           CFGF_NONE),
+	/* network configuration */
+	CFG_STR("listen-host", "127.0.0.1", CFGF_NONE),
+	CFG_INT("listen-port", 13386,       CFGF_NONE),
+	
+	/* client handling */
+	CFG_INT("client-max",     20, CFGF_NONE),
+	CFG_INT("client-timeout", 30, CFGF_NONE),
+	
+	/* logging */
+	CFG_STR("log-dir",   "/var/log/vcd", CFGF_NONE),
+	CFG_INT("log-level", 3,              CFGF_NONE),
+	
+	/* SSL/TLS */
+	CFG_INT("tls-mode",       0,    CFGF_NONE),
+	CFG_STR("tls-server-key", NULL, CFGF_NONE),
+	CFG_STR("tls-server-crt", NULL, CFGF_NONE),
+	CFG_STR("tls-server-crl", NULL, CFGF_NONE),
+	CFG_STR("tls-ca-crt",     NULL, CFGF_NONE),
+	
+	/* vxdb configuration */
+	CFG_STR("vxdb-path", "/var/lib/vcd", CFGF_NONE),
 	CFG_END()
 };
 

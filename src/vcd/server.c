@@ -29,18 +29,18 @@
 #include <arpa/inet.h>
 #include <gnutls/gnutls.h>
 
-#include "pathconfig.h"
-
 #include "lucid.h"
-#include "confuse.h"
 #include "xmlrpc.h"
+#include "xmlrpc_private.h"
 
+#include "auth.h"
+#include "cfg.h"
 #include "log.h"
-#include "methods/methods.h"
+#include "vxdb.h"
+
+#include "methods.h"
 
 #define DH_BITS 1024
-
-extern cfg_t *cfg;
 
 static XMLRPC_SERVER xmlrpc_server;
 static int sfd, cfd, num_clients;
@@ -62,6 +62,7 @@ typedef struct {
 	char *desc;
 } httpd_status_t;
 
+static
 httpd_status_t http_status_codes[] = {
 	{ 100, "Continue" },
 	{ 101, "Switching Protocols" },
@@ -207,6 +208,25 @@ send:
 }
 
 static
+XMLRPC_VALUE call_method(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+{
+	XMLRPC_Callback cb;
+	
+	if (r->error)
+		return XMLRPC_CopyValue(r->error);
+	
+	if (!auth_isvalid(r))
+		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
+	
+	cb = XMLRPC_ServerFindMethod(s, r->methodName.str);
+	
+	if (cb)
+		return cb(s, r, d);
+	
+	return XMLRPC_UtilityCreateFault(xmlrpc_error_unknown_method, r->methodName.str);
+}
+
+static
 int handle_request(char *req, char **res)
 {
 	XMLRPC_REQUEST request, response;
@@ -224,8 +244,7 @@ int handle_request(char *req, char **res)
 	XMLRPC_RequestSetRequestType(response, xmlrpc_request_response);
 	
 	/* call requested method and fill response struct */
-	XMLRPC_RequestSetData(response,
-	                      XMLRPC_ServerCallMethod(xmlrpc_server, request, NULL));
+	XMLRPC_RequestSetData(response, call_method(xmlrpc_server, request, NULL));
 	
 	/* reply in same vocabulary/manner as the request */
 	XMLRPC_RequestSetOutputOptions(response,
@@ -430,6 +449,8 @@ void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 		
 		close(sfd);
 		
+		vxdb_close();
+		
 		gnutls_certificate_free_credentials(x509);
 		gnutls_global_deinit();
 		
@@ -500,6 +521,9 @@ void server_main(void)
 		log_info("TLS with X.509 authentication configured successfully");
 	}
 	
+	/* open connection to vxdb */
+	vxdb_init();
+	
 	port = cfg_getint(cfg, "listen-port");
 	host = cfg_getstr(cfg, "listen-host");
 	
@@ -514,7 +538,7 @@ void server_main(void)
 		inet_pton(AF_INET, "127.0.0.1", &host_addr.sin_addr);
 	}
 	
-	max_clients = cfg_getint(cfg, "max-clients");
+	max_clients = cfg_getint(cfg, "client-max");
 	
 	/* handle these signals on our own */
 	sigfillset(&act.sa_mask);

@@ -20,11 +20,7 @@
 
 #include "xmlrpc.h"
 
-int auth_isvalid(XMLRPC_VALUE auth);
-int auth_exists(char *username);
-int auth_isuser(XMLRPC_VALUE auth, char *user);
-int auth_isadmin(XMLRPC_VALUE auth);
-int auth_capable(XMLRPC_VALUE auth, char *method);
-int auth_vxowner(XMLRPC_VALUE auth, char *name);
+int auth_isvalid(XMLRPC_REQUEST r);
+int auth_isadmin(XMLRPC_REQUEST r);
 
 #endif

@@ -15,20 +15,14 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _METHODS_VXDB_H
-#define _METHODS_VXDB_H
+#ifndef _VCD_VXDB_H
+#define _VCD_VXDB_H
 
-#include "confuse.h"
-#include "xmlrpc.h"
+#include <dbi/dbi.h>
 
-cfg_t     *vxdb_open      (char *name);
-void       vxdb_close     (cfg_t *cfg);
-int        vxdb_closewrite(cfg_t *cfg);
-cfg_opt_t *vxdb_lookup    (cfg_t *cfg, char *key, char *title);
-int        vxdb_addsec    (cfg_t *cfg, char *key, char *title);
-int        vxdb_capable   (XMLRPC_VALUE auth, char *name, char *key, int write);
+extern dbi_conn vxdb;
 
-#define vxdb_capable_read(auth, name, key)   vxdb_capable(auth, name, key, 0)
-#define vxdb_capable_write(auth, name, key)  vxdb_capable(auth, name, key, 1)
+void vxdb_init(void);
+void vxdb_close(void);
 
 #endif

@@ -19,39 +19,42 @@
 #include <config.h>
 #endif
 
-#include <errno.h>
-#include <vserver.h>
+#include <string.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "methods.h"
 #include "vxdb.h"
-#include "xid.h"
 
-XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.create(string name, int xid) */
+XMLRPC_VALUE m_vxdb_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	XMLRPC_VALUE request, auth, params;
-	XMLRPC_VALUE response;
-	char *name;
-	xid_t xid;
+	dbi_result dbr;
+	XMLRPC_VALUE params = get_method_params(r);
 	
-	request = XMLRPC_RequestGetData(r);
-	auth    = XMLRPC_VectorRewind(request);
-	params  = XMLRPC_VectorNext(request);
-	
-	name = (char *) XMLRPC_VectorGetStringWithID(params, "name");
-	
-	if (!auth_capable(auth, "vx.stop") || !auth_vxowner(auth, name))
+	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	if (xid_byname(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	int xid    = XMLRPC_VectorGetIntWithID(params, "xid");
 	
-	/* do stop here */
+	if (!name || xid < 2)
+		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT * FROM xid_name_map WHERE name = '%s'",
+		name);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
+	if (dbi_result_get_numrows(dbr) != 0)
+		return XMLRPC_UtilityCreateFault(409, "Conflict");
 	
-	return response;
+	dbr = dbi_conn_queryf(vxdb,
+		"INSERT INTO xid_name_map (name, xid) VALUES ('%s', %d)",
+		name, xid);
+	
+	if (!dbr)
+		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	
+	return params;
 }

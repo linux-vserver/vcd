@@ -19,179 +19,59 @@
 #include <config.h>
 #endif
 
-#include "pathconfig.h"
-
-#include <stdlib.h>
 #include <string.h>
-#include <fcntl.h>
 
-#include "lucid.h"
-#include "confuse.h"
 #include "xmlrpc.h"
 
-#include "log.h"
 #include "auth.h"
+#include "log.h"
+#include "vxdb.h"
 
-extern cfg_t *cfg;
-
-int auth_isvalid(XMLRPC_VALUE auth)
+int auth_isvalid(XMLRPC_REQUEST r)
 {
-	SDBM *db;
-	DATUM k, v;
+	dbi_result dbr;
+	XMLRPC_VALUE request, auth;
+	
+	request = XMLRPC_RequestGetData(r);
+	auth    = XMLRPC_VectorRewind(request);
 	
 	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
 	char *password = (char *) XMLRPC_VectorGetStringWithID(auth, "password");
 	
-	if (!username || !password)
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT password FROM user WHERE name = '%s'",
+		username);
+	
+	if (dbi_result_get_numrows(dbr) != 1)
 		return 0;
 	
-	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0)))
-		return log_warn("sdbm_open: %s", strerror(errno)), 0;
+	dbi_result_first_row(dbr);
 	
-	k.dptr  = username;
-	k.dsize = strlen(k.dptr);
-	
-	v = sdbm_fetch(db, k);
-	
-	sdbm_close(db);
-	
-	if (v.dsize > 0 && strncmp(password, v.dptr, v.dsize) == 0)
+	if (strcmp(dbi_result_get_string(dbr, "password"), password) == 0)
 		return 1;
 	
 	return 0;
 }
 
-int auth_exists(char *username)
+int auth_isadmin(XMLRPC_REQUEST r)
 {
-	SDBM *db;
-	DATUM k, v;
+	dbi_result dbr;
+	XMLRPC_VALUE request, auth;
 	
-	if (!username)
+	if (!auth_isvalid(r))
 		return 0;
 	
-	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/passwd", O_RDONLY, 0)))
-		return log_warn("sdbm_open: %s", strerror(errno)), 0;
-	
-	k.dptr  = username;
-	k.dsize = strlen(k.dptr);
-	
-	v = sdbm_fetch(db, k);
-	
-	sdbm_close(db);
-	
-	if (v.dsize > 0)
-		return 1;
-	
-	return 0;
-}
-
-int auth_isuser(XMLRPC_VALUE auth, char *user)
-{
-	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
-	
-	if (!username || !auth_exists(username))
-		return 0;
-	
-	if (strcmp(user, username) == 0)
-		return 1;
-	
-	return 0;
-}
-
-int auth_isadmin(XMLRPC_VALUE auth)
-{
-	int i, m = cfg_size(cfg, "admins");
+	request = XMLRPC_RequestGetData(r);
+	auth    = XMLRPC_VectorRewind(request);
 	
 	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
 	
-	if (!username || !auth_exists(username))
-		return 0;
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT admin FROM user WHERE name = '%s' AND admin = 1",
+		username);
 	
-	for (i = 0; i < m; i++) {
-		char *admin = cfg_getnstr(cfg, "admins", i);
-		
-		if (strcmp(username, admin) == 0)
-			return 1;
-	}
-	
-	return 0;
-}
-
-int auth_capable(XMLRPC_VALUE auth, char *method)
-{
-	SDBM *db;
-	DATUM k, v;
-	char *buf, *bufp, *p;
-	int rc = 0;
-	
-	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
-	
-	if (!username || !auth_isvalid(auth))
-		return 0;
-	
-	if (auth_isadmin(auth))
+	if (dbi_result_get_numrows(dbr) == 1)
 		return 1;
-	
-	if (!(db = sdbm_open(__LOCALSTATEDIR "/auth/acl", O_RDONLY, 0)))
-		return log_warn("sdbm_open: %s", strerror(errno)), 0;
-	
-	k.dptr  = username;
-	k.dsize = strlen(k.dptr);
-	
-	v = sdbm_fetch(db, k);
-	
-	sdbm_close(db);
-	
-	if (v.dsize > 0) {
-		bufp = buf = strndup(v.dptr, v.dsize);
-		
-		while ((p = strsep(&buf, ",")) != NULL) {
-			if (strcmp(method, p) == 0) {
-				rc = 1;
-				break;
-			}
-		}
-		
-		free(bufp);
-	}
-	
-	return rc;
-}
-
-int auth_vxowner(XMLRPC_VALUE auth, char *name)
-{
-	SDBM *db;
-	DATUM k, v;
-	char *p, *owners, *ownersp;
-	
-	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
-	
-	if (!username || !auth_isvalid(auth))
-		return 0;
-	
-	if (auth_isadmin(auth))
-		return 1;
-	
-	if (!(db = sdbm_open(__LOCALSTATEDIR "/maps/owner", O_RDONLY, 0)))
-		return log_warn("sdbm_open: %s", strerror(errno)), 0;
-	
-	k.dptr  = (char *) name;
-	k.dsize = strlen(k.dptr);
-	
-	v = sdbm_fetch(db, k);
-	
-	sdbm_close(db);
-	
-	if (v.dsize > 0) {
-		ownersp = owners = strndup(v.dptr, v.dsize);
-		
-		while ((p = strsep(&owners, ",")) != NULL) {
-			if (strcmp(username, p) == 0)
-				return 1;
-		}
-		
-		free(ownersp);
-	}
 	
 	return 0;
 }

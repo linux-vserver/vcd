@@ -15,39 +15,11 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_METHODS_H
-#define _VCD_METHODS_H
+#ifndef _VCD_CFG_H
+#define _VCD_CFG_H
 
-#include "xmlrpc.h"
+#include "confuse.h"
 
-void registry_init(XMLRPC_SERVER s);
-
-#define MPROTO(NAME) \
-	XMLRPC_VALUE NAME (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
-
-/* auth */
-MPROTO(m_auth_adduser);
-MPROTO(m_auth_deluser);
-MPROTO(m_auth_getacl);
-MPROTO(m_auth_login);
-MPROTO(m_auth_moduser);
-MPROTO(m_auth_setacl);
-MPROTO(m_auth_userinfo);
-
-/* vx */
-MPROTO(m_vx_getowners);
-MPROTO(m_vx_restart);
-MPROTO(m_vx_setowners);
-MPROTO(m_vx_start);
-MPROTO(m_vx_status);
-MPROTO(m_vx_stop);
-
-/* vxdb */
-MPROTO(m_vxdb_get);
-MPROTO(m_vxdb_getacl);
-MPROTO(m_vxdb_set);
-MPROTO(m_vxdb_setacl);
-
-#undef MPROTO
+extern cfg_t *cfg;
 
 #endif

@@ -22,24 +22,26 @@ INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libxmlrpc
 
 noinst_HEADERS = auth.h \
+                 cfg.h \
                  log.h \
-                 vxdb.h \
-                 xid.h
+                 methods.h \
+                 vxdb.h
 
 sbin_PROGRAMS = vcd
 
 vcd_SOURCES = auth.c \
-              log.c \
               collector.c \
+              log.c \
               main.c \
+              methods.c \
               server.c \
-              vxdb.c \
-              xid.c
+              vxdb.c
 
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(top_builddir)/src/lucid/libucid.a \
             $(top_builddir)/src/libconfuse/libconfuse.a \
             $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
             $(LIBGNUTLS_LIBS) \
+            -ldbi \
             -lexpat \
             -lvserver
