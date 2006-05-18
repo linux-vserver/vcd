@@ -36,9 +36,6 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-AC_VU_CHECK_PROG(SED, sed)
-AC_VU_CHECK_PROG(MOUNT, mount)
-
 # Checks for libraries.
 AC_LIBVSERVER([1 2])
 
@@ -62,7 +59,6 @@ AC_C_INLINE
 CFLAGS="${CFLAGS} -W -Wall -Wno-unused -std=gnu99 -pedantic"
 
 # Site settings
-AC_VU_PATHCONFIG
 
 # Final info page
 AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
@@ -75,13 +71,11 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                    target: $target
 
                    prefix: $prefix
-               sysconfdir: $sysconfdir
-                 vdirbase: $vdirbase
 "])
 
 # Output
 AC_CONFIG_FILES([Makefile
-                 etc/Makefile
+                 scripts/Makefile
                  src/libconfuse/Makefile
                  src/libxmlrpc/Makefile
                  src/lucid/Makefile

@@ -16,24 +16,5 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-include $(top_srcdir)/m4/pathconfig.am
-
-SUBDIRS = etc \
+SUBDIRS = scripts \
           src
-
-BUILT_SOURCES = pathconfig.h
-CLEANFILES    = pathconfig.h
-
-EXTRA_DIST = pathconfig.h.in
-
-pathconfig.h: pathconfig.h.in
-	@SED@ $(PATHCONFIG_SCRIPT) $(srcdir)/pathconfig.h.in > ./pathconfig.h
-
-install-data-hook: install-vdirbase install-misc
-
-install-vdirbase:
-	$(mkinstalldirs) -m 000 $(DESTDIR)$(vdirbase)
-
-install-misc:
-	$(mkinstalldirs) -m 000 $(DESTDIR)/var/lib/vserver
-	$(mkinstalldirs) -m 000 $(DESTDIR)/var/lock/vservers
