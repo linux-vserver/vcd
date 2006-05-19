@@ -20,54 +20,55 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.dx.limit.get(string name, string path) */
+XMLRPC_VALUE m_vxdb_dx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = get_method_params(r);
+	XMLRPC_VALUE params   = get_method_params(r);
+	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *path = XMLRPC_VectorGetStringWithID(params, "path");
 	
-	if (!name)
+	if (!name || !path)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
-	
 	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
-		xid);
+		"SELECT space,inodes,reserved FROM dx_limit WHERE xid = %d AND path = '%s'",
+		xid, path);
 	
 	if (!dbr)
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	
-	return params;
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("path", path, 0));
+	
+	if (dbi_result_get_numrows(dbr) > 0) {
+		dbi_result_first_row(dbr);
+		
+		int space    = dbi_result_get_longlong(dbr, "space");
+		int inodes   = dbi_result_get_longlong(dbr, "inodes");
+		int reserved = dbi_result_get_longlong(dbr, "reserved");
+		
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("space", space));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("inodes", inodes));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("reserved", reserved));
+	}
+	
+	return response;
 }

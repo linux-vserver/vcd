@@ -20,16 +20,16 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.dx.limit.set(string name, string type, int space, int inodes, int reserved) */
+XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
@@ -39,32 +39,34 @@ XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *path = XMLRPC_VectorGetStringWithID(params, "path");
 	
-	if (!name)
+	int space    = XMLRPC_VectorGetIntWithID(params, "space");
+	int inodes   = XMLRPC_VectorGetIntWithID(params, "inodes");
+	int reserved = XMLRPC_VectorGetIntWithID(params, "reserved");
+	
+	if (!name || !path)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
-	
 	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
-		xid);
+		"SELECT space FROM dx_limit WHERE xid = %d AND path = '%s'",
+		xid, path);
+	
+	if (dbr) {
+		if (dbi_result_get_numrows(dbr) > 0)
+			dbr = dbi_conn_queryf(vxdb,
+				"UPDATE dx_limit SET space = %d, inodes = %d, reserved = %d "
+				"WHERE xid = %d AND path = '%s'",
+				space, inodes, reserved, xid, path);
+		else
+			dbr = dbi_conn_queryf(vxdb,
+				"INSERT INTO dx_limit (xid, path, space, inodes, reserved) "
+				"VALUES (%d, '%s', %d, %d, %d)",
+				xid, path, space, inodes, reserved);
+	}
 	
 	if (!dbr)
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");

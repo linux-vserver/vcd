@@ -20,54 +20,55 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.vx.limit.get(string name, string type) */
+XMLRPC_VALUE m_vxdb_vx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = get_method_params(r);
+	XMLRPC_VALUE params   = get_method_params(r);
+	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
+	char *type = XMLRPC_VectorGetStringWithID(params, "type");
 	
-	if (!name)
+	if (!name || !type || flist32_getval(rlimit_list, type, NULL) == -1)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
-	
 	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
-		xid);
+		"SELECT min,soft,max FROM vx_limit WHERE xid = %d AND type = '%s'",
+		xid, type);
 	
 	if (!dbr)
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	
-	return params;
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("type", type, 0));
+	
+	if (dbi_result_get_numrows(dbr) > 0) {
+		dbi_result_first_row(dbr);
+		
+		uint64_t min  = dbi_result_get_longlong(dbr, "min");
+		uint64_t soft = dbi_result_get_longlong(dbr, "soft");
+		uint64_t max  = dbi_result_get_longlong(dbr, "max");
+		
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("min", min));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("soft", soft));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("max", max));
+	}
+	
+	return response;
 }

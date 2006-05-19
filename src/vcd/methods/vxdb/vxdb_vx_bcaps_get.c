@@ -20,54 +20,54 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.vx.bcaps.get([string name]) */
+XMLRPC_VALUE m_vxdb_vx_bcaps_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
 	XMLRPC_VALUE params = get_method_params(r);
+	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	XMLRPC_VALUE bcaps = XMLRPC_CreateVector("bcaps", xmlrpc_vector_array);
 	
 	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	
-	if (!name)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+	if (name) {
+		if (vxdb_getxid(name, &xid) == -1)
+			return XMLRPC_UtilityCreateFault(404, "Not Found");
+		
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT bcap FROM vx_bcaps WHERE xid = %d",
+			xid);
+		
+		if (!dbr)
+			goto out;
+		
+		while (dbi_result_next_row(dbr)) {
+			char *bcap = (char *) dbi_result_get_string(dbr, "bcap");
+			XMLRPC_AddValueToVector(bcaps, XMLRPC_CreateValueString(NULL, bcap, 0));
+		}
+	}
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+	else {
+		int i;
+		
+		for (i = 0; bcaps_list[i].key; i++)
+			XMLRPC_AddValueToVector(bcaps,
+				XMLRPC_CreateValueString(NULL, bcaps_list[i].key, 0));
+	}
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
-		xid);
-	
-	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	
-	return params;
+out:
+	XMLRPC_AddValueToVector(response, bcaps);
+	return response;
 }

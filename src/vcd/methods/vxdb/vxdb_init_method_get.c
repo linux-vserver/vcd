@@ -20,25 +20,26 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.init.method.get(string name) */
+XMLRPC_VALUE m_vxdb_init_method_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = get_method_params(r);
+	XMLRPC_VALUE params   = get_method_params(r);
+	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
 	
 	if (!name)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
@@ -46,28 +47,28 @@ XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (vxdb_getxid(name, &xid) == -1)
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
-	
 	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
+		"SELECT method,start,stop,timeout FROM init_method WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
 	
-	return params;
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
+	
+	if (dbi_result_get_numrows(dbr) > 0) {
+		dbi_result_first_row(dbr);
+		
+		char *method = (char *) dbi_result_get_string(dbr, "method");
+		char *start  = (char *) dbi_result_get_string(dbr, "start");
+		char *stop   = (char *) dbi_result_get_string(dbr, "stop");
+		int timeout  =          dbi_result_get_int(dbr, "timeout");
+		
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("method", method, 0));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("start", start, 0));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("stop", stop, 0));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("timeout", timeout));
+	}
+	
+	return response;
 }

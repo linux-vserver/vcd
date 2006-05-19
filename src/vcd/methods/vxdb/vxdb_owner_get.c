@@ -20,25 +20,27 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.owner.get(string name) */
+XMLRPC_VALUE m_vxdb_owner_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
 	XMLRPC_VALUE params = get_method_params(r);
+	XMLRPC_VALUE response;
 	
 	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	response   = XMLRPC_CreateVector(NULL, xmlrpc_vector_array);
 	
 	if (!name)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
@@ -46,28 +48,21 @@ XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (vxdb_getxid(name, &xid) == -1)
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
-	
 	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
+		"SELECT user.name AS user FROM user "
+		"INNER JOIN xid_uid_map "
+		"ON user.uid = xid_uid_map.uid "
+		"WHERE xid_uid_map.xid = %d",
 		xid);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		goto out;
 	
-	return params;
+	while (dbi_result_next_row(dbr)) {
+		char *user = (char *) dbi_result_get_string(dbr, "user");
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString(NULL, user, 0));
+	}
+	
+out:
+	return response;
 }

@@ -42,11 +42,7 @@ XMLRPC_VALUE m_vxdb_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!name || xid < 2)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT * FROM xid_name_map WHERE name = '%s'",
-		name);
-	
-	if (dbi_result_get_numrows(dbr) != 0)
+	if (vxdb_getxid(name, NULL) == 0)
 		return XMLRPC_UtilityCreateFault(409, "Conflict");
 	
 	dbr = dbi_conn_queryf(vxdb,

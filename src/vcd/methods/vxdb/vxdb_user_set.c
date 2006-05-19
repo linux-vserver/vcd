@@ -20,16 +20,16 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.user.set(string name[, string password[, int admin]]) */
+XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
@@ -38,36 +38,38 @@ XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *name     = XMLRPC_VectorGetStringWithID(params, "name");
+	char *password = XMLRPC_VectorGetStringWithID(params, "password");
+	int admin;
+	
+	if (XMLRPC_VectorGetValueWithID(params, "admin") == NULL)
+		admin = -1;
+	else
+		admin = XMLRPC_VectorGetIntWithID(params, "admin");
 	
 	if (!name)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
-	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
-	
 	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
-		xid);
+		"SELECT uid FROM user WHERE name = '%s'",
+		name);
 	
-	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+	if (dbr && dbi_result_get_numrows(dbr) > 0) {
+		int uid = dbi_result_get_int(dbr, "uid");
+		
+		if (password)
+			dbi_conn_queryf(vxdb,
+				"UPDATE user SET password = '%s' WHERE uid = %d",
+				password, uid);
+		
+		if (admin != -1)
+			dbi_conn_queryf(vxdb,
+				"UPDATE user SET admin = %d WHERE uid = %d",
+				admin == 0 ? 0 : 1, uid);
+	}
+	
+	else
+		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
 	return params;
 }

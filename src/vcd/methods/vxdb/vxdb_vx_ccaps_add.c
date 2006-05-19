@@ -20,16 +20,16 @@
 #endif
 
 #include <string.h>
-#include <vserver.h>
 
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.remove(string name) */
-XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.vx.ccaps.add(string name, string ccap) */
+XMLRPC_VALUE m_vxdb_vx_ccaps_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
@@ -39,35 +39,27 @@ XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *ccap = XMLRPC_VectorGetStringWithID(params, "ccap");
 	
-	if (!name)
+	if (!name || !ccap || flist64_getval(ccaps_list, ccap, NULL) == -1)
 		return XMLRPC_UtilityCreateFault(400, "Bad Request");
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return XMLRPC_UtilityCreateFault(404, "Not Found");
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT xid FROM vx_ccaps WHERE xid = %d AND ccap = '%s'",
+		xid, ccap);
+	
+	if (dbi_result_get_numrows(dbr) != 0)
+		return XMLRPC_UtilityCreateFault(409, "Conflict");
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM dx_limit WHERE xid = '%1$d';"
-		"DELETE FROM init_method WHERE xid = '%1$d';"
-		"DELETE FROM init_mount WHERE xid = '%1$d';"
-		"DELETE FROM nx_addr WHERE xid = '%1$d';"
-		"DELETE FROM vx_bcaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_ccaps WHERE xid = '%1$d';"
-		"DELETE FROM vx_flags WHERE xid = '%1$d';"
-		"DELETE FROM vx_pflags WHERE xid = '%1$d';"
-		"DELETE FROM vx_sched WHERE xid = '%1$d';"
-		"DELETE FROM vx_uname WHERE xid = '%1$d';"
-		"DELETE FROM xid_name_map WHERE xid = '%1$d';"
-		"DELETE FROM xid_uid_map WHERE xid = '%1$d';"
-		"COMMIT;",
-		xid);
+		"INSERT INTO vx_ccaps (xid, ccap) VALUES (%d, '%s')",
+		xid, ccap);
 	
 	if (!dbr)
 		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
-	
+		
 	return params;
 }
