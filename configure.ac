@@ -37,13 +37,11 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
-AC_LIBVSERVER([1 2])
-
-if test "$libvserver_found" = "no"; then
-  AC_MSG_ERROR([libvserver not found.  Please read the documentation.])
-fi
-
-AM_PATH_LIBGNUTLS(1.0.0,, AC_MSG_ERROR([libgnutls not found.]))
+AC_LIBVSERVER([2])
+AM_PATH_LIBGNUTLS(1.0.0,, AC_MSG_ERROR([libgnutls not found]))
+AC_CHECK_LIB(dl,dlopen,,AC_MSG_ERROR([libdl not found]),)
+AC_CHECK_LIB(dbi,dbi_initialize,,AC_MSG_ERROR([libdbi not found]),)
+AC_CHECK_LIB(expat,XML_Parse,,AC_MSG_ERROR([libexpat not found]),)
 
 # Checks for header files.
 AC_CHECK_HEADERS(stdarg.h)

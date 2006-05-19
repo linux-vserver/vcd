@@ -46,10 +46,11 @@ ac_libvserver_api_minor=LIBVSERVER_API_MINOR
 			
 		fi
 		
-		if test "x$libvserver_found" = "yes" ; then 
+		if test "x$libvserver_found" = "xyes" ; then 
 			AC_MSG_RESULT([$ac_libvserver_api_major.$ac_libvserver_api_minor])
 		else
 			AC_MSG_RESULT([no])
+			AC_MSG_ERROR([libvserver not found])
 		fi
 	fi
 	

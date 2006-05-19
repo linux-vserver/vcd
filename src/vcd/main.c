@@ -19,8 +19,6 @@
 #include <config.h>
 #endif
 
-#include "pathconfig.h"
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -71,9 +69,8 @@ void usage(int rc)
 	printf("Usage: vcd [<opts>*]\n\n"
 	       "\n"
 	       "Available options:\n"
-	       "   -c <file>     configuration file (default: %s/vcd.conf)\n"
-	       "   -d            debug mode (do not fork to background)\n",
-	       __LOCALSTATEDIR);
+	       "   -c <file>     configuration file (default: /etc/vcd.conf)\n"
+	       "   -d            debug mode (do not fork to background)\n");
 	exit(rc);
 }
 
@@ -118,7 +115,7 @@ void reset_signals(void)
 
 int main(int argc, char **argv)
 {
-	char *cfg_file = __SYSCONFDIR "/vcd.conf";
+	char *cfg_file = "/etc/vcd.conf";
 	pid_t pid = 0;
 	int c, status, debug = 0;
 	struct sigaction act;
