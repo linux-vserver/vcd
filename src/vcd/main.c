@@ -43,8 +43,8 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_INT("client-timeout", 30, CFGF_NONE),
 	
 	/* logging */
-	CFG_STR("log-dir",   "/var/log/vcd", CFGF_NONE),
-	CFG_INT("log-level", 3,              CFGF_NONE),
+	CFG_STR("log-dir",   NULL, CFGF_NONE),
+	CFG_INT("log-level", 3,    CFGF_NONE),
 	
 	/* SSL/TLS */
 	CFG_INT("tls-mode",       0,    CFGF_NONE),
@@ -54,7 +54,7 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("tls-ca-crt",     NULL, CFGF_NONE),
 	
 	/* vxdb configuration */
-	CFG_STR("vxdb-path", "/var/lib/vcd", CFGF_NONE),
+	CFG_STR("vxdb-path", NULL, CFGF_NONE),
 	CFG_END()
 };
 

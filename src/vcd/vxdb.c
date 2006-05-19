@@ -34,6 +34,9 @@ void vxdb_init(void)
 	
 	char *dbdir = cfg_getstr(cfg, "vxdb-path");
 	
+	if (!dbdir)
+		log_error_and_die("Unable to load vxdb configuration");
+	
 	dbi_initialize(NULL);
 	vxdb = dbi_conn_new("sqlite3");
 	
@@ -45,8 +48,6 @@ void vxdb_init(void)
 	
 	if (dbi_conn_connect(vxdb) < 0)
 		log_error_and_die("Could not open vxdb");
-	
-	log_info("Successfully loaded vxdb");
 }
 
 void vxdb_close(void)
@@ -55,4 +56,45 @@ void vxdb_close(void)
 		dbi_conn_close(vxdb);
 	
 	dbi_shutdown();
+}
+
+int vxdb_getxid(char *name, xid_t *xid)
+{
+	dbi_result dbr;
+	
+	if (!name)
+		return errno = EINVAL, -1;
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT xid FROM xid_name_map WHERE name = '%s'",
+		name);
+	
+	if (dbi_result_get_numrows(dbr) == 0)
+		return errno = ENOENT, -1;
+	
+	dbi_result_first_row(dbr);
+	
+	if (xid)
+		*xid = dbi_result_get_int(dbr, "xid");
+	
+	return 0;
+}
+
+int vxdb_getname(xid_t xid, char **name)
+{
+	dbi_result dbr;
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT name FROM xid_name_map WHERE xid = '%d'",
+		xid);
+	
+	if (dbi_result_get_numrows(dbr) == 0)
+		return errno = ENOENT, -1;
+	
+	dbi_result_first_row(dbr);
+	
+	if (name)
+		*name = (char *) dbi_result_get_string(dbr, "name");
+	
+	return 0;
 }

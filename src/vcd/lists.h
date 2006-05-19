@@ -15,18 +15,19 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_VXDB_H
-#define _VCD_VXDB_H
+#ifndef _VCD_LISTS_H
+#define _VCD_LISTS_H
 
-#include <dbi/dbi.h>
-#include <vserver.h>
+#include "lucid.h"
 
-extern dbi_conn vxdb;
-
-void vxdb_init(void);
-void vxdb_close(void);
-
-int vxdb_getxid(char *name, xid_t *xid);
-int vxdb_getname(xid_t xid, char **name);
+extern const flist64_t bcaps_list[];
+extern const flist64_t ccaps_list[];
+extern const flist64_t cflags_list[];
+extern const flist32_t vhiname_list[];
+extern const flist32_t iattr_list[];
+extern const flist32_t pflags_list[];
+extern const flist32_t rlimit_list[];
+extern const flist64_t nflags_list[];
+extern const flist32_t sched_list[];
 
 #endif

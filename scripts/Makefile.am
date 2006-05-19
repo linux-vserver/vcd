@@ -16,7 +16,6 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-pkgdata_DATA = bootstrap-vcd.sh \
-               bootstrap-vcd.conf
+pkgdata_DATA = bootstrap-vcd.sh
 
 EXTRA_DIST = $(pkgdata_DATA)

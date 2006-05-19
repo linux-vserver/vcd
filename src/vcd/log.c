@@ -46,8 +46,11 @@ int log_init(char *ident, int debug)
 	
 	log_ident = ident;
 	
+	if (debug)
+		log_stderr = 1;
+	
 	if (!logdir || !*logdir)
-		return errno = ENOENT, -1;
+		return 0;
 	
 	logdir = realpath(logdir, NULL);
 	
@@ -59,15 +62,12 @@ int log_init(char *ident, int debug)
 	free(logfile);
 	
 	if (log_fd == -1)
-		return -1;
+		log_error_and_die("Could not open log file");
 	
 	level = cfg_getint(cfg, "log-level");
 	
 	if (!(level < 0 || level > 4))
 		log_level = level;
-	
-	if (debug)
-		log_stderr = 1;
 	
 	return 0;
 }
@@ -78,7 +78,7 @@ void _log_internal(int level, char *fmt, va_list ap)
 	time_t curtime = time(0);
 	char *levelstr = NULL, timestr[64];
 	
-	if (log_fd == -1 || level > log_level)
+	if (level > log_level)
 		return;
 	
 	switch (level) {
@@ -102,9 +102,11 @@ void _log_internal(int level, char *fmt, va_list ap)
 	bzero(timestr, 64);
 	strftime(timestr, 63, "%a %b %d %H:%M:%S %Y", localtime(&curtime));
 	
-	dprintf(log_fd, "[%s] [%5d] [%s] ", timestr, getpid(), levelstr);
-	vdprintf(log_fd, fmt, ap);
-	dprintf(log_fd, "\n");
+	if (log_fd > -1) {
+		dprintf(log_fd, "[%s] [%5d] [%s] ", timestr, getpid(), levelstr);
+		vdprintf(log_fd, fmt, ap);
+		dprintf(log_fd, "\n");
+	}
 	
 	if (log_stderr) {
 		dprintf(STDERR_FILENO, "[%s] [%5d] [%s] [%s] ",
