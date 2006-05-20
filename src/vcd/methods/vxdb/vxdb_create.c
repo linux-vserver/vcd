@@ -34,23 +34,23 @@ XMLRPC_VALUE m_vxdb_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	int xid    = XMLRPC_VectorGetIntWithID(params, "xid");
 	
 	if (!name || xid < 2)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, NULL) == 0)
-		return XMLRPC_UtilityCreateFault(409, "Conflict");
+		return method_error(MEEXIST);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT INTO xid_name_map (name, xid) VALUES ('%s', %d)",
 		name, xid);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 	
 	return params;
 }

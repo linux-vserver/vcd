@@ -20,9 +20,30 @@
 
 #include "xmlrpc.h"
 
+typedef struct {
+	int id;
+	char *msg;
+} m_err_t;
+
+#define MEAUTH    100
+#define MEPERM    101
+#define MEREQ     102
+#define MEVXDB    200
+#define MECONF    201
+#define MESTOPPED 300
+#define MERUNNING 301
+#define MEEXIST   400
+#define MENOENT   401
+#define MESYS     500
+
+extern m_err_t method_error_codes[];
+
 void         method_registry_init(XMLRPC_SERVER s);
+
 XMLRPC_VALUE method_get_params   (XMLRPC_REQUEST r);
-int          method_error        (char **buf, char *fmt, ...);
+
+char        *method_strerror     (int id);
+XMLRPC_VALUE method_error        (int id);
 
 #define MPROTO(NAME) \
 	XMLRPC_VALUE NAME (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)

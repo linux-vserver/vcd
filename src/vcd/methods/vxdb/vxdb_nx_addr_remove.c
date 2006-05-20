@@ -36,16 +36,16 @@ XMLRPC_VALUE m_vxdb_nx_addr_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
 	
 	if (!name)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	if (addr)
 		dbr = dbi_conn_queryf(vxdb,
@@ -58,7 +58,7 @@ XMLRPC_VALUE m_vxdb_nx_addr_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			xid);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 		
 	return params;
 }

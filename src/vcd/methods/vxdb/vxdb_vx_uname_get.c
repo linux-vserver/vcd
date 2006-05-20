@@ -37,23 +37,23 @@ XMLRPC_VALUE m_vxdb_vx_uname_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
 	char *field = XMLRPC_VectorGetStringWithID(params, "field");
 	
 	if (!name || !field || flist32_getval(vhiname_list, field, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT %s FROM vx_uname WHERE xid = %d",
 		field, xid);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("field", field, 0));

@@ -36,7 +36,7 @@ XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *path = XMLRPC_VectorGetStringWithID(params, "path");
@@ -46,10 +46,10 @@ XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	int reserved = XMLRPC_VectorGetIntWithID(params, "reserved");
 	
 	if (!name || !path)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT space FROM dx_limit WHERE xid = %d AND path = '%s'",
@@ -69,7 +69,7 @@ XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	}
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 	
 	return params;
 }

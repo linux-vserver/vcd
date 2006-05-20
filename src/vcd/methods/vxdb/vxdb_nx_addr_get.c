@@ -38,16 +38,16 @@ XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE addrs = XMLRPC_CreateVector("addrs", xmlrpc_vector_array);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
 	
 	if (!name)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 	

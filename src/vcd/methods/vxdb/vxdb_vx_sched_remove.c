@@ -36,22 +36,22 @@ XMLRPC_VALUE m_vxdb_vx_sched_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params   = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
 	
 	if (!name)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"DELETE FROM vx_sched WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 	
 	return params;
 }

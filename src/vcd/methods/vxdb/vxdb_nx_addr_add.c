@@ -36,7 +36,7 @@ XMLRPC_VALUE m_vxdb_nx_addr_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
@@ -44,17 +44,17 @@ XMLRPC_VALUE m_vxdb_nx_addr_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *bcas = XMLRPC_VectorGetStringWithID(params, "broadcast");
 	
 	if (!name || !addr)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT xid FROM nx_addr WHERE xid = %d AND addr = '%s'",
 		xid, addr);
 	
 	if (dbi_result_get_numrows(dbr) != 0)
-		return XMLRPC_UtilityCreateFault(409, "Conflict");
+		return method_error(MEEXIST);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT INTO nx_addr (xid, addr, netmask, broadcast) "
@@ -62,7 +62,7 @@ XMLRPC_VALUE m_vxdb_nx_addr_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		xid, addr, netm, bcas);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 	
 	return params;
 }

@@ -25,15 +25,31 @@
 
 #include "methods.h"
 
+m_err_t method_error_codes[] = {
+	{ MEAUTH,    "Unauthorized" },
+	{ MEPERM,    "Operation not permitted" },
+	{ MEREQ,     "Invalid request" },
+	{ MEVXDB,    "Error in vxdb" },
+	{ MECONF,    "Invalid configuration" },
+	{ MESTOPPED, "Not running" },
+	{ MERUNNING, "Already running" },
+	{ MEEXIST,   "Conflict/Already exists" },
+	{ MENOENT,   "Not found" },
+	{ MESYS,     "System call failed" },
+	{ 0,         NULL },
+};
+
 #define MREGISTER(NAME,FUNC)  XMLRPC_ServerRegisterMethod(s, NAME, FUNC)
 
 void method_registry_init(XMLRPC_SERVER s)
 {
-	/* vxdb */
+	/* vx */
 	MREGISTER("vx.killer", m_vx_killer);
 	MREGISTER("vx.restart", m_vx_restart);
 	MREGISTER("vx.start", m_vx_start);
 	MREGISTER("vx.stop", m_vx_stop);
+	
+	/* vxdb */
 	MREGISTER("vxdb.create", m_vxdb_create);
 	MREGISTER("vxdb.dx.limit.get", m_vxdb_dx_limit_get);
 	MREGISTER("vxdb.dx.limit.remove", m_vxdb_dx_limit_remove);
@@ -91,11 +107,18 @@ XMLRPC_VALUE method_get_params(XMLRPC_REQUEST r)
 	return params;
 }
 
-int method_error(char **buf, char *fmt, ...)
+char *method_strerror(int id)
 {
-	va_list ap;
-	va_start(ap, fmt);
-	vasprintf(buf, fmt, ap);
-	va_end(ap);
-	return -1;
+	int i;
+	
+	for (i = 0; method_error_codes[i].msg; i++)
+		if (method_error_codes[i].id == id)
+			return method_error_codes[i].msg;
+	
+	return NULL;
+}
+
+XMLRPC_VALUE method_error(int id)
+{
+	return XMLRPC_UtilityCreateFault(id, method_strerror(id));
 }

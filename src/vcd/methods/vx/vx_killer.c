@@ -119,7 +119,7 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	if (!auth_isadmin(r) && !auth_isowner(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	_server = s;
 	_request = r;
@@ -128,17 +128,20 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	reboot = XMLRPC_VectorGetIntWithID(params, "reboot");
 	
 	if (!name)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	if (vx_get_info(xid, NULL) == -1 && errno == ESRCH)
-		return XMLRPC_UtilityCreateFault(404, "Not Running");
+		return method_error(MESTOPPED);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT timeout FROM init_method WHERE xid = %d",
 		xid);
+	
+	if (!dbr)
+		return method_error(MEVXDB);
 	
 	int timeout = 0;
 	
@@ -156,7 +159,7 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	switch((pid = fork())) {
 	case -1:
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MESYS);
 		break;
 	
 	case 0:

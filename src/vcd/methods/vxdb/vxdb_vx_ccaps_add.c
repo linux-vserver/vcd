@@ -36,30 +36,30 @@ XMLRPC_VALUE m_vxdb_vx_ccaps_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *ccap = XMLRPC_VectorGetStringWithID(params, "ccap");
 	
 	if (!name || !ccap || flist64_getval(ccaps_list, ccap, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT xid FROM vx_ccaps WHERE xid = %d AND ccap = '%s'",
 		xid, ccap);
 	
 	if (dbi_result_get_numrows(dbr) != 0)
-		return XMLRPC_UtilityCreateFault(409, "Conflict");
+		return method_error(MEEXIST);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT INTO vx_ccaps (xid, ccap) VALUES (%d, '%s')",
 		xid, ccap);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 		
 	return params;
 }

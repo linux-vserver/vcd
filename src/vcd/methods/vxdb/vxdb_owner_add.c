@@ -36,23 +36,23 @@ XMLRPC_VALUE m_vxdb_owner_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *user = XMLRPC_VectorGetStringWithID(params, "username");
 	
 	if (!name || !user)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid FROM user WHERE name = '%s'",
 		user);
 	
 	if (dbi_result_get_numrows(dbr) == 0)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	dbi_result_first_row(dbr);
 	int uid = dbi_result_get_int(dbr, "uid");
@@ -62,14 +62,14 @@ XMLRPC_VALUE m_vxdb_owner_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		uid, xid);
 	
 	if (dbi_result_get_numrows(dbr) != 0)
-		return XMLRPC_UtilityCreateFault(409, "Conflict");
+		return method_error(MEEXIST);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT INTO xid_uid_map (xid, uid) VALUES (%d, %d)",
 		xid, uid);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 	
 	return params;
 }

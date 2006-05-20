@@ -38,13 +38,13 @@ XMLRPC_VALUE m_vxdb_vx_ccaps_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE ccaps = XMLRPC_CreateVector("ccaps", xmlrpc_vector_array);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	
 	if (name) {
 		if (vxdb_getxid(name, &xid) == -1)
-			return XMLRPC_UtilityCreateFault(404, "Not Found");
+			return method_error(MENOENT);
 		
 		dbr = dbi_conn_queryf(vxdb,
 			"SELECT ccap FROM vx_ccaps WHERE xid = %d",

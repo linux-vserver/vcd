@@ -216,7 +216,7 @@ XMLRPC_VALUE call_method(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return XMLRPC_CopyValue(r->error);
 	
 	if (!auth_isvalid(r))
-		return XMLRPC_UtilityCreateFault(401, "Unauthorized");
+		return method_error(MEAUTH);
 	
 	cb = XMLRPC_ServerFindMethod(s, r->methodName.str);
 	

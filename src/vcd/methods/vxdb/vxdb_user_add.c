@@ -36,21 +36,21 @@ XMLRPC_VALUE m_vxdb_user_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name     = XMLRPC_VectorGetStringWithID(params, "name");
 	char *password = XMLRPC_VectorGetStringWithID(params, "password");
 	int admin      = XMLRPC_VectorGetIntWithID(params, "admin");
 	
 	if (!name || !password)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid FROM user WHERE name = '%s'",
 		name);
 	
 	if (dbi_result_get_numrows(dbr) != 0)
-		return XMLRPC_UtilityCreateFault(409, "Conflict");
+		return method_error(MEEXIST);
 	
 	dbr = dbi_conn_queryf(vxdb, "SELECT MAX(uid) AS maxuid FROM user");
 	
@@ -63,7 +63,7 @@ XMLRPC_VALUE m_vxdb_user_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		uid, name, password, admin == 0 ? 0 : 1);
 	
 	if (!dbr)
-		return XMLRPC_UtilityCreateFault(500, "Internal Server Error");
+		return method_error(MEVXDB);
 	
 	return params;
 }

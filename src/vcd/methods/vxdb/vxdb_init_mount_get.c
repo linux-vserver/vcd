@@ -38,16 +38,16 @@ XMLRPC_VALUE m_vxdb_init_mount_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE mounts = XMLRPC_CreateVector("mounts", xmlrpc_vector_array);
 	
 	if (!auth_isadmin(r))
-		return XMLRPC_UtilityCreateFault(403, "Forbidden");
+		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *dst = XMLRPC_VectorGetStringWithID(params, "dst");
 	
 	if (!name)
-		return XMLRPC_UtilityCreateFault(400, "Bad Request");
+		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
-		return XMLRPC_UtilityCreateFault(404, "Not Found");
+		return method_error(MENOENT);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 	
