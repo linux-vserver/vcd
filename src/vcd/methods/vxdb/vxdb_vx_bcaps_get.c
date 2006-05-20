@@ -33,7 +33,7 @@ XMLRPC_VALUE m_vxdb_vx_bcaps_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = get_method_params(r);
+	XMLRPC_VALUE params = method_get_params(r);
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	XMLRPC_VALUE bcaps = XMLRPC_CreateVector("bcaps", xmlrpc_vector_array);
 	

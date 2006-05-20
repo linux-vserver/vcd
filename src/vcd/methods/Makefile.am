@@ -17,9 +17,14 @@
 
 INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libxmlrpc \
+           -I$(top_srcdir)/src/libconfuse \
            -I$(top_srcdir)/src/vcd
 
-M_VXDB = vxdb/vxdb_create.c \
+M_VXDB = vx/vx_killer.c \
+         vx/vx_restart.c \
+         vx/vx_start.c \
+         vx/vx_stop.c \
+         vxdb/vxdb_create.c \
          vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_dx_limit_remove.c \
          vxdb/vxdb_dx_limit_set.c \

@@ -33,7 +33,7 @@ XMLRPC_VALUE m_vxdb_vx_ccaps_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = get_method_params(r);
+	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
 		return XMLRPC_UtilityCreateFault(403, "Forbidden");

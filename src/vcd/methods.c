@@ -19,15 +19,21 @@
 #include <config.h>
 #endif
 
+#include <stdarg.h>
+
 #include "xmlrpc.h"
 
 #include "methods.h"
 
 #define MREGISTER(NAME,FUNC)  XMLRPC_ServerRegisterMethod(s, NAME, FUNC)
 
-void registry_init(XMLRPC_SERVER s)
+void method_registry_init(XMLRPC_SERVER s)
 {
 	/* vxdb */
+	MREGISTER("vx.killer", m_vx_killer);
+	MREGISTER("vx.restart", m_vx_restart);
+	MREGISTER("vx.start", m_vx_start);
+	MREGISTER("vx.stop", m_vx_stop);
 	MREGISTER("vxdb.create", m_vxdb_create);
 	MREGISTER("vxdb.dx.limit.get", m_vxdb_dx_limit_get);
 	MREGISTER("vxdb.dx.limit.remove", m_vxdb_dx_limit_remove);
@@ -74,7 +80,7 @@ void registry_init(XMLRPC_SERVER s)
 
 #undef MREGISTER
 
-XMLRPC_VALUE get_method_params(XMLRPC_REQUEST r)
+XMLRPC_VALUE method_get_params(XMLRPC_REQUEST r)
 {
 	XMLRPC_VALUE request, auth, params;
 	
@@ -83,4 +89,13 @@ XMLRPC_VALUE get_method_params(XMLRPC_REQUEST r)
 	params  = XMLRPC_VectorNext(request);
 	
 	return params;
+}
+
+int method_error(char **buf, char *fmt, ...)
+{
+	va_list ap;
+	va_start(ap, fmt);
+	vasprintf(buf, fmt, ap);
+	va_end(ap);
+	return -1;
 }

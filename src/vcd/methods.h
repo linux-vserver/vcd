@@ -20,13 +20,18 @@
 
 #include "xmlrpc.h"
 
-void registry_init(XMLRPC_SERVER s);
-XMLRPC_VALUE get_method_params(XMLRPC_REQUEST r);
+void         method_registry_init(XMLRPC_SERVER s);
+XMLRPC_VALUE method_get_params   (XMLRPC_REQUEST r);
+int          method_error        (char **buf, char *fmt, ...);
 
 #define MPROTO(NAME) \
 	XMLRPC_VALUE NAME (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 
 /* vxdb */
+MPROTO(m_vx_killer);
+MPROTO(m_vx_restart);
+MPROTO(m_vx_start);
+MPROTO(m_vx_stop);
 MPROTO(m_vxdb_create);
 MPROTO(m_vxdb_dx_limit_get);
 MPROTO(m_vxdb_dx_limit_remove);

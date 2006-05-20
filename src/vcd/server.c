@@ -42,7 +42,7 @@
 
 #define DH_BITS 1024
 
-static XMLRPC_SERVER xmlrpc_server;
+XMLRPC_SERVER xmlrpc_server;
 static int sfd, cfd, num_clients;
 
 typedef enum {
@@ -565,7 +565,7 @@ void server_main(void)
 	
 	/* setup xmlrpc server */
 	xmlrpc_server = XMLRPC_ServerCreate();
-	registry_init(xmlrpc_server);
+	method_registry_init(xmlrpc_server);
 	
 	log_info("Accepting incoming connections on %s:%d", host, port);
 	
