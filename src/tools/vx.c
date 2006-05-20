@@ -217,7 +217,7 @@ migrate:
 	goto out;
 	
 login:
-	if (vx_enter_namespace(xid) != -1)
+	if (vx_enter_namespace(xid) == -1)
 		perr("vx_enter_namespace");
 	
 	if (chroot(".") == -1)

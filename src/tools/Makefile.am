@@ -28,6 +28,7 @@ sbin_PROGRAMS = dx \
                 nx \
                 vdbm \
                 vr \
+                vshelper \
                 vx
 
 dx_SOURCES = dx.c msg.c
@@ -36,5 +37,6 @@ ns_SOURCES = ns.c msg.c
 nx_SOURCES = nx.c msg.c lists.c
 vdbm_SOURCES = vdbm.c msg.c
 vr_SOURCES = vr.c msg.c
+vshelper_SOURCES = vshelper.c msg.c
 vx_SOURCES = vx.c msg.c lists.c vlogin.c
 vx_LDADD   = $(LDADD) -lutil
