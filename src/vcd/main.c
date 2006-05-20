@@ -53,6 +53,10 @@ static cfg_opt_t CFG_OPTS[] = {
 	
 	/* vxdb configuration */
 	CFG_STR("vxdb-path", NULL, CFGF_NONE),
+	
+	/* vserver configuration */
+	CFG_STR("vserver-lockdir", NULL, CFGF_NONE),
+	CFG_STR("vserver-basedir", NULL, CFGF_NONE),
 	CFG_END()
 };
 
@@ -183,10 +187,11 @@ int main(int argc, char **argv)
 	chdir("/");
 	
 	close(STDIN_FILENO);
-	close(STDOUT_FILENO);
 	
-	if (!debug)
+	if (!debug) {
+		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
+	}
 	
 	/* ignore some standard signals */
 	signal(SIGHUP,  SIG_IGN);

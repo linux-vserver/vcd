@@ -38,7 +38,6 @@ static char *log_ident = NULL;
 
 int log_init(char *ident, int debug)
 {
-	int level;
 	char *logfile, *logdir = cfg_getstr(cfg, "log-dir");
 	
 	if (!ident || !*ident)
@@ -64,10 +63,7 @@ int log_init(char *ident, int debug)
 	if (log_fd == -1)
 		log_error_and_die("Could not open log file");
 	
-	level = cfg_getint(cfg, "log-level");
-	
-	if (!(level < 0 || level > 4))
-		log_level = level;
+	log_level = cfg_getint(cfg, "log-level");
 	
 	return 0;
 }

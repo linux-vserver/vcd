@@ -22,5 +22,5 @@
 
 int auth_isvalid(XMLRPC_REQUEST r);
 int auth_isadmin(XMLRPC_REQUEST r);
-
+int auth_isowner(XMLRPC_REQUEST r);
 #endif

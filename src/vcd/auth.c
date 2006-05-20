@@ -75,3 +75,42 @@ int auth_isadmin(XMLRPC_REQUEST r)
 	
 	return 0;
 }
+
+int auth_isowner(XMLRPC_REQUEST r)
+{
+	xid_t xid;
+	dbi_result dbr;
+	XMLRPC_VALUE request, auth, params;
+	
+	if (!auth_isvalid(r))
+		return 0;
+	
+	request = XMLRPC_RequestGetData(r);
+	auth    = XMLRPC_VectorRewind(request);
+	params  = XMLRPC_VectorNext(request);
+	
+	char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	char *name     = XMLRPC_VectorGetStringWithID(params, "name");
+	
+	if (vxdb_getxid(name, &xid) == -1)
+		return 0;
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT uid FROM user WHERE name = '%s'",
+		username);
+	
+	if (dbi_result_get_numrows(dbr) < 1)
+		return 0;
+	
+	dbi_result_first_row(dbr);
+	int uid = dbi_result_get_int(dbr, "uid");
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT uid FROM xid_uid_map WHERE uid = %d AND xid = %d",
+		uid, xid);
+	
+	if (dbi_result_get_numrows(dbr) > 0)
+		return 1;
+	
+	return 0;
+}
