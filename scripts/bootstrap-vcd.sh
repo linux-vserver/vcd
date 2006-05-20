@@ -21,9 +21,13 @@ fi
 echo ${MD5SUM}
 
 echo
+echo -n "Directory for vservers? (/vservers): "
+read vserver_dir
+echo -n "Directory for vserver lock files? (/var/lock/vservers): "
+read lock_dir
 echo -n "Directory for log files? (/var/log/vcd): "
 read log_dir
-echo -n "Directory for vxdb (/var/lib/vcd): "
+echo -n "Directory for vxdb and other data (/var/lib/vcd): "
 read vxdb_path
 echo -n "Name of the admin user (admin): "
 read admin_name
@@ -50,6 +54,8 @@ read listen_port
 echo -n "Location of config file (/etc/vcd.conf): "
 read vcd_conf
 
+: ${vserver_dir:=/vservers}
+: ${lock_dir:=/var/lock/vserver}
 : ${log_dir:=/var/log/vcd}
 : ${vxdb_path:=/var/lib/vcd}
 : ${admin_name:=admin}
@@ -59,6 +65,10 @@ read vcd_conf
 
 admin_password=$(echo -n ${admin_password} | md5sum | cut -d\  -f1)
 
+echo " * Creating vserver directory"
+mkdir -p ${vserver_dir}
+echo " * Creating lock directory"
+mkdir -p ${lock_dir}
 echo " * Creating log directory"
 mkdir -p ${log_dir}
 echo " * Creating vxdb directory"
@@ -198,6 +208,10 @@ log-dir = "${log_dir}"
 
 /* vxdb configuration */
 vxdb-path = "${vxdb_path}"
+
+/* vserver configuration */
+vserver-lockdir = "${lock_dir}"
+vserver-basedir = "${vserver_dir}"
 VCDCONFEOF
 	
 	chmod 600 "${vcd_conf}"
