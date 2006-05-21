@@ -95,6 +95,34 @@ int auth_isowner(XMLRPC_REQUEST r)
 	if (vxdb_getxid(name, &xid) == -1)
 		return 0;
 	
+	int uid = auth_getuid(r);
+	
+	if (uid == 0)
+		return 0;
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT uid FROM xid_uid_map WHERE uid = %d AND xid = %d",
+		uid, xid);
+	
+	if (dbi_result_get_numrows(dbr) > 0)
+		return 1;
+	
+	return 0;
+}
+
+int auth_getuid(XMLRPC_REQUEST r)
+{
+	dbi_result dbr;
+	XMLRPC_VALUE request, auth;
+	
+	if (!auth_isvalid(r))
+		return 0;
+	
+	request = XMLRPC_RequestGetData(r);
+	auth    = XMLRPC_VectorRewind(request);
+	
+	char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid FROM user WHERE name = '%s'",
 		username);
@@ -105,12 +133,5 @@ int auth_isowner(XMLRPC_REQUEST r)
 	dbi_result_first_row(dbr);
 	int uid = dbi_result_get_int(dbr, "uid");
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT uid FROM xid_uid_map WHERE uid = %d AND xid = %d",
-		uid, xid);
-	
-	if (dbi_result_get_numrows(dbr) > 0)
-		return 1;
-	
-	return 0;
+	return uid;
 }
