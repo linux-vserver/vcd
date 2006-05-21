@@ -39,16 +39,11 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *method  = XMLRPC_VectorGetStringWithID(params, "method");
-	char *start = XMLRPC_VectorGetStringWithID(params, "start");
-	char *stop  = XMLRPC_VectorGetStringWithID(params, "stop");
-	int timeout;
-	
-	if (XMLRPC_VectorGetValueWithID(params, "timeout") == NULL)
-		timeout = -1;
-	else
-		timeout = XMLRPC_VectorGetIntWithID(params, "timeout");
+	char *name   = XMLRPC_VectorGetStringWithID(params, "name");
+	char *method = XMLRPC_VectorGetStringWithID(params, "method");
+	char *start  = XMLRPC_VectorGetStringWithID(params, "start");
+	char *stop   = XMLRPC_VectorGetStringWithID(params, "stop");
+	int timeout  = XMLRPC_VectorGetIntWithID(params, "timeout");
 	
 	if (!name)
 		return method_error(MEREQ);
@@ -76,13 +71,22 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 				"UPDATE init_method SET stop = '%s' WHERE xid = %d",
 				stop, xid);
 		
-		if (timeout != -1)
+		if (timeout > 0)
 			dbr = dbi_conn_queryf(vxdb,
 				"UPDATE init_method SET timeout = %d WHERE xid = %d",
 				timeout, xid);
 	}
 	
 	else if (dbr && dbi_result_get_numrows(dbr) == 0) {
+		if (!method || !*method)
+			method = "init";
+		
+		if (!start)
+			start = "";
+		
+		if (!stop)
+			stop = "";
+		
 		dbr = dbi_conn_queryf(vxdb,
 			"INSERT INTO init_method (xid, method, start, stop, timeout) "
 			"VALUES (%d, '%s', '%s', '%s', %d)",

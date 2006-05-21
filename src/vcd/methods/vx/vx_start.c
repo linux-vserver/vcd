@@ -287,6 +287,9 @@ int setup_context(void)
 		if (!dbr)
 			return errno = MEVXDB, -1;
 		
+		if (dbi_result_get_numrows(dbr) < 1)
+			continue;
+		
 		if (flist32_getval(vhiname_list, vhifields[i], &buf32) == -1)
 			continue;
 		
@@ -554,26 +557,27 @@ int guest_init(void)
 		    chroot(vdir) == -1 ||
 		    nx_migrate(xid) == -1 ||
 		    vx_migrate(xid, &migrate_flags) == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		if (strcmp(method, "init") == 0) {
 			if (exec_replace("/sbin/init") == -1)
-				exit(errno);
+				exit(EXIT_FAILURE);
 		}
 		
 		else if (strcmp(method, "gentoo") == 0) {
-			if (!start)
+			if (!start || !*start)
 				start = "default";
 			
-			if (exec_fork("/sbin/rc boot") == -1 ||
-			    exec_fork("/sbin/rc %s", start) == -1)
-				exit(errno);
+			exec_fork("/sbin/rc sysinit");
+			exec_fork("/sbin/rc boot");
+			exec_fork("/sbin/rc %s", start); /* /sbin/rc always fails */
+			exit(EXIT_SUCCESS);
 		}
 		
 		else
-			exit(MECONF);
+			exit(EXIT_FAILURE);
 		
-		exit(MESYS);
+		exit(EXIT_SUCCESS);
 	
 	default:
 		switch (waitpid(pid, &status, waitchild == 0 ? WNOHANG : 0)) {
@@ -585,7 +589,7 @@ int guest_init(void)
 		
 		default:
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				return errno = WEXITSTATUS(status), -1;
+				return errno = MESYS, -1;
 			
 			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
@@ -612,12 +616,6 @@ void cleanup_on_exit(void)
 	nx_set_flags(xid, &nflags);
 }
 
-static
-void cleanup_on_error(void)
-{
-	cleanup_on_exit();
-}
-
 /* vx.start(string name) */
 XMLRPC_VALUE m_vx_start(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
@@ -635,12 +633,16 @@ XMLRPC_VALUE m_vx_start(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
+	if (vx_get_info(xid, NULL) != -1)
+		return method_error(MERUNNING);
+	
 	if (setup_context() == -1 ||
 	    setup_network() == -1 ||
 	    setup_namespace() == -1 ||
 	    setup_disklimit() == -1 ||
 	    guest_init() == -1) {
-		cleanup_on_error();
+		cleanup_on_exit();
+		m_vx_stop(s, r, d);
 		return method_error(errno);
 	}
 	

@@ -46,8 +46,8 @@ XMLRPC_VALUE m_vxdb_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return XMLRPC_UtilityCreateFault(302, "Still running");
+	if (vx_get_info(xid, NULL) != -1)
+		return method_error(MERUNNING);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"BEGIN EXCLUSIVE TRANSACTION;"

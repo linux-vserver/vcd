@@ -25,6 +25,7 @@
 
 #include "auth.h"
 #include "lists.h"
+#include "log.h"
 #include "methods.h"
 #include "vxdb.h"
 
@@ -51,16 +52,22 @@ XMLRPC_VALUE m_vxdb_init_mount_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM init_mount WHERE xid = %d AND dst = '%s'",
+		"SELECT xid FROM init_mount WHERE xid = %d AND file = '%s'",
 		xid, dst);
 	
 	if (dbi_result_get_numrows(dbr) != 0)
 		return method_error(MEEXIST);
 	
+	if (!opts || !*opts)
+		opts = "defaults";
+	
+	if (!type || !*type)
+		type = "auto";
+	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT INTO init_mount (xid, spec, file, vfstype, mntops) "
 		"VALUES (%d, '%s', '%s', '%s', '%s')",
-		xid, src, dst, opts, type);
+		xid, src, dst, type, opts);
 	
 	if (!dbr)
 		return method_error(MEVXDB);

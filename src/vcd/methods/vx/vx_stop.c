@@ -69,7 +69,7 @@ XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		"SELECT method,stop FROM init_method WHERE xid = %d",
 		xid);
 	
-	if (dbi_result_get_numrows(dbr) < 1) {
+	if (dbr && dbi_result_get_numrows(dbr) < 1) {
 		method  = "init";
 		stop    = "";
 	}
@@ -88,13 +88,14 @@ XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	asprintf(&vdir, "%s/%s", vdirbase, name);
 	
-	signal(SIGCHLD, SIG_DFL);
+	signal(SIGCHLD, SIG_IGN);
 	
 	switch ((pid = fork())) {
 	case -1:
 		return method_error(MESYS);
 	
 	case 0:
+		signal(SIGCHLD, SIG_DFL);
 		usleep(200);
 		
 		for (i = 0; i < 100; i++)
@@ -104,45 +105,19 @@ XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		    chroot(vdir) == -1 ||
 		    nx_migrate(xid) == -1 ||
 		    vx_migrate(xid, NULL) == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		if (strcmp(method, "init") == 0) {
 			if (!stop || !*stop)
 				stop = "0";
 			
-			if (exec_replace("/sbin/telinit %s", stop) == -1)
-				exit(errno);
+			exec_replace("/sbin/telinit %s", stop);
 		}
 		
-		else if (strcmp(method, "gentoo") == 0) {
-			if (!stop || !*stop)
-				stop = "shutdown";
-			
-			if (exec_fork("/sbin/rc %s", stop) == -1)
-				exit(errno);
-		}
-		
-		else
-			exit(MECONF);
-		
-		exit(MESYS);
+		exit(EXIT_SUCCESS);
 	
 	default:
-		switch (waitpid(pid, &status, WNOHANG)) {
-		case -1:
-			return method_error(MESYS);
-		
-		case 0:
-			signal(SIGCHLD, SIG_IGN);
-			break;
-		
-		default:
-			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				return method_error(MESYS);
-			
-			if (WIFSIGNALED(status))
-				kill(getpid(), WTERMSIG(status));
-		}
+		break;
 	}
 	
 	response = m_vx_killer(s, r, d);

@@ -24,18 +24,21 @@
 #include <signal.h>
 #include <sys/wait.h>
 
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
+#include "cfg.h"
 #include "log.h"
 #include "methods.h"
 #include "vxdb.h"
 
 /* killer process:
-   1) fork to background
-   2) wait for context to die using a timeout
-   3) if timeout is reached kill all processes in context
-   4) restart OR exit if all processes in context died
+   1) fork to background if appropriate
+   2) shutdown init less contexts
+   3) wait for context to die using a timeout
+   4) if timeout is reached kill all processes in context
+   5) restart OR exit if all processes in context died
 */
 
 static XMLRPC_SERVER _server;
@@ -79,7 +82,7 @@ void wait_timeout_handler(int sig)
 		.sig = 9,
 	};
 	
-	log_debug("vx killer reached timeout before death", name);
+	log_debug("vx killer reached timeout before death");
 	
 	signal(SIGALRM, SIG_DFL);
 	
@@ -110,6 +113,70 @@ void wait_death(int timeout)
 	signal(SIGALRM, SIG_DFL);
 	
 	handle_death();
+}
+
+static
+int initless_shutdown(void)
+{
+	dbi_result dbr;
+	char *method, *stop;
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT method,stop FROM init_method WHERE xid = %d",
+		xid);
+	
+	if (!dbr)
+		return errno = MEVXDB, -1;
+	 
+	if (dbi_result_get_numrows(dbr) < 1)
+		return 0;
+	
+	dbi_result_first_row(dbr);
+	method  = (char *) dbi_result_get_string(dbr, "method");
+	stop    = (char *) dbi_result_get_string(dbr, "stop");
+	
+	pid_t pid;
+	int i, status;
+	
+	char *vdirbase = cfg_getstr(cfg, "vserver-basedir");
+	char *vdir = NULL;
+	
+	asprintf(&vdir, "%s/%s", vdirbase, name);
+	
+	signal(SIGCHLD, SIG_IGN);
+	
+	switch ((pid = fork())) {
+	case -1:
+		return errno = MESYS, -1;
+	
+	case 0:
+		signal(SIGCHLD, SIG_DFL);
+		usleep(200);
+		
+		for (i = 0; i < 100; i++)
+			close(i);
+		
+		if (vx_enter_namespace(xid) == -1 ||
+		    chroot(vdir) == -1 ||
+		    nx_migrate(xid) == -1 ||
+		    vx_migrate(xid, NULL) == -1)
+			exit(EXIT_FAILURE);
+		
+		if (strcmp(method, "gentoo") == 0) {
+			if (!stop || !*stop)
+				stop = "shutdown";
+			
+			if (exec_replace("/sbin/rc %s", stop) == -1)
+				exit(EXIT_FAILURE);
+		}
+		
+		exit(EXIT_SUCCESS);
+	
+	default:
+		break;
+	}
+	
+	return 0;
 }
 
 /* vx.killer(string name[, int wait[, int reboot]]) */
@@ -151,13 +218,16 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		timeout = dbi_result_get_int(dbr, "timeout");
 	}
 	
-	if (timeout == 0)
+	if (timeout < 3)
 		timeout = 10;
 	
 	pid_t pid;
 	int status;
 	
-	signal(SIGCHLD, SIG_DFL);
+	if (wait)
+		signal(SIGCHLD, SIG_DFL);
+	else
+		signal(SIGCHLD, SIG_IGN);
 	
 	switch((pid = fork())) {
 	case -1:
@@ -166,19 +236,20 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	case 0:
 		log_debug("vx killer activated for '%s'", name);
+		
+		if (initless_shutdown() == -1)
+			exit(EXIT_FAILURE);
+		
 		wait_death(timeout);
 		break;
 	
 	default:
-		if (!wait)
-			signal(SIGCHLD, SIG_IGN);
-		
-		else {
+		if (wait) {
 			if (waitpid(pid, &status, 0) == -1)
 				return method_error(MESYS);
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				return method_error(WEXITSTATUS(status));
+				return method_error(MESYS);
 			
 			if (WIFSIGNALED(status))
 				kill(getpid(), WTERMSIG(status));
