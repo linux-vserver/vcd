@@ -60,6 +60,7 @@ void method_registry_init(XMLRPC_SERVER s)
 	MREGISTER("vxdb.init.mount.add", m_vxdb_init_mount_add);
 	MREGISTER("vxdb.init.mount.get", m_vxdb_init_mount_get);
 	MREGISTER("vxdb.init.mount.remove", m_vxdb_init_mount_remove);
+	MREGISTER("vxdb.list", m_vxdb_list);
 	MREGISTER("vxdb.nx.addr.add", m_vxdb_nx_addr_add);
 	MREGISTER("vxdb.nx.addr.get", m_vxdb_nx_addr_get);
 	MREGISTER("vxdb.nx.addr.remove", m_vxdb_nx_addr_remove);

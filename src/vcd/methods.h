@@ -63,6 +63,7 @@ MPROTO(m_vxdb_init_method_set);
 MPROTO(m_vxdb_init_mount_add);
 MPROTO(m_vxdb_init_mount_get);
 MPROTO(m_vxdb_init_mount_remove);
+MPROTO(m_vxdb_list);
 MPROTO(m_vxdb_nx_addr_add);
 MPROTO(m_vxdb_nx_addr_get);
 MPROTO(m_vxdb_nx_addr_remove);

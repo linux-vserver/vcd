@@ -34,6 +34,7 @@ M_VXDB = vx/vx_killer.c \
          vxdb/vxdb_init_mount_add.c \
          vxdb/vxdb_init_mount_get.c \
          vxdb/vxdb_init_mount_remove.c \
+         vxdb/vxdb_list.c \
          vxdb/vxdb_nx_addr_add.c \
          vxdb/vxdb_nx_addr_get.c \
          vxdb/vxdb_nx_addr_remove.c \
