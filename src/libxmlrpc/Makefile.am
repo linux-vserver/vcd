@@ -27,6 +27,7 @@ noinst_HEADERS = base64.h \
                  xml_to_soap.h \
                  xml_to_xmlrpc.h \
                  xmlrpc.h \
+		 xmlrpc_private.h \
                  xmlrpc_introspection.h \
                  xmlrpc_introspection_private.h
 
