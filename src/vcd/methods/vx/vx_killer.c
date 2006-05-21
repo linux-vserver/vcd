@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
+#include <sys/wait.h>
 
 #include "xmlrpc.h"
 
@@ -111,12 +112,11 @@ void wait_death(int timeout)
 	handle_death();
 }
 
-/* vx.killer(string name, int reboot) */
+/* vx.killer(string name[, int wait[, int reboot]]) */
 XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	dbi_result dbr;
 	XMLRPC_VALUE params = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	if (!auth_isadmin(r) && !auth_isowner(r))
 		return method_error(MEPERM);
@@ -124,8 +124,9 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	_server = s;
 	_request = r;
 	
-	name   = XMLRPC_VectorGetStringWithID(params, "name");
-	reboot = XMLRPC_VectorGetIntWithID(params, "reboot");
+	name     = XMLRPC_VectorGetStringWithID(params, "name");
+	reboot   = XMLRPC_VectorGetIntWithID(params, "reboot");
+	int wait = XMLRPC_VectorGetIntWithID(params, "wait");
 	
 	if (!name)
 		return method_error(MEREQ);
@@ -153,9 +154,10 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (timeout == 0)
 		timeout = 10;
 	
-	signal(SIGCHLD, SIG_IGN);
-	
 	pid_t pid;
+	int status;
+	
+	signal(SIGCHLD, SIG_DFL);
 	
 	switch((pid = fork())) {
 	case -1:
@@ -168,11 +170,20 @@ XMLRPC_VALUE m_vx_killer(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		break;
 	
 	default:
-		break;
+		if (!wait)
+			signal(SIGCHLD, SIG_IGN);
+		
+		else {
+			if (waitpid(pid, &status, 0) == -1)
+				return method_error(MESYS);
+			
+			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+				return method_error(WEXITSTATUS(status));
+			
+			if (WIFSIGNALED(status))
+				kill(getpid(), WTERMSIG(status));
+		}
 	}
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("pid", pid));
-	
-	return response;
+	return params;
 }

@@ -19,40 +19,30 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
-#include "auth.h"
 #include "methods.h"
-#include "vxdb.h"
 
-/* restart process:
-   1) create new vps killer (background, reboot)
-   2) run init-style based stop command
-   3) wait for vps killer
-*/
-
-static xid_t xid = 0;
-
-/* vx.restart(string name) */
+/* vx.restart(string name[, int wait]) */
 XMLRPC_VALUE m_vx_restart(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	dbi_result dbr;
 	XMLRPC_VALUE params = method_get_params(r);
+	XMLRPC_VALUE response;
 	
-	if (!auth_isadmin(r) && !auth_isowner(r))
-		return method_error(MEPERM);
+	XMLRPC_VALUE reboot = XMLRPC_VectorGetValueWithID(params, "reboot");
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	if (!reboot)
+		XMLRPC_AddValueToVector(params, XMLRPC_CreateValueInt("reboot", 1));
+	else
+		XMLRPC_SetValueInt(reboot, 1);
 	
-	if (!name)
-		return method_error(MEREQ);
+	response = m_vx_stop(s, r, d);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
+	int   fault_code   = XMLRPC_VectorGetIntWithID(response, "faultCode");
 	
-	/* restart here */
+	if (fault_string || fault_code != 0)
+		return response;
 	
 	return params;
 }
