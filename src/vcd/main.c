@@ -106,6 +106,9 @@ void signal_handler(int sig, siginfo_t *siginfo, void *u)
 	signal(SIGCHLD, SIG_IGN);
 	kill(0, SIGTERM);
 	
+	if (cfg)
+		cfg_free(cfg);
+	
 	exit(EXIT_FAILURE);
 }
 
@@ -125,7 +128,7 @@ int main(int argc, char **argv)
 	struct sigaction act;
 	
 	/* getopt */
-	while ((c = getopt (argc, argv, "dc:")) != -1) {
+	while ((c = getopt(argc, argv, "dc:")) != -1) {
 		switch (c) {
 		case 'c':
 			cfg_file = optarg;

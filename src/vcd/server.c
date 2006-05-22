@@ -31,11 +31,11 @@
 
 #include "lucid.h"
 #include "xmlrpc.h"
-#include "xmlrpc_private.h"
 
 #include "auth.h"
 #include "cfg.h"
 #include "log.h"
+#include "methods.h"
 #include "vxdb.h"
 
 #include "methods.h"
@@ -57,173 +57,22 @@ static gnutls_certificate_credentials_t x509;
 static gnutls_dh_params_t dh_params;
 static gnutls_session_t tls_session;
 
-typedef struct {
-	int id;
-	char *desc;
-} httpd_status_t;
-
 static
-httpd_status_t http_status_codes[] = {
-	{ 100, "Continue" },
-	{ 101, "Switching Protocols" },
-	{ 200, "OK" },
-	{ 201, "Created" },
-	{ 202, "Accepted" },
-	{ 203, "Non-Authoritative Information" },
-	{ 204, "No Content" },
-	{ 205, "Reset Content" },
-	{ 206, "Partial Content" },
-	{ 300, "Multiple Choices" },
-	{ 301, "Moved Permanently" },
-	{ 302, "Found" },
-	{ 303, "See Other" },
-	{ 304, "Not Modified" },
-	{ 305, "Use Proxy" },
-	{ 307, "Temporary Redirect" },
-	{ 400, "Bad Request" },
-	{ 401, "Unauthorized" },
-	{ 402, "Payment Required" },
-	{ 403, "Forbidden" },
-	{ 404, "Not Found" },
-	{ 405, "Method Not Allowed" },
-	{ 406, "Not Acceptable" },
-	{ 407, "Proxy Authentication Required" },
-	{ 408, "Request Timeout" },
-	{ 409, "Conflict" },
-	{ 410, "Gone" },
-	{ 411, "Length Required" },
-	{ 412, "Precondition Failed" },
-	{ 413, "Request Entity Too Large" },
-	{ 414, "Request-URI Too Long" },
-	{ 415, "Unsupported Media Type" },
-	{ 416, "Requested Range Not Satisfiable" },
-	{ 417, "Expectation Failed" },
-	{ 500, "Internal Server Error" },
-	{ 501, "Not Implemented" },
-	{ 502, "Bad Gateway" },
-	{ 503, "Service Unavailable" },
-	{ 504, "Gateway Timeout" },
-	{ 505, "HTTP Version Not Supported" },
-	{ 0,   NULL }
-};
-
-static
-int httpd_read_line(char **line)
+size_t httpd_read(void *src, char *data, size_t len)
 {
-	int rc, chunks = 1, idx = 0;
-	char *buf = malloc(chunks * CHUNKSIZE + 1);
-	char c;
-
-	for (;;) {
-		if (tls_mode == TLS_DISABLED)
-			rc = read(cfd, &c, 1);
-		else
-			rc = gnutls_record_recv(tls_session, &c, 1);
-		
-		if (rc < 0) {
-			free(buf);
-			return -1;
-		}
-		
-		if (rc == 0) {
-			idx = 0;
-			goto out;
-		}
-		
-		if (c == '\r')
-			continue;
-		
-		if (c == '\n')
-			goto out;
-		
-		if (idx >= chunks * CHUNKSIZE) {
-			chunks++;
-			buf = realloc(buf, chunks * CHUNKSIZE + 1);
-		}
-		
-		buf[idx++] = c;
-	}
-	
-out:
-	buf[idx] = '\0';
-	*line = buf;
-	return strlen(buf);
-}
-
-static
-int httpd_write(char *fmt, ...)
-{
-	char *buf;
-	int rc;
-	
-	va_list ap;
-	va_start(ap, fmt);
-	
-	vasprintf(&buf, fmt, ap);
-	
 	if (tls_mode == TLS_DISABLED)
-		rc = write(cfd, buf, strlen(buf));
+		return read(*(int *) src, data, len);
 	else
-		rc = gnutls_record_send(tls_session, buf, strlen(buf));
-	
-	free(buf);
-	return rc;
+		return gnutls_record_send(*(gnutls_session_t *) src, data, len);
 }
 
 static
-void httpd_send_headers(int id, size_t clen)
+size_t httpd_write(void *dst, char *data, size_t len)
 {
-	static int headers_sent = 0;
-	int i;
-	
-	if (headers_sent == 1)
-		return;
-	
-	headers_sent = 1;
-	
-	/* find description */
-	for (i = 0;; i++) {
-		if (http_status_codes[i].id == 0) {
-			id = 500;
-			i  = 0;
-			continue;
-		}
-		
-		if (http_status_codes[i].id == id)
-			goto send;
-	}
-	
-send:
-	httpd_write("HTTP/1.1 %d %s\r\n", http_status_codes[i].id,
-	                http_status_codes[i].desc);
-	httpd_write("Server: VServer Control Daemon\r\n");
-	httpd_write("Connection: close\r\n");
-	
-	if (clen > 0) {
-		httpd_write("Content-Length: %d\r\n", clen);
-		httpd_write("Content-Type: text/xml\r\n");
-	}
-	
-	httpd_write("\r\n");
-}
-
-static
-XMLRPC_VALUE call_method(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
-{
-	XMLRPC_Callback cb;
-	
-	if (r->error)
-		return XMLRPC_CopyValue(r->error);
-	
-	if (!auth_isvalid(r))
-		return method_error(MEAUTH);
-	
-	cb = XMLRPC_ServerFindMethod(s, r->methodName.str);
-	
-	if (cb)
-		return cb(s, r, d);
-	
-	return XMLRPC_UtilityCreateFault(xmlrpc_error_unknown_method, r->methodName.str);
+	if (tls_mode == TLS_DISABLED)
+		return write(*(int *) dst, data, len);
+	else
+		return gnutls_record_send(*(gnutls_session_t *) dst, data, len);
 }
 
 static
@@ -244,7 +93,7 @@ int handle_request(char *req, char **res)
 	XMLRPC_RequestSetRequestType(response, xmlrpc_request_response);
 	
 	/* call requested method and fill response struct */
-	XMLRPC_RequestSetData(response, call_method(xmlrpc_server, request, NULL));
+	XMLRPC_RequestSetData(response, method_call(xmlrpc_server, request, NULL));
 	
 	/* reply in same vocabulary/manner as the request */
 	XMLRPC_RequestSetOutputOptions(response,
@@ -267,12 +116,10 @@ void client_signal_handler(int sig)
 {
 	switch (sig) {
 	case SIGTERM:
-		httpd_send_headers(503, 0);
 		close(cfd);
 		exit(EXIT_FAILURE);
 	
 	case SIGALRM:
-		httpd_send_headers(408, 0);
 		close(cfd);
 		exit(EXIT_FAILURE);
 	}
@@ -308,14 +155,11 @@ gnutls_session_t initialize_tls_session(void)
 	return session;
 }
 
-#define NOREPLACE(NEW) id == 0 ? NEW : id
-
 static
 void handle_client(void)
 {
 	int timeout = cfg_getint(cfg, "client-timeout");
-	int rc, id = 0, clen = 0, first_line = 1;
-	char *line = NULL, *req = NULL, *res = NULL;
+	int rc;
 	
 	/* setup some standard signals */
 	signal(SIGTERM, client_signal_handler);
@@ -323,6 +167,8 @@ void handle_client(void)
 	/* timeout */
 	signal(SIGALRM, client_signal_handler);
 	alarm(timeout);
+	
+	void *src;
 	
 	/* init TLS */
 	if (tls_mode != TLS_DISABLED) {
@@ -334,98 +180,62 @@ void handle_client(void)
 			gnutls_deinit(tls_session);
 			log_error_and_die("Handshake has failed: %s", gnutls_strerror(rc));
 		}
+		
+		src = (void *) &tls_session;
 	}
 	
-	/* parse request header */
-	while (1) {
-		if (line != NULL)
-			free(line);
-		
-		rc = httpd_read_line(&line);
-		
-		if (rc == -1)
-			goto close;
-		
-		else if (rc == 0)
-			break;
-		
-		/* parse request line */
-		else if (first_line) {
-			first_line = 0;
-			
-			/* only support POST request */
-			if (strncmp(line, "POST", 4) != 0)
-				id = NOREPLACE(501);
-			
-			/* only support requests via /RPC2 */
-			else if (strncmp(line + 5, "/RPC2", 5) != 0)
-				id = NOREPLACE(404);
-		}
-		
-		/* parse additional headers */
-		else {
-			if (strncmp(line, "Content-Length: ", 16) == 0)
-				clen = atoi(line + 16);
-		}
-	}
+	else
+		src = (void *) &cfd;
+	
+	http_request_t request;
+	http_header_t *headers = (http_header_t *) malloc(sizeof(http_header_t));
+	char *body;
+	
+	if (http_get_request(src, &request, headers, &body, httpd_read) == -1)
+		log_error_and_die("Could not get request: %s", strerror(errno));
+	
+	http_headers_free(headers);
 	
 	/* remove timeout */
 	alarm(0);
 	signal(SIGALRM, SIG_DFL);
 	
-	/* an error occured and id was set */
-	if (id > 0) {
-		httpd_send_headers(id, 0);
+	http_response_t response;
+	http_header_t *tmp;
+	char *rbody = NULL;
+	
+	response.status = HTTP_STATUS_BADREQ;
+	response.vmajor = 1;
+	response.vminor = 0;
+	
+	headers = (http_header_t *) malloc(sizeof(http_header_t));
+	INIT_LIST_HEAD(&(headers->list));
+	
+	if (request.method != HTTP_METHOD_POST || strcmp(request.uri, "/RPC2") != 0) {
+		http_send_response(src, &response, headers, NULL, httpd_write);
 		goto close;
 	}
 	
-	/* no XMLRPC request was sent */
-	if (clen <= 0) {
-		httpd_send_headers(400, 0);
-		goto close;
-	}
+	rc = handle_request(body, &rbody);
 	
-	/* get XMLRPC request */
-	if (tls_mode == TLS_DISABLED)
-		rc = io_read_len(cfd, &req, clen);
+	if (!rbody)
+		response.status = HTTP_STATUS_INTERNAL;
 	
 	else {
-		req = calloc(clen + 1, sizeof(char));
-		rc  = gnutls_record_recv(tls_session, req, clen);
+		response.status = HTTP_STATUS_OK;
+		
+		tmp = (http_header_t *) malloc(sizeof(http_header_t));
+		asprintf(&(tmp->key), "Content-Length");
+		asprintf(&(tmp->val), "%d", strlen(rbody));
+		
+		list_add(&(tmp->list), &(headers->list));
 	}
 	
-	/* connection died? */
-	if (rc == -1)
-		goto close;
-	
-	/* invalid request length */
-	if (rc != clen) {
-		httpd_send_headers(400, 0);
-		goto close;
-	}
-	
-	/* handle request */
-	rc = handle_request(req, &res);
-	
-	free(req);
-	
-	/* invalid XML */
-	if (rc == -1)
-		httpd_send_headers(400, 0);
-	
-	/* somehow the response didn't build */
-	else if (res == NULL)
-		httpd_send_headers(500, 0);
-	
-	/* send response */
-	else {
-		clen = strlen(res);
-		httpd_send_headers(200, clen);
-		httpd_write(res, clen);
-		free(res);
-	}
+	http_send_response(src, &response, headers, rbody, httpd_write);
+	free(rbody);
 	
 close:
+	http_headers_free(headers);
 	gnutls_bye(tls_session, GNUTLS_SHUT_WR);
 	close(cfd);
 	gnutls_deinit(tls_session);
@@ -472,8 +282,9 @@ void server_main(void)
 	
 	tls_mode = cfg_getint(cfg, "tls-mode");
 	
+	gnutls_global_init();
+	
 	if (tls_mode == TLS_ANON) {
-		gnutls_global_init();
 		gnutls_anon_allocate_server_credentials(&anon);
 		
 		if ((rc = gnutls_dh_params_init(&dh_params)) < 0)
@@ -495,8 +306,6 @@ void server_main(void)
 		
 		if (!key || !cert)
 			log_error_and_die("No TLS key or certificate specified");
-		
-		gnutls_global_init();
 		
 		if ((rc = gnutls_certificate_allocate_credentials(&x509)) < 0)
 			log_error_and_die("gnuttls_certificate_allocate_credentials: %s", gnutls_strerror(rc));
@@ -586,7 +395,6 @@ void server_main(void)
 			log_info("Rejecting client from %s:%d",
 			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
 			         ntohs(peer_addr.sin_port));
-			httpd_send_headers(503, 0);
 			close(cfd);
 			continue;
 		}

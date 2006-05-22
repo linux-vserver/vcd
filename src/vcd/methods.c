@@ -22,7 +22,9 @@
 #include <stdarg.h>
 
 #include "xmlrpc.h"
+#include "xmlrpc_private.h"
 
+#include "auth.h"
 #include "methods.h"
 
 m_err_t method_error_codes[] = {
@@ -96,6 +98,24 @@ void method_registry_init(XMLRPC_SERVER s)
 }
 
 #undef MREGISTER
+
+XMLRPC_VALUE method_call(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+{
+	XMLRPC_Callback cb;
+	
+	if (r->error)
+		return XMLRPC_CopyValue(r->error);
+	
+	if (!auth_isvalid(r))
+		return method_error(MEAUTH);
+	
+	cb = XMLRPC_ServerFindMethod(s, r->methodName.str);
+	
+	if (cb)
+		return cb(s, r, d);
+	
+	return XMLRPC_UtilityCreateFault(xmlrpc_error_unknown_method, r->methodName.str);
+}
 
 XMLRPC_VALUE method_get_params(XMLRPC_REQUEST r)
 {

@@ -29,32 +29,39 @@
 
 int auth_isvalid(XMLRPC_REQUEST r)
 {
+	int rc = 0;
 	dbi_result dbr;
 	XMLRPC_VALUE request, auth;
 	
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	
-	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
-	char *password = (char *) XMLRPC_VectorGetStringWithID(auth, "password");
+	char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	char *password = XMLRPC_VectorGetStringWithID(auth, "password");
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT password FROM user WHERE name = '%s'",
 		username);
 	
-	if (dbi_result_get_numrows(dbr) != 1)
+	if (!dbr)
 		return 0;
+	
+	if (dbi_result_get_numrows(dbr) != 1)
+		goto out;
 	
 	dbi_result_first_row(dbr);
 	
 	if (strcmp(dbi_result_get_string(dbr, "password"), password) == 0)
-		return 1;
+		rc = 1;
 	
-	return 0;
+out:
+	dbi_result_free(dbr);
+	return rc;
 }
 
 int auth_isadmin(XMLRPC_REQUEST r)
 {
+	int rc = 0;
 	dbi_result dbr;
 	XMLRPC_VALUE request, auth;
 	
@@ -70,14 +77,19 @@ int auth_isadmin(XMLRPC_REQUEST r)
 		"SELECT admin FROM user WHERE name = '%s' AND admin = 1",
 		username);
 	
-	if (dbi_result_get_numrows(dbr) == 1)
-		return 1;
+	if (!dbr)
+		return 0;
 	
-	return 0;
+	if (dbi_result_get_numrows(dbr) > 0)
+		rc = 1;
+	
+	dbi_result_free(dbr);
+	return rc;
 }
 
 int auth_isowner(XMLRPC_REQUEST r)
 {
+	int rc = 0;
 	xid_t xid;
 	dbi_result dbr;
 	XMLRPC_VALUE request, auth, params;
@@ -104,14 +116,19 @@ int auth_isowner(XMLRPC_REQUEST r)
 		"SELECT uid FROM xid_uid_map WHERE uid = %d AND xid = %d",
 		uid, xid);
 	
-	if (dbi_result_get_numrows(dbr) > 0)
-		return 1;
+	if (!dbr)
+		return 0;
 	
-	return 0;
+	if (dbi_result_get_numrows(dbr) > 0)
+		rc = 1;
+	
+	dbi_result_free(dbr);
+	return rc;
 }
 
 int auth_getuid(XMLRPC_REQUEST r)
 {
+	int uid = 0;
 	dbi_result dbr;
 	XMLRPC_VALUE request, auth;
 	
@@ -127,11 +144,14 @@ int auth_getuid(XMLRPC_REQUEST r)
 		"SELECT uid FROM user WHERE name = '%s'",
 		username);
 	
-	if (dbi_result_get_numrows(dbr) < 1)
+	if (!dbr)
 		return 0;
 	
-	dbi_result_first_row(dbr);
-	int uid = dbi_result_get_int(dbr, "uid");
+	if (dbi_result_get_numrows(dbr) > 0) {
+		dbi_result_first_row(dbr);
+		uid = dbi_result_get_int(dbr, "uid");
+	}
 	
+	dbi_result_free(dbr);
 	return uid;
 }

@@ -69,14 +69,20 @@ int vxdb_getxid(char *name, xid_t *xid)
 		"SELECT xid FROM xid_name_map WHERE name = '%s'",
 		name);
 	
-	if (dbi_result_get_numrows(dbr) == 0)
-		return errno = ENOENT, -1;
+	if (!dbr)
+		return -1;
+	
+	if (dbi_result_get_numrows(dbr) == 0) {
+		dbi_result_free(dbr);
+		return -1;
+	}
 	
 	dbi_result_first_row(dbr);
 	
 	if (xid)
 		*xid = dbi_result_get_int(dbr, "xid");
 	
+	dbi_result_free(dbr);
 	return 0;
 }
 
@@ -88,13 +94,19 @@ int vxdb_getname(xid_t xid, char **name)
 		"SELECT name FROM xid_name_map WHERE xid = '%d'",
 		xid);
 	
-	if (dbi_result_get_numrows(dbr) == 0)
-		return errno = ENOENT, -1;
+	if (!dbr)
+		return -1;
+	
+	if (dbi_result_get_numrows(dbr) == 0) {
+		dbi_result_free(dbr);
+		return -1;
+	}
 	
 	dbi_result_first_row(dbr);
 	
 	if (name)
 		*name = (char *) dbi_result_get_string(dbr, "name");
 	
+	dbi_result_free(dbr);
 	return 0;
 }

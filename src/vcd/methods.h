@@ -40,6 +40,7 @@ extern m_err_t method_error_codes[];
 
 void         method_registry_init(XMLRPC_SERVER s);
 
+XMLRPC_VALUE method_call         (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
 XMLRPC_VALUE method_get_params   (XMLRPC_REQUEST r);
 
 char        *method_strerror     (int id);
