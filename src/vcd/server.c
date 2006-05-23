@@ -76,51 +76,14 @@ size_t httpd_write(void *dst, char *data, size_t len)
 }
 
 static
-int handle_request(char *req, char **res)
-{
-	XMLRPC_REQUEST request, response;
-	char *buf;
-	
-	/* parse XML */
-	size_t len = strlen(req);
-	request = XMLRPC_REQUEST_FromXML(req, len, NULL);
-	
-	if (!request)
-		return -1;
-	
-	/* create a response struct */
-	response = XMLRPC_RequestNew();
-	XMLRPC_RequestSetRequestType(response, xmlrpc_request_response);
-	
-	/* call requested method and fill response struct */
-	XMLRPC_RequestSetData(response, method_call(xmlrpc_server, request, NULL));
-	
-	/* reply in same vocabulary/manner as the request */
-	XMLRPC_RequestSetOutputOptions(response,
-	                               XMLRPC_RequestGetOutputOptions(request));
-	
-	/* serialize server response as XML */
-	buf = XMLRPC_REQUEST_ToXML(response, 0);
-	
-	if (buf)
-		*res = buf;
-	
-	XMLRPC_RequestFree(request, 1);
-	XMLRPC_RequestFree(response, 1);
-	
-	return 0;
-}
-
-static
 void client_signal_handler(int sig)
 {
 	switch (sig) {
 	case SIGTERM:
-		close(cfd);
-		exit(EXIT_FAILURE);
-	
 	case SIGALRM:
+		gnutls_bye(tls_session, GNUTLS_SHUT_WR);
 		close(cfd);
+		gnutls_deinit(tls_session);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -152,14 +115,26 @@ gnutls_session_t initialize_tls_session(void)
 	}
 	
 	gnutls_dh_set_prime_bits(session, DH_BITS);
+	gnutls_transport_set_ptr(session, (gnutls_transport_ptr_t) cfd);
+	
+	if ((rc = gnutls_handshake(session)) < 0) {
+		gnutls_deinit(session);
+		log_error_and_die("Handshake has failed: %s", gnutls_strerror(rc));
+	}
+	
 	return session;
 }
 
 static
 void handle_client(void)
 {
+	void *src;
+	http_request_t request;
+	http_response_t response;
+	http_header_t *headers, *tmp;
+	char *body = NULL, *rbody = NULL;
+	
 	int timeout = cfg_getint(cfg, "client-timeout");
-	int rc;
 	
 	/* setup some standard signals */
 	signal(SIGTERM, client_signal_handler);
@@ -168,28 +143,17 @@ void handle_client(void)
 	signal(SIGALRM, client_signal_handler);
 	alarm(timeout);
 	
-	void *src;
-	
 	/* init TLS */
 	if (tls_mode != TLS_DISABLED) {
 		tls_session = initialize_tls_session();
-		
-		gnutls_transport_set_ptr(tls_session, (gnutls_transport_ptr_t) cfd);
-		
-		if ((rc = gnutls_handshake(tls_session)) < 0) {
-			gnutls_deinit(tls_session);
-			log_error_and_die("Handshake has failed: %s", gnutls_strerror(rc));
-		}
-		
 		src = (void *) &tls_session;
 	}
 	
 	else
 		src = (void *) &cfd;
 	
-	http_request_t request;
-	http_header_t *headers = (http_header_t *) malloc(sizeof(http_header_t));
-	char *body;
+	headers = (http_header_t *) malloc(sizeof(http_header_t));
+	INIT_LIST_HEAD(&(headers->list));
 	
 	if (http_get_request(src, &request, headers, &body, httpd_read) == -1)
 		log_error_and_die("Could not get request: %s", strerror(errno));
@@ -200,10 +164,7 @@ void handle_client(void)
 	alarm(0);
 	signal(SIGALRM, SIG_DFL);
 	
-	http_response_t response;
-	http_header_t *tmp;
-	char *rbody = NULL;
-	
+	/* init repsonse */
 	response.status = HTTP_STATUS_BADREQ;
 	response.vmajor = 1;
 	response.vminor = 0;
@@ -216,9 +177,11 @@ void handle_client(void)
 		goto close;
 	}
 	
-	rc = handle_request(body, &rbody);
+	/* call xmlrpc method */
+	if (method_call(xmlrpc_server, body, &rbody) == -1)
+		response.status = HTTP_STATUS_BADREQ;
 	
-	if (!rbody)
+	else if (!rbody)
 		response.status = HTTP_STATUS_INTERNAL;
 	
 	else {
@@ -231,6 +194,7 @@ void handle_client(void)
 		list_add(&(tmp->list), &(headers->list));
 	}
 	
+	/* send response */
 	http_send_response(src, &response, headers, rbody, httpd_write);
 	free(rbody);
 	
@@ -261,7 +225,12 @@ void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 		
 		vxdb_close();
 		
-		gnutls_certificate_free_credentials(x509);
+		if (tls_mode == TLS_ANON)
+			gnutls_anon_free_server_credentials(anon);
+		
+		if (tls_mode == TLS_X509)
+			gnutls_certificate_free_credentials(x509);
+		
 		gnutls_global_deinit();
 		
 		exit(EXIT_FAILURE);
@@ -270,16 +239,17 @@ void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 
 void server_main(void)
 {
-	int rc, port, i, max_clients;
+	int rc, port, max_clients;
 	char *host, peer[INET_ADDRSTRLEN];
 	socklen_t peerlen;
-	struct sockaddr_in host_addr, peer_addr;
+	struct sockaddr_in peer_addr;
 	struct sigaction act;
 	char *ca, *crl, *cert, *key;
 	
 	log_init("server", 0);
 	log_info("Loading configuration");
 	
+	/* init TLS */
 	tls_mode = cfg_getint(cfg, "tls-mode");
 	
 	gnutls_global_init();
@@ -333,21 +303,12 @@ void server_main(void)
 	/* open connection to vxdb */
 	vxdb_init();
 	
+	/* setup listen socket */
 	port = cfg_getint(cfg, "listen-port");
 	host = cfg_getstr(cfg, "listen-host");
 	
-	bzero(&host_addr, sizeof(host_addr));
-	
-	host_addr.sin_family = AF_INET;
-	host_addr.sin_port   = htons(port);
-	
-	if (inet_pton(AF_INET, host, &host_addr.sin_addr) < 1) {
-		log_warn("Invalid configuration for listen-host: %s", host);
-		log_info("Using fallback listen-host: 127.0.0.1");
-		inet_pton(AF_INET, "127.0.0.1", &host_addr.sin_addr);
-	}
-	
-	max_clients = cfg_getint(cfg, "client-max");
+	if ((sfd = tcp_listen(host, port, 20)) == -1)
+		log_error_and_die("cannot listen: %s", strerror(errno));
 	
 	/* handle these signals on our own */
 	sigfillset(&act.sa_mask);
@@ -360,25 +321,15 @@ void server_main(void)
 	sigdelset(&act.sa_mask, SIGCHLD);
 	sigaction(SIGTERM, &act, NULL);
 	
-	/* setup listen socket */
-	sfd = socket(AF_INET, SOCK_STREAM, 0);
-	
-	if (sfd == -1)
-		log_error_and_die("socket: %s", strerror(errno));
-	
-	if (bind(sfd, (struct sockaddr *) &host_addr, sizeof(struct sockaddr_in)) == -1)
-		log_error_and_die("bind: %s", strerror(errno));
-	
-	if (listen(sfd, 20) == -1)
-		log_error_and_die("listen: %s", strerror(errno));
-	
 	/* setup xmlrpc server */
 	xmlrpc_server = XMLRPC_ServerCreate();
 	method_registry_init(xmlrpc_server);
 	
+	/* wait and create a new child for each connection */
 	log_info("Accepting incoming connections on %s:%d", host, port);
 	
-	/* wait and create a new child for each connection */
+	max_clients = cfg_getint(cfg, "client-max");
+	
 	while (1) {
 		peerlen = sizeof(struct sockaddr_in);
 		cfd = accept(sfd, (struct sockaddr *) &peer_addr, &peerlen);

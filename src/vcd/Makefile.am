@@ -28,7 +28,8 @@ noinst_HEADERS = auth.h \
                  methods.h \
                  vxdb.h
 
-sbin_PROGRAMS = vcd
+sbin_PROGRAMS = vcd \
+                vshelper
 
 vcd_SOURCES = auth.c \
               collector.c \
@@ -39,6 +40,9 @@ vcd_SOURCES = auth.c \
               server.c \
               vxdb.c
 
+vshelper_SOURCES = vshelper.c \
+                   log.c
+
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(top_builddir)/src/lucid/libucid.a \
             $(top_builddir)/src/libconfuse/libconfuse.a \
@@ -47,3 +51,9 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             -ldbi \
             -lexpat \
             -lvserver
+
+vshelper_LDADD = $(top_builddir)/src/lucid/libucid.a \
+                 $(top_builddir)/src/libconfuse/libconfuse.a \
+                 $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
+                 $(LIBGNUTLS_LIBS) \
+                 -lexpat
