@@ -20,6 +20,7 @@
 #endif
 
 #include <stdarg.h>
+#include <string.h>
 
 #include "xmlrpc.h"
 #include "xmlrpc_private.h"
@@ -63,6 +64,7 @@ void method_registry_init(XMLRPC_SERVER s)
 	MREGISTER("vxdb.init.mount.get", m_vxdb_init_mount_get);
 	MREGISTER("vxdb.init.mount.remove", m_vxdb_init_mount_remove);
 	MREGISTER("vxdb.list", m_vxdb_list);
+	MREGISTER("vxdb.name.get", m_vxdb_name_get);
 	MREGISTER("vxdb.nx.addr.add", m_vxdb_nx_addr_add);
 	MREGISTER("vxdb.nx.addr.get", m_vxdb_nx_addr_get);
 	MREGISTER("vxdb.nx.addr.remove", m_vxdb_nx_addr_remove);
@@ -95,26 +97,59 @@ void method_registry_init(XMLRPC_SERVER s)
 	MREGISTER("vxdb.vx.uname.get", m_vxdb_vx_uname_get);
 	MREGISTER("vxdb.vx.uname.remove", m_vxdb_vx_uname_remove);
 	MREGISTER("vxdb.vx.uname.set", m_vxdb_vx_uname_set);
+	MREGISTER("vxdb.xid.get", m_vxdb_xid_get);
 }
 
 #undef MREGISTER
 
-XMLRPC_VALUE method_call(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+int method_call(XMLRPC_SERVER server, char *in, char **out)
 {
 	XMLRPC_Callback cb;
+	XMLRPC_REQUEST request, response;
+	XMLRPC_VALUE tmp;
+	char *buf;
 	
-	if (r->error)
-		return XMLRPC_CopyValue(r->error);
+	/* parse XML */
+	size_t len = strlen(in);
+	request = XMLRPC_REQUEST_FromXML(in, len, NULL);
 	
-	if (!auth_isvalid(r))
-		return method_error(MEAUTH);
+	if (!request)
+		return -1;
 	
-	cb = XMLRPC_ServerFindMethod(s, r->methodName.str);
+	/* create a response struct */
+	response = XMLRPC_RequestNew();
+	XMLRPC_RequestSetRequestType(response, xmlrpc_request_response);
 	
-	if (cb)
-		return cb(s, r, d);
+	/* call requested method and fill response struct */
+	if (request->error)
+		tmp = XMLRPC_CopyValue(request->error);
 	
-	return XMLRPC_UtilityCreateFault(xmlrpc_error_unknown_method, r->methodName.str);
+	else if (!auth_isvalid(request))
+		tmp = method_error(MEAUTH);
+	
+	else if ((cb = XMLRPC_ServerFindMethod(server, request->methodName.str)))
+		tmp = cb(server, request, NULL);
+	
+	else
+		tmp = XMLRPC_UtilityCreateFault(xmlrpc_error_unknown_method,
+		                                request->methodName.str);
+	
+	XMLRPC_RequestSetData(response, tmp);
+	
+	/* reply in same vocabulary/manner as the request */
+	XMLRPC_RequestSetOutputOptions(response,
+	                               XMLRPC_RequestGetOutputOptions(request));
+	
+	/* serialize server response as XML */
+	buf = XMLRPC_REQUEST_ToXML(response, 0);
+	
+	if (buf)
+		*out = buf;
+	
+	XMLRPC_RequestFree(request, 1);
+	XMLRPC_RequestFree(response, 1);
+	
+	return 0;
 }
 
 XMLRPC_VALUE method_get_params(XMLRPC_REQUEST r)

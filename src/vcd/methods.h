@@ -39,8 +39,8 @@ typedef struct {
 extern m_err_t method_error_codes[];
 
 void         method_registry_init(XMLRPC_SERVER s);
+int          method_call(XMLRPC_SERVER server, char *in, char **out);
 
-XMLRPC_VALUE method_call         (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d);
 XMLRPC_VALUE method_get_params   (XMLRPC_REQUEST r);
 
 char        *method_strerror     (int id);
@@ -65,6 +65,7 @@ MPROTO(m_vxdb_init_mount_add);
 MPROTO(m_vxdb_init_mount_get);
 MPROTO(m_vxdb_init_mount_remove);
 MPROTO(m_vxdb_list);
+MPROTO(m_vxdb_name_get);
 MPROTO(m_vxdb_nx_addr_add);
 MPROTO(m_vxdb_nx_addr_get);
 MPROTO(m_vxdb_nx_addr_remove);
@@ -97,6 +98,7 @@ MPROTO(m_vxdb_vx_sched_set);
 MPROTO(m_vxdb_vx_uname_get);
 MPROTO(m_vxdb_vx_uname_remove);
 MPROTO(m_vxdb_vx_uname_set);
+MPROTO(m_vxdb_xid_get);
 
 #undef MPROTO
 
