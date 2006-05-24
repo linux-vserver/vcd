@@ -169,15 +169,14 @@ void handle_client(void)
 	response.vmajor = 1;
 	response.vminor = 0;
 	
-	headers = (http_header_t *) malloc(sizeof(http_header_t));
-	INIT_LIST_HEAD(&(headers->list));
-	
 	if (request.method != HTTP_METHOD_POST || strcmp(request.uri, "/RPC2") != 0) {
-		http_send_response(src, &response, headers, NULL, httpd_write);
+		http_send_response(src, &response, NULL, NULL, httpd_write);
 		goto close;
 	}
 	
 	/* call xmlrpc method */
+	headers = NULL;
+	
 	if (method_call(xmlrpc_server, body, &rbody) == -1)
 		response.status = HTTP_STATUS_BADREQ;
 	
@@ -186,6 +185,9 @@ void handle_client(void)
 	
 	else {
 		response.status = HTTP_STATUS_OK;
+		
+		headers = (http_header_t *) malloc(sizeof(http_header_t));
+		INIT_LIST_HEAD(&(headers->list));
 		
 		tmp = (http_header_t *) malloc(sizeof(http_header_t));
 		asprintf(&(tmp->key), "Content-Length");
@@ -209,6 +211,8 @@ close:
 static
 void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 {
+	int i;
+	
 	switch (sig) {
 	case SIGCHLD:
 		num_clients--;
@@ -218,8 +222,19 @@ void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 	case SIGTERM:
 		log_info("Caught SIGTERM -- shutting down");
 		
-		signal(SIGCHLD, SIG_IGN);
 		kill(0, SIGTERM);
+		
+		for (i = 0; i < 5; i++) {
+			if (wait(NULL) == -1 && errno == ECHILD)
+				break;
+			
+			usleep(200);
+			
+			if (i == 4) {
+				kill(0, SIGKILL);
+				i = 0;
+			}
+		}
 		
 		close(sfd);
 		
@@ -317,8 +332,6 @@ void server_main(void)
 	act.sa_sigaction = server_signal_handler;
 	
 	sigaction(SIGCHLD, &act, NULL);
-	
-	sigdelset(&act.sa_mask, SIGCHLD);
 	sigaction(SIGTERM, &act, NULL);
 	
 	/* setup xmlrpc server */

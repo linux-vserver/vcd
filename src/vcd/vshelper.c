@@ -410,15 +410,5 @@ loadcfg:
 	if (ACTIONS[i].func() == -1)
 		log_error_and_die("action '%s' failed: %s", action, strerror(errno));
 	
-	/* shutdown connection & exit */
-	if (tls_mode == TLS_ANON)
-		gnutls_anon_free_client_credentials(anon);
-	
-	if (tls_mode == TLS_X509)
-		gnutls_certificate_free_credentials(x509);
-	
-	if (tls_mode != TLS_DISABLED)
-		gnutls_global_deinit();
-	
-	return 0;
+	exit(EXIT_SUCCESS);
 }

@@ -81,6 +81,8 @@ void usage(int rc)
 static
 void signal_handler(int sig, siginfo_t *siginfo, void *u)
 {
+	int i, status;
+	
 	switch (sig) {
 	case SIGCHLD:
 		if (siginfo->si_pid == collector)
@@ -103,8 +105,19 @@ void signal_handler(int sig, siginfo_t *siginfo, void *u)
 		break;
 	}
 	
-	signal(SIGCHLD, SIG_IGN);
 	kill(0, SIGTERM);
+	
+	for (i = 0; i < 5; i++) {
+		if (wait(NULL) == -1 && errno == ECHILD)
+			break;
+		
+		usleep(200);
+		
+		if (i == 4) {
+			kill(0, SIGKILL);
+			i = 0;
+		}
+	}
 	
 	if (cfg)
 		cfg_free(cfg);

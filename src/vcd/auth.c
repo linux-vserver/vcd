@@ -24,7 +24,6 @@
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "log.h"
 #include "vxdb.h"
 
 int auth_isvalid(XMLRPC_REQUEST r)

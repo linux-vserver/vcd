@@ -19,8 +19,6 @@
 #include <config.h>
 #endif
 
-#include <stdio.h>
-
 #include "cfg.h"
 #include "log.h"
 #include "vxdb.h"
@@ -107,6 +105,6 @@ int vxdb_getname(xid_t xid, char **name)
 	if (name)
 		*name = (char *) dbi_result_get_string(dbr, "name");
 	
-	dbi_result_free(dbr);
+	dbi_result_free(dbr); /* TODO: will this free *name too? */
 	return 0;
 }

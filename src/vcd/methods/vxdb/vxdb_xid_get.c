@@ -40,14 +40,11 @@ XMLRPC_VALUE m_vxdb_xid_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!name)
 		return method_error(MEREQ);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM xid_name_map WHERE name = '%s'", name);
+	xid_t xid;
 	
-	if (!dbr)
+	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MEVXDB);
 	
-	dbi_result_first_row(dbr);
-	int xid = dbi_result_get_int(dbr, "xid");
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("xid", xid));
 	
 	return response;
