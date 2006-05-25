@@ -104,17 +104,17 @@ vps.context() {
 			[ ! -z "${VX_BCAPS}" ] && VCTX_ARGS="${VCTX_ARGS} -b $(util.array_to_list ${VX_BCAPS[@]})"
 			[ ! -z "${VX_CCAPS}" ] && VCTX_ARGS="${VCTX_ARGS} -c $(util.array_to_list ${VX_CCAPS[@]})"
 			if [ ! -z "${VX_FLAGS}" ]; then
-				VCTX_ARGS="${VCTX_ARGS} -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTANT,STATE_SETUP"
+				VCTX_ARGS="${VCTX_ARGS} -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTENT,STATE_SETUP"
 			else
-				VCTX_ARGS="${VCTX_ARGS} -f PERSISTANT,STATE_SETUP"
+				VCTX_ARGS="${VCTX_ARGS} -f PERSISTENT,STATE_SETUP"
 			fi
-			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTANT,STATE_SETUP
+			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTENT,STATE_SETUP
 			${_VCONTEXT} -C ${VCTX_ARGS}
 			;;
 		
 		release)
-			${_VNFLAGS} -S -n ${VX_XID} -f ~PERSISTANT &>/dev/null || :
-			${_VFLAGS}  -S -x ${VX_XID} -f ~PERSISTANT &>/dev/null || :
+			${_VNFLAGS} -S -n ${VX_XID} -f ~PERSISTENT &>/dev/null || :
+			${_VFLAGS}  -S -x ${VX_XID} -f ~PERSISTENT &>/dev/null || :
 			;;
 		
 		*)
@@ -245,13 +245,13 @@ vps.flags() {
 #				${_VFLAGS} -S -c $(util.array_to_list ${VX_CCAPS[@]}) -x ${VX_XID}
 #			fi
 #			if [ ! -z "${VX_FLAGS}" ]; then
-#				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTANT -x ${VX_XID}
+#				${_VFLAGS} -S -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTENT -x ${VX_XID}
 #			fi
 			;;
 		
 		run)
-			${_VFLAGS} -S -f "~PERSISTANT,~STATE_SETUP" -x ${VX_XID}
-			${_VNFLAGS} -S -f "~PERSISTANT,~STATE_SETUP" -n ${VX_XID}
+			${_VFLAGS} -S -f "~PERSISTENT,~STATE_SETUP" -x ${VX_XID}
+			${_VNFLAGS} -S -f "~PERSISTENT,~STATE_SETUP" -n ${VX_XID}
 			;;
 		*)
 			util.error "vps.flags: unknown subcommand '${subcmd}'"
@@ -333,8 +333,8 @@ vps.halt() {
 			;;
 	esac
 	
-	${_VNFLAGS} -S -f ~PERSISTANT -n ${VX_XID} || :
-	${_VFLAGS}  -S -f ~PERSISTANT -x ${VX_XID} || :
+	${_VNFLAGS} -S -f ~PERSISTENT -n ${VX_XID} || :
+	${_VFLAGS}  -S -f ~PERSISTENT -x ${VX_XID} || :
 	
 	popd >/dev/null
 }

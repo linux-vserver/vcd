@@ -63,9 +63,9 @@ int main(int argc, char *argv[])
 	};
 	
 	/* init syscall data */
-	struct vx_wait_opts wait_opts = {
-		.a = 0,
-		.b = 0,
+	struct vx_wait_result wait_opts = {
+		.reboot_cmd = 0,
+		.exit_code = 0,
 	};
 	
 	int c;
@@ -101,5 +101,7 @@ int main(int argc, char *argv[])
 	if (vx_wait(opts.xid, &wait_opts) == -1)
 		PEXIT("Failed to wait for context", EXIT_COMMAND);
 	
+	vu_printf("REBOOT_CMD: %d\n", wait_opts.reboot_cmd);
+	vu_printf("EXIT_CODE:  %d\n", wait_opts.exit_code);
 	exit(EXIT_SUCCESS);
 }

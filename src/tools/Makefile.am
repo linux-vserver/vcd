@@ -48,6 +48,8 @@ sbin_PROGRAMS = nidof \
                 vsched \
                 vuname \
                 vwait \
-                xidof
+                xidof \
+		vunify \
+		cowcp
 
 pkglib_PROGRAMS = lockfile
