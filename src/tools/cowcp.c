@@ -134,16 +134,24 @@ out:
 static
 int cp_cow(const char *src, const char *dst)
 {
-	if (link(src, dst) == -1) {
-		vu_printf("link(%s, %s): %s\n", src, dst, strerror(errno));
-		return -1;
-	}
 	/* init syscall data */
 	struct vx_iattr iattr = {
-		.filename = dst,
+		.filename = NULL,
 		.flags = IATTR_IMMUTABLE | IATTR_IUNLINK,
 		.mask  = IATTR_IMMUTABLE | IATTR_IUNLINK,
 	};
+	if (link(src, dst) == -1) {
+		if (errno == EPERM) {
+			// Make sure src is CoW, not just IMMUTABLE
+			iattr.filename = src;
+			if (vx_set_iattr(&iattr) == 0 && link(src, dst) == 0)
+				goto ok;
+		}
+		vu_printf("link(%s, %s): %s\n", src, dst, strerror(errno));
+		return -1;
+	}
+ok:
+	iattr.filename = dst;
 	if (vx_set_iattr(&iattr) == -1) {
 		vu_printf("iattr(%s): %s\n", dst, strerror(errno));
 		return -1;
@@ -268,6 +276,10 @@ int main(int argc, char *argv[])
 			
 			case 'r':
 				opts.recurse = true;
+				break;
+
+			case 'f':
+				opts.force = true;
 				break;
 			
 			DEFAULT_GETOPT
