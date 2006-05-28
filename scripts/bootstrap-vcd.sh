@@ -1,7 +1,11 @@
 #!/bin/bash
 
+echo
 echo "This script will setup vxdb and a default vcd configuration"
-echo "To use default values just press ENTER"
+echo "Default values are shown in brackets"
+echo
+read -p "Press ENTER to continue .. "
+
 echo
 
 echo -n " * Checking for sqlite3 ... "
@@ -20,69 +24,211 @@ if [[ $? -ne 0 ]]; then
 fi
 echo ${MD5SUM}
 
-echo
-echo -n "Directory for vservers? (/vservers): "
-read vserver_dir
-echo -n "Directory for vserver lock files? (/var/lock/vservers): "
-read lock_dir
-echo -n "Directory for log files? (/var/log/vcd): "
-read log_dir
-echo -n "Directory for vxdb and other data (/var/lib/vcd): "
-read vxdb_path
-echo -n "Name of the admin user (admin): "
-read admin_name
-while [[ -z "${admin_password}" ]]; do
-	echo -n "Password of the admin user: "
-	stty -echo
-	read admin_password; echo
-	stty echo
-done
-while [[ -z "${admin_password2}" ]]; do
-	echo -n "Repeat password of the admin user: "
-	stty -echo
-	read admin_password2; echo
-	stty echo
-done
-if [[ "${admin_password}" != "${admin_password2}" ]]; then
-	echo "Passwords are not equal!"
-	exit 1
-fi
-echo -n "IP address to listen on (127.0.0.1): "
-read listen_host
-echo -n "Port to listen on (13386): "
-read listen_port
-echo -n "Location of config file (/etc/vcd.conf): "
-read vcd_conf
 
-: ${vserver_dir:=/vservers}
-: ${lock_dir:=/var/lock/vserver}
-: ${log_dir:=/var/log/vcd}
-: ${vxdb_path:=/var/lib/vcd}
-: ${admin_name:=admin}
+# configure filesystem paths
+echo
+echo "=== Filesystem layout ==="
+echo
+echo "FHS compliant:"
+echo "  config-dir:   /etc/vcd"
+echo "  vxdb-dir:     /var/lib/vcd"
+echo "  lock-dir:     /var/lock/vservers"
+echo "  log-dir:      /var/log/vcd"
+echo "  run-dir:      /var/run"
+echo "  vserver-dir:  /srv/vservers"
+echo "  template-dir: /var/cache/vcd/templates"
+echo
+echo "Using a prefix:"
+echo "  config-dir:   <prefix>/conf"
+echo "  vxdb-dir:     <prefix>/lib"
+echo "  lock-dir:     <prefix>/lock"
+echo "  log-dir:      <prefix>/log"
+echo "  run-dir:      <prefix>/run"
+echo "  vserver-dir:  <prefix>/vservers"
+echo "  template-dir: <prefix>/templates"
+echo
+echo "You can choose between the following options:"
+echo "  [1] FHS compliant"
+echo "  [2] Using a prefix"
+echo "  [3] Custom layout"
+echo
+while true; do
+	read -p "Filesystem layout to use? (1) " fs_layout
+	[[ ${fs_layout} -gt 0 && ${fs_layout} -lt 4 ]] && break;
+	echo "Invalid choice. Try again!"
+done
+
+if [[ ${fs_layout} -eq 1 ]]; then
+	config_dir="/etc/vcd"
+	vxdb_dir="/var/lib/vcd"
+	lock_dir="/var/lock/vservers"
+	log_dir="/var/log/vcd"
+	run_dir="/var/run"
+	vserver_dir="/srv/vservers"
+	template_dir="/var/cache/vcd/templates"
+fi
+
+if [[ ${fs_layout} -eq 2 ]]; then
+	while [[ -z ${fs_prefix} ]]; do
+		read -p "Enter prefix: " fs_prefix
+	done
+	
+	config_dir="${fs_prefix}/conf"
+	vxdb_dir="${fs_prefix}/lib"
+	lock_dir="${fs_prefix}/lock"
+	log_dir="${fs_prefix}/log"
+	run_dir="${fs_prefix}/run"
+	vserver_dir="${fs_prefix}/vservers"
+	template_dir="${fs_prefix}/templates"
+fi
+
+fs_ask() {
+	[[ -z $1 ]] && return
+	
+	while [[ -z $(eval echo \$$1) ]]; do
+		read -p "Enter filesystem location for $1: " $1
+	done
+}
+
+if [[ ${fs_layout} -eq 3 ]]; then
+	fs_ask config_dir
+	fs_ask vxdb_dir
+	fs_ask lock_dir
+	fs_ask log_dir
+	fs_ask run_dir
+	fs_ask vserver_dir
+	fs_ask template_dir
+fi
+
+echo
+
+fs_check() {
+	[[ -z $1 ]] && return
+	[[ -e $1 ]] || return
+	
+	echo "$1 does already exist!"
+	rm -ri $1
+	
+	[[ -e $1 ]] && exit 1
+	echo
+}
+
+fs_check ${config_dir}
+fs_check ${vxdb_dir}
+fs_check ${lock_dir}
+fs_check ${log_dir}
+fs_check ${run_dir}
+fs_check ${vserver_dir}
+fs_check ${template_dir}
+
+
+# configure TLS/SSL settings (not yet)
+
+
+# configure listen socket
+echo
+echo "=== Listen socket ==="
+echo
+
+read -p "IP address to listen on (127.0.0.1): " listen_host
+read -p "Port to listen on (13386): " listen_port
+
 : ${listen_host:=127.0.0.1}
 : ${listen_port:=13386}
-: ${vcd_conf:=/etc/vcd.conf}
 
-admin_password=$(echo -n ${admin_password} | md5sum | cut -d\  -f1)
+echo
 
-echo " * Creating vserver directory"
-mkdir -p ${vserver_dir}
-echo " * Creating lock directory"
-mkdir -p ${lock_dir}
-echo " * Creating log directory"
-mkdir -p ${log_dir}
-echo " * Creating vxdb directory"
-mkdir -p ${vxdb_path}
+# configure admin user
+echo
+echo "=== Admin user ==="
+echo
 
-echo " * Initialize vxdb"
-if [[ -e "${vxdb_path}/vxdb" ]]; then
-	echo -n "Database already exists. Overwrite? (y/N): "
-	read overwrite
-	[[ "${overwrite}" == "y" || "${overwrite}" == "Y" ]] && rm "${vxdb_path}/vxdb"
-fi
+read -p "Name of the admin user (admin): " admin_user
 
-if [[ ! -e "${vxdb_path}/vxdb" ]]; then
-	cat <<SQLEOF | sqlite3 "${vxdb_path}/vxdb"
+: ${admin_user:=admin}
+
+while true; do
+	while [[ -z ${admin_pass} ]]; do
+		read -s -p "Password of the admin user: " admin_pass
+		echo
+	done
+	while [[ -z ${admin_pass2} ]]; do
+		read -s -p "Repeat password of the admin user: " admin_pass2
+		echo
+	done
+	
+	[[ ${admin_pass} == ${admin_pass2} ]] && break;
+	
+	echo
+	echo "Password are not equal! Try again!"
+	echo
+	
+	admin_pass=
+	admin_pass2=
+done
+
+admin_pass_md5=$(echo -n ${admin_pass} | ${MD5SUM} | cut -d\  -f1)
+
+echo
+
+# configure vshelper user
+echo
+echo "=== vshelper user ==="
+echo
+
+vshelper_user="vshelper"
+
+while true; do
+	while [[ -z ${vshelper_pass} ]]; do
+		read -s -p "Password of the vshelper user: " vshelper_pass
+		echo
+	done
+	while [[ -z ${vshelper_pass2} ]]; do
+		read -s -p "Repeat password of the vshelper user: " vshelper_pass2
+		echo
+	done
+	
+	[[ ${vshelper_pass} == ${vshelper_pass2} ]] && break;
+	
+	echo
+	echo "Password are not equal! Try again!"
+	echo
+	
+	vshelper_pass=
+	vshelper_pass2=
+done
+
+vshelper_pass_md5=$(echo -n ${vshelper_pass} | ${MD5SUM} | cut -d\  -f1)
+
+echo
+echo
+read -p "Configuration finished. Press ENTER to write configuration .. "
+
+echo
+echo
+echo "Creating filesystem layout:"
+
+fs_create() {
+	[[ -z $1 ]] && return
+	
+	echo "  $1 .. "
+	mkdir -p $1 || exit 1
+}
+
+fs_create ${config_dir}
+fs_create ${vxdb_dir}
+fs_create ${lock_dir}
+fs_create ${log_dir}
+fs_create ${run_dir}
+fs_create ${vserver_dir}
+fs_create ${template_dir}
+
+echo
+echo "Creating initial vxdb structure:"
+
+echo "  Database schema .. "
+
+sql_schema=$(cat <<SQLEOF
 CREATE TABLE dx_limit (
   xid SMALLINT NOT NULL,
   path TEXT NOT NULL,
@@ -116,7 +262,6 @@ CREATE TABLE user (
   password TEXT NOT NULL,
   admin TINYINT NOT NULL
 );
-INSERT INTO user VALUES(1, '${admin_name}', '${admin_password}', 1);
 CREATE TABLE vx_bcaps (
   xid SMALLINT NOT NULL,
   bcap TEXT NOT NULL
@@ -168,22 +313,41 @@ CREATE TABLE xid_uid_map (
   uid INT NOT NULL
 );
 SQLEOF
-	
-	chmod 600 "${vxdb_path}/vxdb"
-fi
+)
 
-echo " * Writing default configuration to ${vcd_conf}"
-if [[ -e "${vcd_conf}" ]]; then
-	echo -n "Configuration already exists. Overwrite? (y/N): "
-	read overwrite
-	[[ "${overwrite}" == "y" || "${overwrite}" == "Y" ]] && rm "${vcd_conf}"
-fi
+${SQLITE3} "${vxdb_dir}/vxdb" "${sql_schema}" || exit 1
+chmod 600 "${vxdb_dir}/vxdb" || exit 1
 
-if [[ ! -e "${vcd_conf}" ]]; then
-	cat <<VCDCONFEOF > "${vcd_conf}"
-/* listen on the specified IP/PORT */
+
+echo "  User accounts .. "
+
+sql_users=$(cat << SQLEOF
+INSERT INTO user VALUES(1, '${admin_user}', '${admin_pass_md5}', 1);
+INSERT INTO user VALUES(2, '${vshelper_user}', '${vshelper_pass_md5}', 1);
+SQLEOF
+)
+
+${SQLITE3} "${vxdb_dir}/vxdb" "${sql_users}" || exit 1
+
+
+echo
+echo "Creating configuration files:"
+
+echo "  ${config_dir}/vcd.conf .. "
+
+cat <<EOF > "${config_dir}/vcd.conf"
+/* listen on the specified IP/Port */
 listen-host = ${listen_host}
 listen-port = ${listen_port}
+
+/* tls mode (0 = disabled, 1 = anonymous, 2 = X.509) */
+#tls-mode = 0
+
+/* for X.509 auth */
+#tls-server-key = "${config_dir}/server.key"
+#tls-server-crt = "${config_dir}/server.crt"
+#tls-server-crl = "${config_dir}/server.crl"
+#tls-ca-crt     = "${config_dir}/ca.crt"
 
 /* maximum number of clients connected */
 #client-max = 20
@@ -191,30 +355,41 @@ listen-port = ${listen_port}
 /* request timeout */
 #client-timeout = 30
 
-/* log directory */
-log-dir = "${log_dir}"
-
 /* log level (1 = err, 2 = warn, 3 = info, 4 = debug) */
 #log-level = 3
+
+/* filesystem layout */
+vxdb-dir     = "${vxdb_dir}"
+lock-dir     = "${lock_dir}"
+log-dir      = "${log_dir}"
+run-dir      = "${run_dir}"
+vserver-dir  = "${vserver_dir}"
+template-dir = "${template_dir}"
+EOF
+
+chmod 600 "${config_dir}/vcd.conf" || exit 1
+
+
+echo "  /etc/vshelper.conf .. "
+
+cat <<EOF > "/etc/vshelper.conf"
+/* server configuration */
+server-host = ${listen_host}
+server-port = ${listen_port}
+server-user = ${vshelper_user}
+server-pass = ${vshelper_pass}
 
 /* tls mode (0 = disabled, 1 = anonymous, 2 = X.509) */
 #tls-mode = 0
 
-/* for X.509 auth */
-#tls-server-key = /etc/vcd/server.key
-#tls-server-crt = /etc/vcd/server.crt
-#tls-server-crl = /etc/vcd/server.crl
-#tls-ca-crt     = /etc/vcd/ca.crt
+/* log directory */
+log-dir      = "${log_dir}"
 
-/* vxdb configuration */
-vxdb-path = "${vxdb_path}"
+/* log level (1 = err, 2 = warn, 3 = info, 4 = debug) */
+#log-level = 3
+EOF
 
-/* vserver configuration */
-vserver-lockdir = "${lock_dir}"
-vserver-basedir = "${vserver_dir}"
-VCDCONFEOF
-	
-	chmod 600 "${vcd_conf}"
-fi
+chmod 600 "/etc/vshelper.conf" || exit 1
 
-echo " * vcd configured successfully"
+echo
+echo "vcd configured successfully"
