@@ -30,7 +30,7 @@ void vxdb_init(void)
 	if (vxdb)
 		return;
 	
-	char *dbdir = cfg_getstr(cfg, "vxdb-path");
+	char *dbdir = cfg_getstr(cfg, "vxdb-dir");
 	
 	if (!dbdir)
 		log_error_and_die("Unable to load vxdb configuration");

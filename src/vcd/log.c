@@ -38,6 +38,7 @@ static char *log_ident = NULL;
 
 int log_init(char *ident, int debug)
 {
+	int rc = 0;
 	char *logfile, *logdir = cfg_getstr(cfg, "log-dir");
 	
 	if (!ident || !*ident)
@@ -45,27 +46,32 @@ int log_init(char *ident, int debug)
 	
 	log_ident = ident;
 	
+	if (!debug && (!logdir || !*logdir))
+		return errno = ENOENT, -1;
+	
 	if (debug)
 		log_stderr = 1;
 	
-	if (!logdir || !*logdir)
-		return 0;
-	
 	logdir = realpath(logdir, NULL);
+	
+	if (!logdir)
+		return -1;
 	
 	if (log_fd >= 0)
 		close(log_fd);
 	
 	asprintf(&logfile, "%s/%s.log", logdir, ident);
 	log_fd = open_append(logfile);
-	free(logfile);
 	
 	if (log_fd == -1)
-		log_error_and_die("Could not open log file");
+		rc = -1;
+	else
+		log_level = cfg_getint(cfg, "log-level");
 	
-	log_level = cfg_getint(cfg, "log-level");
+	free(logfile);
+	free(logdir);
 	
-	return 0;
+	return rc;
 }
 
 static

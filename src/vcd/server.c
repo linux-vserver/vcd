@@ -43,7 +43,8 @@
 #define DH_BITS 1024
 
 XMLRPC_SERVER xmlrpc_server;
-static int sfd, cfd, num_clients;
+static int sfd, cfd, num_clients, max_clients;
+static struct sockaddr_in peer_addr;
 
 typedef enum {
 	TLS_DISABLED = 0,
@@ -133,6 +134,7 @@ void handle_client(void)
 	http_response_t response;
 	http_header_t *headers, *tmp;
 	char *body = NULL, *rbody = NULL;
+	char peer[INET_ADDRSTRLEN];
 	
 	int timeout = cfg_getint(cfg, "client-timeout");
 	
@@ -152,6 +154,28 @@ void handle_client(void)
 	else
 		src = (void *) &cfd;
 	
+	/* init repsonse */
+	response.status = HTTP_STATUS_SERVICE;
+	response.vmajor = 1;
+	response.vminor = 0;
+	
+	headers = NULL;
+	
+	/* check number of clients */
+	if (num_clients >= max_clients) {
+		log_warn("Maximum number of connections reached");
+		log_info("Rejecting client from %s:%d",
+		         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
+		         ntohs(peer_addr.sin_port));
+		http_send_response(src, &response, headers, NULL, httpd_write);
+		close(cfd);
+		exit(EXIT_FAILURE);
+	}
+		
+	log_info("New connection from %s, port %d",
+	         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
+	         ntohs(peer_addr.sin_port));
+	
 	headers = (http_header_t *) malloc(sizeof(http_header_t));
 	INIT_LIST_HEAD(&(headers->list));
 	
@@ -164,20 +188,13 @@ void handle_client(void)
 	alarm(0);
 	signal(SIGALRM, SIG_DFL);
 	
-	/* init repsonse */
-	response.status = HTTP_STATUS_BADREQ;
-	response.vmajor = 1;
-	response.vminor = 0;
-	
-	if (request.method != HTTP_METHOD_POST || strcmp(request.uri, "/RPC2") != 0) {
-		http_send_response(src, &response, NULL, NULL, httpd_write);
-		goto close;
-	}
-	
-	/* call xmlrpc method */
+	/* handle request */
 	headers = NULL;
 	
-	if (method_call(xmlrpc_server, body, &rbody) == -1)
+	if (request.method != HTTP_METHOD_POST || strcmp(request.uri, "/RPC2") != 0)
+		response.status = HTTP_STATUS_BADREQ;
+	
+	else if (method_call(xmlrpc_server, body, &rbody) == -1)
 		response.status = HTTP_STATUS_BADREQ;
 	
 	else if (!rbody)
@@ -254,15 +271,16 @@ void server_signal_handler(int sig, siginfo_t *siginfo, void *u)
 
 void server_main(void)
 {
-	int rc, port, max_clients;
-	char *host, peer[INET_ADDRSTRLEN];
+	int rc, port;
+	char *host;
 	socklen_t peerlen;
-	struct sockaddr_in peer_addr;
 	struct sigaction act;
 	char *ca, *crl, *cert, *key;
 	
 	log_init("server", 0);
 	log_info("Loading configuration");
+	
+	max_clients = cfg_getint(cfg, "client-max");
 	
 	/* init TLS */
 	tls_mode = cfg_getint(cfg, "tls-mode");
@@ -335,13 +353,13 @@ void server_main(void)
 	sigaction(SIGTERM, &act, NULL);
 	
 	/* setup xmlrpc server */
-	xmlrpc_server = XMLRPC_ServerCreate();
+	if ((xmlrpc_server = XMLRPC_ServerCreate()) == NULL)
+		log_error_and_die("Cannot create XMLRPC instance");
+	
 	method_registry_init(xmlrpc_server);
 	
 	/* wait and create a new child for each connection */
 	log_info("Accepting incoming connections on %s:%d", host, port);
-	
-	max_clients = cfg_getint(cfg, "client-max");
 	
 	while (1) {
 		peerlen = sizeof(struct sockaddr_in);
@@ -354,24 +372,12 @@ void server_main(void)
 			continue;
 		}
 		
-		if (num_clients >= max_clients) {
-			log_warn("Maximum number of connections reached");
-			log_info("Rejecting client from %s:%d",
-			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
-			         ntohs(peer_addr.sin_port));
-			close(cfd);
-			continue;
-		}
-		
 		switch (fork()) {
 		case -1:
 			log_warn("fork: %s", strerror(errno));
 			break;
 		
 		case 0:
-			log_info("New connection from %s, port %d",
-			         inet_ntop(AF_INET, &peer_addr.sin_addr, peer, INET_ADDRSTRLEN),
-			         ntohs(peer_addr.sin_port));
 			close(sfd);
 			handle_client();
 			break;

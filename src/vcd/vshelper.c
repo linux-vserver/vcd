@@ -347,7 +347,7 @@ loadcfg:
 	/* load configuration */
 	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
 	
-	switch (cfg_parse(cfg, "/etc/vshelper.conf")) { /* TODO: look in more places */
+	switch (cfg_parse(cfg, "/etc/vshelper.conf")) {
 	case CFG_FILE_ERROR:
 		perror("cfg_parse");
 		exit(EXIT_FAILURE);

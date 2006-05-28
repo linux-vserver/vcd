@@ -28,6 +28,8 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 
+#include "lucid.h"
+
 #include "cfg.h"
 #include "log.h"
 
@@ -36,14 +38,6 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("listen-host", "127.0.0.1", CFGF_NONE),
 	CFG_INT("listen-port", 13386,       CFGF_NONE),
 	
-	/* client handling */
-	CFG_INT("client-max",     20, CFGF_NONE),
-	CFG_INT("client-timeout", 30, CFGF_NONE),
-	
-	/* logging */
-	CFG_STR("log-dir",   NULL, CFGF_NONE),
-	CFG_INT("log-level", 3,    CFGF_NONE),
-	
 	/* SSL/TLS */
 	CFG_INT("tls-mode",       0,    CFGF_NONE),
 	CFG_STR("tls-server-key", NULL, CFGF_NONE),
@@ -51,12 +45,20 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("tls-server-crl", NULL, CFGF_NONE),
 	CFG_STR("tls-ca-crt",     NULL, CFGF_NONE),
 	
-	/* vxdb configuration */
-	CFG_STR("vxdb-path", NULL, CFGF_NONE),
+	/* client handling */
+	CFG_INT("client-max",     20, CFGF_NONE),
+	CFG_INT("client-timeout", 30, CFGF_NONE),
 	
-	/* vserver configuration */
-	CFG_STR("vserver-lockdir", NULL, CFGF_NONE),
-	CFG_STR("vserver-basedir", NULL, CFGF_NONE),
+	/* logging */
+	CFG_INT("log-level", 3,    CFGF_NONE),
+	
+	/* filesystem layout */
+	CFG_STR("vxdb-dir",     NULL, CFGF_NONE),
+	CFG_STR("lock-dir",     NULL, CFGF_NONE),
+	CFG_STR("log-dir",      NULL, CFGF_NONE),
+	CFG_STR("run-dir",      NULL, CFGF_NONE),
+	CFG_STR("vserver-dir",  NULL, CFGF_NONE),
+	CFG_STR("template-dir", NULL, CFGF_NONE),
 	CFG_END()
 };
 
@@ -136,8 +138,9 @@ void reset_signals(void)
 int main(int argc, char **argv)
 {
 	char *cfg_file = "/etc/vcd.conf";
+	char *rundir, *pidfile;
 	pid_t pid = 0;
-	int c, status, debug = 0;
+	int fd, c, status, debug = 0;
 	struct sigaction act;
 	
 	/* getopt */
@@ -228,6 +231,20 @@ int main(int argc, char **argv)
 	
 	if (debug)
 		sigaction(SIGINT, &act, NULL);
+	
+	/* log process id */
+	rundir  = cfg_getstr(cfg, "run-dir");
+	
+	if (rundir) {
+		asprintf(&pidfile, "%s/vcd.pid", rundir);
+		
+		if ((fd = open_trunc(pidfile)) != -1) {
+			dprintf(fd, "%d\n", getpid());
+			close(fd);
+		}
+		
+		free(pidfile);
+	}
 	
 	/* start threads */
 	log_info("Starting collector thread");

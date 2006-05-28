@@ -26,6 +26,7 @@
 #include "xmlrpc_private.h"
 
 #include "auth.h"
+#include "log.h"
 #include "methods.h"
 
 m_err_t method_error_codes[] = {
@@ -42,9 +43,12 @@ m_err_t method_error_codes[] = {
 	{ 0,         NULL },
 };
 
-#define MREGISTER(NAME,FUNC)  XMLRPC_ServerRegisterMethod(s, NAME, FUNC)
+#define MREGISTER(NAME,FUNC) do { \
+	if (XMLRPC_ServerRegisterMethod(s, NAME, FUNC) == 0) \
+		log_error_and_die("Could not register method '%s'", NAME); \
+} while (0)
 
-void method_registry_init(XMLRPC_SERVER s)
+int method_registry_init(XMLRPC_SERVER s)
 {
 	/* vx */
 	MREGISTER("vx.killer", m_vx_killer);
@@ -98,6 +102,8 @@ void method_registry_init(XMLRPC_SERVER s)
 	MREGISTER("vxdb.vx.uname.remove", m_vxdb_vx_uname_remove);
 	MREGISTER("vxdb.vx.uname.set", m_vxdb_vx_uname_set);
 	MREGISTER("vxdb.xid.get", m_vxdb_xid_get);
+	
+	return 0;
 }
 
 #undef MREGISTER

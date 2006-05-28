@@ -38,7 +38,7 @@ typedef struct {
 
 extern m_err_t method_error_codes[];
 
-void         method_registry_init(XMLRPC_SERVER s);
+int          method_registry_init(XMLRPC_SERVER s);
 int          method_call(XMLRPC_SERVER server, char *in, char **out);
 
 XMLRPC_VALUE method_get_params   (XMLRPC_REQUEST r);

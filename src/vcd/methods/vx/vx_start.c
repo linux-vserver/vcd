@@ -399,7 +399,7 @@ int mount_namespace(void)
 	dbi_result dbr;
 	int mtabfd;
 	
-	char *vdirbase = cfg_getstr(cfg, "vserver-basedir");
+	char *vdirbase = cfg_getstr(cfg, "vserver-dir");
 	char *vdir = NULL;
 	
 	asprintf(&vdir, "%s/%s", vdirbase, name);
@@ -531,7 +531,7 @@ int guest_init(void)
 		.flags = 0,
 	};
 	
-	char *vdirbase = cfg_getstr(cfg, "vserver-basedir");
+	char *vdirbase = cfg_getstr(cfg, "vserver-dir");
 	char *vdir = NULL;
 	
 	asprintf(&vdir, "%s/%s", vdirbase, name);

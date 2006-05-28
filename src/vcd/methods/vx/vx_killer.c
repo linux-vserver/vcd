@@ -138,7 +138,7 @@ int initless_shutdown(void)
 	pid_t pid;
 	int i, status;
 	
-	char *vdirbase = cfg_getstr(cfg, "vserver-basedir");
+	char *vdirbase = cfg_getstr(cfg, "vserver-dir");
 	char *vdir = NULL;
 	
 	asprintf(&vdir, "%s/%s", vdirbase, name);
