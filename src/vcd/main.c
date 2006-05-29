@@ -72,7 +72,7 @@ static pid_t server, collector;
 static inline
 void usage(int rc)
 {
-	printf("Usage: vcd [<opts>*]\n\n"
+	printf("Usage: vcd [<opts>*]\n"
 	       "\n"
 	       "Available options:\n"
 	       "   -c <file>     configuration file (default: /etc/vcd.conf)\n"

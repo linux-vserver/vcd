@@ -39,34 +39,6 @@ struct option long_opts[] = {
 	{ NULL,        0, 0, 0 },
 };
 
-static
-uint64_t str_to_dlim(char *str)
-{
-	if (str == NULL)
-		return CDLIM_KEEP;
-	
-	if (strcmp(str, "inf") == 0)
-		return CDLIM_INFINITY;
-	
-	if (strcmp(str, "keep") == 0)
-		return CDLIM_KEEP;
-	
-	return atoi(str);
-}
-
-static
-char *dlim_to_str(uint64_t lim)
-{
-	char *buf;
-	
-	if (lim == CDLIM_INFINITY)
-		asprintf(&buf, "%s", "inf");
-	
-	asprintf(&buf, "%lld", lim);
-	
-	return buf;
-}
-
 static inline
 void usage(int rc)
 {

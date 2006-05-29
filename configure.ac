@@ -39,21 +39,23 @@ AC_PROG_MAKE_SET
 # Checks for libraries.
 AC_LIBVSERVER([2])
 AM_PATH_LIBGNUTLS(1.0.0,, AC_MSG_ERROR([libgnutls not found]))
-AC_CHECK_LIB(dl,dlopen,,AC_MSG_ERROR([libdl not found]),)
-AC_CHECK_LIB(dbi,dbi_initialize,,AC_MSG_ERROR([libdbi not found]),)
-AC_CHECK_LIB(expat,XML_Parse,,AC_MSG_ERROR([libexpat not found]),)
+
+# Checks for library functions.
+AC_CHECK_LIB(dl,      dlopen,,           AC_MSG_ERROR([libdl not found]),)
+AC_CHECK_LIB(dbi,     dbi_initialize,,   AC_MSG_ERROR([libdbi not found]),)
+AC_CHECK_LIB(expat,   XML_Parse,,        AC_MSG_ERROR([libexpat not found]),)
+AC_CHECK_LIB(archive, archive_read_new,, AC_MSG_ERROR([libarchive not found]),)
+AC_CHECK_LIB(bz2,     BZ2_bzDecompress,, AC_MSG_ERROR([libbz2 not found]),)
+AC_CHECK_LIB(z,       inflate,,          AC_MSG_ERROR([libz not found]),)
 
 # Checks for header files.
 AC_CHECK_HEADERS(stdarg.h)
 
 # Checks for typedefs, structures, and compiler characteristics.
-
-# Checks for library functions.
-
-# Compiler settings
 AC_C_CONST
 AC_C_INLINE
 
+# Compiler settings
 CFLAGS="${CFLAGS} -W -Wall -Wno-unused -std=gnu99 -pedantic"
 
 # Site settings

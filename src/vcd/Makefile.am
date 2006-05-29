@@ -48,6 +48,7 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(top_builddir)/src/libconfuse/libconfuse.a \
             $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
             $(LIBGNUTLS_LIBS) \
+            -larchive -lbz2 -lz \
             -ldbi \
             -lexpat \
             -lvserver

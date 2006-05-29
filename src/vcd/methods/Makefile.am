@@ -20,7 +20,8 @@ INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libconfuse \
            -I$(top_srcdir)/src/vcd
 
-M_VXDB = vx/vx_killer.c \
+M_VXDB = vx/vx_create.c \
+         vx/vx_killer.c \
          vx/vx_restart.c \
          vx/vx_start.c \
          vx/vx_stop.c \

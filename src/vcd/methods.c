@@ -51,6 +51,7 @@ m_err_t method_error_codes[] = {
 int method_registry_init(XMLRPC_SERVER s)
 {
 	/* vx */
+	MREGISTER("vx.create", m_vx_create);
 	MREGISTER("vx.killer", m_vx_killer);
 	MREGISTER("vx.restart", m_vx_restart);
 	MREGISTER("vx.start", m_vx_start);

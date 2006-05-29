@@ -50,6 +50,7 @@ XMLRPC_VALUE method_error        (int id);
 	XMLRPC_VALUE NAME (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 
 /* vxdb */
+MPROTO(m_vx_create);
 MPROTO(m_vx_killer);
 MPROTO(m_vx_restart);
 MPROTO(m_vx_start);
