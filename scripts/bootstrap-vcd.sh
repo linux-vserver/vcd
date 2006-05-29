@@ -54,6 +54,8 @@ echo "  [3] Custom layout"
 echo
 while true; do
 	read -p "Filesystem layout to use? (1) " fs_layout
+	: ${fs_layout:=1}
+	
 	[[ ${fs_layout} -gt 0 && ${fs_layout} -lt 4 ]] && break;
 	echo "Invalid choice. Try again!"
 done
@@ -106,10 +108,12 @@ fs_check() {
 	[[ -z $1 ]] && return
 	[[ -e $1 ]] || return
 	
-	echo "$1 does already exist!"
-	rm -ri $1
+	local remove
+	read -p "$1 does already exist! Remove? (y/N) " remove
 	
-	[[ -e $1 ]] && exit 1
+	[[ ${remove} != "Y" && ${remove} != "y" ]] && return
+	
+	rm -rf $1
 	echo
 }
 
@@ -234,83 +238,99 @@ CREATE TABLE dx_limit (
   path TEXT NOT NULL,
   space INT NOT NULL,
   inodes INT NOT NULL,
-  reserved TINYINT
+  reserved TINYINT,
+  UNIQUE(xid, path)
 );
 CREATE TABLE init_method (
-  xid SMALLINT NOT NULL UNIQUE,
+  xid SMALLINT NOT NULL,
   method TEXT NOT NULL,
   start TEXT,
   stop TEXT,
-  timeout TINYINT
+  timeout TINYINT,
+  UNIQUE(xid)
 );
 CREATE TABLE init_mount (
   xid SMALLINT NOT NULL,
   spec TEXT NOT NULL,
   file TEXT NOT NULL,
   vfstype TEXT,
-  mntops TEXT
+  mntops TEXT,
+  UNIQUE(xid, file)
 );
 CREATE TABLE nx_addr (
   xid SMALLINT NOT NULL,
   addr TEXT NOT NULL,
   netmask TEXT NOT NULL,
-  broadcast TEXT NOT NULL
+  broadcast TEXT NOT NULL,
+  UNIQUE(xid, addr)
 );
 CREATE TABLE user (
-  uid SMALLINT NOT NULL UNIQUE,
-  name TEXT NOT NULL UNIQUE,
+  uid SMALLINT NOT NULL,
+  name TEXT NOT NULL,
   password TEXT NOT NULL,
-  admin TINYINT NOT NULL
+  admin TINYINT NOT NULL,
+  UNIQUE(uid),
+  UNIQUE(name)
 );
 CREATE TABLE vx_bcaps (
   xid SMALLINT NOT NULL,
-  bcap TEXT NOT NULL
+  bcap TEXT NOT NULL,
+  UNIQUE(xid, bcap)
 );
 CREATE TABLE vx_ccaps (
   xid SMALLINT NOT NULL,
-  ccap TEXT NOT NULL
+  ccap TEXT NOT NULL,
+  UNIQUE(xid, ccap)
 );
 CREATE TABLE vx_flags (
   xid SMALLINT NOT NULL,
-  flag TEXT NOT NULL
+  flag TEXT NOT NULL,
+  UNIQUE(xid, flag)
 );
 CREATE TABLE vx_limit (
   xid SMALLINT NOT NULL,
   type TEXT NOT NULL,
   min BIGINT,
   soft BIGINT,
-  max BIGINT
+  max BIGINT,
+  UNIQUE(xid, type)
 );
 CREATE TABLE vx_pflags (
   xid SMALLINT NOT NULL,
-  pflag TEXT NOT NULL
+  pflag TEXT NOT NULL,
+  UNIQUE(xid, pflag)
 );
 CREATE TABLE vx_sched (
-  xid SMALLINT NOT NULL UNIQUE,
+  xid SMALLINT NOT NULL,
   fill_rate INT NOT NULL,
   fill_rate2 INT NOT NULL,
   interval INT NOT NULL,
   interval2 INT NOT NULL,
   prio_bias INT NOT NULL,
   tokens_min INT NOT NULL,
-  tokens_max INT NOT NULL
+  tokens_max INT NOT NULL,
+  UNIQUE(xid)
 );
 CREATE TABLE vx_uname (
-  xid SMALLINT NOT NULL UNIQUE,
+  xid SMALLINT NOT NULL,
   domainname TEXT,
   machine TEXT,
   nodename TEXT,
   release TEXT,
   sysname TEXT,
-  version TEXT
+  version TEXT,
+  UNIQUE(xid)
 );
 CREATE TABLE xid_name_map (
-  xid SMALLINT NOT NULL UNIQUE,
-  name TEXT NOT NULL UNIQUE
+  xid SMALLINT NOT NULL,
+  name TEXT NOT NULL,
+  UNIQUE(xid),
+  UNIQUE(name)
 );
 CREATE TABLE xid_uid_map (
   xid SMALLINT NOT NULL,
-  uid INT NOT NULL
+  uid INT NOT NULL,
+  UNIQUE(xid, uid)
 );
 SQLEOF
 )
