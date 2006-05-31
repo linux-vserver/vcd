@@ -22,12 +22,12 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <confuse.h>
 #include <vserver.h>
 #include <archive.h>
 #include <archive_entry.h>
 #include <sys/stat.h>
 
-#include "confuse.h"
 #include "lucid.h"
 #include "xmlrpc.h"
 

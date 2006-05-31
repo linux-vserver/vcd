@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
+#include <confuse.h>
 #include <vserver.h>
 #include <gnutls/gnutls.h>
 
-#include "confuse.h"
 #include "lucid.h"
 #include "xmlrpc.h"
 

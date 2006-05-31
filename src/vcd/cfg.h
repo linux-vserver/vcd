@@ -18,7 +18,7 @@
 #ifndef _VCD_CFG_H
 #define _VCD_CFG_H
 
-#include "confuse.h"
+#include <confuse.h>
 
 extern cfg_t *cfg;
 

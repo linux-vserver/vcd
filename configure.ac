@@ -30,7 +30,6 @@ AM_MAINTAINER_MODE
 
 # Checks for programs.
 AC_PROG_CC
-AM_PROG_LEX
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -41,11 +40,12 @@ AC_LIBVSERVER([2])
 AM_PATH_LIBGNUTLS(1.0.0,, AC_MSG_ERROR([libgnutls not found]))
 
 # Checks for library functions.
-AC_CHECK_LIB(dl,      dlopen,,           AC_MSG_ERROR([libdl not found]),)
-AC_CHECK_LIB(dbi,     dbi_initialize,,   AC_MSG_ERROR([libdbi not found]),)
-AC_CHECK_LIB(expat,   XML_Parse,,        AC_MSG_ERROR([libexpat not found]),)
 AC_CHECK_LIB(archive, archive_read_new,, AC_MSG_ERROR([libarchive not found]),)
 AC_CHECK_LIB(bz2,     BZ2_bzDecompress,, AC_MSG_ERROR([libbz2 not found]),)
+AC_CHECK_LIB(confuse, cfg_parse,,        AC_MSG_ERROR([libconfuse not found]),)
+AC_CHECK_LIB(dbi,     dbi_initialize,,   AC_MSG_ERROR([libdbi not found]),)
+AC_CHECK_LIB(dl,      dlopen,,           AC_MSG_ERROR([libdl not found]),)
+AC_CHECK_LIB(expat,   XML_Parse,,        AC_MSG_ERROR([libexpat not found]),)
 AC_CHECK_LIB(z,       inflate,,          AC_MSG_ERROR([libz not found]),)
 
 # Checks for header files.
@@ -76,7 +76,6 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  scripts/Makefile
-                 src/libconfuse/Makefile
                  src/libxmlrpc/Makefile
                  src/lucid/Makefile
                  src/tools/Makefile
