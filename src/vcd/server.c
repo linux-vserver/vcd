@@ -32,13 +32,10 @@
 #include "lucid.h"
 #include "xmlrpc.h"
 
-#include "auth.h"
 #include "cfg.h"
 #include "log.h"
 #include "methods.h"
 #include "vxdb.h"
-
-#include "methods.h"
 
 #define DH_BITS 1024
 

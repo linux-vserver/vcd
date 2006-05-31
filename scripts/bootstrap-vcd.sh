@@ -360,8 +360,8 @@ cat <<EOF > "${config_dir}/vcd.conf"
 listen-host = ${listen_host}
 listen-port = ${listen_port}
 
-/* tls mode (0 = disabled, 1 = anonymous, 2 = X.509) */
-#tls-mode = 0
+/* tls mode (none, anonymous, x509) */
+tls-mode = none
 
 /* for X.509 auth */
 #tls-server-key = "${config_dir}/server.key"
@@ -370,13 +370,13 @@ listen-port = ${listen_port}
 #tls-ca-crt     = "${config_dir}/ca.crt"
 
 /* maximum number of clients connected */
-#client-max = 20
+client-max = 20
 
 /* request timeout */
-#client-timeout = 30
+client-timeout = 30
 
-/* log level (1 = err, 2 = warn, 3 = info, 4 = debug) */
-#log-level = 3
+/* log level (error, warn, info, debug) */
+log-level = info
 
 /* filesystem layout */
 vxdb-dir     = "${vxdb_dir}"
@@ -399,14 +399,14 @@ server-port = ${listen_port}
 server-user = ${vshelper_user}
 server-pass = ${vshelper_pass}
 
-/* tls mode (0 = disabled, 1 = anonymous, 2 = X.509) */
-#tls-mode = 0
+/* tls mode (none, anonymous, X.509) */
+tls-mode = none
 
 /* log directory */
 log-dir      = "${log_dir}"
 
-/* log level (1 = err, 2 = warn, 3 = info, 4 = debug) */
-#log-level = 3
+/* log level (error, warn, info, debug) */
+log-level = info
 EOF
 
 chmod 600 "/etc/vshelper.conf" || exit 1

@@ -24,13 +24,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <fcntl.h>
-#include <confuse.h>
 #include <vserver.h>
 #include <gnutls/gnutls.h>
 
 #include "lucid.h"
 #include "xmlrpc.h"
 
+#include "cfg.h"
 #include "log.h"
 
 static const char *rcsid = "$Id: vdbm.c 160 2006-04-08 13:31:34Z hollow $";
@@ -54,18 +54,19 @@ static char *name;
 
 static cfg_opt_t CFG_OPTS[] = {
 	/* network configuration */
-	CFG_STR("server-host", "127.0.0.1", CFGF_NONE),
-	CFG_INT("server-port", 13386,       CFGF_NONE),
+	CFG_STR_CB("server-host", "127.0.0.1", CFGF_NONE, &cfg_validate_host),
+	CFG_INT_CB("server-port", 13386,       CFGF_NONE, &cfg_validate_port),
+	
 	CFG_STR("server-user", "vshelper",  CFGF_NONE),
 	CFG_STR("server-pass", NULL,        CFGF_NONE),
 	
 	/* logging */
-	CFG_STR("log-dir",   NULL, CFGF_NONE),
-	CFG_INT("log-level", 3,    CFGF_NONE),
+	CFG_STR_CB("log-dir",   NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_INT_CB("log-level", 3,    CFGF_NONE, &cfg_validate_log),
 	
 	/* SSL/TLS */
-	CFG_INT("tls-mode",       0,    CFGF_NONE),
-	CFG_STR("tls-ca-crt",     NULL, CFGF_NONE),
+	CFG_INT_CB("tls-mode",       0,    CFGF_NONE, &cfg_validate_tls),
+	CFG_STR_CB("tls-ca-crt",     NULL, CFGF_NONE, &cfg_validate_path),
 	CFG_END()
 };
 
@@ -353,7 +354,7 @@ loadcfg:
 		exit(EXIT_FAILURE);
 	
 	case CFG_PARSE_ERROR:
-		dprintf(STDERR_FILENO, "cfg_parse: Parse error");
+		dprintf(STDERR_FILENO, "cfg_parse: Parse error\n");
 		exit(EXIT_FAILURE);
 	
 	default:

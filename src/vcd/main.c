@@ -35,30 +35,30 @@
 
 static cfg_opt_t CFG_OPTS[] = {
 	/* network configuration */
-	CFG_STR("listen-host", "127.0.0.1", CFGF_NONE),
-	CFG_INT("listen-port", 13386,       CFGF_NONE),
+	CFG_STR_CB("listen-host", "127.0.0.1", CFGF_NONE, &cfg_validate_host),
+	CFG_INT_CB("listen-port", 13386,       CFGF_NONE, &cfg_validate_port),
 	
 	/* SSL/TLS */
-	CFG_INT("tls-mode",       0,    CFGF_NONE),
-	CFG_STR("tls-server-key", NULL, CFGF_NONE),
-	CFG_STR("tls-server-crt", NULL, CFGF_NONE),
-	CFG_STR("tls-server-crl", NULL, CFGF_NONE),
-	CFG_STR("tls-ca-crt",     NULL, CFGF_NONE),
+	CFG_INT_CB("tls-mode",       0,    CFGF_NONE, &cfg_validate_tls),
+	CFG_STR_CB("tls-server-key", NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("tls-server-crt", NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("tls-server-crl", NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("tls-ca-crt",     NULL, CFGF_NONE, &cfg_validate_path),
 	
 	/* client handling */
 	CFG_INT("client-max",     20, CFGF_NONE),
 	CFG_INT("client-timeout", 30, CFGF_NONE),
 	
 	/* logging */
-	CFG_INT("log-level", 3,    CFGF_NONE),
+	CFG_INT_CB("log-level", 3,    CFGF_NONE, &cfg_validate_log),
 	
 	/* filesystem layout */
-	CFG_STR("vxdb-dir",     NULL, CFGF_NONE),
-	CFG_STR("lock-dir",     NULL, CFGF_NONE),
-	CFG_STR("log-dir",      NULL, CFGF_NONE),
-	CFG_STR("run-dir",      NULL, CFGF_NONE),
-	CFG_STR("vserver-dir",  NULL, CFGF_NONE),
-	CFG_STR("template-dir", NULL, CFGF_NONE),
+	CFG_STR_CB("vxdb-dir",     NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("lock-dir",     NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("log-dir",      NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("run-dir",      NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("vserver-dir",  NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("template-dir", NULL, CFGF_NONE, &cfg_validate_path),
 	CFG_END()
 };
 
@@ -172,7 +172,7 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	
 	case CFG_PARSE_ERROR:
-		dprintf(STDERR_FILENO, "cfg_parse: Parse error");
+		dprintf(STDERR_FILENO, "cfg_parse: Parse error\n");
 		exit(EXIT_FAILURE);
 	
 	default:

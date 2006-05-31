@@ -31,6 +31,7 @@ sbin_PROGRAMS = vcd \
                 vshelper
 
 vcd_SOURCES = auth.c \
+              cfg.c \
               collector.c \
               lists.c \
               log.c \
@@ -39,8 +40,9 @@ vcd_SOURCES = auth.c \
               server.c \
               vxdb.c
 
-vshelper_SOURCES = vshelper.c \
-                   log.c
+vshelper_SOURCES = cfg.c \
+                   log.c \
+                   vshelper.c
 
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(top_builddir)/src/lucid/libucid.a \
