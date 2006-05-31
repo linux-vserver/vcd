@@ -95,8 +95,12 @@ int setup_context(void)
 		.flags = VXF_PERSISTENT,
 	};
 	
-	struct vx_caps caps = {
-		.bcaps = -1,
+	struct vx_bcaps bcaps = {
+		.bcaps = ~(0ULL),
+		.bmask = ~(0ULL),
+	};
+	
+	struct vx_ccaps ccaps = {
 		.ccaps = 0,
 		.cmask = 0,
 	};
@@ -174,8 +178,13 @@ int setup_context(void)
 	while (dbi_result_next_row(dbr)) {
 		uint64_t bcap;
 		flist64_getval(bcaps_list, (char *) dbi_result_get_string(dbr, "bcap"), &bcap);
-		caps.bcaps &= ~bcap;
+		bcaps.bcaps &= ~bcap;
 	}
+	
+	bcaps.bmask  = bcaps.bcaps;
+	
+	if (vx_set_bcaps(xid, &bcaps) == -1)
+		return errno = MESYS, -1;
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT ccap FROM vx_ccaps WHERE xid = %d",
@@ -187,11 +196,12 @@ int setup_context(void)
 	while (dbi_result_next_row(dbr)) {
 		uint64_t ccap;
 		flist64_getval(ccaps_list, (char *) dbi_result_get_string(dbr, "ccap"), &ccap);
-		caps.ccaps |= ccap;
-		caps.cmask  = caps.ccaps;
+		ccaps.ccaps |= ccap;
 	}
 	
-	if (vx_set_caps(xid, &caps) == -1)
+	ccaps.cmask  = ccaps.ccaps;
+	
+	if (vx_set_ccaps(xid, &ccaps) == -1)
 		return errno = MESYS, -1;
 	
 	dbr = dbi_conn_queryf(vxdb,
@@ -458,7 +468,7 @@ static
 int setup_namespace(void)
 {
 	int status;
-	pid_t pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0);
+	pid_t pid = vx_clone_namespace();
 	
 	switch (pid) {
 	case -1:
