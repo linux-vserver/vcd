@@ -1,0 +1,39 @@
+#!/bin/bash
+
+usage() {
+	echo "Usage: vprocunhide /path/to/vprocunhide-files"
+	echo
+	echo "Exit codes:"
+	echo "  0    no errors"
+	echo "  1    some files were changed but errors occured on other ones"
+	echo "  2    operation failed on every file"
+	exit 0
+}
+
+[[ -z $1 || $1 == "--help" ]] && usage
+
+
+local o=1
+local p=0
+
+local path flags
+
+while read path; do
+	case "$path" in
+		(\#*) continue;;
+		(\~*) flags="ADMIN,WATCH,HIDE"; path=${path#\~};;
+		(-*)  flags="ADMIN,HIDE";       path=${path#-};;
+		(:*)  flags="WATCH,HIDE";       path=${path#:};;
+		(!*)  flags="HIDE";             path=${path#!};;
+		(+*)  flags="~HIDE";            path=${path#+};;
+		(*)   flags="~HIDE";;
+	esac
+	
+	test -e "$path" || continue
+	
+	ix -set-attr "$path" "$flags" && p=1 || o=0
+done
+
+test $o -ne 0 && exit 0 || \
+test $p -ne 0 && exit 2 || \
+exit 3
