@@ -21,24 +21,15 @@ noinst_HEADERS = base64.h \
                  encodings.h \
                  queue.h \
                  simplestring.h \
-                 system_methods_private.h \
                  xml_element.h \
-                 xml_to_dandarpc.h \
-                 xml_to_soap.h \
                  xml_to_xmlrpc.h \
                  xmlrpc.h \
-		 xmlrpc_private.h \
-                 xmlrpc_introspection.h \
-                 xmlrpc_introspection_private.h
+                 xmlrpc_private.h
 
 libxmlrpc_a_SOURCES = base64.c \
                       encodings.c \
                       queue.c \
                       simplestring.c \
-                      system_methods.c \
                       xml_element.c \
-                      xml_to_dandarpc.c \
-                      xml_to_soap.c \
                       xml_to_xmlrpc.c \
-                      xmlrpc.c \
-                      xmlrpc_introspection.c
+                      xmlrpc.c

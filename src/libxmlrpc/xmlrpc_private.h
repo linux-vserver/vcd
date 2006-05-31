@@ -141,9 +141,6 @@ typedef struct _xmlrpc_vector {
  */
 typedef struct _xmlrpc_server {
    queue methodlist;                                  /* list of callback methods          */
-   queue docslist;                                    /* list of introspection callbacks   */
-   XMLRPC_VALUE xIntrospection;
-   XMLRPC_SERVER_VALIDATION validation;               /* how/whether to perform request validation */
 } STRUCT_XMLRPC_SERVER;
 /******/
 

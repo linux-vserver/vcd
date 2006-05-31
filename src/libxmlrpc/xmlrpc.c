@@ -134,12 +134,8 @@ static const char rcsid[] =
 #include "base64.h"
 
 #include "xml_to_xmlrpc.h"
-#include "xml_to_dandarpc.h"
-#include "xml_to_soap.h"
 #include "xml_element.h"
 #include "xmlrpc_private.h"
-#include "xmlrpc_introspection_private.h"
-#include "system_methods_private.h"
 
 
 
@@ -226,11 +222,7 @@ static int date_from_ISO8601 (const char *text, time_t * value) {
 static int date_to_ISO8601 (time_t value, char *buf, int length) {
    struct tm *tm;
    tm = localtime(&value);
-#if 0  // TODO: soap seems to favor this method. xmlrpc the latter.
-	return strftime (buf, length, "%Y-%m-%dT%H:%M:%SZ", tm);
-#else
    return strftime(buf, length, "%Y%m%dT%H:%M:%S", tm);
-#endif
 }
 
 /*-*******************
@@ -646,16 +638,7 @@ char* XMLRPC_REQUEST_ToXML(XMLRPC_REQUEST request, int* buf_len) {
       char* pRet = NULL;
 	if (request) {
 		xml_element *root_elem = NULL;
-		if (request->output.version == xmlrpc_version_simple) {
-			root_elem = DANDARPC_REQUEST_to_xml_element (request);
-		}
-		else if (request->output.version == xmlrpc_version_1_0 ||
-					request->output.version == xmlrpc_version_none) {
-			root_elem = XMLRPC_REQUEST_to_xml_element (request);
-		}
-		else if (request->output.version == xmlrpc_version_soap_1_1) {
-			root_elem = SOAP_REQUEST_to_xml_element (request);
-		}
+		root_elem = XMLRPC_REQUEST_to_xml_element (request);
 
       if(root_elem) {
 			pRet =
@@ -761,18 +744,8 @@ XMLRPC_REQUEST XMLRPC_REQUEST_FromXML (const char *in_buf, int len,
 								  &error);
 
       if(root_elem) {
-         if(!strcmp(root_elem->name, "simpleRPC")) {
-            request->output.version = xmlrpc_version_simple;
-            xml_element_to_DANDARPC_REQUEST(request, root_elem);
-         }
-			else if (!strcmp (root_elem->name, "SOAP-ENV:Envelope")) {
-				request->output.version = xmlrpc_version_soap_1_1;
-				xml_element_to_SOAP_REQUEST (request, root_elem);
-			}
-         else {
-            request->output.version = xmlrpc_version_1_0;
-            xml_element_to_XMLRPC_REQUEST(request, root_elem);
-         }
+         request->output.version = xmlrpc_version_1_0;
+         xml_element_to_XMLRPC_REQUEST(request, root_elem);
          xml_elem_free(root_elem);
       }
       else {
@@ -2281,10 +2254,6 @@ XMLRPC_SERVER XMLRPC_ServerCreate() {
    XMLRPC_SERVER server = calloc(1, sizeof(STRUCT_XMLRPC_SERVER));
    if(server) {
       Q_Init(&server->methodlist);
-      Q_Init(&server->docslist);
-
-      /* register system methods */
-      xsm_register(server);
    }
    return server;
 }
@@ -2341,12 +2310,7 @@ XMLRPC_SERVER XMLRPC_GetGlobalServer() {
  */
 void XMLRPC_ServerDestroy(XMLRPC_SERVER server) {
    if(server) {
-      doc_method* dm = Q_Head(&server->docslist);
       server_method* sm = Q_Head(&server->methodlist);
-      while( dm ) {
-         my_free(dm);
-         dm = Q_Next(&server->docslist);
-      }
       while( sm ) {
          if(sm->name) {
             my_free(sm->name);
@@ -2357,12 +2321,8 @@ void XMLRPC_ServerDestroy(XMLRPC_SERVER server) {
          my_free(sm);
          sm = Q_Next(&server->methodlist);
       }
-      if(server->xIntrospection) {
-         XMLRPC_CleanupValue(server->xIntrospection);
-      }
 
       Q_Destroy(&server->methodlist);
-      Q_Destroy(&server->docslist);
       my_free(server);
    }
 }
@@ -2532,13 +2492,7 @@ XMLRPC_VALUE XMLRPC_ServerCallMethod(XMLRPC_SERVER server, XMLRPC_REQUEST reques
 		XMLRPC_Callback cb =
 		XMLRPC_ServerFindMethod (server, request->methodName.str);
       if(cb) {
-         if( XMLRPC_ServerValidateRequest(server, request, userData) ) {
-            xReturn = cb(server, request, userData);
-         }
-         else {
-            xReturn = XMLRPC_UtilityCreateFault(xmlrpc_error_invalid_params,
-                                                xmlrpc_error_invalid_params_str);
-         }
+         xReturn = cb(server, request, userData);
       }
       else {
 			xReturn =

@@ -179,21 +179,6 @@ typedef enum _xmlrpc_error_code {
 #define xmlrpc_error_transport_str              "transport error."
 
 
-/****d* VALUE/XMLRPC_SERVER_VALIDATION
- * NAME
- *   XMLRPC_SERVER_VALIDATION
- * NOTES
- *   Defines if/how server validates incoming requests according to introspection data
- * SOURCE
- */
-typedef enum _xmlrpc_server_validation {
-   validation_none = 0,          /* no validation                                                */ 
-   validation_all = 1,           /* all methods must validate                                    */ 
-   validation_if_defined = 2    /* all methods with defined introspection params must validate  */ 
-} XMLRPC_SERVER_VALIDATION;
-/******/
-
-
 /****d* VALUE/XMLRPC_VERSION
  * NAME
  *   XMLRPC_VERSION
@@ -207,9 +192,6 @@ typedef enum _xmlrpc_server_validation {
 typedef enum _xmlrpc_version {
    xmlrpc_version_none = 0,      /* not a recognized vocabulary    */ 
    xmlrpc_version_1_0 = 1,       /* xmlrpc 1.0 standard vocab      */ 
-   xmlrpc_version_simple = 2,    /* alt more readable vocab        */ 
-   xmlrpc_version_danda = 2,     /* same as simple. legacy         */
-	xmlrpc_version_soap_1_1 = 3	/* SOAP. version 1.1              */
 } XMLRPC_VERSION;
 /******/
 
@@ -408,8 +390,6 @@ void XMLRPC_ServerDestroy(XMLRPC_SERVER server);
 int XMLRPC_ServerRegisterMethod(XMLRPC_SERVER server, const char *name, XMLRPC_Callback cb);
 XMLRPC_Callback XMLRPC_ServerFindMethod(XMLRPC_SERVER server, const char* callName);
 XMLRPC_VALUE XMLRPC_ServerCallMethod(XMLRPC_SERVER server, XMLRPC_REQUEST request, void* userData);
-
-#include "xmlrpc_introspection.h"
 
 /* Fault interrogation funcs */
 int XMLRPC_ValueIsFault (XMLRPC_VALUE value);
