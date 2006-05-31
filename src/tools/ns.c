@@ -81,9 +81,9 @@ int main(int argc, char *argv[])
 	goto usage;
 	
 create:
-	switch((pid = sys_clone(CLONE_NEWNS|SIGCHLD, 0))) {
+	switch((pid = vx_clone_namespace())) {
 		case -1:
-			perr("clone");
+			perr("vx_clone_namespace");
 		
 		case 0:
 			if (vx_set_namespace(xid) == -1)

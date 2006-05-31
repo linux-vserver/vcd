@@ -119,8 +119,12 @@ int main(int argc, char *argv[])
 		.flags = 0,
 	};
 	
-	struct vx_caps caps = {
+	struct vx_bcaps bcaps = {
 		.bcaps = ~(0ULL),
+		.bmask = ~(0ULL),
+	};
+	
+	struct vx_ccaps ccaps = {
 		.ccaps =   0,
 		.cmask =   0,
 	};
@@ -234,11 +238,11 @@ setbcaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], bcaps_list, &caps.bcaps, &mask, '~', ',') == -1)
+	if (flist64_parse(argv[optind], bcaps_list, &bcaps.bcaps, &bcaps.bmask, '~', ',') == -1)
 		perr("flist64_parse");
 	
-	if (vx_set_caps(xid, &caps) == -1)
-		perr("vx_set_caps");
+	if (vx_set_bcaps(xid, &bcaps) == -1)
+		perr("vx_set_bcaps");
 	
 	goto out;
 	
@@ -246,11 +250,11 @@ setccaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], ccaps_list, &caps.ccaps, &caps.cmask, '~', ',') == -1)
+	if (flist64_parse(argv[optind], ccaps_list, &ccaps.ccaps, &ccaps.cmask, '~', ',') == -1)
 		perr("flist64_parse");
 	
-	if (vx_set_caps(xid, &caps) == -1)
-		perr("vx_set_caps");
+	if (vx_set_ccaps(xid, &ccaps) == -1)
+		perr("vx_set_ccaps");
 	
 	goto out;
 	
@@ -398,10 +402,10 @@ setvhi:
 	goto out;
 	
 getbcaps:
-	if (vx_get_caps(xid, &caps) == -1)
-		perr("vx_get_caps");
+	if (vx_get_bcaps(xid, &bcaps) == -1)
+		perr("vx_get_bcaps");
 	
-	if (flist64_tostr(bcaps_list, caps.bcaps, &buf, '\n') == -1)
+	if (flist64_tostr(bcaps_list, bcaps.bcaps, &buf, '\n') == -1)
 		perr("flist64_tostr");
 	
 	printf("%s", buf);
@@ -410,10 +414,10 @@ getbcaps:
 	goto out;
 	
 getccaps:
-	if (vx_get_caps(xid, &caps) == -1)
-		perr("vx_get_caps");
+	if (vx_get_ccaps(xid, &ccaps) == -1)
+		perr("vx_get_ccaps");
 	
-	if (flist64_tostr(ccaps_list, caps.ccaps, &buf, '\n') == -1)
+	if (flist64_tostr(ccaps_list, ccaps.ccaps, &buf, '\n') == -1)
 		perr("flist64_tostr");
 	
 	printf("%s", buf);
