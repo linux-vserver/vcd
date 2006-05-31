@@ -249,7 +249,7 @@ CREATE TABLE init_method (
   timeout TINYINT,
   UNIQUE(xid)
 );
-CREATE TABLE init_mount (
+CREATE TABLE mount (
   xid SMALLINT NOT NULL,
   spec TEXT NOT NULL,
   file TEXT NOT NULL,
@@ -289,11 +289,10 @@ CREATE TABLE vx_flags (
 );
 CREATE TABLE vx_limit (
   xid SMALLINT NOT NULL,
-  type TEXT NOT NULL,
-  min BIGINT,
+  limit TEXT NOT NULL,
   soft BIGINT,
   max BIGINT,
-  UNIQUE(xid, type)
+  UNIQUE(xid, limit)
 );
 CREATE TABLE vx_pflags (
   xid SMALLINT NOT NULL,
@@ -302,6 +301,7 @@ CREATE TABLE vx_pflags (
 );
 CREATE TABLE vx_sched (
   xid SMALLINT NOT NULL,
+  cpu_id SMALLINT NOT NULL,
   fill_rate INT NOT NULL,
   fill_rate2 INT NOT NULL,
   interval INT NOT NULL,
@@ -309,17 +309,13 @@ CREATE TABLE vx_sched (
   prio_bias INT NOT NULL,
   tokens_min INT NOT NULL,
   tokens_max INT NOT NULL,
-  UNIQUE(xid)
+  UNIQUE(xid, cpu_id)
 );
 CREATE TABLE vx_uname (
   xid SMALLINT NOT NULL,
-  domainname TEXT,
-  machine TEXT,
-  nodename TEXT,
-  release TEXT,
-  sysname TEXT,
-  version TEXT,
-  UNIQUE(xid)
+  uname TEXT NOT NULL,
+  value TEXT NOT NULL,
+  UNIQUE(xid, uname)
 );
 CREATE TABLE xid_name_map (
   xid SMALLINT NOT NULL,

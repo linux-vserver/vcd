@@ -19,16 +19,14 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.user.set(string name[, string password[, int admin]]) */
+/* vxdb.user.set(string name, string password[, int admin]) */
 XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -38,7 +36,7 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name     = XMLRPC_VectorGetStringWithID(params, "name");
+	char *user     = XMLRPC_VectorGetStringWithID(params, "username");
 	char *password = XMLRPC_VectorGetStringWithID(params, "password");
 	int admin;
 	
@@ -47,29 +45,31 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	else
 		admin = XMLRPC_VectorGetIntWithID(params, "admin");
 	
-	if (!name)
+	if (!validate_username(user) || !validate_password(password))
 		return method_error(MEREQ);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT uid FROM user WHERE name = '%s'",
-		name);
+		"SELECT uid,admin FROM user WHERE name = '%s'",
+		user);
 	
-	if (dbr && dbi_result_get_numrows(dbr) > 0) {
-		int uid = dbi_result_get_int(dbr, "uid");
-		
-		if (password)
-			dbi_conn_queryf(vxdb,
-				"UPDATE user SET password = '%s' WHERE uid = %d",
-				password, uid);
-		
-		if (admin != -1)
-			dbi_conn_queryf(vxdb,
-				"UPDATE user SET admin = %d WHERE uid = %d",
-				admin == 0 ? 0 : 1, uid);
-	}
+	if (!dbr)
+		return method_error(MEVXDB);
 	
-	else
+	if (dbi_result_get_numrows(dbr) < 1)
 		return method_error(MENOENT);
 	
-	return params;
+	int uid = dbi_result_get_int(dbr, "uid");
+	int adm = admin == -1 ? dbi_result_get_int(dbr, "admin") : admin;
+	
+	/* TODO: password to SHA-1 */
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"INSERT OR REPLACE INTO user (uid, name, password, admin) "
+		"VALUES (%d, '%s', '%s', %d)",
+		uid, user, password, adm);
+	
+	if (!dbr)
+		return method_error(MEVXDB);
+	
+	return NULL;
 }

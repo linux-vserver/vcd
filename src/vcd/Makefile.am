@@ -25,6 +25,7 @@ noinst_HEADERS = auth.h \
                  lists.h \
                  log.h \
                  methods.h \
+                 validate.h \
                  vxdb.h
 
 sbin_PROGRAMS = vcd \
@@ -38,6 +39,7 @@ vcd_SOURCES = auth.c \
               main.c \
               methods.c \
               server.c \
+              validate.c \
               vxdb.c
 
 vshelper_SOURCES = cfg.c \

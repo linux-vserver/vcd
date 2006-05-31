@@ -19,45 +19,44 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.limit.remove(string name[, string type]) */
+/* vxdb.vx.limit.remove(string name[, string limit]) */
 XMLRPC_VALUE m_vxdb_vx_limit_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params   = method_get_params(r);
+	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *type = XMLRPC_VectorGetStringWithID(params, "type");
+	char *limit = XMLRPC_VectorGetStringWithID(params, "limit");
 	
-	if (!name || (type && flist32_getval(rlimit_list, type, NULL) == -1))
+	if (!validate_name(name) || (limit && !validate_rlimit(limit)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	if (type)
+	if (limit)
 		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM vx_limit WHERE xid = %d AND type = '%s'",
-			xid, type);
+			"DELETE FROM vx_limit WHERE xid = %d AND limit = '%s'",
+			xid, limit);
+	
 	else
 		dbr = dbi_conn_queryf(vxdb,
 			"DELETE FROM vx_limit WHERE xid = %d",
-			xid, type);
+			xid);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

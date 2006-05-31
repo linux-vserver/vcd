@@ -23,6 +23,7 @@
 
 #include "auth.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.xid.get(string name) */
@@ -32,12 +33,12 @@ XMLRPC_VALUE m_vxdb_xid_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params   = method_get_params(r);
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	if (!name)
+	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	
+	if (!validate_name(name))
 		return method_error(MEREQ);
 	
 	xid_t xid;

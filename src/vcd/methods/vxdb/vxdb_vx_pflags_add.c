@@ -19,13 +19,12 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.vx.pflags.add(string name, string pflag) */
@@ -38,28 +37,21 @@ XMLRPC_VALUE m_vxdb_vx_pflags_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
 	char *pflag = XMLRPC_VectorGetStringWithID(params, "pflag");
 	
-	if (!name || !pflag || flist32_getval(pflags_list, pflag, NULL) == -1)
+	if (!validate_name(name) || !validate_pflag(str_toupper(pflag)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM vx_pflags WHERE xid = %d AND pflag = '%s'",
-		xid, pflag);
-	
-	if (dbi_result_get_numrows(dbr) != 0)
-		return method_error(MEEXIST);
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"INSERT INTO vx_pflags (xid, pflag) VALUES (%d, '%s')",
+		"INSERT OR REPLACE INTO vx_pflags (xid, pflag) VALUES (%d, '%s')",
 		xid, pflag);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
-		
-	return params;
+	
+	return NULL;
 }

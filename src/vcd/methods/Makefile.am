@@ -24,26 +24,22 @@ M_VXDB = vx/vx_create.c \
          vx/vx_restart.c \
          vx/vx_start.c \
          vx/vx_stop.c \
-         vxdb/vxdb_create.c \
          vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_dx_limit_remove.c \
          vxdb/vxdb_dx_limit_set.c \
          vxdb/vxdb_init_method_get.c \
-         vxdb/vxdb_init_method_remove.c \
          vxdb/vxdb_init_method_set.c \
-         vxdb/vxdb_init_mount_add.c \
-         vxdb/vxdb_init_mount_get.c \
-         vxdb/vxdb_init_mount_remove.c \
          vxdb/vxdb_list.c \
+         vxdb/vxdb_mount_get.c \
+         vxdb/vxdb_mount_remove.c \
+         vxdb/vxdb_mount_set.c \
          vxdb/vxdb_name_get.c \
-         vxdb/vxdb_nx_addr_add.c \
          vxdb/vxdb_nx_addr_get.c \
          vxdb/vxdb_nx_addr_remove.c \
+         vxdb/vxdb_nx_addr_set.c \
          vxdb/vxdb_owner_add.c \
          vxdb/vxdb_owner_get.c \
          vxdb/vxdb_owner_remove.c \
-         vxdb/vxdb_remove.c \
-         vxdb/vxdb_user_add.c \
          vxdb/vxdb_user_get.c \
          vxdb/vxdb_user_remove.c \
          vxdb/vxdb_user_set.c \

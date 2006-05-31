@@ -19,9 +19,6 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-#include <vserver.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -47,7 +44,8 @@ XMLRPC_VALUE m_vxdb_list(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			"SELECT xid_name_map.name AS name FROM xid_name_map "
 			"INNER JOIN xid_uid_map "
 			"ON xid_name_map.xid = xid_uid_map.xid "
-			"WHERE xid_uid_map.uid = %d",
+			"WHERE xid_uid_map.uid = %d "
+			"ORDER BY name ASC",
 			uid);
 	}
 	
@@ -55,8 +53,8 @@ XMLRPC_VALUE m_vxdb_list(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEVXDB);
 	
 	while (dbi_result_next_row(dbr)) {
-		char *name = (char *) dbi_result_get_string(dbr, "name");
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString(NULL, name, 0));
+		XMLRPC_AddValueToVector(response,
+			XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "name"), 0));
 	}
 	
 	return response;

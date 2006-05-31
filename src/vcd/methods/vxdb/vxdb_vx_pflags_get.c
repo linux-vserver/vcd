@@ -19,43 +19,51 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
 #include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.pflags.get([string name]) */
+/* vxdb.vx.pflags.get([string name[, string pflag]]) */
 XMLRPC_VALUE m_vxdb_vx_pflags_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
 	XMLRPC_VALUE params = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
-	XMLRPC_VALUE pflags = XMLRPC_CreateVector("pflags", xmlrpc_vector_array);
+	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_array);
 	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
+	char *pflag = XMLRPC_VectorGetStringWithID(params, "pflag");
+	
+	if ((name && !validate_name(name)) || (pflag && !validate_pflag(pflag)))
+		return method_error(MEREQ);
 	
 	if (name) {
 		if (vxdb_getxid(name, &xid) == -1)
 			return method_error(MENOENT);
 		
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT pflag FROM vx_pflags WHERE xid = %d",
-			xid);
+		if (pflag)
+			dbr = dbi_conn_queryf(vxdb,
+				"SELECT pflag FROM vx_pflags WHERE xid = %d AND pflag = '%s'",
+				xid, pflag);
+		
+		else
+			dbr = dbi_conn_queryf(vxdb,
+				"SELECT pflag FROM vx_pflags WHERE xid = %d",
+				xid);
 		
 		if (!dbr)
-			goto out;
+			return method_error(MEVXDB);
 		
 		while (dbi_result_next_row(dbr)) {
-			char *pflag = (char *) dbi_result_get_string(dbr, "pflag");
-			XMLRPC_AddValueToVector(pflags, XMLRPC_CreateValueString(NULL, pflag, 0));
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "pflag"), 0));
 		}
 	}
 	
@@ -63,11 +71,9 @@ XMLRPC_VALUE m_vxdb_vx_pflags_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		int i;
 		
 		for (i = 0; pflags_list[i].key; i++)
-			XMLRPC_AddValueToVector(pflags,
+			XMLRPC_AddValueToVector(response,
 				XMLRPC_CreateValueString(NULL, pflags_list[i].key, 0));
 	}
 	
-out:
-	XMLRPC_AddValueToVector(response, pflags);
 	return response;
 }

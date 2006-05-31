@@ -19,16 +19,14 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.sched.get(string name, string field) */
+/* vxdb.vx.sched.get(string name, int cpuid) */
 XMLRPC_VALUE m_vxdb_vx_sched_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -39,30 +37,39 @@ XMLRPC_VALUE m_vxdb_vx_sched_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *field = XMLRPC_VectorGetStringWithID(params, "field");
+	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	int cpuid  = XMLRPC_VectorGetIntWithID(params, "cpuid");
 	
-	if (!name || !field || flist32_getval(vhiname_list, field, NULL) == -1)
+	if (!validate_name(name) || !validate_cpuid(cpuid))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT %s FROM vx_sched WHERE xid = %d",
-		field, xid);
+		"SELECT * FROM vx_sched WHERE xid = %d",
+		xid);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("field", field, 0));
+	if (dbi_result_get_numrows(dbr) < 1)
+		return NULL;
 	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		char *value = (char *) dbi_result_get_string(dbr, field);
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("value", name, 0));
-	}
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("fillrate",
+		dbi_result_get_int(dbr, "fill_rate")));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("interval",
+		dbi_result_get_int(dbr, "interval")));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("fillrate2",
+		dbi_result_get_int(dbr, "fill_rate2")));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("interval2",
+		dbi_result_get_int(dbr, "interval2")));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("tokensmin",
+		dbi_result_get_int(dbr, "tokens_min")));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("tokensmax",
+		dbi_result_get_int(dbr, "tokens_max")));
+	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("priobias",
+		dbi_result_get_int(dbr, "prio_bias")));
 	
 	return response;
 }

@@ -19,55 +19,50 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.init.mount.get(string name[, string dst]) */
-XMLRPC_VALUE m_vxdb_init_mount_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.init.mount.get(string name[, string path]) */
+XMLRPC_VALUE m_vxdb_mount_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
 	XMLRPC_VALUE params = method_get_params(r);
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
-	XMLRPC_VALUE mounts = XMLRPC_CreateVector("mounts", xmlrpc_vector_array);
 	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *dst = XMLRPC_VectorGetStringWithID(params, "dst");
+	char *path = XMLRPC_VectorGetStringWithID(params, "path");
 	
-	if (!name)
+	if (!validate_name(name) || (path && !validate_path(path)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
-	
-	if (dst) {
+	if (path) {
 		dbr = dbi_conn_queryf(vxdb,
 			"SELECT spec,mntops,vfstype FROM init_mount "
 			"WHERE xid = %d AND file = '%s'",
-			xid, dst);
+			xid, path);
 		
 		if (!dbr)
-			goto out;
+			return method_error(MEVXDB);
 		
-		dbi_result_first_row(dbr);
+		if (dbi_result_get_numrows(dbr) < 1)
+			return method_error(MENOENT);
 		
-		char *src  = (char *) dbi_result_get_string(dbr, "spec");
+		char *spec = (char *) dbi_result_get_string(dbr, "spec");
 		char *opts = (char *) dbi_result_get_string(dbr, "mntops");
 		char *type = (char *) dbi_result_get_string(dbr, "vfstype");
 		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("src", src, 0));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("dst", dst, 0));
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("spec", spec, 0));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("opts", opts, 0));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("type", type, 0));
 	}
@@ -78,16 +73,13 @@ XMLRPC_VALUE m_vxdb_init_mount_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			xid);
 		
 		if (!dbr)
-			goto out;
+			return method_error(MEVXDB);
 		
 		while (dbi_result_next_row(dbr)) {
-			dst = (char *) dbi_result_get_string(dbr, "file");
-			XMLRPC_AddValueToVector(mounts, XMLRPC_CreateValueString(NULL, dst, 0));
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "file"), 0));
 		}
-		
-		XMLRPC_AddValueToVector(response, mounts);
 	}
 	
-out:
 	return response;
 }

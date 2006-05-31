@@ -49,32 +49,31 @@ XMLRPC_VALUE method_error        (int id);
 #define MPROTO(NAME) \
 	XMLRPC_VALUE NAME (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 
-/* vxdb */
+/* vx */
 MPROTO(m_vx_create);
 MPROTO(m_vx_killer);
 MPROTO(m_vx_restart);
 MPROTO(m_vx_start);
 MPROTO(m_vx_stop);
-MPROTO(m_vxdb_create);
+
+/* vxdb */
 MPROTO(m_vxdb_dx_limit_get);
 MPROTO(m_vxdb_dx_limit_remove);
 MPROTO(m_vxdb_dx_limit_set);
 MPROTO(m_vxdb_init_method_get);
-MPROTO(m_vxdb_init_method_remove);
 MPROTO(m_vxdb_init_method_set);
-MPROTO(m_vxdb_init_mount_add);
-MPROTO(m_vxdb_init_mount_get);
-MPROTO(m_vxdb_init_mount_remove);
 MPROTO(m_vxdb_list);
+MPROTO(m_vxdb_mount_get);
+MPROTO(m_vxdb_mount_remove);
+MPROTO(m_vxdb_mount_set);
 MPROTO(m_vxdb_name_get);
-MPROTO(m_vxdb_nx_addr_add);
 MPROTO(m_vxdb_nx_addr_get);
 MPROTO(m_vxdb_nx_addr_remove);
+MPROTO(m_vxdb_nx_addr_set);
 MPROTO(m_vxdb_owner_add);
 MPROTO(m_vxdb_owner_get);
 MPROTO(m_vxdb_owner_remove);
 MPROTO(m_vxdb_remove);
-MPROTO(m_vxdb_user_add);
 MPROTO(m_vxdb_user_get);
 MPROTO(m_vxdb_user_remove);
 MPROTO(m_vxdb_user_set);

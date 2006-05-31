@@ -19,18 +19,15 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
-#include "log.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.init.mount.add(string name, string src, string dst[, string opts[, string type]) */
-XMLRPC_VALUE m_vxdb_init_mount_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.nx.addr.set(string name, string addr[, string netmask[, string broadcast]]) */
+XMLRPC_VALUE m_vxdb_nx_addr_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
@@ -40,37 +37,31 @@ XMLRPC_VALUE m_vxdb_init_mount_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *src  = XMLRPC_VectorGetStringWithID(params, "src");
-	char *dst  = XMLRPC_VectorGetStringWithID(params, "dst");
-	char *opts = XMLRPC_VectorGetStringWithID(params, "opts");
-	char *type = XMLRPC_VectorGetStringWithID(params, "type");
+	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
+	char *netm = XMLRPC_VectorGetStringWithID(params, "netmask");
+	char *bcas = XMLRPC_VectorGetStringWithID(params, "broadcast");
 	
-	if (!name || !src || !dst)
+	if (!validate_name(name) || !validate_addr(addr) ||
+	   (netm && !validate_addr(netm)) ||
+	   (bcas && !validate_addr(bcas)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM init_mount WHERE xid = %d AND file = '%s'",
-		xid, dst);
+	if (!netm)
+		netm = "";
 	
-	if (dbi_result_get_numrows(dbr) != 0)
-		return method_error(MEEXIST);
-	
-	if (!opts || !*opts)
-		opts = "defaults";
-	
-	if (!type || !*type)
-		type = "auto";
+	if (!bcas)
+		bcas = "";
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"INSERT INTO init_mount (xid, spec, file, vfstype, mntops) "
-		"VALUES (%d, '%s', '%s', '%s', '%s')",
-		xid, src, dst, type, opts);
+		"INSERT OR REPLACE INTO nx_addr (xid, addr, netmask, broadcast) "
+		"VALUES (%d, '%s', '%s', '%s')",
+		xid, addr, netm, bcas);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

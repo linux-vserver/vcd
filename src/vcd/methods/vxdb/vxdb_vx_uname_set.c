@@ -19,16 +19,15 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.uname.set(string name, string field, string value) */
+/* vxdb.vx.uname.set(string name, string uname, string value) */
 XMLRPC_VALUE m_vxdb_vx_uname_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -39,32 +38,23 @@ XMLRPC_VALUE m_vxdb_vx_uname_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *field = XMLRPC_VectorGetStringWithID(params, "field");
+	char *uname = XMLRPC_VectorGetStringWithID(params, "uname");
 	char *value = XMLRPC_VectorGetStringWithID(params, "value");
 	
-	if (!name || !field || !value || flist32_getval(vhiname_list, field, NULL) == -1)
+	if (!validate_name(name) || !validate_uname(str_toupper(uname)) ||
+	    !validate_uname_value(value))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT %s FROM vx_uname WHERE xid = %d",
-		field, xid);
-	
-	if (dbr) {
-		if (dbi_result_get_numrows(dbr) > 0)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE vx_uname SET %s = '%s' WHERE xid = %d",
-				field, value, xid);
-		else
-			dbr = dbi_conn_queryf(vxdb,
-				"INSERT INTO vx_uname (xid, %s) VALUES (%d, '%s')",
-				field, xid, value);
-	}
+		"INSERT OR REPLACE INTO vx_uname (xid, uname, value) "
+		"VALUES (%d, '%s', '%s')",
+		xid, uname, value);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

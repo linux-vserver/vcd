@@ -19,13 +19,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.nx.addr.get(string name[, string addr]) */
@@ -35,7 +33,6 @@ XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	dbi_result dbr;
 	XMLRPC_VALUE params = method_get_params(r);
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
-	XMLRPC_VALUE addrs = XMLRPC_CreateVector("addrs", xmlrpc_vector_array);
 	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
@@ -43,13 +40,11 @@ XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
 	
-	if (!name)
+	if (!validate_name(name) || (addr && !validate_addr(addr)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
-	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 	
 	if (addr) {
 		dbr = dbi_conn_queryf(vxdb,
@@ -58,34 +53,29 @@ XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			xid, addr);
 		
 		if (!dbr)
-			goto out;
+			return method_error(MEVXDB);
 		
-		dbi_result_first_row(dbr);
+		if (dbi_result_get_numrows(dbr) < 1)
+			return method_error(MENOENT);
+		
 		char *bcas = (char *) dbi_result_get_string(dbr, "broadcast");
 		char *netm = (char *) dbi_result_get_string(dbr, "netmask");
 		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("addr", addr, 0));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("netmask", netm, 0));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("broadcast", bcas, 0));
 	}
 	
 	else {
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT addr FROM nx_addr "
-			"WHERE xid = %d",
-			xid);
+		dbr = dbi_conn_queryf(vxdb, "SELECT addr FROM nx_addr WHERE xid = %d", xid);
 		
 		if (!dbr)
-			goto out;
+			return method_error(MEVXDB);
 		
 		while (dbi_result_next_row(dbr)) {
-			addr = (char *) dbi_result_get_string(dbr, "addr");
-			XMLRPC_AddValueToVector(addrs, XMLRPC_CreateValueString(NULL, addr, 0));
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "addr"), 0));
 		}
-		
-		XMLRPC_AddValueToVector(response, addrs);
 	}
 	
-out:
 	return response;
 }

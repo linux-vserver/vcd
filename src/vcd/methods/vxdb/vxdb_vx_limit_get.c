@@ -19,16 +19,14 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.limit.get(string name, string type) */
+/* vxdb.vx.limit.get(string name, string limit) */
 XMLRPC_VALUE m_vxdb_vx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -40,32 +38,25 @@ XMLRPC_VALUE m_vxdb_vx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *type = XMLRPC_VectorGetStringWithID(params, "type");
+	char *limit = XMLRPC_VectorGetStringWithID(params, "limit");
 	
-	if (!name || !type || flist32_getval(rlimit_list, type, NULL) == -1)
+	if (!validate_name(name) || !validate_rlimit(limit))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT min,soft,max FROM vx_limit WHERE xid = %d AND type = '%s'",
-		xid, type);
+		"SELECT soft,max FROM vx_limit WHERE xid = %d AND limit = '%s'",
+		xid, limit);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("type", type, 0));
-	
 	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		
-		uint64_t min  = dbi_result_get_longlong(dbr, "min");
 		uint64_t soft = dbi_result_get_longlong(dbr, "soft");
 		uint64_t max  = dbi_result_get_longlong(dbr, "max");
 		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("min", min));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("soft", soft));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("max", max));
 	}

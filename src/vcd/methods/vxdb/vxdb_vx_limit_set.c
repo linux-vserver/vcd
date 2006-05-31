@@ -19,13 +19,12 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.vx.limit.set(string name, string type, int min, int soft, int max) */
@@ -38,38 +37,26 @@ XMLRPC_VALUE m_vxdb_vx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *type = XMLRPC_VectorGetStringWithID(params, "type");
+	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
+	char *limit = XMLRPC_VectorGetStringWithID(params, "limit");
 	
-	int min  = XMLRPC_VectorGetIntWithID(params, "min");
 	int soft = XMLRPC_VectorGetIntWithID(params, "soft");
 	int max  = XMLRPC_VectorGetIntWithID(params, "max");
 	
-	if (!name || !type || flist32_getval(rlimit_list, type, NULL) == -1)
+	if (!validate_name(name) || !validate_rlimit(str_toupper(limit)) ||
+	    !validate_rlimits(soft, max))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT min FROM vx_limit WHERE xid = %d AND type = '%s'",
-		xid, type);
-	
-	if (dbr) {
-		if (dbi_result_get_numrows(dbr) > 0)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE vx_limit SET min = %d, soft = %d, max = %d "
-				"WHERE xid = %d AND type = '%s'",
-				min, soft, max, xid, type);
-		else
-			dbr = dbi_conn_queryf(vxdb,
-				"INSERT INTO vx_limit (xid, type, min, soft, max) "
-				"VALUES (%d, '%s', %d, %d, %d)",
-				xid, type, min, soft, max);
-	}
+		"INSERT OR REPLACE INTO vx_limit (xid, limit, soft, max) "
+		"VALUES (%d, '%s', %d, %d)",
+		xid, limit, soft, max);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

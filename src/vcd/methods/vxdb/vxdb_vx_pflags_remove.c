@@ -19,13 +19,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.vx.pflags.remove(string name[, string pflag]) */
@@ -38,10 +36,10 @@ XMLRPC_VALUE m_vxdb_vx_pflags_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
 	char *pflag = XMLRPC_VectorGetStringWithID(params, "pflag");
 	
-	if (!name)
+	if (!validate_name(name) || (pflag && !validate_pflag(pflag)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
@@ -60,5 +58,5 @@ XMLRPC_VALUE m_vxdb_vx_pflags_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!dbr)
 		return method_error(MEVXDB);
 		
-	return params;
+	return NULL;
 }

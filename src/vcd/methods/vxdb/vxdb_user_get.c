@@ -19,16 +19,14 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.user.get([string name]) */
+/* vxdb.user.get([string username]) */
 XMLRPC_VALUE m_vxdb_user_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -39,25 +37,28 @@ XMLRPC_VALUE m_vxdb_user_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	char *user = XMLRPC_VectorGetStringWithID(params, "username");
 	
-	if (name) {
+	if (user && !validate_username(user))
+		return method_error(MEREQ);
+	
+	if (user) {
 		response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 		
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uid,name,admin FROM user WHERE name = '%s'",
-			name);
+			"SELECT uid,admin FROM user WHERE name = '%s'",
+			user);
 		
 		if (!dbr)
-			goto out;
+			return method_error(MEVXDB);
 		
-		dbi_result_first_row(dbr);
+		if (dbi_result_get_numrows(dbr) < 1)
+			return NULL;
 		
-		int uid = dbi_result_get_int(dbr, "uid");
+		int uid   = dbi_result_get_int(dbr, "uid");
 		int admin = dbi_result_get_int(dbr, "admin") == 0 ? 0 : 1;
 		
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("uid", uid));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("admin", admin));
 	}
 	
@@ -67,14 +68,13 @@ XMLRPC_VALUE m_vxdb_user_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		dbr = dbi_conn_queryf(vxdb, "SELECT name FROM user ORDER BY name ASC");
 		
 		if (!dbr)
-			goto out;
+			return method_error(MEVXDB);
 		
 		while (dbi_result_next_row(dbr)) {
-			char *name = (char *) dbi_result_get_string(dbr, "name");
-			XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString(NULL, name, 0));
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "name"), 0));
 		}
 	}
 	
-out:
 	return response;
 }

@@ -19,16 +19,14 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.dx.limit.set(string name, string type, int space, int inodes, int reserved) */
+/* vxdb.dx.limit.set(string name, string path, int space, int inodes, int reserved) */
 XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -45,31 +43,20 @@ XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	int inodes   = XMLRPC_VectorGetIntWithID(params, "inodes");
 	int reserved = XMLRPC_VectorGetIntWithID(params, "reserved");
 	
-	if (!name || !path)
+	if (!validate_name(name) || !validate_path(path) ||
+	    !validate_dlimits(space, inodes, reserved))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT space FROM dx_limit WHERE xid = %d AND path = '%s'",
-		xid, path);
-	
-	if (dbr) {
-		if (dbi_result_get_numrows(dbr) > 0)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE dx_limit SET space = %d, inodes = %d, reserved = %d "
-				"WHERE xid = %d AND path = '%s'",
-				space, inodes, reserved, xid, path);
-		else
-			dbr = dbi_conn_queryf(vxdb,
-				"INSERT INTO dx_limit (xid, path, space, inodes, reserved) "
-				"VALUES (%d, '%s', %d, %d, %d)",
-				xid, path, space, inodes, reserved);
-	}
+		"INSERT OR REPLACE INTO dx_limit (xid, path, space, inodes, reserved) "
+		"VALUES (%d, '%s', %d, %d, %d)",
+		xid, path, space, inodes, reserved);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

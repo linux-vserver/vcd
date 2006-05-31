@@ -19,20 +19,19 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.uname.get(string name, string field) */
+/* vxdb.vx.uname.get(string name[, string uname]) */
 XMLRPC_VALUE m_vxdb_vx_uname_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
+	
 	XMLRPC_VALUE params = method_get_params(r);
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
@@ -40,28 +39,31 @@ XMLRPC_VALUE m_vxdb_vx_uname_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *field = XMLRPC_VectorGetStringWithID(params, "field");
+	char *uname = XMLRPC_VectorGetStringWithID(params, "uname");
 	
-	if (!name || !field || flist32_getval(vhiname_list, field, NULL) == -1)
+	if (!validate_name(name) || (uname && !validate_uname(uname)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT %s FROM vx_uname WHERE xid = %d",
-		field, xid);
+	if (uname)
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT value FROM vx_uname WHERE xid = %d AND uname = '%s'",
+			xid, uname);
+	
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT uname,value FROM vx_uname WHERE xid = %d",
+			xid, uname);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("field", field, 0));
-	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		char *value = (char *) dbi_result_get_string(dbr, field);
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("value", name, 0));
+	while (dbi_result_next_row(dbr)) {
+		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString(
+			dbi_result_get_string(dbr, "uname"),
+			dbi_result_get_string(dbr, "value"), 0));
 	}
 	
 	return response;

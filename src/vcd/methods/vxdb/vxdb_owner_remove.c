@@ -19,13 +19,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.owner.remove(string name[, string username]) */
@@ -41,7 +39,7 @@ XMLRPC_VALUE m_vxdb_owner_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *user = XMLRPC_VectorGetStringWithID(params, "username");
 	
-	if (!name)
+	if (!validate_name(name) || (user && !validate_username(user)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
@@ -52,18 +50,13 @@ XMLRPC_VALUE m_vxdb_owner_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			"SELECT uid FROM user WHERE name = '%s'",
 			user);
 		
-		if (dbi_result_get_numrows(dbr) == 0)
+		if (!dbr)
+			return method_error(MEVXDB);
+		
+		if (dbi_result_get_numrows(dbr) < 1)
 			return method_error(MENOENT);
 		
-		dbi_result_first_row(dbr);
 		int uid = dbi_result_get_int(dbr, "uid");
-		
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uid FROM xid_uid_map WHERE uid = %d AND xid = %d",
-			uid, xid);
-		
-		if (dbi_result_get_numrows(dbr) == 0)
-			return method_error(MENOENT);
 		
 		dbr = dbi_conn_queryf(vxdb,
 			"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
@@ -78,5 +71,5 @@ XMLRPC_VALUE m_vxdb_owner_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

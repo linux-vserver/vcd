@@ -225,7 +225,7 @@ int setup_context(void)
 		return errno = MESYS, -1;
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT type,min,soft,max FROM vx_limit WHERE xid = %d",
+		"SELECT type,soft,max FROM vx_limit WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
@@ -237,13 +237,11 @@ int setup_context(void)
 		if (flist32_getval(rlimit_list, type, &buf32) == -1)
 			continue;
 		
-		if ((rlimit_mask.minimum   & buf32) != buf32 &&
-		    (rlimit_mask.softlimit & buf32) != buf32 &&
+		if ((rlimit_mask.softlimit & buf32) != buf32 &&
 		    (rlimit_mask.maximum   & buf32) != buf32)
 			continue;
 		
 		rlimit.id        = flist32_mask2val(buf32);
-		rlimit.minimum   = dbi_result_get_longlong(dbr, "min");
 		rlimit.softlimit = dbi_result_get_longlong(dbr, "soft");
 		rlimit.maximum   = dbi_result_get_longlong(dbr, "max");
 		
@@ -289,26 +287,23 @@ int setup_context(void)
 			return errno = MESYS, -1;
 	}
 	
-	for (i = 0; vhifields[i]; i++) {
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT %s FROM vx_uname WHERE xid = %d",
-			vhifields[i], xid);
-		
-		if (!dbr)
-			return errno = MEVXDB, -1;
-		
-		if (dbi_result_get_numrows(dbr) < 1)
-			continue;
-		
-		if (flist32_getval(vhiname_list, vhifields[i], &buf32) == -1)
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT uname,value FROM vx_uname WHERE xid = %d",
+		vhifields[i], xid);
+	
+	if (!dbr)
+		return errno = MEVXDB, -1;
+	
+	while (dbi_result_next_row(dbr)) {
+		if (flist32_getval(vhiname_list,
+		                   dbi_result_get_string(dbr, "uname"), &buf32) == -1)
 			continue;
 		
 		vhiname.field = flist32_mask2val(buf32);
 		
-		dbi_result_first_row(dbr);
-		buf = (char *) dbi_result_get_string(dbr, vhifields[i]);
+		buf = (char *) dbi_result_get_string(dbr, "value");
 		
-		if(!buf || !*buf)
+		if (str_isempty(buf))
 			continue;
 		
 		bzero(vhiname.name, VHILEN);

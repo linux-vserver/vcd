@@ -19,13 +19,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.dx.limit.remove(string name[, string path]) */
@@ -33,7 +31,7 @@ XMLRPC_VALUE m_vxdb_dx_limit_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params   = method_get_params(r);
+	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
@@ -41,7 +39,7 @@ XMLRPC_VALUE m_vxdb_dx_limit_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *path = XMLRPC_VectorGetStringWithID(params, "path");
 	
-	if (!name)
+	if (!validate_name(name) || (path && !validate_path(path)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
@@ -59,5 +57,5 @@ XMLRPC_VALUE m_vxdb_dx_limit_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

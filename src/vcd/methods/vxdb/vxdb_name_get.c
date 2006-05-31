@@ -19,13 +19,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-#include <vserver.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.name.get(int xid) */
@@ -35,12 +33,12 @@ XMLRPC_VALUE m_vxdb_name_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	XMLRPC_VALUE params   = method_get_params(r);
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	int xid    = XMLRPC_VectorGetIntWithID(params, "xid");
-	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	if (xid < 2)
+	int xid = XMLRPC_VectorGetIntWithID(params, "xid");
+	
+	if (!validate_xid(xid))
 		return method_error(MEREQ);
 	
 	char *name;

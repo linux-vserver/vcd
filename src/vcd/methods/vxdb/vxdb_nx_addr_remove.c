@@ -19,13 +19,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.nx.addr.remove(string name[, string addr]) */
@@ -41,7 +39,7 @@ XMLRPC_VALUE m_vxdb_nx_addr_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
 	
-	if (!name)
+	if (!validate_name(name) || (addr && !validate_addr(addr)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
@@ -49,16 +47,13 @@ XMLRPC_VALUE m_vxdb_nx_addr_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	if (addr)
 		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM nx_addr WHERE xid = %d AND addr = '%s'",
-			xid, addr);
+			"DELETE FROM nx_addr WHERE xid = %d AND addr = '%s'", xid, addr);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM nx_addr WHERE xid = %d",
-			xid);
+		dbr = dbi_conn_queryf(vxdb, "DELETE FROM nx_addr WHERE xid = %d", xid);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 		
-	return params;
+	return NULL;
 }

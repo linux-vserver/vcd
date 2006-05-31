@@ -19,16 +19,18 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.sched.set(string name, string field, int value) */
+/* vxdb.vx.sched.set(string name, int fillrate, int interval,
+                  int tokensmin, int tokensmax[,
+                  int fillrate2[, int interval2[,
+                  int priobias[, int cpuid]]]]]]) 
+*/
 XMLRPC_VALUE m_vxdb_vx_sched_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -39,32 +41,36 @@ XMLRPC_VALUE m_vxdb_vx_sched_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *field = XMLRPC_VectorGetStringWithID(params, "field");
-	int value   = XMLRPC_VectorGetIntWithID(params, "value");
 	
-	if (!name || !field || flist32_getval(sched_list, field, NULL) == -1)
+	int fillrate  = XMLRPC_VectorGetIntWithID(params, "fillrate");
+	int interval  = XMLRPC_VectorGetIntWithID(params, "interval");
+	int fillrate2 = XMLRPC_VectorGetIntWithID(params, "fillrate2");
+	int interval2 = XMLRPC_VectorGetIntWithID(params, "interval2");
+	int tokensmin = XMLRPC_VectorGetIntWithID(params, "tokensmin");
+	int tokensmax = XMLRPC_VectorGetIntWithID(params, "tokensmax");
+	int priobias  = XMLRPC_VectorGetIntWithID(params, "priobias");
+	int cpuid     = XMLRPC_VectorGetIntWithID(params, "cpuid");
+	
+	if (!validate_name(name) || !validate_cpuid(cpuid))
+		return method_error(MEREQ);
+	
+	if (!validate_token_bucket(fillrate, interval,
+	                           fillrate2, interval2,
+	                           tokensmin, tokensmax, priobias))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT %s FROM vx_sched WHERE xid = %d",
-		field, xid);
-	
-	if (dbr) {
-		if (dbi_result_get_numrows(dbr) > 0)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE vx_sched SET %s = %d WHERE xid = %d",
-				field, value, xid);
-		else
-			dbr = dbi_conn_queryf(vxdb,
-				"INSERT INTO vx_sched (xid, %s) VALUES (%d, %d)",
-				field, xid, value);
-	}
+		"INSERT OR REPLACE INTO vx_sched (xid, fill_rate, interval, fill_rate2, "
+		"interval2, tokens_min, tokens_max, prio_bias, cpu_id) "
+		"VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d",
+		xid, fillrate, interval, fillrate2, interval2,
+		tokensmin, tokensmax, priobias, cpuid);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

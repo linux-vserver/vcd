@@ -19,13 +19,12 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.vx.bcaps.add(string name, string bcap) */
@@ -41,25 +40,22 @@ XMLRPC_VALUE m_vxdb_vx_bcaps_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *bcap = XMLRPC_VectorGetStringWithID(params, "bcap");
 	
-	if (!name || !bcap || flist64_getval(bcaps_list, bcap, NULL) == -1)
+	log_debug("bcap: '%s'", bcap);
+	log_debug("bcap: '%s'", str_toupper(bcap));
+	log_debug("bcap: '%s'", bcap);
+	
+	if (!validate_name(name) || !validate_bcap(str_toupper(bcap)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM vx_bcaps WHERE xid = %d AND bcap = '%s'",
-		xid, bcap);
-	
-	if (dbi_result_get_numrows(dbr) != 0)
-		return method_error(MEEXIST);
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"INSERT INTO vx_bcaps (xid, bcap) VALUES (%d, '%s')",
+		"INSERT OR REPLACE INTO vx_bcaps (xid, bcap) VALUES (%d, '%s')",
 		xid, bcap);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

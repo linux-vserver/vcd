@@ -19,13 +19,11 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.init.method.get(string name) */
@@ -41,7 +39,7 @@ XMLRPC_VALUE m_vxdb_init_method_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
 	
-	if (!name)
+	if (!validate_name(name))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
@@ -54,21 +52,17 @@ XMLRPC_VALUE m_vxdb_init_method_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("name", name, 0));
+	if (dbi_result_get_numrows(dbr) < 1)
+		return method_error(MENOENT);
 	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		
-		char *method = (char *) dbi_result_get_string(dbr, "method");
-		char *start  = (char *) dbi_result_get_string(dbr, "start");
-		char *stop   = (char *) dbi_result_get_string(dbr, "stop");
-		int timeout  =          dbi_result_get_int(dbr, "timeout");
-		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("method", method, 0));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("start", start, 0));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("stop", stop, 0));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("timeout", timeout));
-	}
+	XMLRPC_AddValueToVector(response,
+		XMLRPC_CreateValueString("method", dbi_result_get_string(dbr, "method"), 0));
+	XMLRPC_AddValueToVector(response,
+		XMLRPC_CreateValueString("start", dbi_result_get_string(dbr, "start"), 0));
+	XMLRPC_AddValueToVector(response,
+		XMLRPC_CreateValueString("stop", dbi_result_get_string(dbr, "stop"), 0));
+	XMLRPC_AddValueToVector(response,
+		XMLRPC_CreateValueInt("timeout", dbi_result_get_int(dbr, "timeout")));
 	
 	return response;
 }

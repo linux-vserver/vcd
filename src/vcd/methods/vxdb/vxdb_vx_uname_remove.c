@@ -19,16 +19,14 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.uname.remove(string name[, string field]) */
+/* vxdb.vx.uname.remove(string name[, string uname]) */
 XMLRPC_VALUE m_vxdb_vx_uname_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -39,24 +37,18 @@ XMLRPC_VALUE m_vxdb_vx_uname_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEPERM);
 	
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *field = XMLRPC_VectorGetStringWithID(params, "field");
+	char *uname = XMLRPC_VectorGetStringWithID(params, "uname");
 	
-	if (!name || (field && flist32_getval(vhiname_list, field, NULL) == -1))
+	if (!validate_name(name) || (uname && !validate_uname(uname)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	if (field) {
+	if (uname)
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT %s FROM vx_uname WHERE xid = %d",
-			field, xid);
-		
-		if (dbr && dbi_result_get_numrows(dbr) > 0)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE vx_uname SET %s = NULL WHERE xid = %d",
-				field, xid);
-	}
+			"DELETE FROM vx_uname WHERE xid = %d AND uname = '%s'",
+			xid, uname);
 	
 	else
 		dbr = dbi_conn_queryf(vxdb,
@@ -66,5 +58,5 @@ XMLRPC_VALUE m_vxdb_vx_uname_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	return params;
+	return NULL;
 }

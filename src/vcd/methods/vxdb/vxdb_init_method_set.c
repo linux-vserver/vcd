@@ -19,17 +19,15 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.init.method.set(string name,
-     [string method[, string stop[, string start[,int timeout]]]]) */
+     string method[, string stop[, string start[,int timeout]]]) */
 XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -45,7 +43,9 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *stop   = XMLRPC_VectorGetStringWithID(params, "stop");
 	int timeout  = XMLRPC_VectorGetIntWithID(params, "timeout");
 	
-	if (!name)
+	if (!validate_name(name) || !validate_init_method(method) ||
+	   (start && !validate_runlevel(start)) ||
+	   (stop  && !validate_runlevel(stop)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
@@ -55,32 +55,37 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		"SELECT xid FROM init_method WHERE xid = %d",
 		xid);
 	
-	if (dbr && dbi_result_get_numrows(dbr) > 0) {
-		if (method)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE init_method SET method = '%s' WHERE xid = %d",
-				method, xid);
+	if (!dbr)
+		return method_error(MEVXDB);
+	
+	if (dbi_result_get_numrows(dbr) > 0) {
+		if (dbi_conn_queryf(vxdb, "BEGIN EXCLUSIVE TRANSACTION"))
+			return method_error(MEVXDB);
 		
+		if (!dbi_conn_queryf(vxdb,
+		    "UPDATE init_method SET method = '%s' WHERE xid = %d", method, xid))
+			return method_error(MEVXDB);
+	
 		if (start)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE init_method SET start = '%s' WHERE xid = %d",
-				start, xid);
+			if (!dbi_conn_queryf(vxdb,
+			    "UPDATE init_method SET start = '%s' WHERE xid = %d", start, xid))
+				return method_error(MEVXDB);
 		
 		if (stop)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE init_method SET stop = '%s' WHERE xid = %d",
-				stop, xid);
+			if (!dbi_conn_queryf(vxdb,
+			    "UPDATE init_method SET stop = '%s' WHERE xid = %d", stop, xid))
+				return method_error(MEVXDB);
 		
 		if (timeout > 0)
-			dbr = dbi_conn_queryf(vxdb,
-				"UPDATE init_method SET timeout = %d WHERE xid = %d",
-				timeout, xid);
+			if (!dbi_conn_queryf(vxdb,
+			    "UPDATE init_method SET timeout = %d WHERE xid = %d", timeout, xid))
+				return method_error(MEVXDB);
+		
+		if (!dbi_conn_queryf(vxdb, "COMMIT TRANSACTION"))
+			return method_error(MEVXDB);
 	}
 	
-	else if (dbr && dbi_result_get_numrows(dbr) == 0) {
-		if (!method || !*method)
-			method = "init";
-		
+	else {
 		if (!start)
 			start = "";
 		
@@ -90,11 +95,11 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		dbr = dbi_conn_queryf(vxdb,
 			"INSERT INTO init_method (xid, method, start, stop, timeout) "
 			"VALUES (%d, '%s', '%s', '%s', %d)",
-			xid, method, start, stop, timeout);
+			xid, method, start, stop, timeout))
+		
+		if (dbr)
+			return method_error(MEVXDB);
 	}
 	
-	else
-		return method_error(MEVXDB);
-	
-	return params;
+	return NULL;
 }

@@ -19,13 +19,12 @@
 #include <config.h>
 #endif
 
-#include <string.h>
-
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.vx.ccaps.add(string name, string ccap) */
@@ -41,25 +40,18 @@ XMLRPC_VALUE m_vxdb_vx_ccaps_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *ccap = XMLRPC_VectorGetStringWithID(params, "ccap");
 	
-	if (!name || !ccap || flist64_getval(ccaps_list, ccap, NULL) == -1)
+	if (!validate_name(name) || !validate_ccap(str_toupper(ccap)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM vx_ccaps WHERE xid = %d AND ccap = '%s'",
-		xid, ccap);
-	
-	if (dbi_result_get_numrows(dbr) != 0)
-		return method_error(MEEXIST);
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"INSERT INTO vx_ccaps (xid, ccap) VALUES (%d, '%s')",
+		"INSERT OR REPLACE INTO vx_ccaps (xid, ccap) VALUES (%d, '%s')",
 		xid, ccap);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
-		
-	return params;
+	
+	return NULL;
 }
