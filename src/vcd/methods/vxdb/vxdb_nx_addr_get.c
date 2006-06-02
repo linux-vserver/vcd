@@ -58,6 +58,8 @@ XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		if (dbi_result_get_numrows(dbr) < 1)
 			return method_error(MENOENT);
 		
+		dbi_result_first_row(dbr);
+		
 		char *bcas = (char *) dbi_result_get_string(dbr, "broadcast");
 		char *netm = (char *) dbi_result_get_string(dbr, "netmask");
 		

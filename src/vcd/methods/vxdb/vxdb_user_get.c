@@ -55,6 +55,8 @@ XMLRPC_VALUE m_vxdb_user_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		if (dbi_result_get_numrows(dbr) < 1)
 			return NULL;
 		
+		dbi_result_first_row(dbr);
+		
 		int uid   = dbi_result_get_int(dbr, "uid");
 		int admin = dbi_result_get_int(dbr, "admin") == 0 ? 0 : 1;
 		

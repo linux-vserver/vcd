@@ -26,7 +26,7 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.sched.get(string name, int cpuid) */
+/* vxdb.vx.sched.get(string name[, int cpuid]) */
 XMLRPC_VALUE m_vxdb_vx_sched_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -47,14 +47,16 @@ XMLRPC_VALUE m_vxdb_vx_sched_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT * FROM vx_sched WHERE xid = %d",
-		xid);
+		"SELECT * FROM vx_sched WHERE xid = %d AND cpu_id = %d",
+		xid, cpuid);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
 	if (dbi_result_get_numrows(dbr) < 1)
 		return NULL;
+	
+	dbi_result_first_row(dbr);
 	
 	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("fillrate",
 		dbi_result_get_int(dbr, "fill_rate")));

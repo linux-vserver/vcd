@@ -48,7 +48,7 @@ XMLRPC_VALUE m_vxdb_mount_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	if (path) {
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT spec,mntops,vfstype FROM init_mount "
+			"SELECT spec,mntops,vfstype FROM mount "
 			"WHERE xid = %d AND file = '%s'",
 			xid, path);
 		
@@ -58,18 +58,19 @@ XMLRPC_VALUE m_vxdb_mount_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		if (dbi_result_get_numrows(dbr) < 1)
 			return method_error(MENOENT);
 		
-		char *spec = (char *) dbi_result_get_string(dbr, "spec");
-		char *opts = (char *) dbi_result_get_string(dbr, "mntops");
-		char *type = (char *) dbi_result_get_string(dbr, "vfstype");
+		dbi_result_first_row(dbr);
 		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("spec", spec, 0));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("opts", opts, 0));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("type", type, 0));
+		XMLRPC_AddValueToVector(response,
+			XMLRPC_CreateValueString("spec", dbi_result_get_string(dbr, "spec"), 0));
+		XMLRPC_AddValueToVector(response,
+			XMLRPC_CreateValueString("opts", dbi_result_get_string(dbr, "mntops"), 0));
+		XMLRPC_AddValueToVector(response,
+			XMLRPC_CreateValueString("type", dbi_result_get_string(dbr, "vfstype"), 0));
 	}
 	
 	else {
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT file FROM init_mount WHERE xid = %d ORDER BY file ASC",
+			"SELECT file FROM mount WHERE xid = %d ORDER BY file ASC",
 			xid);
 		
 		if (!dbr)

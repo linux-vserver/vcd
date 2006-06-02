@@ -65,7 +65,7 @@ int log_init(char *ident, int debug)
 	
 	if (log_fd == -1)
 		rc = -1;
-	else
+	else if (!log_stderr)
 		log_level = cfg_getint(cfg, "log-level");
 	
 	free(logfile);

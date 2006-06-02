@@ -19,6 +19,7 @@
 #include <config.h>
 #endif
 
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -49,10 +50,10 @@ XMLRPC_VALUE m_vxdb_nx_addr_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	if (!netm)
+	if (str_isempty(netm))
 		netm = "";
 	
-	if (!bcas)
+	if (str_isempty(bcas))
 		bcas = "";
 	
 	dbr = dbi_conn_queryf(vxdb,

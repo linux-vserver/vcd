@@ -36,7 +36,7 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *user     = XMLRPC_VectorGetStringWithID(params, "username");
+	char *username = XMLRPC_VectorGetStringWithID(params, "username");
 	char *password = XMLRPC_VectorGetStringWithID(params, "password");
 	int admin;
 	
@@ -45,28 +45,47 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	else
 		admin = XMLRPC_VectorGetIntWithID(params, "admin");
 	
-	if (!validate_username(user) || !validate_password(password))
+	if (!validate_username(username) || !validate_password(password))
 		return method_error(MEREQ);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid,admin FROM user WHERE name = '%s'",
-		user);
+		username);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
-	if (dbi_result_get_numrows(dbr) < 1)
-		return method_error(MENOENT);
+	int uid, adm;
 	
-	int uid = dbi_result_get_int(dbr, "uid");
-	int adm = admin == -1 ? dbi_result_get_int(dbr, "admin") : admin;
+	if (dbi_result_get_numrows(dbr) > 0) {
+		dbi_result_first_row(dbr);
+		uid = dbi_result_get_int(dbr, "uid");
+		adm = admin == -1 ? dbi_result_get_int(dbr, "admin") : admin;
+	}
+	
+	else {
+		dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
+		
+		if (!dbr)
+			return method_error(MEVXDB);
+		
+		if (dbi_result_get_numrows(dbr) > 0) {
+			dbi_result_first_row(dbr);
+			uid = dbi_result_get_int(dbr, "uid") + 1;
+		}
+		
+		else
+			return method_error(MEVXDB);
+		
+		adm = admin == -1 ? 0 : 1;
+	}
 	
 	/* TODO: password to SHA-1 */
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT OR REPLACE INTO user (uid, name, password, admin) "
 		"VALUES (%d, '%s', '%s', %d)",
-		uid, user, password, adm);
+		uid, username, password, adm);
 	
 	if (!dbr)
 		return method_error(MEVXDB);

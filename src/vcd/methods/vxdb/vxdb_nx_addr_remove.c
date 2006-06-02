@@ -47,7 +47,8 @@ XMLRPC_VALUE m_vxdb_nx_addr_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	if (addr)
 		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM nx_addr WHERE xid = %d AND addr = '%s'", xid, addr);
+			"DELETE FROM nx_addr WHERE xid = %d AND addr = '%s'",
+			xid, addr);
 	
 	else
 		dbr = dbi_conn_queryf(vxdb, "DELETE FROM nx_addr WHERE xid = %d", xid);

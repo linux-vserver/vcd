@@ -49,6 +49,7 @@ XMLRPC_VALUE m_vxdb_dx_limit_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		dbr = dbi_conn_queryf(vxdb,
 			"DELETE FROM dx_limit WHERE xid = %d AND path = '%s'",
 			xid, path);
+	
 	else
 		dbr = dbi_conn_queryf(vxdb,
 			"DELETE FROM dx_limit WHERE xid = %d",

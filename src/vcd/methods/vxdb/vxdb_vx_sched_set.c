@@ -29,7 +29,7 @@
 /* vxdb.vx.sched.set(string name, int fillrate, int interval,
                   int tokensmin, int tokensmax[,
                   int fillrate2[, int interval2[,
-                  int priobias[, int cpuid]]]]]]) 
+                  int priobias[, int cpuid]]]])
 */
 XMLRPC_VALUE m_vxdb_vx_sched_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
@@ -65,7 +65,7 @@ XMLRPC_VALUE m_vxdb_vx_sched_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT OR REPLACE INTO vx_sched (xid, fill_rate, interval, fill_rate2, "
 		"interval2, tokens_min, tokens_max, prio_bias, cpu_id) "
-		"VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d",
+		"VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d)",
 		xid, fillrate, interval, fillrate2, interval2,
 		tokensmin, tokensmax, priobias, cpuid);
 	

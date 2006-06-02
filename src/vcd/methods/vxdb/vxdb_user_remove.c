@@ -51,6 +51,8 @@ XMLRPC_VALUE m_vxdb_user_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (dbi_result_get_numrows(dbr) < 1)
 		return method_error(MENOENT);
 	
+	dbi_result_first_row(dbr);
+	
 	int uid = dbi_result_get_int(dbr, "uid");
 	
 	dbr = dbi_conn_queryf(vxdb,

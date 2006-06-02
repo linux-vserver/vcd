@@ -53,7 +53,9 @@ XMLRPC_VALUE m_vxdb_init_method_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEVXDB);
 	
 	if (dbi_result_get_numrows(dbr) < 1)
-		return method_error(MENOENT);
+		return response;
+	
+	dbi_result_first_row(dbr);
 	
 	XMLRPC_AddValueToVector(response,
 		XMLRPC_CreateValueString("method", dbi_result_get_string(dbr, "method"), 0));

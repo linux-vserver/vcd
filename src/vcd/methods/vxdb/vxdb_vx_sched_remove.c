@@ -37,17 +37,30 @@ XMLRPC_VALUE m_vxdb_vx_sched_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MEPERM);
 	
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	int cpuid  = XMLRPC_VectorGetIntWithID(params, "cpuid");
+	int cpuid;
 	
-	if (!validate_name(name) || !validate_cpuid(cpuid))
+	if (!validate_name(name))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"DELETE FROM vx_sched WHERE xid = %d AND cpu_id = %d",
-		xid, cpuid);
+	if (XMLRPC_VectorGetValueWithID(params, "cpuid") == NULL) {
+		dbr = dbi_conn_queryf(vxdb,
+			"DELETE FROM vx_sched WHERE xid = %d",
+			xid);
+	}
+	
+	else {
+		cpuid = XMLRPC_VectorGetIntWithID(params, "cpuid");
+		
+		if (!validate_cpuid(cpuid))
+			return method_error(MEREQ);
+		
+		dbr = dbi_conn_queryf(vxdb,
+			"DELETE FROM vx_sched WHERE xid = %d AND cpu_id = %d",
+			xid, cpuid);
+	}
 	
 	if (!dbr)
 		return method_error(MEVXDB);

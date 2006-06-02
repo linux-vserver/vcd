@@ -40,10 +40,6 @@ XMLRPC_VALUE m_vxdb_vx_bcaps_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *bcap = XMLRPC_VectorGetStringWithID(params, "bcap");
 	
-	log_debug("bcap: '%s'", bcap);
-	log_debug("bcap: '%s'", str_toupper(bcap));
-	log_debug("bcap: '%s'", bcap);
-	
 	if (!validate_name(name) || !validate_bcap(str_toupper(bcap)))
 		return method_error(MEREQ);
 	

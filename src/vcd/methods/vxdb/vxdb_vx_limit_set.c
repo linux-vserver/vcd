@@ -27,7 +27,7 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.limit.set(string name, string type, int min, int soft, int max) */
+/* vxdb.vx.limit.set(string name, string type, int soft, int max) */
 XMLRPC_VALUE m_vxdb_vx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -51,7 +51,7 @@ XMLRPC_VALUE m_vxdb_vx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"INSERT OR REPLACE INTO vx_limit (xid, limit, soft, max) "
+		"INSERT OR REPLACE INTO vx_limit (xid, type, soft, max) "
 		"VALUES (%d, '%s', %d, %d)",
 		xid, limit, soft, max);
 	

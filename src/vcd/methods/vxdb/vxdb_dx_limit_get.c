@@ -26,7 +26,7 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.dx.limit.get(string name, string path) */
+/* vxdb.dx.limit.get(string name[, string path]) */
 XMLRPC_VALUE m_vxdb_dx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -40,27 +40,45 @@ XMLRPC_VALUE m_vxdb_dx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *path = XMLRPC_VectorGetStringWithID(params, "path");
 	
-	if (!validate_name(name) || !validate_path(path))
+	if (!validate_name(name) || (path && !validate_path(path)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT space,inodes,reserved FROM dx_limit 
-		"WHERE xid = %d AND path = '%s'",
-		xid, path);
+	if (path) {
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT space,inodes,reserved FROM dx_limit "
+			"WHERE xid = %d AND path = '%s'",
+			xid, path);
+		
+		if (!dbr)
+			return method_error(MEVXDB);
+		
+		if (dbi_result_get_numrows(dbr) > 0) {
+			dbi_result_first_row(dbr);
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueInt("space", dbi_result_get_longlong(dbr, "space")));
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueInt("inodes", dbi_result_get_longlong(dbr, "inodes")));
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueInt("reserved", dbi_result_get_longlong(dbr, "reserved")));
+		}
+	}
 	
-	if (!dbr)
-		return method_error(MEVXDB);
-	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		XMLRPC_AddValueToVector(response,
-			XMLRPC_CreateValueInt("space", dbi_result_get_longlong(dbr, "space")));
-		XMLRPC_AddValueToVector(response,
-			XMLRPC_CreateValueInt("inodes", dbi_result_get_longlong(dbr, "inodes")));
-		XMLRPC_AddValueToVector(response,
-			XMLRPC_CreateValueInt("reserved", dbi_result_get_longlong(dbr, "reserved")));
+	else {
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT path FROM dx_limit "
+			"WHERE xid = %d",
+			xid);
+		
+		if (!dbr)
+			return method_error(MEVXDB);
+		
+		while (dbi_result_next_row(dbr)) {
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "path"), 0));
+		}
 	}
 	
 	return response;

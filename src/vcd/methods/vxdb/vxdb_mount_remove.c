@@ -39,7 +39,7 @@ XMLRPC_VALUE m_vxdb_mount_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	char *path = XMLRPC_VectorGetStringWithID(params, "path");
 	
-	if (!validate_name(name) || !validate_path(path))
+	if (!validate_name(name) || (path && !validate_path(path)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
@@ -47,12 +47,12 @@ XMLRPC_VALUE m_vxdb_mount_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	if (path)
 		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM init_mount WHERE xid = %d AND file = '%s'",
+			"DELETE FROM mount WHERE xid = %d AND file = '%s'",
 			xid, path);
 	
 	else
 		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM init_mount WHERE xid = %d",
+			"DELETE FROM mount WHERE xid = %d",
 			xid);
 	
 	if (!dbr)

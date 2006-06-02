@@ -19,6 +19,7 @@
 #include <config.h>
 #endif
 
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -52,54 +53,43 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		return method_error(MENOENT);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM init_method WHERE xid = %d",
+		"SELECT stop,start,timeout FROM init_method WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
 	if (dbi_result_get_numrows(dbr) > 0) {
-		if (dbi_conn_queryf(vxdb, "BEGIN EXCLUSIVE TRANSACTION"))
-			return method_error(MEVXDB);
+		dbi_result_first_row(dbr);
 		
-		if (!dbi_conn_queryf(vxdb,
-		    "UPDATE init_method SET method = '%s' WHERE xid = %d", method, xid))
-			return method_error(MEVXDB);
-	
-		if (start)
-			if (!dbi_conn_queryf(vxdb,
-			    "UPDATE init_method SET start = '%s' WHERE xid = %d", start, xid))
-				return method_error(MEVXDB);
+		if (str_isempty(start))
+			start = (char *) dbi_result_get_string(dbr, "start");
 		
-		if (stop)
-			if (!dbi_conn_queryf(vxdb,
-			    "UPDATE init_method SET stop = '%s' WHERE xid = %d", stop, xid))
-				return method_error(MEVXDB);
+		if (str_isempty(stop))
+			stop = (char *) dbi_result_get_string(dbr, "stop");
 		
-		if (timeout > 0)
-			if (!dbi_conn_queryf(vxdb,
-			    "UPDATE init_method SET timeout = %d WHERE xid = %d", timeout, xid))
-				return method_error(MEVXDB);
-		
-		if (!dbi_conn_queryf(vxdb, "COMMIT TRANSACTION"))
-			return method_error(MEVXDB);
+		if (timeout < 1)
+			timeout = dbi_result_get_int(dbr, "timeout");
 	}
 	
 	else {
-		if (!start)
+		if (str_isempty(start))
 			start = "";
 		
-		if (!stop)
+		if (str_isempty(stop))
 			stop = "";
 		
-		dbr = dbi_conn_queryf(vxdb,
-			"INSERT INTO init_method (xid, method, start, stop, timeout) "
-			"VALUES (%d, '%s', '%s', '%s', %d)",
-			xid, method, start, stop, timeout))
-		
-		if (dbr)
-			return method_error(MEVXDB);
+		if (timeout < 1)
+			timeout = 30;
 	}
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"INSERT OR REPLACE INTO init_method (xid, method, start, stop, timeout) "
+		"VALUES (%d, '%s', '%s', '%s', %d)",
+		xid, method, start, stop, timeout);
+	
+	if (!dbr)
+		return method_error(MEVXDB);
 	
 	return NULL;
 }

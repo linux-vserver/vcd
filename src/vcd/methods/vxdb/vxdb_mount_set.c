@@ -19,6 +19,7 @@
 #include <config.h>
 #endif
 
+#include "lucid.h"
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -45,20 +46,23 @@ XMLRPC_VALUE m_vxdb_mount_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!validate_name(name) || !validate_path(path))
 		return method_error(MEREQ);
 	
+	if (str_isempty(spec) && str_isempty(type))
+		return method_error(MEREQ);
+	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	if (!spec || !*spec)
-		opts = "none";
+	if (str_isempty(spec))
+		spec = "none";
 	
-	if (!opts || !*opts)
+	if (str_isempty(opts))
 		opts = "defaults";
 	
-	if (!type || !*type)
+	if (str_isempty(type))
 		type = "auto";
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"INSERT OR REPLACE INTO init_mount (xid, spec, file, vfstype, mntops) "
+		"INSERT OR REPLACE INTO mount (xid, spec, file, vfstype, mntops) "
 		"VALUES (%d, '%s', '%s', '%s', '%s')",
 		xid, spec, path, type, opts);
 	

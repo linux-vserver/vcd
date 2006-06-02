@@ -26,7 +26,7 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.limit.get(string name, string limit) */
+/* vxdb.vx.limit.get(string name[, string limit]) */
 XMLRPC_VALUE m_vxdb_vx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	xid_t xid;
@@ -40,25 +40,43 @@ XMLRPC_VALUE m_vxdb_vx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
 	char *limit = XMLRPC_VectorGetStringWithID(params, "limit");
 	
-	if (!validate_name(name) || !validate_rlimit(limit))
+	if (!validate_name(name) || (limit && !validate_rlimit(limit)))
 		return method_error(MEREQ);
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT soft,max FROM vx_limit WHERE xid = %d AND limit = '%s'",
-		xid, limit);
-	
-	if (!dbr)
-		return method_error(MEVXDB);
-	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		uint64_t soft = dbi_result_get_longlong(dbr, "soft");
-		uint64_t max  = dbi_result_get_longlong(dbr, "max");
+	if (limit) {
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT soft,max FROM vx_limit WHERE xid = %d AND type = '%s'",
+			xid, limit);
 		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("soft", soft));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("max", max));
+		if (!dbr)
+			return method_error(MEVXDB);
+		
+		if (dbi_result_get_numrows(dbr) < 1)
+			return method_error(MENOENT);
+		
+		dbi_result_first_row(dbr);
+		
+		XMLRPC_AddValueToVector(response,
+			XMLRPC_CreateValueInt("soft", dbi_result_get_longlong(dbr, "soft")));
+		XMLRPC_AddValueToVector(response,
+			XMLRPC_CreateValueInt("max", dbi_result_get_longlong(dbr, "max")));
+	}
+	
+	else {
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT type FROM vx_limit WHERE xid = %d",
+			xid);
+		
+		if (!dbr)
+			return method_error(MEVXDB);
+		
+		while (dbi_result_next_row(dbr)) {
+			XMLRPC_AddValueToVector(response,
+				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "type"), 0));
+		}
 	}
 	
 	return response;
