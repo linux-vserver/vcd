@@ -32,7 +32,7 @@ void vxdb_init(void)
 	
 	char *dbdir = cfg_getstr(cfg, "vxdb-dir");
 	
-	if (!dbdir)
+	if (str_isempty(dbdir))
 		log_error_and_die("Unable to load vxdb configuration");
 	
 	dbi_initialize(NULL);
@@ -60,7 +60,7 @@ int vxdb_getxid(char *name, xid_t *xid)
 {
 	dbi_result dbr;
 	
-	if (!name)
+	if (str_isempty(name))
 		return errno = EINVAL, -1;
 	
 	dbr = dbi_conn_queryf(vxdb,
@@ -70,7 +70,7 @@ int vxdb_getxid(char *name, xid_t *xid)
 	if (!dbr)
 		return -1;
 	
-	if (dbi_result_get_numrows(dbr) == 0) {
+	if (dbi_result_get_numrows(dbr) < 1) {
 		dbi_result_free(dbr);
 		return -1;
 	}
@@ -95,7 +95,7 @@ int vxdb_getname(xid_t xid, char **name)
 	if (!dbr)
 		return -1;
 	
-	if (dbi_result_get_numrows(dbr) == 0) {
+	if (dbi_result_get_numrows(dbr) < 1) {
 		dbi_result_free(dbr);
 		return -1;
 	}
@@ -103,7 +103,8 @@ int vxdb_getname(xid_t xid, char **name)
 	dbi_result_first_row(dbr);
 	
 	if (name)
-		*name = (char *) dbi_result_get_string(dbr, "name");
+		*name = strndup(dbi_result_get_string(dbr, "name"));
 	
+	dbi_result_free(dbr);
 	return 0;
 }

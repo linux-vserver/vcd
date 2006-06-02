@@ -143,7 +143,7 @@ int method_call(XMLRPC_SERVER server, char *in, char **out)
 	/* serialize server response as XML */
 	buf = XMLRPC_REQUEST_ToXML(response, 0);
 	
-	if (buf)
+	if (!str_isempty(buf))
 		*out = buf;
 	
 	XMLRPC_RequestFree(request, 1);

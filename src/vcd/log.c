@@ -46,7 +46,7 @@ int log_init(char *ident, int debug)
 	
 	log_ident = ident;
 	
-	if (!debug && (!logdir || !*logdir))
+	if (!debug && str_isempty(logdir))
 		return errno = ENOENT, -1;
 	
 	if (debug)

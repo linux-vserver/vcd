@@ -19,6 +19,7 @@
 #include <config.h>
 #endif
 
+#include <unistd.h>
 #include <string.h>
 #include <arpa/inet.h>
 
@@ -29,7 +30,7 @@
 
 int validate_name(char *name)
 {
-	if (!name)
+	if (str_isempty(name))
 		return 0;
 	
 	return str_isalnum(name);
@@ -42,7 +43,7 @@ int validate_xid(xid_t xid)
 
 int validate_path(char *path)
 {
-	if (!path)
+	if (str_isempty(path))
 		return 0;
 	
 	return str_path_isabs(path);
@@ -55,7 +56,7 @@ int validate_dlimits(uint32_t inodes, uint32_t space, int reserved)
 
 int validate_init_method(char *method)
 {
-	if (!method)
+	if (str_isempty(method))
 		return 0;
 	
 	if (strcmp(method, "init")   == 0 ||
@@ -69,7 +70,7 @@ int validate_init_method(char *method)
 
 int validate_runlevel(char *runlevel)
 {
-	if (!runlevel)
+	if (str_isempty(runlevel))
 		return 0;
 	
 	return str_isalnum(runlevel);
@@ -77,7 +78,7 @@ int validate_runlevel(char *runlevel)
 
 int validate_addr(char *addr)
 {
-	if (!addr)
+	if (str_isempty(addr))
 		return 0;
 	
 	struct in_addr inaddr;
@@ -86,7 +87,7 @@ int validate_addr(char *addr)
 
 int validate_username(char *username)
 {
-	if (!username)
+	if (str_isempty(username))
 		return 0;
 	
 	return str_isalnum(username);
@@ -94,7 +95,7 @@ int validate_username(char *username)
 
 int validate_password(char *password)
 {
-	if (!password)
+	if (str_isempty(password))
 		return 0;
 	
 	return strlen(password) >= 8;
@@ -102,7 +103,7 @@ int validate_password(char *password)
 
 int validate_bcap(char *bcap)
 {
-	if (!bcap)
+	if (str_isempty(bcap))
 		return 0;
 	
 	return flist64_getval(bcaps_list, bcap, NULL) == -1 ? 0 : 1;
@@ -110,7 +111,7 @@ int validate_bcap(char *bcap)
 
 int validate_ccap(char *ccap)
 {
-	if (!ccap)
+	if (str_isempty(ccap))
 		return 0;
 	
 	return flist64_getval(ccaps_list, ccap, NULL) == -1 ? 0 : 1;
@@ -118,7 +119,7 @@ int validate_ccap(char *ccap)
 
 int validate_cflag(char *cflag)
 {
-	if (!cflag)
+	if (str_isempty(cflag))
 		return 0;
 	
 	return flist64_getval(cflags_list, cflag, NULL) == -1 ? 0 : 1;
@@ -126,7 +127,7 @@ int validate_cflag(char *cflag)
 
 int validate_rlimit(char *rlimit)
 {
-	if (!rlimit)
+	if (str_isempty(rlimit))
 		return 0;
 	
 	return flist32_getval(rlimit_list, rlimit, NULL) == -1 ? 0 : 1;
@@ -139,7 +140,9 @@ int validate_rlimits(int soft, int max)
 
 int validate_cpuid(int cpuid)
 {
-	return (cpuid >= 0 && cpuid < 1024);
+	long ncpu = sysconf(_SC_NPROCESSORS_ONLN);
+	
+	return (cpuid < ncpu && cpuid >= 0);
 }
 
 int validate_token_bucket(int32_t fillrate, int32_t interval,
@@ -158,7 +161,7 @@ int validate_token_bucket(int32_t fillrate, int32_t interval,
 
 int validate_uname(char *uname)
 {
-	if (!uname)
+	if (str_isempty(uname))
 		return 0;
 	
 	return flist32_getval(vhiname_list, uname, NULL) == -1 ? 0 : 1;
