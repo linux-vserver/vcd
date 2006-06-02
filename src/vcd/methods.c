@@ -22,6 +22,7 @@
 #include <stdarg.h>
 #include <string.h>
 
+#include "lucid.h"
 #include "xmlrpc.h"
 #include "xmlrpc_private.h"
 

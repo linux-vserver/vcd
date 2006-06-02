@@ -19,6 +19,10 @@
 #include <config.h>
 #endif
 
+#include <string.h>
+
+#include "lucid.h"
+
 #include "cfg.h"
 #include "log.h"
 #include "vxdb.h"
@@ -103,7 +107,7 @@ int vxdb_getname(xid_t xid, char **name)
 	dbi_result_first_row(dbr);
 	
 	if (name)
-		*name = strndup(dbi_result_get_string(dbr, "name"));
+		*name = strdup(dbi_result_get_string(dbr, "name"));
 	
 	dbi_result_free(dbr);
 	return 0;

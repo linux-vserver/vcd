@@ -45,33 +45,53 @@ XMLRPC_VALUE m_vxdb_owner_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (vxdb_getxid(name, &xid) == -1)
 		return method_error(MENOENT);
 	
-	if (user) {
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uid FROM user WHERE name = '%s'",
-			user);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		if (dbi_result_get_numrows(dbr) < 1)
-			return method_error(MENOENT);
-		
-		dbi_result_first_row(dbr);
-		
-		int uid = dbi_result_get_int(dbr, "uid");
-		
-		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
-			xid, uid);
-	}
-	
-	else
+	if (!user) {
 		dbr = dbi_conn_queryf(vxdb,
 			"DELETE FROM xid_uid_map WHERE xid = %d",
 			xid);
 	
+		if (!dbr)
+			return method_error(MEVXDB);
+		
+		return NULL;
+	}
+	
+	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION");
+	
 	if (!dbr)
 		return method_error(MEVXDB);
 	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT uid FROM user WHERE name = '%s'",
+		user);
+	
+	if (!dbr)
+		goto rollback;
+	
+	if (dbi_result_get_numrows(dbr) < 1) {
+		dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
+		return method_error(MENOENT);
+	}
+	
+	dbi_result_first_row(dbr);
+	
+	int uid = dbi_result_get_int(dbr, "uid");
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
+		xid, uid);
+	
+	if (!dbr)
+		goto rollback;
+	
+	dbr = dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
+	
+	if (!dbr)
+		goto rollback;
+	
 	return NULL;
+	
+rollback:
+	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
+	return method_error(MEVXDB);
 }

@@ -48,12 +48,17 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!validate_username(username) || !validate_password(password))
 		return method_error(MEREQ);
 	
+	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION");
+	
+	if (!dbr)
+		return method_error(MEVXDB);
+	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid,admin FROM user WHERE name = '%s'",
 		username);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		goto rollback;
 	
 	int uid, adm;
 	
@@ -67,7 +72,7 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
 		
 		if (!dbr)
-			return method_error(MEVXDB);
+			goto rollback;
 		
 		if (dbi_result_get_numrows(dbr) > 0) {
 			dbi_result_first_row(dbr);
@@ -75,7 +80,7 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		}
 		
 		else
-			return method_error(MEVXDB);
+			goto rollback;
 		
 		adm = admin == -1 ? 0 : 1;
 	}
@@ -88,7 +93,16 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		uid, username, password, adm);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		goto rollback;
+	
+	dbr = dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
+	
+	if (!dbr)
+		goto rollback;
 	
 	return NULL;
+	
+rollback:
+	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
+	return method_error(MEVXDB);
 }
