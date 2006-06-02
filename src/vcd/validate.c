@@ -124,14 +124,6 @@ int validate_cflag(char *cflag)
 	return flist64_getval(cflags_list, cflag, NULL) == -1 ? 0 : 1;
 }
 
-int validate_pflag(char *pflag)
-{
-	if (!pflag)
-		return 0;
-	
-	return flist32_getval(pflags_list, pflag, NULL) == -1 ? 0 : 1;
-}
-
 int validate_rlimit(char *rlimit)
 {
 	if (!rlimit)
@@ -155,7 +147,7 @@ int validate_token_bucket(int32_t fillrate, int32_t interval,
                           int32_t tokensmin, int32_t tokensmax,
                           int32_t priobias)
 {
-	if (interval > fillrate || interval2 > fillrate2)
+	if (interval < fillrate || interval2 < fillrate2)
 		return 0;
 	
 	if (tokensmin > tokensmax)
@@ -174,7 +166,7 @@ int validate_uname(char *uname)
 
 int validate_uname_value(char *value)
 {
-	if (!value)
+	if (str_isempty(value))
 		return 0;
 	
 	return strlen(value) < 65;

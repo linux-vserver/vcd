@@ -289,14 +289,14 @@ int setup_context(void)
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uname,value FROM vx_uname WHERE xid = %d",
-		vhifields[i], xid);
+		xid);
 	
 	if (!dbr)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
 		if (flist32_getval(vhiname_list,
-		                   dbi_result_get_string(dbr, "uname"), &buf32) == -1)
+		   (char *) dbi_result_get_string(dbr, "uname"), &buf32) == -1)
 			continue;
 		
 		vhiname.field = flist32_mask2val(buf32);
@@ -419,7 +419,7 @@ int mount_namespace(void)
 		return errno = MESYS, -1;
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT spec,file,vfstype,mntops FROM init_mount WHERE xid = %d",
+		"SELECT spec,file,vfstype,mntops FROM mount WHERE xid = %d",
 		xid);
 	
 	if (!dbr)

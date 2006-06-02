@@ -55,9 +55,6 @@ M_VXDB = vx/vx_create.c \
          vxdb/vxdb_vx_limit_get.c \
          vxdb/vxdb_vx_limit_remove.c \
          vxdb/vxdb_vx_limit_set.c \
-         vxdb/vxdb_vx_pflags_add.c \
-         vxdb/vxdb_vx_pflags_get.c \
-         vxdb/vxdb_vx_pflags_remove.c \
          vxdb/vxdb_vx_sched_get.c \
          vxdb/vxdb_vx_sched_remove.c \
          vxdb/vxdb_vx_sched_set.c \

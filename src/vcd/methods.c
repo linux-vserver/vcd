@@ -89,9 +89,6 @@ int method_registry_init(XMLRPC_SERVER s)
 	MREGISTER("vxdb.vx.limit.get",     m_vxdb_vx_limit_get);
 	MREGISTER("vxdb.vx.limit.remove",  m_vxdb_vx_limit_remove);
 	MREGISTER("vxdb.vx.limit.set",     m_vxdb_vx_limit_set);
-	MREGISTER("vxdb.vx.pflags.add",    m_vxdb_vx_pflags_add);
-	MREGISTER("vxdb.vx.pflags.get",    m_vxdb_vx_pflags_get);
-	MREGISTER("vxdb.vx.pflags.remove", m_vxdb_vx_pflags_remove);
 	MREGISTER("vxdb.vx.sched.get",     m_vxdb_vx_sched_get);
 	MREGISTER("vxdb.vx.sched.remove",  m_vxdb_vx_sched_remove);
 	MREGISTER("vxdb.vx.sched.set",     m_vxdb_vx_sched_set);

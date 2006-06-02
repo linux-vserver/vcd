@@ -289,15 +289,10 @@ CREATE TABLE vx_flags (
 );
 CREATE TABLE vx_limit (
   xid SMALLINT NOT NULL,
-  limit TEXT NOT NULL,
+  type TEXT NOT NULL,
   soft BIGINT,
   max BIGINT,
-  UNIQUE(xid, limit)
-);
-CREATE TABLE vx_pflags (
-  xid SMALLINT NOT NULL,
-  pflag TEXT NOT NULL,
-  UNIQUE(xid, pflag)
+  UNIQUE(xid, type)
 );
 CREATE TABLE vx_sched (
   xid SMALLINT NOT NULL,

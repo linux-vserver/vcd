@@ -73,7 +73,6 @@ static cfg_opt_t BUILD_OPTS[] = {
 	CFG_STR_LIST("vx_bcaps",  DEFAULT_BCAPS, CFGF_NONE),
 	CFG_STR_LIST("vx_ccaps",  DEFAULT_CCAPS, CFGF_NONE),
 	CFG_STR_LIST("vx_flags",  DEFAULT_FLAGS, CFGF_NONE),
-	CFG_STR_LIST("vx_pflags", NULL,          CFGF_NONE),
 	CFG_END()
 };
 
@@ -338,22 +337,6 @@ XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			"INSERT OR ROLLBACK INTO vx_flags (xid, flag) "
 			"VALUES (%d, '%s')",
 			xid, flag)) goto rolledback;
-	}
-	
-	int vx_pflags_size = cfg_size(build_cfg, "vx_pflags");
-	
-	for (i = 0; i < vx_pflags_size; i++) {
-		char *pflag = cfg_getnstr(build_cfg, "vx_pflags", i);
-		
-		if (flist32_getval(pflags_list, pflag, NULL) == -1) {
-			errno = MECONF;
-			goto rollback;
-		}
-		
-		if (!dbi_conn_queryf(vxdb,
-			"INSERT OR ROLLBACK INTO vx_pflags (xid, pflag) "
-			"VALUES (%d, '%s')",
-			xid, pflag)) goto rolledback;
 	}
 	
 	if (!dbi_conn_queryf(vxdb,
