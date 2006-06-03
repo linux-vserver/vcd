@@ -183,7 +183,7 @@ getflags:
 	if (nx_get_flags(nid, &flags) == -1)
 		perr("nx_get_flags");
 	
-	if (flist64_tostr(nflags_list, flags.flags, &buf, '\n') == -1)
+	if (!(buf = flist64_tostr(nflags_list, flags.flags, '\n')))
 		perr("flist64_tostr");
 	
 	printf("%s", buf);

@@ -55,7 +55,7 @@ int main(int argc, char *argv[])
 	INIT_ARGV0
 	
 	int c;
-	char *file, *buf;
+	char *buf;
 	
 	/* syscall data */
 	struct vx_iattr iattr = {
@@ -89,7 +89,7 @@ getattr:
 	if (vx_get_iattr(&iattr) == -1)
 		perr("vx_get_iattr");
 	
-	if (flist32_tostr(iattr_list, iattr.flags & iattr.mask, &buf, ',') == -1)
+	if (!(buf = flist32_tostr(iattr_list, iattr.flags & iattr.mask, ',')))
 		perr("flist32_tostr");
 	
 	if (strlen(buf) > 0)

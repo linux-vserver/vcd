@@ -280,12 +280,10 @@ setlimit:
 		if (buf == NULL)
 			goto usage;
 		
-		if (flist32_getval(rlimit_list, buf, &rlimit.id) == -1)
+		if (!(rlimit.id = flist32_getval(rlimit_list, buf)))
 			perr("flist32_getval");
 		
 		rlimit.id = flist32_mask2val(rlimit.id);
-		
-		int k = 0;
 		
 		if ((buf = strtok(NULL, ",")) == NULL)
 			goto usage;
@@ -318,7 +316,7 @@ setsched:
 		if (buf == NULL)
 			goto usage;
 		
-		if (flist32_getval(sched_list, buf, &sched.set_mask) == -1)
+		if (!(sched.set_mask = flist32_getval(sched_list, buf)))
 			perr("flist32_getval");
 		
 		buf = strtok(NULL, "=");
@@ -384,7 +382,7 @@ setvhi:
 		if (buf == NULL)
 			goto usage;
 		
-		if (flist32_getval(vhiname_list, buf, &vhiname.field) == -1)
+		if (!(vhiname.field = flist32_getval(vhiname_list, buf)))
 			perr("flist32_getval");
 		
 		buf = strtok(NULL, "=");
@@ -405,10 +403,11 @@ getbcaps:
 	if (vx_get_bcaps(xid, &bcaps) == -1)
 		perr("vx_get_bcaps");
 	
-	if (flist64_tostr(bcaps_list, bcaps.bcaps, &buf, '\n') == -1)
-		perr("flist64_tostr");
+	buf = flist64_tostr(bcaps_list, bcaps.bcaps, '\n');
 	
-	printf("%s", buf);
+	if (!str_isempty(buf))
+		printf("%s\n", buf);
+	
 	free(buf);
 	
 	goto out;
@@ -417,10 +416,11 @@ getccaps:
 	if (vx_get_ccaps(xid, &ccaps) == -1)
 		perr("vx_get_ccaps");
 	
-	if (flist64_tostr(ccaps_list, ccaps.ccaps, &buf, '\n') == -1)
-		perr("flist64_tostr");
+	buf = flist64_tostr(ccaps_list, ccaps.ccaps, '\n');
 	
-	printf("%s", buf);
+	if (!str_isempty(buf))
+		printf("%s\n", buf);
+	
 	free(buf);
 	
 	goto out;
@@ -429,10 +429,11 @@ getflags:
 	if (vx_get_flags(xid, &flags) == -1)
 		perr("vx_get_flags");
 	
-	if (flist64_tostr(cflags_list, flags.flags, &buf, '\n') == -1)
-		perr("flist64_tostr");
+	buf = flist64_tostr(cflags_list, flags.flags, '\n');
 	
-	printf("%s", buf);
+	if (!str_isempty(buf))
+		printf("%s\n", buf);
+	
 	free(buf);
 	
 	goto out;
@@ -442,7 +443,7 @@ getlimit:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (flist32_getval(rlimit_list, argv[i], &rlimit.id) == -1)
+		if (!(rlimit.id = flist32_getval(rlimit_list, argv[i])))
 			perr("flist32_getval");
 		
 		if (vx_get_rlimit(xid, &rlimit) == -1)
@@ -468,7 +469,7 @@ getvhi:
 		goto usage;
 	
 	for (i = optind; argc > i; i++) {
-		if (flist32_getval(vhiname_list, argv[i], &vhiname.field) == -1)
+		if (!(vhiname.field = flist32_getval(vhiname_list, argv[i])))
 			perr("flist32_getval");
 		
 		if (vx_get_vhi_name(xid, &vhiname) == -1)
