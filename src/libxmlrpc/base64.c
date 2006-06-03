@@ -52,7 +52,6 @@ void base64_encode(struct buffer_st *b, const char *source, int length)
   int i, hiteof = 0;
   int offset = 0;
   int olen;
-  char *dest;
   unsigned char dtable[64];
   
   olen = 0;

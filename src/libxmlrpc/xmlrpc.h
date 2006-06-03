@@ -428,7 +428,7 @@ const char*  XMLRPC_GetVersionString(void);
 
 /* Get named values from vector */
 #define XMLRPC_VectorGetValueWithID(vector, id) XMLRPC_VectorGetValueWithID_Case(vector, id, XMLRPC_DEFAULT_ID_CASE_SENSITIVITY)
-#define XMLRPC_VectorGetStringWithID(vector, id) (char *) XMLRPC_GetValueString(XMLRPC_VectorGetValueWithID(vector, id))
+#define XMLRPC_VectorGetStringWithID(vector, id) XMLRPC_GetValueString(XMLRPC_VectorGetValueWithID(vector, id))
 #define XMLRPC_VectorGetBase64WithID(vector, id) XMLRPC_GetValueBase64(XMLRPC_VectorGetValueWithID(vector, id))
 #define XMLRPC_VectorGetDateTimeWithID(vector, id) XMLRPC_GetValueDateTime(XMLRPC_VectorGetValueWithID(vector, id))
 #define XMLRPC_VectorGetDoubleWithID(vector, id) XMLRPC_GetValueDouble(XMLRPC_VectorGetValueWithID(vector, id))

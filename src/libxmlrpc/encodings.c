@@ -34,6 +34,7 @@
 static const char rcsid[] = "#(@) $Id: encodings.c,v 1.4 2005/03/17 22:41:15 danda Exp $";
 
 #include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <iconv.h>
 #include "encodings.h"
@@ -46,7 +47,7 @@ static char* convert(const char* src, int src_len, int *new_len, const char* fro
       size_t outlen = src_len;
       size_t inlenleft = src_len;
       iconv_t ic = iconv_open(to_enc, from_enc);
-      char* src_ptr = (char*)src;
+      char* src_ptr = strdup(src);
       char* out_ptr = 0;
 
       if(ic != (iconv_t)-1) {
@@ -75,6 +76,7 @@ static char* convert(const char* src, int src_len, int *new_len, const char* fro
                   }
                }
             }
+            free(src_ptr);
          }
          iconv_close(ic);
       }

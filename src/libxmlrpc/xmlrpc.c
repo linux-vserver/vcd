@@ -150,7 +150,8 @@ static int date_from_ISO8601 (const char *text, time_t * value) {
 	char buf[18];
 
 	if (strchr (text, '-')) {
-		char *p = (char *) text, *p2 = buf;
+		const char *p = text;
+		char *p2 = buf;
 		while (p && *p) {
 			if (*p != '-') {
 				*p2 = *p;
@@ -794,13 +795,6 @@ XMLRPC_VALUE XMLRPC_CreateValueEmpty() {
    return v;
 }
 
-static const char* get_string(const char* buf, int bDup) {
-   if(bDup) {
-      return strdup(buf);
-   }
-   return buf;
-}
-
 /*******/
 
 /****f* VALUE/XMLRPC_SetValueID_Case
@@ -1026,8 +1020,6 @@ XMLRPC_VALUE XMLRPC_CreateVector(const char* id, XMLRPC_VECTOR_TYPE type) {
 
    val = XMLRPC_CreateValueEmpty();
    if(val) {
-      XMLRPC_VECTOR *pSIV = NULL;
-
       if(XMLRPC_SetIsVector(val, type)) {
          if(id) {
             const char *pSVI = NULL;
@@ -2683,7 +2675,7 @@ XMLRPC_CASE_COMPARISON XMLRPC_SetDefaultIdCaseComparison(XMLRPC_CASE_COMPARISON 
 XMLRPC_VALUE XMLRPC_UtilityCreateFault(int fault_code, const char* fault_string) {
    XMLRPC_VALUE xOutput = NULL;
 
-   char* string = NULL;
+   const char* string = NULL;
    simplestring description;
    simplestring_init(&description);
 

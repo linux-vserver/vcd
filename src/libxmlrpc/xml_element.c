@@ -180,7 +180,7 @@ void xml_elem_free_non_recurse(xml_element* root) {
       Q_Destroy(&root->children);
       Q_Destroy(&root->attrs);
       if(root->name) {
-          free((char *)root->name);
+          free(root->name);
           root->name = NULL;
       }
       simplestring_free(&root->text);

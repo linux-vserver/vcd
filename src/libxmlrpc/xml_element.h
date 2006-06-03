@@ -147,7 +147,7 @@ typedef struct _xml_element_attr {
  * SOURCE
  */
 typedef struct _xml_element {
-   const char*   name;           /* element identifier */
+   char*   name;                 /* element identifier */
    simplestring  text;           /* text contained between element begin/end pairs */
    struct _xml_element* parent;  /* element's parent */
                                  
