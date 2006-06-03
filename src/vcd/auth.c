@@ -35,8 +35,8 @@ int auth_isvalid(XMLRPC_REQUEST r)
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	
-	char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	char *password = XMLRPC_VectorGetStringWithID(auth, "password");
+	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	const char *password = XMLRPC_VectorGetStringWithID(auth, "password");
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT password FROM user WHERE name = '%s'",
@@ -70,7 +70,7 @@ int auth_isadmin(XMLRPC_REQUEST r)
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	
-	char *username = (char *) XMLRPC_VectorGetStringWithID(auth, "username");
+	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT admin FROM user WHERE name = '%s' AND admin = 1",
@@ -100,8 +100,7 @@ int auth_isowner(XMLRPC_REQUEST r)
 	auth    = XMLRPC_VectorRewind(request);
 	params  = XMLRPC_VectorNext(request);
 	
-	char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	char *name     = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
 	
 	if (vxdb_getxid(name, &xid) == -1)
 		return 0;
@@ -137,7 +136,7 @@ int auth_getuid(XMLRPC_REQUEST r)
 	request = XMLRPC_RequestGetData(r);
 	auth    = XMLRPC_VectorRewind(request);
 	
-	char *username = XMLRPC_VectorGetStringWithID(auth, "username");
+	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid FROM user WHERE name = '%s'",

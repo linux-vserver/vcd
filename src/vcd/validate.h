@@ -21,27 +21,27 @@
 #include <stdint.h>
 #include <vserver.h>
 
-int validate_name(char *name);
+int validate_name(const char *name);
 int validate_xid(xid_t xid);
 
-int validate_path(char *path);
+int validate_path(const char *path);
 
 int validate_dlimits(uint32_t inodes, uint32_t space, int reserved);
 
-int validate_init_method(char *method);
-int validate_runlevel(char *runlevel);
+int validate_init_method(const char *method);
+int validate_runlevel(const char *runlevel);
 
-int validate_addr(char *addr);
+int validate_addr(const char *addr);
 
-int validate_username(char *username);
-int validate_password(char *password);
+int validate_username(const char *username);
+int validate_password(const char *password);
 
-int validate_bcap(char *bcap);
-int validate_ccap(char *ccap);
-int validate_cflag(char *cflag);
-int validate_pflag(char *pflag);
+int validate_bcap(const char *bcap);
+int validate_ccap(const char *ccap);
+int validate_cflag(const char *cflag);
+int validate_pflag(const char *pflag);
 
-int validate_rlimit(char *rlimit);
+int validate_rlimit(const char *rlimit);
 int validate_rlimits(int soft, int max);
 
 int validate_cpuid(int cpuid);
@@ -50,7 +50,7 @@ int validate_token_bucket(int32_t fillrate, int32_t interval,
                           int32_t tokensmin, int32_t tokensmax,
                           int32_t priobias);
 
-int validate_uname(char *uname);
-int validate_uname_value(char *value);
+int validate_uname(const char *uname);
+int validate_uname_value(const char *value);
 
 #endif

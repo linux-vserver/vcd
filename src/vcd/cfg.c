@@ -38,7 +38,7 @@ int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
 		return -1;
 	}
 	
-	*(char **) result = (char *) value;
+	*(const char **) result = (const char *) value;
 	return 0;
 }
 
@@ -107,6 +107,6 @@ int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
 		return -1;
 	}
 	
-	*(char **) result = (char *) value;
+	*(const char **) result = (const char *) value;
 	return 0;
 }

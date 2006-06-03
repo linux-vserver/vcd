@@ -25,16 +25,16 @@
 #define LOG_WARN  2
 #define LOG_ERR   1
 
-int  log_init (char *ident, int level);
+int  log_init (const char *ident, int level);
 
-void log_debug(char *fmt, ...);
-void log_info (char *fmt, ...);
-void log_warn (char *fmt, ...);
-void log_error(char *fmt, ...);
+void log_debug(const char *fmt, ...);
+void log_info (const char *fmt, ...);
+void log_warn (const char *fmt, ...);
+void log_error(const char *fmt, ...);
 
-void log_debug_and_die(char *fmt, ...);
-void log_info_and_die (char *fmt, ...);
-void log_warn_and_die (char *fmt, ...);
-void log_error_and_die(char *fmt, ...);
+void log_debug_and_die(const char *fmt, ...);
+void log_info_and_die (const char *fmt, ...);
+void log_warn_and_die (const char *fmt, ...);
+void log_error_and_die(const char *fmt, ...);
 
 #endif

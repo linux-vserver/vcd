@@ -56,21 +56,21 @@ static gnutls_dh_params_t dh_params;
 static gnutls_session_t tls_session;
 
 static
-size_t httpd_read(void *src, char *data, size_t len)
+size_t httpd_read(const void *src, char *data, size_t len)
 {
 	if (tls_mode == TLS_DISABLED)
-		return read(*(int *) src, data, len);
+		return read(*(const int *) src, data, len);
 	else
-		return gnutls_record_send(*(gnutls_session_t *) src, data, len);
+		return gnutls_record_send(*(const gnutls_session_t *) src, data, len);
 }
 
 static
-size_t httpd_write(void *dst, char *data, size_t len)
+size_t httpd_write(const void *dst, const char *data, size_t len)
 {
 	if (tls_mode == TLS_DISABLED)
-		return write(*(int *) dst, data, len);
+		return write(*(const int *) dst, data, len);
 	else
-		return gnutls_record_send(*(gnutls_session_t *) dst, data, len);
+		return gnutls_record_send(*(const gnutls_session_t *) dst, data, len);
 }
 
 static
@@ -212,13 +212,14 @@ void handle_client(void)
 	
 	/* send response */
 	http_send_response(src, &response, headers, rbody, httpd_write);
-	free(rbody);
 	
-close:
+	free(rbody);
 	http_headers_free(headers);
+	
 	gnutls_bye(tls_session, GNUTLS_SHUT_WR);
 	close(cfd);
 	gnutls_deinit(tls_session);
+	
 	exit(0);
 }
 

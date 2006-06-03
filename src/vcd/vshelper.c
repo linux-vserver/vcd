@@ -33,8 +33,6 @@
 #include "cfg.h"
 #include "log.h"
 
-static const char *rcsid = "$Id: vdbm.c 160 2006-04-08 13:31:34Z hollow $";
-
 typedef enum {
 	TLS_DISABLED = 0,
 	TLS_ANON     = 1,
@@ -50,7 +48,7 @@ static int cfd;
 
 static char *action;
 static xid_t xid;
-static char *name;
+static const char *name;
 
 static cfg_opt_t CFG_OPTS[] = {
 	/* network configuration */
@@ -76,7 +74,6 @@ typedef int (*helper_t)(void);
 
 static int vshelper_restart(void);
 static int vshelper_halt(void);
-static int vshelper_poweroff(void);
 static int vshelper_ignore(void);
 
 typedef struct {
@@ -109,21 +106,21 @@ void usage(int rc)
 }
 
 static
-size_t httpd_read(void *src, char *data, size_t len)
+size_t httpd_read(const void *src, char *data, size_t len)
 {
 	if (tls_mode == TLS_DISABLED)
-		return read(*(int *) src, data, len);
+		return read(*(const int *) src, data, len);
 	else
-		return gnutls_record_send(*(gnutls_session_t *) src, data, len);
+		return gnutls_record_send(*(const gnutls_session_t *) src, data, len);
 }
 
 static
-size_t httpd_write(void *dst, char *data, size_t len)
+size_t httpd_write(const void *dst, const char *data, size_t len)
 {
 	if (tls_mode == TLS_DISABLED)
-		return write(*(int *) dst, data, len);
+		return write(*(const int *) dst, data, len);
 	else
-		return gnutls_record_send(*(gnutls_session_t *) dst, data, len);
+		return gnutls_record_send(*(const gnutls_session_t *) dst, data, len);
 }
 
 static
@@ -163,8 +160,8 @@ gnutls_session_t initialize_tls_session(void)
 static
 int fault(XMLRPC_VALUE value)
 {
-	char *fault_string = XMLRPC_VectorGetStringWithID(value, "faultString");
-	int   fault_code   = XMLRPC_VectorGetIntWithID(value, "faultCode");
+	const char *fault_string = XMLRPC_VectorGetStringWithID(value, "faultString");
+	int fault_code           = XMLRPC_VectorGetIntWithID(value, "faultCode");
 	
 	if (fault_string || fault_code != 0)
 		return 1;

@@ -34,9 +34,9 @@
 static int log_fd     = -1;
 static int log_level  = 3;
 static int log_stderr = 0;
-static char *log_ident = NULL;
+static const char *log_ident = NULL;
 
-int log_init(char *ident, int debug)
+int log_init(const char *ident, int debug)
 {
 	int rc = 0;
 	char *logfile, *logdir = cfg_getstr(cfg, "log-dir");
@@ -75,7 +75,7 @@ int log_init(char *ident, int debug)
 }
 
 static
-void _log_internal(int level, char *fmt, va_list ap)
+void _log_internal(int level, const char *fmt, va_list ap)
 {
 	time_t curtime = time(0);
 	char *levelstr = NULL, timestr[64];
@@ -118,7 +118,7 @@ void _log_internal(int level, char *fmt, va_list ap)
 	}
 }
 
-void log_debug(char *fmt, ...)
+void log_debug(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -126,7 +126,7 @@ void log_debug(char *fmt, ...)
 	_log_internal(LOG_DEBG, fmt, ap);
 }
 
-void log_info(char *fmt, ...)
+void log_info(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -134,7 +134,7 @@ void log_info(char *fmt, ...)
 	_log_internal(LOG_INFO, fmt, ap);
 }
 
-void log_warn(char *fmt, ...)
+void log_warn(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -142,7 +142,7 @@ void log_warn(char *fmt, ...)
 	_log_internal(LOG_WARN, fmt, ap);
 }
 
-void log_error(char *fmt, ...)
+void log_error(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -151,7 +151,7 @@ void log_error(char *fmt, ...)
 }
 
 
-void log_debug_and_die(char *fmt, ...)
+void log_debug_and_die(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -160,7 +160,7 @@ void log_debug_and_die(char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-void log_info_and_die(char *fmt, ...)
+void log_info_and_die(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -169,7 +169,7 @@ void log_info_and_die(char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-void log_warn_and_die(char *fmt, ...)
+void log_warn_and_die(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);
@@ -178,7 +178,7 @@ void log_warn_and_die(char *fmt, ...)
 	exit(EXIT_FAILURE);
 }
 
-void log_error_and_die(char *fmt, ...)
+void log_error_and_die(const char *fmt, ...)
 {
 	va_list ap;
 	va_start(ap, fmt);

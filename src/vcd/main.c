@@ -83,7 +83,7 @@ void usage(int rc)
 static
 void signal_handler(int sig, siginfo_t *siginfo, void *u)
 {
-	int i, status;
+	int i;
 	
 	switch (sig) {
 	case SIGCHLD:
@@ -140,7 +140,7 @@ int main(int argc, char **argv)
 	char *cfg_file = "/etc/vcd.conf";
 	char *rundir, *pidfile;
 	pid_t pid = 0;
-	int fd, c, status, debug = 0;
+	int fd, c, debug = 0;
 	struct sigaction act;
 	
 	/* getopt */

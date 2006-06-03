@@ -20,6 +20,12 @@ SUBDIRS = methods
 INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/libxmlrpc
 
+LIBS = $(top_builddir)/src/lucid/libucid.a \
+       $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
+       $(LIBGNUTLS_LIBS) \
+       -lconfuse \
+       -lexpat
+
 noinst_HEADERS = auth.h \
                  cfg.h \
                  lists.h \
@@ -47,17 +53,6 @@ vshelper_SOURCES = cfg.c \
                    vshelper.c
 
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
-            $(top_builddir)/src/lucid/libucid.a \
-            $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
-            $(LIBGNUTLS_LIBS) \
             -larchive -lbz2 -lz \
-            -lconfuse \
-            -ldbi \
-            -lexpat \
+            -ldbi -ldl \
             -lvserver
-
-vshelper_LDADD = $(top_builddir)/src/lucid/libucid.a \
-                 $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
-                 $(LIBGNUTLS_LIBS) \
-                 -lconfuse \
-                 -lexpat

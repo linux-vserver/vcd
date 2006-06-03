@@ -60,7 +60,7 @@ void vxdb_close(void)
 	dbi_shutdown();
 }
 
-int vxdb_getxid(char *name, xid_t *xid)
+int vxdb_getxid(const char *name, xid_t *xid)
 {
 	dbi_result dbr;
 	
