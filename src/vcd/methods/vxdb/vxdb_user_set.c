@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -29,15 +25,14 @@
 /* vxdb.user.set(string name, string password[, int admin]) */
 XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	xid_t xid;
 	dbi_result dbr;
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *username = XMLRPC_VectorGetStringWithID(params, "username");
-	char *password = XMLRPC_VectorGetStringWithID(params, "password");
+	const char *username = XMLRPC_VectorGetStringWithID(params, "username");
+	const char *password = XMLRPC_VectorGetStringWithID(params, "password");
 	int admin;
 	
 	if (XMLRPC_VectorGetValueWithID(params, "admin") == NULL)

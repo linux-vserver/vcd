@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -36,8 +32,8 @@ XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *path = XMLRPC_VectorGetStringWithID(params, "path");
+	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *path = XMLRPC_VectorGetStringWithID(params, "path");
 	
 	int space    = XMLRPC_VectorGetIntWithID(params, "space");
 	int inodes   = XMLRPC_VectorGetIntWithID(params, "inodes");

@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -38,8 +34,8 @@ XMLRPC_VALUE m_vxdb_vx_flags_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *flag = XMLRPC_VectorGetStringWithID(params, "flag");
+	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *flag = XMLRPC_VectorGetStringWithID(params, "flag");
 	
 	if ((name && !validate_name(name)) || (flag && !validate_cflag(flag)))
 		return method_error(MEREQ);

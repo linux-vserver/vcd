@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -37,8 +33,8 @@ XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
+	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
 	
 	if (!validate_name(name) || (addr && !validate_addr(addr)))
 		return method_error(MEREQ);
@@ -60,8 +56,8 @@ XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		
 		dbi_result_first_row(dbr);
 		
-		char *bcas = (char *) dbi_result_get_string(dbr, "broadcast");
-		char *netm = (char *) dbi_result_get_string(dbr, "netmask");
+		const char *bcas = dbi_result_get_string(dbr, "broadcast");
+		const char *netm = dbi_result_get_string(dbr, "netmask");
 		
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("netmask", netm, 0));
 		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("broadcast", bcas, 0));

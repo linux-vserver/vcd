@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -36,8 +32,8 @@ XMLRPC_VALUE m_vxdb_vx_uname_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *uname = XMLRPC_VectorGetStringWithID(params, "uname");
+	const char *name  = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *uname = XMLRPC_VectorGetStringWithID(params, "uname");
 	
 	if (!validate_name(name) || (uname && !validate_uname(uname)))
 		return method_error(MEREQ);

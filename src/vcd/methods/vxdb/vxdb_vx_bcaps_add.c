@@ -15,9 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <string.h>
 
 #include "lucid.h"
 #include "xmlrpc.h"
@@ -37,8 +35,13 @@ XMLRPC_VALUE m_vxdb_vx_bcaps_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *bcap = XMLRPC_VectorGetStringWithID(params, "bcap");
+	const char *name  = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *_bcap = XMLRPC_VectorGetStringWithID(params, "bcap");
+	
+	char bcap[128];
+	
+	if (_bcap)
+		strncpy(bcap, _bcap, 128);
 	
 	if (!validate_name(name) || !validate_bcap(str_toupper(bcap)))
 		return method_error(MEREQ);

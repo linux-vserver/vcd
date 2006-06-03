@@ -15,9 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
+#include <string.h>
 
 #include "lucid.h"
 #include "xmlrpc.h"
@@ -37,9 +35,14 @@ XMLRPC_VALUE m_vxdb_vx_uname_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	char *uname = XMLRPC_VectorGetStringWithID(params, "uname");
-	char *value = XMLRPC_VectorGetStringWithID(params, "value");
+	const char *name   = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *_uname = XMLRPC_VectorGetStringWithID(params, "uname");
+	const char *value  = XMLRPC_VectorGetStringWithID(params, "value");
+	
+	char uname[128];
+	
+	if (_uname)
+		strncpy(uname, _uname, 128);
 	
 	if (!validate_name(name) || !validate_uname(str_toupper(uname)) ||
 	    !validate_uname_value(value))

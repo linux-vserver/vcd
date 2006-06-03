@@ -41,13 +41,13 @@
 */
 
 static xid_t xid = 0;
-static char *name = NULL;
+static const char *name = NULL;
 
 /* vx.stop(string name[, int wait[, int reboot]) */
 XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	dbi_result dbr;
-	char *method, *stop;
+	const char *method, *stop;
 	XMLRPC_VALUE params = method_get_params(r);
 	XMLRPC_VALUE response;
 	
@@ -76,12 +76,12 @@ XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	else {
 		dbi_result_first_row(dbr);
-		method  = (char *) dbi_result_get_string(dbr, "method");
-		stop    = (char *) dbi_result_get_string(dbr, "stop");
+		method  = dbi_result_get_string(dbr, "method");
+		stop    = dbi_result_get_string(dbr, "stop");
 	}
 	
 	pid_t pid;
-	int i, status;
+	int i;
 	
 	char *vdirbase = cfg_getstr(cfg, "vserver-dir");
 	char *vdir = NULL;
@@ -122,8 +122,8 @@ XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	response = m_vx_killer(s, r, d);
 	
-	char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
-	int   fault_code   = XMLRPC_VectorGetIntWithID(response, "faultCode");
+	const char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
+	int fault_code           = XMLRPC_VectorGetIntWithID(response, "faultCode");
 	
 	if (fault_string || fault_code != 0)
 		return response;

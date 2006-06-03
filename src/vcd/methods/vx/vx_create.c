@@ -120,14 +120,13 @@ int template_extract(const char *filename)
 XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	int i, errno_orig;
-	char *buf;
-	
 	XMLRPC_VALUE params = method_get_params(r);
 	
-	char *name     = XMLRPC_VectorGetStringWithID(params, "name");
-	char *template = XMLRPC_VectorGetStringWithID(params, "template");
-	xid_t xid      = XMLRPC_VectorGetIntWithID(params, "xid");
-	int rebuild    = XMLRPC_VectorGetIntWithID(params, "rebuild");
+	const char *name     = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *template = XMLRPC_VectorGetStringWithID(params, "template");
+	
+	xid_t xid   = XMLRPC_VectorGetIntWithID(params, "xid");
+	int rebuild = XMLRPC_VectorGetIntWithID(params, "rebuild");
 	
 	if (!name || !*name || !template || !*template || xid < 2)
 		return method_error(MEREQ);
@@ -261,7 +260,8 @@ XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	for (i = 0; i < init_mount_size; i++) {
 		cfg_t *init_mount_cfg = cfg_getnsec(build_cfg, "init_mount", i);
 		
-		char *file    = (char *) cfg_title(init_mount_cfg);
+		const char *file = cfg_title(init_mount_cfg);
+		
 		char *spec    = cfg_getstr(init_mount_cfg, "spec");
 		char *vfstype = cfg_getstr(init_mount_cfg, "vfstype");
 		char *mntops  = cfg_getstr(init_mount_cfg, "mntops");
@@ -296,7 +296,7 @@ XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	for (i = 0; i < vx_bcaps_size; i++) {
 		char *bcap = cfg_getnstr(build_cfg, "vx_bcaps", i);
 		
-		if (flist64_getval(bcaps_list, bcap, NULL) == -1) {
+		if (!flist64_getval(bcaps_list, bcap)) {
 			errno = MECONF;
 			goto rollback;
 		}
@@ -312,7 +312,7 @@ XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	for (i = 0; i < vx_ccaps_size; i++) {
 		char *ccap = cfg_getnstr(build_cfg, "vx_ccaps", i);
 		
-		if (flist64_getval(ccaps_list, ccap, NULL) == -1) {
+		if (!flist64_getval(ccaps_list, ccap)) {
 			errno = MECONF;
 			goto rollback;
 		}
@@ -328,7 +328,7 @@ XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	for (i = 0; i < vx_flags_size; i++) {
 		char *flag = cfg_getnstr(build_cfg, "vx_flags", i);
 		
-		if (flist64_getval(cflags_list, flag, NULL) == -1) {
+		if (!flist64_getval(cflags_list, flag)) {
 			errno = MECONF;
 			goto rollback;
 		}

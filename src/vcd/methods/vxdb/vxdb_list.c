@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -29,7 +25,6 @@
 XMLRPC_VALUE m_vxdb_list(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
 	dbi_result dbr;
-	XMLRPC_VALUE params   = method_get_params(r);
 	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
 	if (auth_isadmin(r)) {

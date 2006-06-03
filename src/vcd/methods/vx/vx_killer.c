@@ -44,7 +44,7 @@
 static XMLRPC_SERVER _server;
 static XMLRPC_REQUEST _request;
 
-static char *name = NULL;
+static const char *name = NULL;
 static xid_t xid = 0;
 static int reboot = 0;
 
@@ -61,8 +61,8 @@ void handle_death(void)
 	log_debug("vx killer restarting '%s'", name);
 	XMLRPC_VALUE response = m_vx_start(_server, _request, NULL);
 	
-	char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
-	int   fault_code   = XMLRPC_VectorGetIntWithID(response, "faultCode");
+	const char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
+	int fault_code = XMLRPC_VectorGetIntWithID(response, "faultCode");
 	
 	if (fault_string || fault_code != 0) {
 		log_warn("vx killer restart failed: %s (%d)", fault_string, fault_code);
@@ -119,7 +119,7 @@ static
 int initless_shutdown(void)
 {
 	dbi_result dbr;
-	char *method, *stop;
+	const char *method, *stop;
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT method,stop FROM init_method WHERE xid = %d",
@@ -132,11 +132,11 @@ int initless_shutdown(void)
 		return 0;
 	
 	dbi_result_first_row(dbr);
-	method  = (char *) dbi_result_get_string(dbr, "method");
-	stop    = (char *) dbi_result_get_string(dbr, "stop");
+	method  = dbi_result_get_string(dbr, "method");
+	stop    = dbi_result_get_string(dbr, "stop");
 	
 	pid_t pid;
-	int i, status;
+	int i;
 	
 	char *vdirbase = cfg_getstr(cfg, "vserver-dir");
 	char *vdir = NULL;

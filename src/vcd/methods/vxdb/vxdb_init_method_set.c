@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "lucid.h"
 #include "xmlrpc.h"
 
@@ -38,10 +34,10 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name   = XMLRPC_VectorGetStringWithID(params, "name");
-	char *method = XMLRPC_VectorGetStringWithID(params, "method");
-	char *start  = XMLRPC_VectorGetStringWithID(params, "start");
-	char *stop   = XMLRPC_VectorGetStringWithID(params, "stop");
+	const char *name   = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *method = XMLRPC_VectorGetStringWithID(params, "method");
+	const char *start  = XMLRPC_VectorGetStringWithID(params, "start");
+	const char *stop   = XMLRPC_VectorGetStringWithID(params, "stop");
 	int timeout  = XMLRPC_VectorGetIntWithID(params, "timeout");
 	
 	if (!validate_name(name) || !validate_init_method(method) ||
@@ -68,10 +64,10 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		dbi_result_first_row(dbr);
 		
 		if (str_isempty(start))
-			start = (char *) dbi_result_get_string(dbr, "start");
+			start = dbi_result_get_string(dbr, "start");
 		
 		if (str_isempty(stop))
-			stop = (char *) dbi_result_get_string(dbr, "stop");
+			stop = dbi_result_get_string(dbr, "stop");
 		
 		if (timeout < 1)
 			timeout = dbi_result_get_int(dbr, "timeout");

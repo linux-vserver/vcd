@@ -38,8 +38,8 @@ XMLRPC_VALUE m_vx_restart(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	
 	response = m_vx_stop(s, r, d);
 	
-	char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
-	int   fault_code   = XMLRPC_VectorGetIntWithID(response, "faultCode");
+	const char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
+	int fault_code           = XMLRPC_VectorGetIntWithID(response, "faultCode");
 	
 	if (fault_string || fault_code != 0)
 		return response;

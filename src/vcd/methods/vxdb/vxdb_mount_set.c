@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "lucid.h"
 #include "xmlrpc.h"
 
@@ -37,11 +33,11 @@ XMLRPC_VALUE m_vxdb_mount_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *path = XMLRPC_VectorGetStringWithID(params, "path");
-	char *spec = XMLRPC_VectorGetStringWithID(params, "spec");
-	char *opts = XMLRPC_VectorGetStringWithID(params, "opts");
-	char *type = XMLRPC_VectorGetStringWithID(params, "type");
+	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *path = XMLRPC_VectorGetStringWithID(params, "path");
+	const char *spec = XMLRPC_VectorGetStringWithID(params, "spec");
+	const char *opts = XMLRPC_VectorGetStringWithID(params, "opts");
+	const char *type = XMLRPC_VectorGetStringWithID(params, "type");
 	
 	if (!validate_name(name) || !validate_path(path))
 		return method_error(MEREQ);

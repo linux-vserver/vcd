@@ -68,28 +68,15 @@
    5.1) start guest init/rc scripts
 */
 
-static char *name = NULL;
+static const char *name = NULL;
 static xid_t xid = 0;
-static char *errmsg = NULL;
-
-static
-char *vhifields[] = {
-	"domainname",
-	"machine",
-	"nodename",
-	"release",
-	"sysname",
-	"version",
-	NULL
-};
 
 static
 int setup_context(void)
 {
 	dbi_result dbr;
 	uint32_t buf32;
-	char *buf;
-	int i;
+	const char *buf;
 	
 	struct vx_create_flags create_flags = {
 		.flags = VXF_PERSISTENT,
@@ -166,8 +153,6 @@ int setup_context(void)
 			kill(getpid(), WTERMSIG(status));
 	}
 	
-	uint64_t mask; // dummy
-	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT bcap FROM vx_bcaps WHERE xid = %d",
 		xid);
@@ -176,8 +161,7 @@ int setup_context(void)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
-		uint64_t bcap;
-		flist64_getval(bcaps_list, (char *) dbi_result_get_string(dbr, "bcap"), &bcap);
+		uint64_t bcap = flist64_getval(bcaps_list, dbi_result_get_string(dbr, "bcap"));
 		bcaps.bcaps &= ~bcap;
 	}
 	
@@ -194,8 +178,7 @@ int setup_context(void)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
-		uint64_t ccap;
-		flist64_getval(ccaps_list, (char *) dbi_result_get_string(dbr, "ccap"), &ccap);
+		uint64_t ccap = flist64_getval(ccaps_list, dbi_result_get_string(dbr, "ccap"));
 		ccaps.ccaps |= ccap;
 	}
 	
@@ -212,11 +195,11 @@ int setup_context(void)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
-		uint64_t flag;
-		flist64_getval(cflags_list, (char *) dbi_result_get_string(dbr, "flag"), &flag);
+		uint64_t flag = flist64_getval(cflags_list, dbi_result_get_string(dbr, "flag"));
 		cflags.flags |= flag;
-		cflags.mask   = cflags.flags;
 	}
+	
+	cflags.mask   = cflags.flags;
 	
 	if (vx_set_flags(xid, &cflags) == -1)
 		return errno = MESYS, -1;
@@ -232,9 +215,9 @@ int setup_context(void)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
-		char *type = (char *) dbi_result_get_string(dbr, "type");
+		const char *type = dbi_result_get_string(dbr, "type");
 		
-		if (flist32_getval(rlimit_list, type, &buf32) == -1)
+		if (!(buf32 = flist32_getval(rlimit_list, type)))
 			continue;
 		
 		if ((rlimit_mask.softlimit & buf32) != buf32 &&
@@ -295,13 +278,14 @@ int setup_context(void)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
-		if (flist32_getval(vhiname_list,
-		   (char *) dbi_result_get_string(dbr, "uname"), &buf32) == -1)
+		const char *uname = dbi_result_get_string(dbr, "uname");
+		
+		if (!(buf32 = flist32_getval(vhiname_list, uname)))
 			continue;
 		
 		vhiname.field = flist32_mask2val(buf32);
 		
-		buf = (char *) dbi_result_get_string(dbr, "value");
+		buf = dbi_result_get_string(dbr, "value");
 		
 		if (str_isempty(buf))
 			continue;
@@ -330,17 +314,10 @@ static
 int setup_network(void)
 {
 	dbi_result dbr;
-	uint32_t buf32;
 	char *buf;
-	int i;
 	
 	struct nx_create_flags create_flags = {
 		.flags = NXF_PERSISTENT,
-	};
-	
-	struct nx_flags flags = {
-		.flags = 0,
-		.mask  = 0,
 	};
 	
 	struct nx_addr addr;
@@ -379,8 +356,8 @@ int setup_network(void)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
-		char *ip   = (char *) dbi_result_get_string(dbr, "addr");
-		char *netm = (char *) dbi_result_get_string(dbr, "netmask");
+		const char *ip   = dbi_result_get_string(dbr, "addr");
+		const char *netm = dbi_result_get_string(dbr, "netmask");
 		asprintf(&buf, "%s/%s", ip, netm);
 		
 		addr.type  = NXA_TYPE_IPV4;
@@ -426,10 +403,10 @@ int mount_namespace(void)
 		return errno = MEVXDB, -1;
 	
 	while (dbi_result_next_row(dbr)) {
-		char *src  = (char *) dbi_result_get_string(dbr, "spec");
-		char *dst  = (char *) dbi_result_get_string(dbr, "file");
-		char *type = (char *) dbi_result_get_string(dbr, "vfstype");
-		char *opts = (char *) dbi_result_get_string(dbr, "mntops");
+		const char *src  = dbi_result_get_string(dbr, "spec");
+		const char *dst  = dbi_result_get_string(dbr, "file");
+		const char *type = dbi_result_get_string(dbr, "vfstype");
+		const char *opts = dbi_result_get_string(dbr, "mntops");
 		
 		if (!type || !*type)
 			type = "auto";
@@ -504,7 +481,7 @@ static
 int guest_init(void)
 {
 	dbi_result dbr;
-	char *method, *start;
+	const char *method, *start;
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT method,start FROM init_method WHERE xid = %d",
@@ -520,8 +497,8 @@ int guest_init(void)
 	
 	else {
 		dbi_result_first_row(dbr);
-		method = (char *) dbi_result_get_string(dbr, "method");
-		start  = (char *) dbi_result_get_string(dbr, "start");
+		method = dbi_result_get_string(dbr, "method");
+		start  = dbi_result_get_string(dbr, "start");
 	}
 	
 	pid_t pid;
@@ -624,7 +601,6 @@ void cleanup_on_exit(void)
 /* vx.start(string name) */
 XMLRPC_VALUE m_vx_start(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 {
-	dbi_result dbr;
 	XMLRPC_VALUE params = method_get_params(r);
 	
 	if (!auth_isadmin(r) && !auth_isowner(r))

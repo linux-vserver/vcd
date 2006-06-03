@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "lucid.h"
 #include "xmlrpc.h"
 
@@ -37,10 +33,10 @@ XMLRPC_VALUE m_vxdb_nx_addr_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
-	char *netm = XMLRPC_VectorGetStringWithID(params, "netmask");
-	char *bcas = XMLRPC_VectorGetStringWithID(params, "broadcast");
+	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
+	const char *netm = XMLRPC_VectorGetStringWithID(params, "netmask");
+	const char *bcas = XMLRPC_VectorGetStringWithID(params, "broadcast");
 	
 	if (!validate_name(name) || !validate_addr(addr) ||
 	   (netm && !validate_addr(netm)) ||

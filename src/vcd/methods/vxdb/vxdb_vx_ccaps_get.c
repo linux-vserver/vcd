@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include "xmlrpc.h"
 
 #include "auth.h"
@@ -38,8 +34,8 @@ XMLRPC_VALUE m_vxdb_vx_ccaps_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!auth_isadmin(r))
 		return method_error(MEPERM);
 	
-	char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	char *ccap = XMLRPC_VectorGetStringWithID(params, "ccap");
+	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	const char *ccap = XMLRPC_VectorGetStringWithID(params, "ccap");
 	
 	if ((name && !validate_name(name)) || (ccap && !validate_ccap(ccap)))
 		return method_error(MEREQ);
