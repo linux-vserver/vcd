@@ -224,7 +224,7 @@ int setup_context(void)
 		    (rlimit_mask.maximum   & buf32) != buf32)
 			continue;
 		
-		rlimit.id        = flist32_mask2val(buf32);
+		rlimit.id        = flist32_val2index(buf32);
 		rlimit.softlimit = dbi_result_get_longlong(dbr, "soft");
 		rlimit.maximum   = dbi_result_get_longlong(dbr, "max");
 		
@@ -283,7 +283,7 @@ int setup_context(void)
 		if (!(buf32 = flist32_getval(vhiname_list, uname)))
 			continue;
 		
-		vhiname.field = flist32_mask2val(buf32);
+		vhiname.field = flist32_val2index(buf32);
 		
 		buf = dbi_result_get_string(dbr, "value");
 		

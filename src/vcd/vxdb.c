@@ -91,6 +91,7 @@ int vxdb_getxid(const char *name, xid_t *xid)
 int vxdb_getname(xid_t xid, char **name)
 {
 	dbi_result dbr;
+	const char *buf;
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT name FROM xid_name_map WHERE xid = '%d'",
@@ -106,8 +107,15 @@ int vxdb_getname(xid_t xid, char **name)
 	
 	dbi_result_first_row(dbr);
 	
+	buf = dbi_result_get_string(dbr, "name");
+	
+	if (!buf) {
+		dbi_result_free(dbr);
+		return -1;
+	}
+	
 	if (name)
-		*name = strdup(dbi_result_get_string(dbr, "name"));
+		*name = strdup(buf);
 	
 	dbi_result_free(dbr);
 	return 0;

@@ -44,7 +44,7 @@ AC_CHECK_LIB(confuse, cfg_parse,,          AC_MSG_ERROR([libconfuse not found]),
 AC_CHECK_LIB(dbi,     dbi_initialize,,     AC_MSG_ERROR([libdbi not found]),)
 AC_CHECK_LIB(dl,      dlopen,,             AC_MSG_ERROR([libdl not found]),)
 AC_CHECK_LIB(expat,   XML_Parse,,          AC_MSG_ERROR([libexpat not found]),)
-AC_CHECK_LIB(vserver, vx_clone_namespace,, AC_MSG_ERROR([libz not found]),)
+AC_CHECK_LIB(vserver, vx_clone_namespace,, AC_MSG_ERROR([libvserver not found]),)
 AC_CHECK_LIB(z,       inflate,,            AC_MSG_ERROR([libz not found]),)
 
 # Checks for header files.

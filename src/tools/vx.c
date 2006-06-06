@@ -283,7 +283,7 @@ setlimit:
 		if (!(rlimit.id = flist32_getval(rlimit_list, buf)))
 			perr("flist32_getval");
 		
-		rlimit.id = flist32_mask2val(rlimit.id);
+		rlimit.id = flist32_val2index(rlimit.id);
 		
 		if ((buf = strtok(NULL, ",")) == NULL)
 			goto usage;

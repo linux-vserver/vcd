@@ -62,7 +62,7 @@ void handle_death(void)
 	XMLRPC_VALUE response = m_vx_start(_server, _request, NULL);
 	
 	const char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
-	int fault_code = XMLRPC_VectorGetIntWithID(response, "faultCode");
+	int fault_code           = XMLRPC_VectorGetIntWithID(response, "faultCode");
 	
 	if (fault_string || fault_code != 0) {
 		log_warn("vx killer restart failed: %s (%d)", fault_string, fault_code);
