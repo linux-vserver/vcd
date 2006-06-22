@@ -35,23 +35,24 @@ static const char *rcsid = "$Id$";
 static
 struct option long_opts[] = {
 	COMMON_LONG_OPTS
-	{ "create",    1, 0, 0x10 },
-	{ "migrate",   1, 0, 0x11 },
-	{ "set-bcaps", 1, 0, 0x12 },
-	{ "set-ccaps", 1, 0, 0x13 },
-	{ "set-flags", 1, 0, 0x14 },
-	{ "set-limit", 1, 0, 0x15 },
-	{ "set-sched", 1, 0, 0x16 },
-	{ "set-vhi",   1, 0, 0x17 },
-	{ "get-bcaps", 1, 0, 0x18 },
-	{ "get-ccaps", 1, 0, 0x19 },
-	{ "get-flags", 1, 0, 0x1A },
-	{ "get-limit", 1, 0, 0x1B },
-	{ "get-vhi",   1, 0, 0x1C },
-	{ "kill",      1, 0, 0x1D },
-	{ "wait",      1, 0, 0x1E },
-	{ "login",     1, 0, 0x1F },
-	{ NULL,        0, 0, 0 },
+	{ "create",      1, 0, 0x10 },
+	{ "migrate",     1, 0, 0x11 },
+	{ "set-bcaps",   1, 0, 0x12 },
+	{ "set-ccaps",   1, 0, 0x13 },
+	{ "set-flags",   1, 0, 0x14 },
+	{ "set-limit",   1, 0, 0x15 },
+	{ "set-sched",   1, 0, 0x16 },
+	{ "set-vhi",     1, 0, 0x17 },
+	{ "get-bcaps",   1, 0, 0x18 },
+	{ "get-ccaps",   1, 0, 0x19 },
+	{ "get-flags",   1, 0, 0x1A },
+	{ "get-limit",   1, 0, 0x1B },
+	{ "get-vhi",     1, 0, 0x1C },
+	{ "kill",        1, 0, 0x1D },
+	{ "wait",        1, 0, 0x1E },
+	{ "login",       1, 0, 0x1F },
+	{ "reset-limit", 1, 0, 0x20 },
+	{ NULL,          0, 0, 0 },
 };
 
 static
@@ -86,22 +87,23 @@ static inline
 void usage(int rc)
 {
 	printf("Usage:\n\n"
-	          "vx -create    <xid> [<list>] [-- <program> <args>*]\n"
-	          "   -migrate   <xid> -- <program> <args>*\n"
-	          "   -login     <xid> [-- <program> <args>*]\n"
-	          "   -set-bcaps <xid> <list>\n"
-	          "   -set-ccaps <xid> <list>\n"
-	          "   -set-flags <xid> <list>\n"
-	          "   -set-limit <xid> <type>=<min>,<soft>,<hard>*\n"
-	          "   -set-sched <xid> <type>=<value>*\n"
-	          "   -set-vhi   <xid> <type>=<value>*\n"
-	          "   -get-bcaps <xid>\n"
-	          "   -get-ccaps <xid>\n"
-	          "   -get-flags <xid>\n"
-	          "   -get-limit <xid> <type>*\n"
-	          "   -get-vhi   <xid> <type>*\n"
-	          "   -kill      <xid> [<pid> <sig>]\n"
-	          "   -wait      <xid>\n");
+	          "vx -create      <xid> [<list>] [-- <program> <args>*]\n"
+	          "   -migrate     <xid> -- <program> <args>*\n"
+	          "   -login       <xid> [-- <program> <args>*]\n"
+	          "   -set-bcaps   <xid> <list>\n"
+	          "   -set-ccaps   <xid> <list>\n"
+	          "   -set-flags   <xid> <list>\n"
+	          "   -set-limit   <xid> <type>=<min>,<soft>,<hard>*\n"
+	          "   -set-sched   <xid> <type>=<value>*\n"
+	          "   -set-vhi     <xid> <type>=<value>*\n"
+	          "   -get-bcaps   <xid>\n"
+	          "   -get-ccaps   <xid>\n"
+	          "   -get-flags   <xid>\n"
+	          "   -get-limit   <xid> <type>*\n"
+	          "   -get-vhi     <xid> <type>*\n"
+	          "   -kill        <xid> [<pid> <sig>]\n"
+	          "   -wait        <xid>\n"
+	          "   -reset-limit <xid>\n");
 	exit(rc);
 }
 
@@ -189,6 +191,7 @@ int main(int argc, char *argv[])
 			CASE_GOTO(0x1D, kill);
 			CASE_GOTO(0x1E, wait);
 			CASE_GOTO(0x1F, login);
+			CASE_GOTO(0x20, resetlimit);
 			
 			DEFAULT_GETOPT_CASES
 		}
@@ -500,6 +503,12 @@ kill:
 	
 	if (vx_kill(xid, &kill_opts) == -1)
 		perr("vx_kill");
+	
+	goto out;
+	
+resetlimit:
+	if (vx_reset_rminmax(xid, NULL) == -1)
+		perr("vx_reset_rminmax");
 	
 	goto out;
 	
