@@ -23,6 +23,7 @@
 #include <string.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <vserver.h>
 #include <sys/mount.h>
 #include <sys/wait.h>
