@@ -57,7 +57,7 @@ AC_C_INLINE
 # Compiler settings
 CPPFLAGS="${CPPFLAGS} -D_GNU_SOURCE"
 CFLAGS="${CFLAGS} -std=gnu99 -pedantic"
-CFLAGS="${CFLAGS} -Wall -Wextra -Wpointer-arith -Wcast-qual -Winline -Wpadded"
+CFLAGS="${CFLAGS} -Wall -Wextra -Wpointer-arith -Wcast-qual -Winline"
 CFLAGS="${CFLAGS} -Wredundant-decls -Wcast-align -Wno-unused-parameter"
 
 # Site settings
