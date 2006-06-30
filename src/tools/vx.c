@@ -78,7 +78,7 @@ char *rlim_to_str(uint64_t lim)
 	if (lim == CRLIM_INFINITY)
 		asprintf(&buf, "%s", "inf");
 	
-	asprintf(&buf, "%lld", lim);
+	asprintf(&buf, "%llu", lim);
 	
 	return buf;
 }

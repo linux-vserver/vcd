@@ -18,7 +18,7 @@
 INCLUDES = -I$(top_srcdir)/src/lucid
 
 LIBS = $(top_builddir)/src/lucid/libucid.a \
-       -lvserver
+       $(VSERVER_LIBS)
 
 noinst_HEADERS = tools.h
 
@@ -35,4 +35,4 @@ ns_SOURCES = ns.c msg.c
 nx_SOURCES = nx.c msg.c lists.c
 vr_SOURCES = vr.c msg.c
 vx_SOURCES = vx.c msg.c lists.c vlogin.c
-vx_LDADD   = $(LDADD) -lutil
+vx_LDADD   = $(LDADD) $(UTIL_LIBS)

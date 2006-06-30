@@ -17,7 +17,7 @@
 
 # Generic configuration
 AC_PREREQ(2.59)
-AC_INIT(vserver-utils, 1.0.3, hollow@gentoo.org)
+AC_INIT(vserver-utils, 2.0.0, hollow@gentoo.org)
 AC_CONFIG_HEADER([config.h])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
@@ -36,19 +36,65 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 # Checks for libraries.
-AM_PATH_LIBGNUTLS(1.0.0,, AC_MSG_ERROR([libgnutls not found]))
+AC_CHECK_FUNC(dlopen, DL_LIBS="",[
+	AC_CHECK_LIB(dl, dlopen, DL_LIBS="-ldl", AC_MSG_ERROR([libdl not found]))
+])
 
-AC_CHECK_LIB(archive, archive_read_new,,   AC_MSG_ERROR([libarchive not found]),)
-AC_CHECK_LIB(bz2,     BZ2_bzDecompress,,   AC_MSG_ERROR([libbz2 not found]),)
-AC_CHECK_LIB(confuse, cfg_parse,,          AC_MSG_ERROR([libconfuse not found]),)
-AC_CHECK_LIB(dl,      dlopen,,             AC_MSG_ERROR([libdl not found]),)
-AC_CHECK_LIB(dbi,     dbi_initialize,,     AC_MSG_ERROR([libdbi not found]),)
-AC_CHECK_LIB(expat,   XML_Parse,,          AC_MSG_ERROR([libexpat not found]),)
-AC_CHECK_LIB(vserver, vx_clone_namespace,, AC_MSG_ERROR([libvserver not found]),)
-AC_CHECK_LIB(z,       inflate,,            AC_MSG_ERROR([libz not found]),)
+AC_SUBST(DL_LIBS)
+
+AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
+	AC_CHECK_LIB(util, openpty, UTIL_LIBS="-lutil", AC_MSG_ERROR([libutil not found]))
+])
+
+AC_SUBST(UTIL_LIBS)
+
+AC_PATH_PROG(CONFUSE_CONFIG, confuse-config)
+if test -z "$CONFUSE_CONFIG"; then
+	AC_MSG_ERROR([confuse-config not found])
+fi
+
+CONFUSE_LIBS="$($CONFUSE_CONFIG --libs)"
+
+AC_SUBST(CONFUSE_LIBS)
+
+AC_CHECK_LIB(dbi, dbi_result_get_int,
+	DBI_LIBS="$DL_LIBS -ldbi", AC_MSG_ERROR([libdbi >= 0.8 not found]),)
+
+AC_SUBST(DBI_LIBS)
+
+AC_CHECK_LIB(vserver, vx_clone_namespace, 
+	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
+
+AC_SUBST(VSERVER_LIBS)
+
+AC_PATH_PROG(XMLRPC_C_CONFIG, xmlrpc-c-config)
+if test -z "$XMLRPC_C_CONFIG"; then
+	AC_MSG_ERROR([xmlrpc-c-config not found])
+fi
+
+XMLRPC_C_VERSION="$($XMLRPC_C_CONFIG --version)"
+XMLRPC_C_MAJOR="${XMLRPC_C_VERSION/.*}"
+XMLRPC_C_MINOR="${XMLRPC_C_VERSION#*.}"
+
+AC_MSG_CHECKING([for xmlrpc-c >= 1.05])
+
+if test $XMLRPC_C_MAJOR -lt 1; then
+	AC_MSG_ERROR([xmlrpc-c-$XMLRPC_VERSION does not match])
+fi
+
+if test $XMLRPC_C_MAJOR -eq 1 && test $XMLRPC_C_MINOR -lt 05; then
+	AC_MSG_ERROR([xmlrpc-c-$XMLRPC_VERSION does not match])
+fi
+
+AC_MSG_RESULT([found])
+
+XMLRPC_C_CLIENT_LIBS="$($XMLRPC_C_CONFIG client --libs)"
+XMLRPC_C_SERVER_LIBS="$($XMLRPC_C_CONFIG abyss-server --libs)"
+
+AC_SUBST(XMLRPC_C_CLIENT_LIBS)
+AC_SUBST(XMLRPC_C_SERVER_LIBS)
 
 # Checks for header files.
-AC_CHECK_HEADERS(stdarg.h)
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -78,11 +124,11 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  scripts/Makefile
-                 src/libxmlrpc/Makefile
                  src/lucid/Makefile
                  src/tools/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
+                 src/vstatd/Makefile
                  src/Makefile])
 
 AC_OUTPUT

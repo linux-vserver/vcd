@@ -94,6 +94,7 @@ setdev:
 	if (realfd == -1)
 		perr("open_read");
 	
+	/* TODO: vr.c:97: warning: cast to pointer from integer of different size */
 	if (ioctl(fd, VROOT_SET_DEV, (void *)realfd) == -1)
 		perr("ioctl");
 	
