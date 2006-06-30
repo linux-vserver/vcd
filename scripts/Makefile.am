@@ -16,8 +16,8 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-pkgdata_DATA = vprocunhide \
-               vprocunhide-files \
-               vxdb.sql
+sbin_SCRIPTS = vprocunhide
+sysconf_DATA = vprocunhide.conf
 
-EXTRA_DIST = $(pkgdata_DATA)
+EXTRA_DIST = $(sbin_SCRIPTS) \
+             $(sysconf_DATA)

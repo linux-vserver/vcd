@@ -26,6 +26,29 @@
 
 dbi_conn vxdb = NULL;
 
+static
+void vxdb_sanity_check(void)
+{
+	dbi_result dbr;
+	int num;
+	
+	dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user WHERE admin = 1");
+	num = dbi_result_get_numrows(dbr);
+	
+	dbi_result_free(dbr);
+	
+	if (num < 1)
+		log_warn("No admin user found");
+	
+	dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user WHERE name = 'vshelper'");
+	num = dbi_result_get_numrows(dbr);
+	
+	dbi_result_free(dbr);
+	
+	if (num < 1)
+		log_warn("No vshelper user found");
+}
+
 void vxdb_init(void)
 {
 	if (vxdb)
@@ -44,6 +67,8 @@ void vxdb_init(void)
 	
 	if (dbi_conn_connect(vxdb) < 0)
 		log_error_and_die("Could not open vxdb");
+	
+	vxdb_sanity_check();
 }
 
 void vxdb_close(void)

@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <errno.h>
 #include <string.h>
 #include <getopt.h>
 #include <sys/stat.h>
@@ -40,8 +41,8 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("logfile", NULL, CFGF_NONE),
 	CFG_STR("pidfile", NULL, CFGF_NONE),
 	
-	CFG_STR_CB("datadir",    NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("vserverdir", NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("datadir",    LOCALSTATEDIR "/vcd", CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("vserverdir", VSERVERDIR,           CFGF_NONE, &cfg_validate_path),
 	CFG_END()
 };
 
@@ -53,14 +54,15 @@ void usage(int rc)
 	printf("Usage: vcd [<opts>*]\n"
 	       "\n"
 	       "Available options:\n"
-	       "   -c <file>     configuration file (default: /etc/vcd.conf)\n"
-	       "   -d            debug mode (do not fork to background)\n");
+	       "   -c <file>     configuration file (default: %s/vcd.conf)\n"
+	       "   -d            debug mode (do not fork to background)\n",
+	       SYSCONFDIR);
 	exit(rc);
 }
 
 int main(int argc, char **argv)
 {
-	char *cfg_file = "/etc/vcd.conf";
+	char *cfg_file = SYSCONFDIR "/vcd.conf";
 	
 	char c, *pidfile, *host;
 	int debug = 0, fd, port, timeout;

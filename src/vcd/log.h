@@ -18,8 +18,6 @@
 #ifndef _VCD_LOG_H
 #define _VCD_LOG_H
 
-#include <errno.h>
-
 #define LOG_DEBG  4
 #define LOG_INFO  3
 #define LOG_WARN  2

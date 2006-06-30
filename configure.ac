@@ -60,6 +60,13 @@ AC_SUBST(CONFUSE_LIBS)
 AC_CHECK_LIB(dbi, dbi_result_get_int,
 	DBI_LIBS="$DL_LIBS -ldbi", AC_MSG_ERROR([libdbi >= 0.8 not found]),)
 
+AC_MSG_CHECKING([for libdbi sqlite3 driver])
+LIBS="$DBI_LIBS"
+AC_RUN_IFELSE(
+	[AC_LANG_PROGRAM(,[[dbi_initialize(0);dbi_conn_new("sqlite3");]])],
+	[AC_MSG_RESULT([yes])],
+	[AC_MSG_ERROR([sqlite3 driver not found])])
+
 AC_SUBST(DBI_LIBS)
 
 AC_CHECK_LIB(vserver, vx_clone_namespace, 
@@ -107,6 +114,22 @@ CFLAGS="${CFLAGS} -Wall -Wextra -Wpointer-arith -Wcast-qual -Winline"
 CFLAGS="${CFLAGS} -Wredundant-decls -Wcast-align -Wno-unused-parameter"
 
 # Site settings
+AC_MSG_CHECKING([for vserver base directory])
+AC_ARG_WITH([vserverdir],
+            [AC_HELP_STRING([--with-vserverdir=DIR],
+                            [vserver base directory (default: /vservers)])],
+            [vserverdir=$withval],
+            [vserverdir=/vservers])
+AC_MSG_RESULT([$vserverdir])
+
+AC_SUBST(vserverdir)
+
+PATH_CPPFLAGS="$PATH_CPPFLAGS -DSYSCONFDIR='\"\$(sysconfdir)\"'"
+PATH_CPPFLAGS="$PATH_CPPFLAGS -DPKGDATADIR='\"\$(pkgdatadir)\"'"
+PATH_CPPFLAGS="$PATH_CPPFLAGS -DVSERVERDIR='\"\$(vserverdir)\"'"
+PATH_CPPFLAGS="$PATH_CPPFLAGS -DLOCALSTATEDIR='\"\$(localstatedir)\"'"
+
+AC_SUBST(PATH_CPPFLAGS)
 
 # Final info page
 AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
@@ -119,6 +142,9 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
                    target: $target
 
                    prefix: $prefix
+               sysconfdir: $sysconfdir
+               vserverdir: $vserverdir
+            localstatedir: $localstatedir
 "])
 
 # Output

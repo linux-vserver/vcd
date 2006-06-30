@@ -35,14 +35,13 @@ int log_init(int debug)
 {
 	const char *logfile = cfg_getstr(cfg, "logfile");
 	
-	
 	if (debug) {
 		log_level  = LOG_DEBG;
 		log_stderr = 1;
 	}
 	
-	else if (str_isempty(logfile))
-		return errno = EINVAL, -1;
+	if (str_isempty(logfile))
+		return 0;
 	
 	if (log_fd >= 0)
 		return errno = EALREADY, -1;

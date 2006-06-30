@@ -27,6 +27,12 @@ LIBS = $(top_builddir)/src/vcd/methods/libmethods.a \
        $(XMLRPC_C_SERVER_LIBS)
 
 sysconf_DATA = vcd.conf
+pkgdata_DATA = vxdb.sql
+
+EXTRA_DIST = $(sysconf_DATA) \
+             $(pkgdata_DATA)
+
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
 noinst_HEADERS = auth.h \
                  cfg.h \
@@ -49,3 +55,4 @@ vcd_SOURCES = auth.c \
 
 install-data-hook:
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd
+	$(mkinstalldirs) -m 000 $(DESTDIR)$(vserverdir)
