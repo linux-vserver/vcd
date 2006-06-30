@@ -15,7 +15,9 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include <string.h>
+
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,23 +25,30 @@
 #include "vxdb.h"
 
 /* vxdb.vx.ccaps.remove(string name[, string ccap]) */
-XMLRPC_VALUE m_vxdb_vx_ccaps_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_vx_ccaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	char *name, *ccap;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_CCAP, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *ccap = XMLRPC_VectorGetStringWithID(params, "ccap");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"ccap", &ccap);
+	method_return_if_fault(env);
+	
+	if (str_isempty(str_toupper(ccap)))
+		ccap = NULL;
 	
 	if (!validate_name(name) || (ccap && !validate_ccap(ccap)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	if (ccap)
 		dbr = dbi_conn_queryf(vxdb,
@@ -52,7 +61,7 @@ XMLRPC_VALUE m_vxdb_vx_ccaps_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			xid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
-		
-	return NULL;
+		method_return_fault(env, MEVXDB);
+	
+	return params;
 }

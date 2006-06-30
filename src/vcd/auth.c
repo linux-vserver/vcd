@@ -15,66 +15,17 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <string.h>
-
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "vxdb.h"
 
-int auth_isvalid(XMLRPC_REQUEST r)
+int auth_isvalid(const char *user, const char *pass)
 {
 	int rc = 0;
 	dbi_result dbr;
-	XMLRPC_VALUE request, auth;
-	
-	request = XMLRPC_RequestGetData(r);
-	auth    = XMLRPC_VectorRewind(request);
-	
-	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	const char *password = XMLRPC_VectorGetStringWithID(auth, "password");
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT password FROM user WHERE name = '%s'",
-		username);
-	
-	if (!dbr)
-		return 0;
-	
-	if (dbi_result_get_numrows(dbr) != 1)
-		goto out;
-	
-	dbi_result_first_row(dbr);
-	
-	if (strcmp(dbi_result_get_string(dbr, "password"), password) == 0)
-		rc = 1;
-	
-out:
-	dbi_result_free(dbr);
-	return rc;
-}
-
-int auth_isadmin(XMLRPC_REQUEST r)
-{
-	int rc = 0;
-	dbi_result dbr;
-	XMLRPC_VALUE request, auth;
-	
-	if (!auth_isvalid(r))
-		return 0;
-	
-	request = XMLRPC_RequestGetData(r);
-	auth    = XMLRPC_VectorRewind(request);
-	
-	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT admin FROM user WHERE name = '%s' AND admin = 1",
-		username);
+		"SELECT uid FROM user WHERE name = '%s' AND password = '%s'",
+		user, pass);
 	
 	if (!dbr)
 		return 0;
@@ -86,28 +37,43 @@ int auth_isadmin(XMLRPC_REQUEST r)
 	return rc;
 }
 
-int auth_isowner(XMLRPC_REQUEST r)
+int auth_isadmin(const char *user)
 {
 	int rc = 0;
+	dbi_result dbr;
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT uid FROM user WHERE name = '%s' AND admin = 1",
+		user);
+	
+	if (!dbr)
+		return 0;
+	
+	if (dbi_result_get_numrows(dbr) > 0)
+		rc = 1;
+	
+	dbi_result_free(dbr);
+	return rc;
+}
+
+int auth_capable(const char *user, uint64_t caps)
+{
+	return 1;
+}
+
+int auth_isowner(const char *user, const char *name)
+{
+	int uid, rc = 0;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE request, auth, params;
 	
-	if (!auth_isvalid(r))
+	if ((uid = auth_getuid(user)) == 0)
 		return 0;
 	
-	request = XMLRPC_RequestGetData(r);
-	auth    = XMLRPC_VectorRewind(request);
-	params  = XMLRPC_VectorNext(request);
+	if (auth_isadmin(user))
+		return 1;
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	
-	if (vxdb_getxid(name, &xid) == -1)
-		return 0;
-	
-	int uid = auth_getuid(r);
-	
-	if (uid == 0)
+	if ((xid = vxdb_getxid(name)) == 0)
 		return 0;
 	
 	dbr = dbi_conn_queryf(vxdb,
@@ -124,23 +90,14 @@ int auth_isowner(XMLRPC_REQUEST r)
 	return rc;
 }
 
-int auth_getuid(XMLRPC_REQUEST r)
+int auth_getuid(const char *user)
 {
 	int uid = 0;
 	dbi_result dbr;
-	XMLRPC_VALUE request, auth;
-	
-	if (!auth_isvalid(r))
-		return 0;
-	
-	request = XMLRPC_RequestGetData(r);
-	auth    = XMLRPC_VectorRewind(request);
-	
-	const char *username = XMLRPC_VectorGetStringWithID(auth, "username");
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid FROM user WHERE name = '%s'",
-		username);
+		user);
 	
 	if (!dbr)
 		return 0;

@@ -15,59 +15,37 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <signal.h>
 #include <getopt.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
+#include <xmlrpc-c/base.h>
+#include <xmlrpc-c/server.h>
+#include <xmlrpc-c/server_abyss.h>
 
 #include "lucid.h"
 
 #include "cfg.h"
 #include "log.h"
+#include "methods.h"
+#include "vxdb.h"
 
 static cfg_opt_t CFG_OPTS[] = {
-	/* network configuration */
-	CFG_STR_CB("listen-host", "127.0.0.1", CFGF_NONE, &cfg_validate_host),
-	CFG_INT_CB("listen-port", 13386,       CFGF_NONE, &cfg_validate_port),
+	CFG_STR_CB("host",    "127.0.0.1", CFGF_NONE, &cfg_validate_host),
+	CFG_INT_CB("port",    13386,       CFGF_NONE, &cfg_validate_port),
+	CFG_INT_CB("timeout", 30,          CFGF_NONE, &cfg_validate_timeout),
 	
-	/* SSL/TLS */
-	CFG_INT_CB("tls-mode",       0,    CFGF_NONE, &cfg_validate_tls),
-	CFG_STR_CB("tls-server-key", NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("tls-server-crt", NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("tls-server-crl", NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("tls-ca-crt",     NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR("logfile", NULL, CFGF_NONE),
+	CFG_STR("pidfile", NULL, CFGF_NONE),
 	
-	/* client handling */
-	CFG_INT("client-max",     20, CFGF_NONE),
-	CFG_INT("client-timeout", 30, CFGF_NONE),
-	
-	/* logging */
-	CFG_INT_CB("log-level", 3,    CFGF_NONE, &cfg_validate_log),
-	
-	/* filesystem layout */
-	CFG_STR_CB("vxdb-dir",     NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("lock-dir",     NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("log-dir",      NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("run-dir",      NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("vserver-dir",  NULL, CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("template-dir", NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("datadir",    NULL, CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("vserverdir", NULL, CFGF_NONE, &cfg_validate_path),
 	CFG_END()
 };
 
 cfg_t *cfg;
-
-void collector_main(void);
-void server_main(void);
-
-static pid_t server, collector;
 
 static inline
 void usage(int rc)
@@ -80,70 +58,19 @@ void usage(int rc)
 	exit(rc);
 }
 
-static
-void signal_handler(int sig, siginfo_t *siginfo, void *u)
-{
-	int i;
-	
-	switch (sig) {
-	case SIGCHLD:
-		if (siginfo->si_pid == collector)
-			log_error("Unexpected death of collector");
-		
-		else if (siginfo->si_pid == server)
-			log_error("Unexpected death of server");
-		
-		else
-			log_warn("Caught SIGCHLD for unknown PID %d", siginfo->si_pid);
-		
-		break;
-	
-	case SIGINT:
-		log_info("Interrupt from keyboard -- shutting down");
-		break;
-	
-	case SIGTERM:
-		log_info("Caught SIGTERM -- shutting down");
-		break;
-	}
-	
-	kill(0, SIGTERM);
-	
-	for (i = 0; i < 5; i++) {
-		if (wait(NULL) == -1 && errno == ECHILD)
-			break;
-		
-		usleep(200);
-		
-		if (i == 4) {
-			kill(0, SIGKILL);
-			i = 0;
-		}
-	}
-	
-	if (cfg)
-		cfg_free(cfg);
-	
-	exit(EXIT_FAILURE);
-}
-
-static
-void reset_signals(void)
-{
-	signal(SIGINT,  SIG_IGN);
-	signal(SIGCHLD, SIG_DFL);
-	signal(SIGTERM, SIG_DFL);
-}
-
 int main(int argc, char **argv)
 {
 	char *cfg_file = "/etc/vcd.conf";
-	char *rundir, *pidfile;
-	pid_t pid = 0;
-	int fd, c, debug = 0;
-	struct sigaction act;
 	
-	/* getopt */
+	char c, *pidfile, *host;
+	int debug = 0, fd, port, timeout;
+	pid_t pid;
+	
+	xmlrpc_env env;
+	xmlrpc_registry *registry;
+	xmlrpc_server_abyss_parms serverparm;
+	
+	/* parse command line */
 	while ((c = getopt(argc, argv, "dc:")) != -1) {
 		switch (c) {
 		case 'c':
@@ -180,103 +107,76 @@ int main(int argc, char **argv)
 	}
 	
 	/* start logging & debugging */
-	if (log_init("master", debug) == -1) {
+	if (log_init(debug) == -1) {
 		perror("log_init");
 		exit(EXIT_FAILURE);
 	}
 	
 	/* fork to background */
-	if (!debug)
-		pid = fork();
-	
-	switch (pid) {
-	case -1:
-		log_error_and_die("fork: %s", strerror(errno));
-	
-	case 0:
-		break;
-	
-	default:
-		exit(EXIT_SUCCESS);
-	}
-	
-	/* daemon stuff */
-	umask(0);
-	setsid();
-	chdir("/");
-	
-	close(STDIN_FILENO);
-	
 	if (!debug) {
+		pid = fork();
+		
+		switch (pid) {
+		case -1:
+			log_error_and_die("fork: %s", strerror(errno));
+		
+		case 0:
+			break;
+		
+		default:
+			exit(EXIT_SUCCESS);
+		}
+		
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 	}
 	
-	/* ignore some standard signals */
-	signal(SIGHUP,  SIG_IGN);
-	signal(SIGQUIT, SIG_IGN);
-	signal(SIGABRT, SIG_IGN);
-	
-	if (!debug)
-		signal(SIGINT,  SIG_IGN);
-	
-	/* handle these signals on our own */
-	sigfillset(&act.sa_mask);
-	
-	act.sa_flags     = SA_SIGINFO;
-	act.sa_sigaction = signal_handler;
-	
-	sigaction(SIGTERM, &act, NULL);
-	sigaction(SIGCHLD, &act, NULL);
-	
-	if (debug)
-		sigaction(SIGINT, &act, NULL);
+	/* daemonize */
+	close(STDIN_FILENO);
+	umask(0);
+	setsid();
+	chdir("/");
 	
 	/* log process id */
-	rundir  = cfg_getstr(cfg, "run-dir");
+	pidfile = cfg_getstr(cfg, "pidfile");
 	
-	if (rundir) {
-		asprintf(&pidfile, "%s/vcd.pid", rundir);
-		
-		if ((fd = open_trunc(pidfile)) != -1) {
-			dprintf(fd, "%d\n", getpid());
-			close(fd);
-		}
-		
-		free(pidfile);
+	if (pidfile && (fd = open_trunc(pidfile)) != -1) {
+		dprintf(fd, "%d\n", getpid());
+		close(fd);
 	}
 	
-	/* start threads */
-	log_info("Starting collector thread");
+	/* open connection to vxdb */
+	vxdb_init();
 	
-	switch ((collector = fork())) {
-	case -1:
-		log_error_and_die("fork: %s", strerror(errno));
+	/* setup listen socket */
+	port = cfg_getint(cfg, "port");
+	host = cfg_getstr(cfg, "host");
 	
-	case 0:
-		reset_signals();
-		collector_main();
+	if ((fd = tcp_listen(host, port, 20)) == -1)
+		log_error_and_die("cannot listen: %s", strerror(errno));
 	
-	default:
-		break;
-	}
+	/* setup xmlrpc server */
+	xmlrpc_env_init(&env);
 	
-	log_info("Starting XMLRPC server thread");
+	registry = xmlrpc_registry_new(&env);
+	method_registry_init(&env, registry);
 	
-	switch ((server = fork())) {
-	case -1:
-		log_error_and_die("fork: %s", strerror(errno));
+	timeout = cfg_getint(cfg, "timeout");
 	
-	case 0:
-		reset_signals();
-		server_main();
+	serverparm.config_file_name   = NULL;
+	serverparm.registryP          = registry;
+	serverparm.log_file_name      = NULL;
+	serverparm.keepalive_timeout  = 0;
+	serverparm.keepalive_max_conn = 0;
+	serverparm.timeout            = timeout;
+	serverparm.dont_advertise     = 0;
+	serverparm.socket_bound       = 1;
+	serverparm.socket_handle      = fd;
 	
-	default:
-		break;
-	}
+	log_info("Accepting incomming connections on %s:%d", host, port);
 	
-	log_info("Resuming normal operation");
+	xmlrpc_server_abyss(&env, &serverparm, XMLRPC_APSIZE(socket_handle));
 	
-	while (1)
-		sleep(1);
+	/* never get here */
+	log_error_and_die("Unexpected death of Abyss server");
 }

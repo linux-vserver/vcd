@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <string.h>
-
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
@@ -29,46 +25,51 @@
                   int fillrate2[, int interval2[,
                   int priobias[, int cpuid]]]])
 */
-XMLRPC_VALUE m_vxdb_vx_sched_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *name;
+	int cpuid, fillrate, interval, fillrate2, interval2;
+	int tokensmin, tokensmax, priobias;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_SCHED, 1);
+	method_return_if_fault(env);
 	
-	const char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	
-	int fillrate  = XMLRPC_VectorGetIntWithID(params, "fillrate");
-	int interval  = XMLRPC_VectorGetIntWithID(params, "interval");
-	int fillrate2 = XMLRPC_VectorGetIntWithID(params, "fillrate2");
-	int interval2 = XMLRPC_VectorGetIntWithID(params, "interval2");
-	int tokensmin = XMLRPC_VectorGetIntWithID(params, "tokensmin");
-	int tokensmax = XMLRPC_VectorGetIntWithID(params, "tokensmax");
-	int priobias  = XMLRPC_VectorGetIntWithID(params, "priobias");
-	int cpuid     = XMLRPC_VectorGetIntWithID(params, "cpuid");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,*}",
+		"name", &name,
+		"cpuid", &cpuid,
+		"fillrate", &fillrate,
+		"interval", &interval,
+		"fillrate2", &fillrate2,
+		"interval2", &interval2,
+		"tokensmin", &tokensmin,
+		"tokensmax", &tokensmax,
+		"priobias", &priobias);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name) || !validate_cpuid(cpuid))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
 	if (!validate_token_bucket(fillrate, interval,
 	                           fillrate2, interval2,
 	                           tokensmin, tokensmax, priobias))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"INSERT OR REPLACE INTO vx_sched (xid, fill_rate, interval, fill_rate2, "
-		"interval2, tokens_min, tokens_max, prio_bias, cpu_id) "
+		"INSERT OR REPLACE INTO vx_sched (xid, fillrate, interval, fillrate2, "
+		"interval2, tokensmin, tokensmax, priobias, cpuid) "
 		"VALUES (%d, %d, %d, %d, %d, %d, %d, %d, %d)",
 		xid, fillrate, interval, fillrate2, interval2,
 		tokensmin, tokensmax, priobias, cpuid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return params;
 }

@@ -26,7 +26,7 @@ extern dbi_conn vxdb;
 void vxdb_init(void);
 void vxdb_close(void);
 
-int vxdb_getxid(const char *name, xid_t *xid);
-int vxdb_getname(xid_t xid, char **name);
+xid_t vxdb_getxid(const char *name);
+char *vxdb_getname(xid_t xid);
 
 #endif

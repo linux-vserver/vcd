@@ -15,55 +15,38 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.user.set(string name, string password[, int admin]) */
-XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.user.set(string name, string password, int admin) */
+xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *user, *pass;
+	int uid, admin;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_AUTH, 0);
+	method_return_if_fault(env);
 	
-	const char *username = XMLRPC_VectorGetStringWithID(params, "username");
-	const char *password = XMLRPC_VectorGetStringWithID(params, "password");
-	int admin;
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,s:i,*}",
+		"username", &user,
+		"password", &pass,
+		"admin", &admin);
+	method_return_if_fault(env);
 	
-	if (XMLRPC_VectorGetValueWithID(params, "admin") == NULL)
-		admin = -1;
-	else
-		admin = XMLRPC_VectorGetIntWithID(params, "admin");
+	if (!validate_username(user) || !validate_password(pass))
+		method_return_fault(env, MEINVAL);
 	
-	if (!validate_username(username) || !validate_password(password))
-		return method_error(MEREQ);
+	if (!dbi_conn_queryf(vxdb, "BEGIN TRANSACTION"))
+		method_return_fault(env, MEVXDB);
 	
-	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION");
+	uid = auth_getuid(user);
 	
-	if (!dbr)
-		return method_error(MEVXDB);
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT uid,admin FROM user WHERE name = '%s'",
-		username);
-	
-	if (!dbr)
-		goto rollback;
-	
-	int uid, adm;
-	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		uid = dbi_result_get_int(dbr, "uid");
-		adm = admin == -1 ? dbi_result_get_int(dbr, "admin") : admin;
-	}
-	
-	else {
+	if (uid == 0) {
 		dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
 		
 		if (!dbr)
@@ -71,13 +54,10 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		
 		if (dbi_result_get_numrows(dbr) > 0) {
 			dbi_result_first_row(dbr);
-			uid = dbi_result_get_int(dbr, "uid") + 1;
+			uid = dbi_result_get_int(dbr, "uid");
 		}
 		
-		else
-			goto rollback;
-		
-		adm = admin == -1 ? 0 : 1;
+		uid++;
 	}
 	
 	/* TODO: password to SHA-1 */
@@ -85,19 +65,16 @@ XMLRPC_VALUE m_vxdb_user_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT OR REPLACE INTO user (uid, name, password, admin) "
 		"VALUES (%d, '%s', '%s', %d)",
-		uid, username, password, adm);
+		uid, user, pass, admin);
 	
 	if (!dbr)
 		goto rollback;
 	
-	dbr = dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
+	dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
 	
-	if (!dbr)
-		goto rollback;
-	
-	return NULL;
+	return params;
 	
 rollback:
 	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	return method_error(MEVXDB);
+	method_return_fault(env, MEVXDB);
 }

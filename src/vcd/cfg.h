@@ -26,10 +26,8 @@ int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result);
 int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result);
-int cfg_validate_tls(cfg_t *cfg, cfg_opt_t *opt,
-                     const char *value, void *result);
-int cfg_validate_log(cfg_t *cfg, cfg_opt_t *opt,
-                     const char *value, void *result);
+int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
+                         const char *value, void *result);
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result);
 

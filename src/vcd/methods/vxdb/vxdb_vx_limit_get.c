@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,57 +23,56 @@
 #include "vxdb.h"
 
 /* vxdb.vx.limit.get(string name[, string limit]) */
-XMLRPC_VALUE m_vxdb_vx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	char *name, *limit;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params   = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_DLIM, 1);
+	method_return_if_fault(env);
 	
-	const char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *limit = XMLRPC_VectorGetStringWithID(params, "limit");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"limit", &limit);
+	method_return_if_fault(env);
+	
+	if (str_isempty(str_toupper(limit)))
+		limit = NULL;
 	
 	if (!validate_name(name) || (limit && !validate_rlimit(limit)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
-	if (limit) {
+	if (limit)
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT soft,max FROM vx_limit WHERE xid = %d AND type = '%s'",
+			"SELECT type,soft,max FROM vx_limit "
+			"WHERE xid = %d AND limit = '%s'",
 			xid, limit);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		if (dbi_result_get_numrows(dbr) < 1)
-			return method_error(MENOENT);
-		
-		dbi_result_first_row(dbr);
-		
-		XMLRPC_AddValueToVector(response,
-			XMLRPC_CreateValueInt("soft", dbi_result_get_longlong(dbr, "soft")));
-		XMLRPC_AddValueToVector(response,
-			XMLRPC_CreateValueInt("max", dbi_result_get_longlong(dbr, "max")));
-	}
 	
-	else {
+	else
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT type FROM vx_limit WHERE xid = %d",
+			"SELECT type,soft,max FROM vx_limit "
+			"WHERE xid = %d",
 			xid);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		while (dbi_result_next_row(dbr)) {
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "type"), 0));
-		}
-	}
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:i,s:i}",
+			"limit", dbi_result_get_string(dbr, "type"),
+			"soft",  dbi_result_get_int(dbr, "soft"),
+			"max",   dbi_result_get_int(dbr, "max")));
+	
+	method_return_if_fault(env);
 	
 	return response;
 }

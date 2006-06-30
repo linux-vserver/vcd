@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,27 +23,61 @@
 #include "vxdb.h"
 
 /* vxdb.init.mount.remove(string name[, string path]) */
-XMLRPC_VALUE m_vxdb_mount_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_mount_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *name, *path;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_MOUNT, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *path = XMLRPC_VectorGetStringWithID(params, "path");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"path", &path);
+	method_return_if_fault(env);
+	
+	if (str_isempty(path))
+		path = NULL;
 	
 	if (!validate_name(name) || (path && !validate_path(path)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	if (path)
 		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM mount WHERE xid = %d AND file = '%s'",
+			"SELECT path,spec,mntops,vfstype FROM mount "
+			"WHERE xid = %d AND path = '%s'",
+			xid, path);
+	
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT path,spec,mntops,vfstype FROM mount "
+			"WHERE xid = %d ORDER BY path ASC",
+			xid);
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:s,s:s,s:s}",
+			"path",    dbi_result_get_string(dbr, "path"),
+			"spec",    dbi_result_get_string(dbr, "spec"),
+			"mntops",  dbi_result_get_string(dbr, "mntops"),
+			"vfstype", dbi_result_get_string(dbr, "vfstype")));
+	
+	method_return_if_fault(env);
+	
+	if (path)
+		dbr = dbi_conn_queryf(vxdb,
+			"DELETE FROM mount WHERE xid = %d AND path = '%s'",
 			xid, path);
 	
 	else
@@ -52,7 +86,7 @@ XMLRPC_VALUE m_vxdb_mount_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			xid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
-		
-	return NULL;
+		method_return_fault(env, MEVXDB);
+	
+	return response;
 }

@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -32,46 +28,31 @@
 #include "log.h"
 
 static int log_fd     = -1;
-static int log_level  = 3;
+static int log_level  = LOG_INFO;
 static int log_stderr = 0;
-static const char *log_ident = NULL;
 
-int log_init(const char *ident, int debug)
+int log_init(int debug)
 {
-	int rc = 0;
-	char *logfile, *logdir = cfg_getstr(cfg, "log-dir");
+	const char *logfile = cfg_getstr(cfg, "logfile");
 	
-	if (!ident || !*ident)
+	
+	if (debug) {
+		log_level  = LOG_DEBG;
+		log_stderr = 1;
+	}
+	
+	else if (str_isempty(logfile))
 		return errno = EINVAL, -1;
 	
-	log_ident = ident;
-	
-	if (!debug && str_isempty(logdir))
-		return errno = ENOENT, -1;
-	
-	if (debug)
-		log_stderr = 1;
-	
-	logdir = realpath(logdir, NULL);
-	
-	if (!logdir)
-		return -1;
-	
 	if (log_fd >= 0)
-		close(log_fd);
+		return errno = EALREADY, -1;
 	
-	asprintf(&logfile, "%s/%s.log", logdir, ident);
 	log_fd = open_append(logfile);
 	
 	if (log_fd == -1)
-		rc = -1;
-	else if (!log_stderr)
-		log_level = cfg_getint(cfg, "log-level");
+		return -1;
 	
-	free(logfile);
-	free(logdir);
-	
-	return rc;
+	return 0;
 }
 
 static
@@ -104,15 +85,15 @@ void _log_internal(int level, const char *fmt, va_list ap)
 	bzero(timestr, 64);
 	strftime(timestr, 63, "%a %b %d %H:%M:%S %Y", localtime(&curtime));
 	
-	if (log_fd > -1) {
+	if (log_fd > -1 && level < LOG_DEBG) {
 		dprintf(log_fd, "[%s] [%5d] [%s] ", timestr, getpid(), levelstr);
 		vdprintf(log_fd, fmt, ap);
 		dprintf(log_fd, "\n");
 	}
 	
 	if (log_stderr) {
-		dprintf(STDERR_FILENO, "[%s] [%5d] [%s] [%s] ",
-		        timestr, getpid(), levelstr, log_ident);
+		dprintf(STDERR_FILENO, "[%s] [%5d] [%s] ",
+		        timestr, getpid(), levelstr);
 		vdprintf(STDERR_FILENO, fmt, ap);
 		dprintf(STDERR_FILENO, "\n");
 	}

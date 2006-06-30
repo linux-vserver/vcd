@@ -15,64 +15,47 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.user.remove(string username) */
-XMLRPC_VALUE m_vxdb_user_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *user;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
+	int uid;
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_AUTH, 0);
+	method_return_if_fault(env);
 	
-	const char *user = XMLRPC_VectorGetStringWithID(params, "username");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,*}",
+		"username", &user);
+	method_return_if_fault(env);
 	
 	if (!validate_username(user))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION");
+	if (!dbi_conn_queryf(vxdb, "BEGIN TRANSACTION"))
+		method_return_fault(env, MEINVAL);
 	
-	if (!dbr)
-		return method_error(MEVXDB);
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT uid FROM user WHERE name = '%s'",
-		user);
-	
-	if (!dbr)
-		goto rollback;
-	
-	if (dbi_result_get_numrows(dbr) < 1) {
-		dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-		return method_error(MENOENT);
-	}
-	
-	dbi_result_first_row(dbr);
-	
-	int uid = dbi_result_get_int(dbr, "uid");
+	if ((uid = auth_getuid(user)) == 0)
+		method_return_fault(env, MENOUSER);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"DELETE FROM xid_uid_map WHERE uid = %1$d;"
 		"DELETE FROM user WHERE uid = %1$d;",
 		uid);
 	
-	if (!dbr)
-		goto rollback;
+	if (!dbr) {
+		dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
+		method_return_fault(env, MEVXDB);
+	}
 	
-	dbr = dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
+	dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
 	
-	if (!dbr)
-		goto rollback;
-	
-	return NULL;
-	
-rollback:
-	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	return method_error(MEVXDB);
+	return params;
 }

@@ -18,7 +18,6 @@
 #include <string.h>
 
 #include "lucid.h"
-#include "xmlrpc.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -26,35 +25,34 @@
 #include "vxdb.h"
 
 /* vxdb.vx.bcaps.add(string name, string bcap) */
-XMLRPC_VALUE m_vxdb_vx_bcaps_add(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	char *name, *bcap;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_BCAP, 1);
+	method_return_if_fault(env);
 	
-	const char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *_bcap = XMLRPC_VectorGetStringWithID(params, "bcap");
-	
-	char bcap[128];
-	
-	if (_bcap)
-		strncpy(bcap, _bcap, 128);
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"bcap", &bcap);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name) || !validate_bcap(str_toupper(bcap)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT OR REPLACE INTO vx_bcaps (xid, bcap) VALUES (%d, '%s')",
 		xid, bcap);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return params;
 }

@@ -17,14 +17,16 @@
 
 SUBDIRS = methods
 
-INCLUDES = -I$(top_srcdir)/src/lucid \
-           -I$(top_srcdir)/src/libxmlrpc
+INCLUDES = -I$(top_srcdir)/src/lucid
 
-LIBS = $(top_builddir)/src/lucid/libucid.a \
-       $(top_builddir)/src/libxmlrpc/libxmlrpc.a \
-       $(LIBGNUTLS_LIBS) \
-       -lconfuse \
-       -lexpat
+LIBS = $(top_builddir)/src/vcd/methods/libmethods.a \
+       $(top_builddir)/src/lucid/libucid.a \
+       $(CONFUSE_LIBS) \
+       $(DBI_LIBS) \
+       $(VSERVER_LIBS) \
+       $(XMLRPC_C_SERVER_LIBS)
+
+sysconf_DATA = vcd.conf
 
 noinst_HEADERS = auth.h \
                  cfg.h \
@@ -34,25 +36,16 @@ noinst_HEADERS = auth.h \
                  validate.h \
                  vxdb.h
 
-sbin_PROGRAMS = vcd \
-                vshelper
+sbin_PROGRAMS = vcd
 
 vcd_SOURCES = auth.c \
               cfg.c \
-              collector.c \
               lists.c \
               log.c \
               main.c \
               methods.c \
-              server.c \
               validate.c \
               vxdb.c
 
-vshelper_SOURCES = cfg.c \
-                   log.c \
-                   vshelper.c
-
-vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
-            -larchive -lbz2 -lz \
-            -ldbi -ldl \
-            -lvserver
+install-data-hook:
+	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd

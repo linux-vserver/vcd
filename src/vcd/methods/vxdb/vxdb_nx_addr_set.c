@@ -16,7 +16,6 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "lucid.h"
-#include "xmlrpc.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -24,27 +23,31 @@
 #include "vxdb.h"
 
 /* vxdb.nx.addr.set(string name, string addr[, string netmask[, string broadcast]]) */
-XMLRPC_VALUE m_vxdb_nx_addr_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *name, *addr, *netm, *bcas;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_NET, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
-	const char *netm = XMLRPC_VectorGetStringWithID(params, "netmask");
-	const char *bcas = XMLRPC_VectorGetStringWithID(params, "broadcast");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,s:s,s:s,*}",
+		"name", &name,
+		"addr", &addr,
+		"netmask", &netm,
+		"broadcast", &bcas);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name) || !validate_addr(addr) ||
-	   (netm && !validate_addr(netm)) ||
-	   (bcas && !validate_addr(bcas)))
-		return method_error(MEREQ);
+	   (!str_isempty(netm) && !validate_addr(netm))  ||
+	   (!str_isempty(bcas) && !validate_addr(bcas)))
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	if (str_isempty(netm))
 		netm = "";
@@ -58,7 +61,7 @@ XMLRPC_VALUE m_vxdb_nx_addr_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		xid, addr, netm, bcas);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return params;
 }

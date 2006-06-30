@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,59 +23,57 @@
 #include "vxdb.h"
 
 /* vxdb.dx.limit.get(string name[, string path]) */
-XMLRPC_VALUE m_vxdb_dx_limit_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	char *name, *path;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params   = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_DLIM, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *path = XMLRPC_VectorGetStringWithID(params, "path");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"path", &path);
+	method_return_if_fault(env);
+	
+	if (str_isempty(path))
+		path = NULL;
 	
 	if (!validate_name(name) || (path && !validate_path(path)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
-	if (path) {
+	if (path)
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT space,inodes,reserved FROM dx_limit "
+			"SELECT path,space,inodes,reserved FROM dx_limit "
 			"WHERE xid = %d AND path = '%s'",
 			xid, path);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		if (dbi_result_get_numrows(dbr) > 0) {
-			dbi_result_first_row(dbr);
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueInt("space", dbi_result_get_longlong(dbr, "space")));
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueInt("inodes", dbi_result_get_longlong(dbr, "inodes")));
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueInt("reserved", dbi_result_get_longlong(dbr, "reserved")));
-		}
-	}
 	
-	else {
+	else
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT path FROM dx_limit "
+			"SELECT path,space,inodes,reserved FROM dx_limit "
 			"WHERE xid = %d",
 			xid);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		while (dbi_result_next_row(dbr)) {
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "path"), 0));
-		}
-	}
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:i,s:i,s:i}",
+			"path",     dbi_result_get_string(dbr, "path"),
+			"space",    dbi_result_get_int(dbr, "space"),
+			"inodes",   dbi_result_get_int(dbr, "inodes"),
+			"reserved", dbi_result_get_int(dbr, "reserved")));
+	
+	method_return_if_fault(env);
 	
 	return response;
 }

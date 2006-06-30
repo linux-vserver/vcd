@@ -15,12 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
 
@@ -56,39 +51,17 @@ int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
 	return 0;
 }
 
-int cfg_validate_tls(cfg_t *cfg, cfg_opt_t *opt,
-                     const char *value, void *result)
+int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
+                         const char *value, void *result)
 {
-	if (strcmp(value, "none") == 0)
-		*(long int *) result = 0;
-	else if (strcmp(value, "anonymous") == 0)
-		*(long int *) result = 1;
-	else if (strcmp(value, "x509") == 0)
-		*(long int *) result = 2;
-	else {
-		cfg_error(cfg, "Invalid TLS mode '%s'", value);
+	long int timeout = strtol(value, NULL, 0);
+	
+	if (timeout < 1 || timeout > 3600) {
+		cfg_error(cfg, "Timeout out of range for %s = '%s'", opt->name, value);
 		return -1;
 	}
 	
-	return 0;
-}
-
-int cfg_validate_log(cfg_t *cfg, cfg_opt_t *opt,
-                     const char *value, void *result)
-{
-	if (strcmp(value, "error") == 0)
-		*(long int *) result = 1;
-	else if (strcmp(value, "warn") == 0)
-		*(long int *) result = 2;
-	else if (strcmp(value, "info") == 0)
-		*(long int *) result = 3;
-	else if (strcmp(value, "debug") == 0)
-		*(long int *) result = 4;
-	else {
-		cfg_error(cfg, "Invalid log level '%s'", value);
-		return -1;
-	}
-	
+	*(long int *) result = timeout;
 	return 0;
 }
 

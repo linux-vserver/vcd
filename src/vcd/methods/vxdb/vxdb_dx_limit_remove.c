@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,23 +23,57 @@
 #include "vxdb.h"
 
 /* vxdb.dx.limit.remove(string name[, string path]) */
-XMLRPC_VALUE m_vxdb_dx_limit_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_dx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *name, *path;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_DLIM, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *path = XMLRPC_VectorGetStringWithID(params, "path");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"path", &path);
+	method_return_if_fault(env);
+	
+	if (str_isempty(path))
+		path = NULL;
 	
 	if (!validate_name(name) || (path && !validate_path(path)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
+	
+	if (path)
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT path,space,inodes,reserved FROM dx_limit "
+			"WHERE xid = %d AND path = '%s'",
+			xid, path);
+	
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT path,space,inodes,reserved FROM dx_limit "
+			"WHERE xid = %d",
+			xid);
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:i,s:i,s:i}",
+			"path",     dbi_result_get_string(dbr, "path"),
+			"space",    dbi_result_get_int(dbr, "space"),
+			"inodes",   dbi_result_get_int(dbr, "inodes"),
+			"reserved", dbi_result_get_int(dbr, "reserved")));
+	
+	method_return_if_fault(env);
 	
 	if (path)
 		dbr = dbi_conn_queryf(vxdb,
@@ -52,7 +86,7 @@ XMLRPC_VALUE m_vxdb_dx_limit_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			xid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return response;
 }

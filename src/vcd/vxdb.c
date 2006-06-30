@@ -15,16 +15,13 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <string.h>
 
 #include "lucid.h"
 
 #include "cfg.h"
 #include "log.h"
+#include "validate.h"
 #include "vxdb.h"
 
 dbi_conn vxdb = NULL;
@@ -34,10 +31,7 @@ void vxdb_init(void)
 	if (vxdb)
 		return;
 	
-	char *dbdir = cfg_getstr(cfg, "vxdb-dir");
-	
-	if (str_isempty(dbdir))
-		log_error_and_die("Unable to load vxdb configuration");
+	char *datadir = cfg_getstr(cfg, "datadir");
 	
 	dbi_initialize(NULL);
 	vxdb = dbi_conn_new("sqlite3");
@@ -46,7 +40,7 @@ void vxdb_init(void)
 		log_error_and_die("Unable to load sqlite3 driver");
 	
 	dbi_conn_set_option(vxdb, "dbname", "vxdb");
-	dbi_conn_set_option(vxdb, "sqlite3_dbdir", dbdir);
+	dbi_conn_set_option(vxdb, "sqlite3_dbdir", datadir);
 	
 	if (dbi_conn_connect(vxdb) < 0)
 		log_error_and_die("Could not open vxdb");
@@ -60,63 +54,56 @@ void vxdb_close(void)
 	dbi_shutdown();
 }
 
-int vxdb_getxid(const char *name, xid_t *xid)
+xid_t vxdb_getxid(const char *name)
 {
+	xid_t xid;
 	dbi_result dbr;
 	
-	if (str_isempty(name))
-		return errno = EINVAL, -1;
+	if (!validate_name(name))
+		return 0;
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT xid FROM xid_name_map WHERE name = '%s'",
 		name);
 	
 	if (!dbr)
-		return -1;
+		return 0;
 	
-	if (dbi_result_get_numrows(dbr) < 1) {
-		dbi_result_free(dbr);
-		return -1;
+	if (dbi_result_get_numrows(dbr) < 1)
+		xid = 0;
+	
+	else {
+		dbi_result_first_row(dbr);
+		xid = dbi_result_get_int(dbr, "xid");
 	}
 	
-	dbi_result_first_row(dbr);
-	
-	if (xid)
-		*xid = dbi_result_get_int(dbr, "xid");
-	
 	dbi_result_free(dbr);
-	return 0;
+	return xid;
 }
 
-int vxdb_getname(xid_t xid, char **name)
+char *vxdb_getname(xid_t xid)
 {
+	char *name;
 	dbi_result dbr;
-	const char *buf;
+	
+	if (!validate_xid(xid))
+		return NULL;
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT name FROM xid_name_map WHERE xid = '%d'",
 		xid);
 	
 	if (!dbr)
-		return -1;
+		return NULL;
 	
-	if (dbi_result_get_numrows(dbr) < 1) {
-		dbi_result_free(dbr);
-		return -1;
+	if (dbi_result_get_numrows(dbr) < 1)
+		name = NULL;
+	
+	else {
+		dbi_result_first_row(dbr);
+		name = strdup(dbi_result_get_string(dbr, "name"));
 	}
-	
-	dbi_result_first_row(dbr);
-	
-	buf = dbi_result_get_string(dbr, "name");
-	
-	if (!buf) {
-		dbi_result_free(dbr);
-		return -1;
-	}
-	
-	if (name)
-		*name = strdup(buf);
 	
 	dbi_result_free(dbr);
-	return 0;
+	return name;
 }

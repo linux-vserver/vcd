@@ -15,59 +15,60 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.sched.get(string name[, int cpuid]) */
-XMLRPC_VALUE m_vxdb_vx_sched_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.vx.sched.get(string name, int cpuid) */
+xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *name;
+	int cpuid;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params   = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_SCHED, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	int cpuid  = XMLRPC_VectorGetIntWithID(params, "cpuid");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:i,*}",
+		"name", &name,
+		"cpuid", &cpuid);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name) || !validate_cpuid(cpuid))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT * FROM vx_sched WHERE xid = %d AND cpu_id = %d",
+		"SELECT * FROM vx_sched WHERE xid = %d AND cpuid = %d",
 		xid, cpuid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
 	
 	if (dbi_result_get_numrows(dbr) < 1)
-		return NULL;
+		return response;
 	
 	dbi_result_first_row(dbr);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("fillrate",
-		dbi_result_get_int(dbr, "fill_rate")));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("interval",
-		dbi_result_get_int(dbr, "interval")));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("fillrate2",
-		dbi_result_get_int(dbr, "fill_rate2")));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("interval2",
-		dbi_result_get_int(dbr, "interval2")));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("tokensmin",
-		dbi_result_get_int(dbr, "tokens_min")));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("tokensmax",
-		dbi_result_get_int(dbr, "tokens_max")));
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("priobias",
-		dbi_result_get_int(dbr, "prio_bias")));
+	xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+		"{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+		"fillrate",  dbi_result_get_int(dbr, "fillrate"),
+		"interval",  dbi_result_get_int(dbr, "interval"),
+		"fillrate2", dbi_result_get_int(dbr, "fillrate2"),
+		"interval2", dbi_result_get_int(dbr, "interval2"),
+		"tokensmin", dbi_result_get_int(dbr, "tokensmin"),
+		"tokensmax", dbi_result_get_int(dbr, "tokensmax"),
+		"priobias",  dbi_result_get_int(dbr, "priobias")));
+	
+	method_return_if_fault(env);
 	
 	return response;
 }

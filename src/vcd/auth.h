@@ -15,14 +15,29 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _METHODS_AUTH_H
-#define _METHODS_AUTH_H
+#ifndef _VCD_AUTH_H
+#define _VCD_AUTH_H
 
-#include "xmlrpc.h"
+#include <stdint.h>
 
-int auth_isvalid(XMLRPC_REQUEST r);
-int auth_isadmin(XMLRPC_REQUEST r);
-int auth_isowner(XMLRPC_REQUEST r);
-int auth_getuid(XMLRPC_REQUEST r);
+#define VCD_CAP_AUTH    1
+#define VCD_CAP_DLIM    2
+#define VCD_CAP_INIT    3
+#define VCD_CAP_MOUNT   4
+#define VCD_CAP_NET     5
+#define VCD_CAP_BCAP    6
+#define VCD_CAP_CCAP    7
+#define VCD_CAP_CFLAG   8
+#define VCD_CAP_RLIM    9
+#define VCD_CAP_SCHED  10
+#define VCD_CAP_UNAME  11
+#define VCD_CAP_BUILD  12
+#define VCD_CAP_HELPER 13
+
+int auth_isvalid(const char *user, const char *pass);
+int auth_isadmin(const char *user);
+int auth_capable(const char *user, uint64_t caps);
+int auth_isowner(const char *user, const char *name);
+int auth_getuid(const char *user);
 
 #endif

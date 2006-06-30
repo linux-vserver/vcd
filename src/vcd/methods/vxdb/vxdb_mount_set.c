@@ -16,54 +16,57 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "lucid.h"
-#include "xmlrpc.h"
 
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.mount.set(string name, string path[, string spec[, string opts[, string type]]]) */
-XMLRPC_VALUE m_vxdb_mount_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+/* vxdb.mount.set(string name, string path[, string spec[, string mntops[, string vfstype]]]) */
+xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *name, *path, *spec, *mntops, *vfstype;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_MOUNT, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *path = XMLRPC_VectorGetStringWithID(params, "path");
-	const char *spec = XMLRPC_VectorGetStringWithID(params, "spec");
-	const char *opts = XMLRPC_VectorGetStringWithID(params, "opts");
-	const char *type = XMLRPC_VectorGetStringWithID(params, "type");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,s:s,s:s,s:s,*}",
+		"name", &name,
+		"path", &path,
+		"spec", &spec,
+		"mntops", &mntops,
+		"vfstype", &vfstype);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name) || !validate_path(path))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (str_isempty(spec) && str_isempty(type))
-		return method_error(MEREQ);
+	if (str_isempty(spec) && str_isempty(vfstype))
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	if (str_isempty(spec))
 		spec = "none";
 	
-	if (str_isempty(opts))
-		opts = "defaults";
+	if (str_isempty(mntops))
+		mntops = "defaults";
 	
-	if (str_isempty(type))
-		type = "auto";
+	if (str_isempty(vfstype))
+		vfstype = "auto";
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"INSERT OR REPLACE INTO mount (xid, spec, file, vfstype, mntops) "
+		"INSERT OR REPLACE INTO mount (xid, spec, path, vfstype, mntops) "
 		"VALUES (%d, '%s', '%s', '%s', '%s')",
-		xid, spec, path, type, opts);
+		xid, spec, path, vfstype, mntops);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return params;
 }

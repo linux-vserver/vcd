@@ -15,25 +15,34 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "vxdb.h"
 
 /* vxdb.list() */
-XMLRPC_VALUE m_vxdb_list(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
 	dbi_result dbr;
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	char *user;
+	int uid;
 	
-	if (auth_isadmin(r)) {
+	method_init(env, p, 0, 0);
+	method_return_if_fault(env);
+	
+	xmlrpc_decompose_value(env, p,
+		"({s:s,*}V)",
+		"username", &user,
+		&params);
+	method_return_if_fault(env);
+	
+	if (auth_isadmin(user)) {
 		dbr = dbi_conn_queryf(vxdb,
 			"SELECT name FROM xid_name_map ORDER BY name ASC");
 	}
 	
 	else {
-		int uid = auth_getuid(r);
+		uid = auth_getuid(user);
 		
 		dbr = dbi_conn_queryf(vxdb,
 			"SELECT xid_name_map.name AS name FROM xid_name_map "
@@ -45,12 +54,15 @@ XMLRPC_VALUE m_vxdb_list(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	}
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr)) {
-		XMLRPC_AddValueToVector(response,
-			XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "name"), 0));
-	}
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"s", dbi_result_get_string(dbr, "name")));
+	
+	method_return_if_fault(env);
 	
 	return response;
 }

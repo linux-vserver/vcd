@@ -15,8 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "lists.h"
 #include "methods.h"
@@ -24,51 +22,52 @@
 #include "vxdb.h"
 
 /* vxdb.vx.bcaps.get([string name]) */
-XMLRPC_VALUE m_vxdb_vx_bcaps_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_vx_bcaps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *name;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_array);
+	int i;
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_BCAP, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *bcap = XMLRPC_VectorGetStringWithID(params, "bcap");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,*}",
+		"name", &name);
+	method_return_if_fault(env);
 	
-	if ((name && !validate_name(name)) || (bcap && !validate_bcap(bcap)))
-		return method_error(MEREQ);
+	if (str_isempty(name))
+		name = NULL;
+	
+	response = xmlrpc_array_new(env);
 	
 	if (name) {
-		if (vxdb_getxid(name, &xid) == -1)
-			return method_error(MENOENT);
+		if (!validate_name(name))
+			method_return_fault(env, MEINVAL);
+	
+		if (!(xid = vxdb_getxid(name)))
+			method_return_fault(env, MENOVPS);
 		
-		if (bcap)
-			dbr = dbi_conn_queryf(vxdb,
-				"SELECT bcap FROM vx_bcaps WHERE xid = %d AND bcap = '%s'",
-				xid, bcap);
-		
-		else
-			dbr = dbi_conn_queryf(vxdb,
-				"SELECT bcap FROM vx_bcaps WHERE xid = %d",
-				xid);
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT bcap FROM vx_bcaps WHERE xid = %d",
+			xid);
 		
 		if (!dbr)
-			return method_error(MEVXDB);
+			method_return_fault(env, MEVXDB);
 		
-		while (dbi_result_next_row(dbr)) {
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "bcap"), 0));
-		}
+		while (dbi_result_next_row(dbr))
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"s", dbi_result_get_string(dbr, "bcap")));
+		
+		method_return_if_fault(env);
 	}
 	
 	else {
-		int i;
-		
 		for (i = 0; bcaps_list[i].key; i++)
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueString(NULL, bcaps_list[i].key, 0));
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"s", bcaps_list[i].key));
 	}
 	
 	return response;

@@ -15,36 +15,38 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.dx.limit.set(string name, string path, int space, int inodes, int reserved) */
-XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *name, *path;
+	int space, inodes, reserved;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_DLIM, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *path = XMLRPC_VectorGetStringWithID(params, "path");
-	
-	int space    = XMLRPC_VectorGetIntWithID(params, "space");
-	int inodes   = XMLRPC_VectorGetIntWithID(params, "inodes");
-	int reserved = XMLRPC_VectorGetIntWithID(params, "reserved");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,s:i,s:i,s:i,*}",
+		"name", &name,
+		"path", &path,
+		"space", &space,
+		"inodes", &inodes,
+		"reserved", &reserved);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name) || !validate_path(path) ||
 	    !validate_dlimits(space, inodes, reserved))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT OR REPLACE INTO dx_limit (xid, path, space, inodes, reserved) "
@@ -52,7 +54,7 @@ XMLRPC_VALUE m_vxdb_dx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		xid, path, space, inodes, reserved);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return params;
 }

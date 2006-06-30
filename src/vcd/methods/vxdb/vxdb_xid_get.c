@@ -15,33 +15,30 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.xid.get(string name) */
-XMLRPC_VALUE m_vxdb_xid_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_xid_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	XMLRPC_VALUE params   = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
-	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
-	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	
-	if (!validate_name(name))
-		return method_error(MEREQ);
-	
+	char *user, *name;
 	xid_t xid;
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MEVXDB);
+	method_init(env, p, 0, 0);
+	method_return_if_fault(env);
 	
-	XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("xid", xid));
+	xmlrpc_decompose_value(env, p,
+		"({s:s,*}{s:s,*})",
+		"username", &user,
+		"name", &name);
+	method_return_if_fault(env);
 	
-	return response;
+	if (!auth_isadmin(user) && !auth_capable(user, VCD_CAP_HELPER))
+		method_return_fault(env, MEPERM);
+	
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
+	
+	return xmlrpc_build_value(env, "i", xid);
 }

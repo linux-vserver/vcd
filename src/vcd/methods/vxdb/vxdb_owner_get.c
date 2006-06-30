@@ -15,31 +15,32 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.owner.get(string name) */
-XMLRPC_VALUE m_vxdb_owner_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_owner_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *name;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_array);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_AUTH, 0);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,*}",
+		"name", &name);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT user.name AS user FROM user "
@@ -49,12 +50,15 @@ XMLRPC_VALUE m_vxdb_owner_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		xid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr)) {
-		XMLRPC_AddValueToVector(response,
-			XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "user"), 0));
-	}
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"s", dbi_result_get_string(dbr, "user")));
+	
+	method_return_if_fault(env);
 	
 	return response;
 }

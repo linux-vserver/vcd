@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,57 +23,56 @@
 #include "vxdb.h"
 
 /* vxdb.nx.addr.get(string name[, string addr]) */
-XMLRPC_VALUE m_vxdb_nx_addr_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *name, *addr;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_NET, 1);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *addr = XMLRPC_VectorGetStringWithID(params, "addr");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"addr", &addr);
+	method_return_if_fault(env);
+	
+	if (str_isempty(addr))
+		addr = NULL;
 	
 	if (!validate_name(name) || (addr && !validate_addr(addr)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
-	if (addr) {
+	if (addr)
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT broadcast,netmask FROM nx_addr "
-			"WHERE xid = %d and addr = '%s'",
+			"SELECT addr,broadcast,netmask FROM nx_addr "
+			"WHERE xid = %d AND addr = '%s'",
 			xid, addr);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		if (dbi_result_get_numrows(dbr) < 1)
-			return method_error(MENOENT);
-		
-		dbi_result_first_row(dbr);
-		
-		const char *bcas = dbi_result_get_string(dbr, "broadcast");
-		const char *netm = dbi_result_get_string(dbr, "netmask");
-		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("netmask", netm, 0));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueString("broadcast", bcas, 0));
-	}
 	
-	else {
-		dbr = dbi_conn_queryf(vxdb, "SELECT addr FROM nx_addr WHERE xid = %d", xid);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		while (dbi_result_next_row(dbr)) {
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "addr"), 0));
-		}
-	}
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT addr,broadcast,netmask FROM nx_addr "
+			"WHERE xid = %d",
+			xid);
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:s,s:s}",
+			"addr",      dbi_result_get_string(dbr, "addr"),
+			"broadcast", dbi_result_get_string(dbr, "broadcast"),
+			"netmask",   dbi_result_get_string(dbr, "netmask")));
+	
+	method_return_if_fault(env);
 	
 	return response;
 }

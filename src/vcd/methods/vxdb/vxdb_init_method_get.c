@@ -15,52 +15,60 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
-
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 /* vxdb.init.method.get(string name) */
-XMLRPC_VALUE m_vxdb_init_method_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *name;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params   = method_get_params(r);
-	XMLRPC_VALUE response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_INIT, 1);
+	method_return_if_fault(env);
 	
-	const char *name  = XMLRPC_VectorGetStringWithID(params, "name");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,*}",
+		"name", &name);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT method,start,stop,timeout FROM init_method WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
 	if (dbi_result_get_numrows(dbr) < 1)
-		return response;
+		response = xmlrpc_build_value(env,
+			"{s:s,s:s,s:s,s:i}",
+			"method",  "init",
+			"start",   "",
+			"stop",    "",
+			"timeout", 0);
 	
-	dbi_result_first_row(dbr);
+	else {
+		dbi_result_first_row(dbr);
+		
+		response = xmlrpc_build_value(env,
+			"{s:s,s:s,s:s,s:i}",
+			"method",  dbi_result_get_string(dbr, "method"),
+			"start",   dbi_result_get_string(dbr, "start"),
+			"stop",    dbi_result_get_string(dbr, "stop"),
+			"timeout", dbi_result_get_int(dbr, "timeout"));
+	}
 	
-	XMLRPC_AddValueToVector(response,
-		XMLRPC_CreateValueString("method", dbi_result_get_string(dbr, "method"), 0));
-	XMLRPC_AddValueToVector(response,
-		XMLRPC_CreateValueString("start", dbi_result_get_string(dbr, "start"), 0));
-	XMLRPC_AddValueToVector(response,
-		XMLRPC_CreateValueString("stop", dbi_result_get_string(dbr, "stop"), 0));
-	XMLRPC_AddValueToVector(response,
-		XMLRPC_CreateValueInt("timeout", dbi_result_get_int(dbr, "timeout")));
+	method_return_if_fault(env);
 	
 	return response;
 }

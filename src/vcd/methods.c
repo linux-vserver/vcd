@@ -15,48 +15,39 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <stdarg.h>
 #include <string.h>
 
-#include "lucid.h"
-#include "xmlrpc.h"
-#include "xmlrpc_private.h"
-
 #include "auth.h"
-#include "log.h"
 #include "methods.h"
 
 m_err_t method_error_codes[] = {
 	{ MEAUTH,    "Unauthorized" },
 	{ MEPERM,    "Operation not permitted" },
-	{ MEREQ,     "Invalid request" },
+	{ MEINVAL,   "Invalid request" },
 	{ MEVXDB,    "Error in vxdb" },
 	{ MECONF,    "Invalid configuration" },
 	{ MESTOPPED, "Not running" },
 	{ MERUNNING, "Already running" },
 	{ MEEXIST,   "Conflict/Already exists" },
-	{ MENOENT,   "Not found" },
+	{ MENOVPS,   "Not found" },
 	{ MESYS,     "System call failed" },
 	{ 0,         NULL },
 };
 
 #define MREGISTER(NAME,FUNC) do { \
-	if (XMLRPC_ServerRegisterMethod(s, NAME, FUNC) == 0) \
-		log_error_and_die("Could not register method '%s'", NAME); \
+	xmlrpc_registry_add_method(env, registry, NULL, NAME, &FUNC, NULL); \
 } while (0)
 
-int method_registry_init(XMLRPC_SERVER s)
+int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry)
 {
 	/* vx */
+/*
 	MREGISTER("vx.create",  m_vx_create);
 	MREGISTER("vx.killer",  m_vx_killer);
 	MREGISTER("vx.restart", m_vx_restart);
 	MREGISTER("vx.start",   m_vx_start);
 	MREGISTER("vx.stop",    m_vx_stop);
+*/
 	
 	/* vxdb */
 	MREGISTER("vxdb.dx.limit.get",     m_vxdb_dx_limit_get);
@@ -103,63 +94,38 @@ int method_registry_init(XMLRPC_SERVER s)
 
 #undef MREGISTER
 
-int method_call(XMLRPC_SERVER server, char *in, char **out)
+xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
+                          uint64_t caps, int ownercheck)
 {
-	XMLRPC_Callback cb;
-	XMLRPC_REQUEST request, response;
-	XMLRPC_VALUE tmp;
-	char *buf;
+	char *user, *pass, *name;
+	xmlrpc_value *params;
 	
-	/* parse XML */
-	size_t len = strlen(in);
-	request = XMLRPC_REQUEST_FromXML(in, len, NULL);
+	xmlrpc_decompose_value(env, p,
+		"({s:s,s:s,*}V)",
+		"username", &user,
+		"password", &pass,
+		&params);
+	method_return_if_fault(env);
 	
-	if (!request)
-		return -1;
+	if (!auth_isvalid(user, pass)) {
+		xmlrpc_env_set_fault(env, MEAUTH, method_strerror(MEAUTH));
+		return NULL;
+	}
 	
-	/* create a response struct */
-	response = XMLRPC_RequestNew();
-	XMLRPC_RequestSetRequestType(response, xmlrpc_request_response);
+	if (!auth_capable(user, caps)) {
+		xmlrpc_env_set_fault(env, MEPERM, method_strerror(MEPERM));
+		return NULL;
+	}
 	
-	/* call requested method and fill response struct */
-	if (request->error)
-		tmp = XMLRPC_CopyValue(request->error);
-	
-	else if (!auth_isvalid(request))
-		tmp = method_error(MEAUTH);
-	
-	else if ((cb = XMLRPC_ServerFindMethod(server, request->methodName.str)))
-		tmp = cb(server, request, NULL);
-	
-	else
-		tmp = XMLRPC_UtilityCreateFault(xmlrpc_error_unknown_method,
-		                                request->methodName.str);
-	
-	XMLRPC_RequestSetData(response, tmp);
-	
-	/* reply in same vocabulary/manner as the request */
-	XMLRPC_RequestSetOutputOptions(response,
-	                               XMLRPC_RequestGetOutputOptions(request));
-	
-	/* serialize server response as XML */
-	buf = XMLRPC_REQUEST_ToXML(response, 0);
-	
-	if (!str_isempty(buf))
-		*out = buf;
-	
-	XMLRPC_RequestFree(request, 1);
-	XMLRPC_RequestFree(response, 1);
-	
-	return 0;
-}
-
-XMLRPC_VALUE method_get_params(XMLRPC_REQUEST r)
-{
-	XMLRPC_VALUE request, auth, params;
-	
-	request = XMLRPC_RequestGetData(r);
-	auth    = XMLRPC_VectorRewind(request);
-	params  = XMLRPC_VectorNext(request);
+	if (ownercheck) {
+		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
+		method_return_if_fault(env);
+		
+		if (!auth_isowner(user, name)) {
+			xmlrpc_env_set_fault(env, MENOVPS, method_strerror(MENOVPS));
+			return NULL;
+		}
+	}
 	
 	return params;
 }
@@ -173,9 +139,4 @@ char *method_strerror(int id)
 			return method_error_codes[i].msg;
 	
 	return NULL;
-}
-
-XMLRPC_VALUE method_error(int id)
-{
-	return XMLRPC_UtilityCreateFault(id, method_strerror(id));
 }

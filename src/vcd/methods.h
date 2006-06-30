@@ -18,7 +18,9 @@
 #ifndef _VCD_METHODS_H
 #define _VCD_METHODS_H
 
-#include "xmlrpc.h"
+#include <stdint.h>
+#include <xmlrpc-c/base.h>
+#include <xmlrpc-c/server.h>
 
 typedef struct {
 	int id;
@@ -27,34 +29,50 @@ typedef struct {
 
 #define MEAUTH    100
 #define MEPERM    101
-#define MEREQ     102
+#define MEINVAL   102
 #define MEVXDB    200
 #define MECONF    201
+#define MENOUSER  202
 #define MESTOPPED 300
 #define MERUNNING 301
 #define MEEXIST   400
-#define MENOENT   401
+#define MENOVPS   401
 #define MESYS     500
 
 extern m_err_t method_error_codes[];
 
-int          method_registry_init(XMLRPC_SERVER s);
-int          method_call(XMLRPC_SERVER server, char *in, char **out);
+int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry);
 
-XMLRPC_VALUE method_get_params   (XMLRPC_REQUEST r);
+xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
+                          uint64_t caps, int ownercheck);
 
-char        *method_strerror     (int id);
-XMLRPC_VALUE method_error        (int id);
+char *method_strerror(int errnum);
+
+#define method_return_if_fault(ENV) do { \
+	if (ENV->fault_occurred) return NULL; \
+} while (0)
+
+#define method_return_fault(ENV, ID) do { \
+	xmlrpc_env_set_fault(ENV, ID, method_strerror(ID)); \
+	return NULL; \
+} while (0)
+
+#define method_return_faultf(ENV, ID, FMT, ...) do { \
+	xmlrpc_env_set_fault_formatted(ENV, ID, FMT, __VA_ARGS__); \
+	return NULL; \
+} while(0)
 
 #define MPROTO(NAME) \
-	XMLRPC_VALUE NAME (XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+	xmlrpc_value *NAME(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 /* vx */
+/*
 MPROTO(m_vx_create);
 MPROTO(m_vx_killer);
 MPROTO(m_vx_restart);
 MPROTO(m_vx_start);
 MPROTO(m_vx_stop);
+*/
 
 /* vxdb */
 MPROTO(m_vxdb_dx_limit_get);

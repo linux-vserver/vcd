@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,71 +23,49 @@
 #include "vxdb.h"
 
 /* vxdb.owner.remove(string name[, string username]) */
-XMLRPC_VALUE m_vxdb_owner_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *name, *user;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
+	int uid;
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_AUTH, 0);
+	method_return_if_fault(env);
 	
-	const char *name = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *user = XMLRPC_VectorGetStringWithID(params, "username");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"username", &user);
+	method_return_if_fault(env);
+	
+	if (str_isempty(user))
+		user = NULL;
 	
 	if (!validate_name(name) || (user && !validate_username(user)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
-	if (!user) {
+	uid = auth_getuid(user);
+	
+	if (user && uid == 0)
+		method_return_fault(env, MENOUSER);
+	
+	if (uid)
+		dbr = dbi_conn_queryf(vxdb,
+			"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
+			xid, uid);
+	
+	else
 		dbr = dbi_conn_queryf(vxdb,
 			"DELETE FROM xid_uid_map WHERE xid = %d",
 			xid);
 	
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		return NULL;
-	}
-	
-	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION");
-	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT uid FROM user WHERE name = '%s'",
-		user);
-	
-	if (!dbr)
-		goto rollback;
-	
-	if (dbi_result_get_numrows(dbr) < 1) {
-		dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-		return method_error(MENOENT);
-	}
-	
-	dbi_result_first_row(dbr);
-	
-	int uid = dbi_result_get_int(dbr, "uid");
-	
-	dbr = dbi_conn_queryf(vxdb,
-		"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
-		xid, uid);
-	
-	if (!dbr)
-		goto rollback;
-	
-	dbr = dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
-	
-	if (!dbr)
-		goto rollback;
-	
-	return NULL;
-	
-rollback:
-	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	return method_error(MEVXDB);
+	return params;
 }

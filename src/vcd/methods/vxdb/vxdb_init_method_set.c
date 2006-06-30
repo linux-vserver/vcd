@@ -25,33 +25,38 @@
 
 /* vxdb.init.method.set(string name,
      string method[, string stop[, string start[,int timeout]]]) */
-XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *name, *method, *start, *stop;
+	int timeout;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_INIT, 1);
+	method_return_if_fault(env);
 	
-	const char *name   = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *method = XMLRPC_VectorGetStringWithID(params, "method");
-	const char *start  = XMLRPC_VectorGetStringWithID(params, "start");
-	const char *stop   = XMLRPC_VectorGetStringWithID(params, "stop");
-	int timeout  = XMLRPC_VectorGetIntWithID(params, "timeout");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,s:s,s:s,s:i,*}",
+		"name", &name,
+		"method", &method,
+		"start", &start,
+		"stop", &stop,
+		"timeout", &timeout);
+	method_return_if_fault(env);
 	
 	if (!validate_name(name) || !validate_init_method(method) ||
 	   (start && !validate_runlevel(start)) ||
 	   (stop  && !validate_runlevel(stop)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION");
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT stop,start,timeout FROM init_method WHERE xid = %d",
@@ -97,9 +102,9 @@ XMLRPC_VALUE m_vxdb_init_method_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	if (!dbr)
 		goto rollback;
 	
-	return NULL;
+	return params;
 	
 rollback:
 	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	return method_error(MEVXDB);
+	method_return_fault(env, MEVXDB);
 }

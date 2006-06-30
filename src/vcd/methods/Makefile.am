@@ -16,15 +16,15 @@
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 INCLUDES = -I$(top_srcdir)/src/lucid \
-           -I$(top_srcdir)/src/libxmlrpc \
            -I$(top_srcdir)/src/vcd
 
-M_VXDB = vx/vx_create.c \
-         vx/vx_killer.c \
-         vx/vx_restart.c \
-         vx/vx_start.c \
-         vx/vx_stop.c \
-         vxdb/vxdb_dx_limit_get.c \
+M_VX = vx/vx_create.c \
+       vx/vx_killer.c \
+       vx/vx_restart.c \
+       vx/vx_start.c \
+       vx/vx_stop.c
+
+M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_dx_limit_remove.c \
          vxdb/vxdb_dx_limit_set.c \
          vxdb/vxdb_init_method_get.c \

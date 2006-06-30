@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,55 +23,46 @@
 #include "vxdb.h"
 
 /* vxdb.user.get([string username]) */
-XMLRPC_VALUE m_vxdb_user_get(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	const char *user;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
-	XMLRPC_VALUE response;
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_AUTH, 0);
+	method_return_if_fault(env);
 	
-	const char *user = XMLRPC_VectorGetStringWithID(params, "username");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,*}",
+		"username", &user);
+	method_return_if_fault(env);
 	
-	if (user && !validate_username(user))
-		return method_error(MEREQ);
-	
-	if (user) {
-		response = XMLRPC_CreateVector(NULL, xmlrpc_vector_struct);
+	if (!str_isempty(user)) {
+		if (!validate_username(user))
+			method_return_fault(env, MEINVAL);
 		
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uid,admin FROM user WHERE name = '%s'",
+			"SELECT uid,name,admin FROM user WHERE name = '%s'",
 			user);
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		if (dbi_result_get_numrows(dbr) < 1)
-			return NULL;
-		
-		dbi_result_first_row(dbr);
-		
-		int uid   = dbi_result_get_int(dbr, "uid");
-		int admin = dbi_result_get_int(dbr, "admin") == 0 ? 0 : 1;
-		
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("uid", uid));
-		XMLRPC_AddValueToVector(response, XMLRPC_CreateValueInt("admin", admin));
 	}
 	
-	else {
-		response = XMLRPC_CreateVector(NULL, xmlrpc_vector_array);
-		
-		dbr = dbi_conn_queryf(vxdb, "SELECT name FROM user ORDER BY name ASC");
-		
-		if (!dbr)
-			return method_error(MEVXDB);
-		
-		while (dbi_result_next_row(dbr)) {
-			XMLRPC_AddValueToVector(response,
-				XMLRPC_CreateValueString(NULL, dbi_result_get_string(dbr, "name"), 0));
-		}
-	}
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT uid,name,admin FROM user ORDER BY name ASC");
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:i,s:i}",
+			"username", dbi_result_get_string(dbr, "name"),
+			"uid",      dbi_result_get_int(dbr, "uid"),
+			"admin",    dbi_result_get_int(dbr, "admin")));
+	
+	method_return_if_fault(env);
 	
 	return response;
 }

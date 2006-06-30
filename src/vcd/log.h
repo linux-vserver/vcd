@@ -25,7 +25,7 @@
 #define LOG_WARN  2
 #define LOG_ERR   1
 
-int  log_init (const char *ident, int level);
+int  log_init (int debug);
 
 void log_debug(const char *fmt, ...);
 void log_info (const char *fmt, ...);

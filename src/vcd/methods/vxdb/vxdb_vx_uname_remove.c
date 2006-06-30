@@ -15,7 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "xmlrpc.h"
+#include "lucid.h"
 
 #include "auth.h"
 #include "methods.h"
@@ -23,23 +23,53 @@
 #include "vxdb.h"
 
 /* vxdb.vx.uname.remove(string name[, string uname]) */
-XMLRPC_VALUE m_vxdb_vx_uname_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_vx_uname_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params, *response;
+	char *name, *uname;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_UNAME, 1);
+	method_return_if_fault(env);
 	
-	const char *name  = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *uname = XMLRPC_VectorGetStringWithID(params, "uname");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,*}",
+		"name", &name,
+		"uname", &uname);
+	method_return_if_fault(env);
+	
+	if (str_isempty(str_toupper(uname)))
+		uname = NULL;
 	
 	if (!validate_name(name) || (uname && !validate_uname(uname)))
-		return method_error(MEREQ);
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
+	
+	if (uname)
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT uname,value FROM vx_uname WHERE xid = %d AND uname = '%s'",
+			xid, uname);
+	
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT uname,value FROM vx_uname WHERE xid = %d",
+			xid);
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	response = xmlrpc_array_new(env);
+	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:s}",
+			"uname",    dbi_result_get_string(dbr, "uname"),
+			"value",    dbi_result_get_string(dbr, "value")));
+	
+	method_return_if_fault(env);
 	
 	if (uname)
 		dbr = dbi_conn_queryf(vxdb,
@@ -52,7 +82,7 @@ XMLRPC_VALUE m_vxdb_vx_uname_remove(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 			xid);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return response;
 }

@@ -26,32 +26,30 @@
 #include "vxdb.h"
 
 /* vxdb.vx.limit.set(string name, string type, int soft, int max) */
-XMLRPC_VALUE m_vxdb_vx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	xmlrpc_value *params;
+	const char *name, *limit;
+	int soft, max;
 	xid_t xid;
 	dbi_result dbr;
-	XMLRPC_VALUE params = method_get_params(r);
 	
-	if (!auth_isadmin(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_DLIM, 1);
+	method_return_if_fault(env);
 	
-	const char *name   = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *_limit = XMLRPC_VectorGetStringWithID(params, "limit");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,s:i,s:i,*}",
+		"name", &name,
+		"limit", &limit,
+		"soft", &soft,
+		"max", &max);
+	method_return_if_fault(env);
 	
-	char limit[128];
+	if (!validate_name(name) || !validate_rlimit(limit))
+		method_return_fault(env, MEINVAL);
 	
-	if (_limit)
-		strncpy(limit, _limit, 128);
-	
-	int soft = XMLRPC_VectorGetIntWithID(params, "soft");
-	int max  = XMLRPC_VectorGetIntWithID(params, "max");
-	
-	if (!validate_name(name) || !validate_rlimit(str_toupper(limit)) ||
-	    !validate_rlimits(soft, max))
-		return method_error(MEREQ);
-	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT OR REPLACE INTO vx_limit (xid, type, soft, max) "
@@ -59,7 +57,7 @@ XMLRPC_VALUE m_vxdb_vx_limit_set(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 		xid, limit, soft, max);
 	
 	if (!dbr)
-		return method_error(MEVXDB);
+		method_return_fault(env, MEVXDB);
 	
-	return NULL;
+	return params;
 }
