@@ -17,10 +17,10 @@
 
 SUBDIRS = methods
 
-INCLUDES = -I$(top_srcdir)/src/lucid
+INCLUDES = -I$(top_srcdir)/lib/lucid
 
 LIBS = $(top_builddir)/src/vcd/methods/libmethods.a \
-       $(top_builddir)/src/lucid/libucid.a \
+       $(top_builddir)/lib/lucid/libucid.a \
        $(CONFUSE_LIBS) \
        $(DBI_LIBS) \
        $(VSERVER_LIBS) \

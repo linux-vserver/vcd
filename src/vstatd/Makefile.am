@@ -15,9 +15,9 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)/src/lucid
+INCLUDES = -I$(top_srcdir)/lib/lucid
 
-LIBS = $(top_builddir)/src/lucid/libucid.a \
+LIBS = $(top_builddir)/lib/lucid/libucid.a \
        $(VSERVER_LIBS)
 
 sbin_PROGRAMS = vstatd
