@@ -19,10 +19,13 @@
 AC_PREREQ(2.59)
 AC_INIT(vserver-utils, 2.0.0, hollow@gentoo.org)
 AC_CONFIG_HEADER([config.h])
+AC_GNU_SOURCE
+
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
-AC_GNU_SOURCE
+
+AC_CONFIG_SUBDIRS(lib/libarchive)
 
 # Automake
 AM_INIT_AUTOMAKE([1.9 gnu dist-bzip2])
@@ -101,6 +104,12 @@ XMLRPC_C_SERVER_LIBS="$($XMLRPC_C_CONFIG abyss-server --libs)"
 AC_SUBST(XMLRPC_C_CLIENT_LIBS)
 AC_SUBST(XMLRPC_C_SERVER_LIBS)
 
+AC_CHECK_LIB(bz2, BZ2_bzDecompressInit,
+	BZ2_LIBS="-lbz2", AC_MSG_ERROR([libbz2 not found]),)
+
+AC_CHECK_LIB(z, inflate,
+	BZ2_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
+
 # Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
@@ -151,6 +160,7 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 AC_CONFIG_FILES([Makefile
                  scripts/Makefile
                  lib/lucid/Makefile
+                 lib/Makefile
                  src/tools/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
