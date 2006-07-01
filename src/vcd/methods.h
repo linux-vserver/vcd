@@ -48,6 +48,10 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
 
 char *method_strerror(int errnum);
 
+#define method_cleanup_if_fault(ENV) do { \
+	if (ENV->fault_occurred) goto cleanup; \
+} while (0)
+
 #define method_return_if_fault(ENV) do { \
 	if (ENV->fault_occurred) return NULL; \
 } while (0)
@@ -66,13 +70,10 @@ char *method_strerror(int errnum);
 	xmlrpc_value *NAME(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 /* vx */
-/*
-MPROTO(m_vx_create);
+//MPROTO(m_vx_create);
 MPROTO(m_vx_killer);
-MPROTO(m_vx_restart);
 MPROTO(m_vx_start);
 MPROTO(m_vx_stop);
-*/
 
 /* vxdb */
 MPROTO(m_vxdb_dx_limit_get);

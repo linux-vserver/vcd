@@ -15,23 +15,20 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
+#include <errno.h>
 #include <string.h>
 #include <signal.h>
 #include <vserver.h>
 #include <sys/wait.h>
 
 #include "lucid.h"
-#include "xmlrpc.h"
 
 #include "auth.h"
 #include "cfg.h"
 #include "log.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 /* stop/restart process:
@@ -43,90 +40,139 @@
 static xid_t xid = 0;
 static const char *name = NULL;
 
-/* vx.stop(string name[, int wait[, int reboot]) */
-XMLRPC_VALUE m_vx_stop(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
+static
+xmlrpc_value *shutdown_init(xmlrpc_env *env)
 {
-	dbi_result dbr;
+	pid_t pid;
+	int i, status;
+	
+	char *vserverdir = cfg_getstr(cfg, "vserverdir");
+	char *vdir = NULL;
+	
+	asprintf(&vdir, "%s/%s", vserverdir, name);
+	
+	switch ((pid = fork())) {
+	case -1:
+		method_return_faultf(env, MESYS, "%s: fork: %s", __FUNCTION__, strerror(errno));
+	
+	case 0:
+		for (i = 0; i < 100; i++)
+			close(i);
+		
+		if (vx_enter_namespace(xid) == -1)
+			exit(errno);
+		
+		if (chroot_secure_chdir(vdir, "/") == -1)
+			exit(errno);
+		
+		if (chroot(".") == -1)
+			exit(errno);
+		
+		if (nx_migrate(xid) == -1 || vx_migrate(xid, NULL) == -1)
+			exit(errno);
+		
+		if (exec_replace("/sbin/telinit 0") == -1)
+			exit(errno);
+		
+		/* never get here */
+		exit(EXIT_SUCCESS);
+	
+	default:
+		if (waitpid(pid, &status, WNOHANG) == -1)
+			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
+		
+		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+			method_return_faultf(env, MESYS, "shutdown failed: %s", strerror(WEXITSTATUS(status)));
+		
+		if (WIFSIGNALED(status))
+			kill(getpid(), WTERMSIG(status));
+	}
+	
+	return NULL;
+}
+
+static
+xmlrpc_value *shutdown_initng(xmlrpc_env *env)
+{
+	return NULL;
+}
+
+static
+xmlrpc_value *shutdown_sysvrc(xmlrpc_env *env)
+{
+	return NULL;
+}
+
+static
+xmlrpc_value *shutdown_gentoo(xmlrpc_env *env, const char *runlevel)
+{
+	return NULL;
+}
+
+/* vx.stop(string name[, int wait[, int reboot]) */
+xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
+{
+	xmlrpc_value *params;
 	const char *method, *stop;
-	XMLRPC_VALUE params = method_get_params(r);
-	XMLRPC_VALUE response;
+	int wait, reboot, timeout;
+	dbi_result dbr;
 	
-	if (!auth_isadmin(r) && !auth_isowner(r))
-		return method_error(MEPERM);
+	params = method_init(env, p, VCD_CAP_INIT, 1);
+	method_return_if_fault(env);
 	
-	name = XMLRPC_VectorGetStringWithID(params, "name");
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:i,s:i,*}",
+		"name", &name,
+		"reboot", &reboot,
+		"wait", &wait);
+	method_return_if_fault(env);
 	
-	if (!name)
-		return method_error(MEREQ);
+	if (!validate_name(name))
+		method_return_fault(env, MEINVAL);
 	
-	if (vxdb_getxid(name, &xid) == -1)
-		return method_error(MENOENT);
+	if ((xid = vxdb_getxid(name)))
+		method_return_fault(env, MEEXIST);
 	
-	if (vx_get_info(xid, NULL) == -1)
-		return method_error(MESTOPPED);
+	if (vx_get_info(xid, NULL) == -1 && errno == ESRCH)
+		method_return_fault(env, MESTOPPED);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT method,stop FROM init_method WHERE xid = %d",
+		"SELECT method,stop,timeout FROM init_method WHERE xid = %d",
 		xid);
 	
-	if (dbr && dbi_result_get_numrows(dbr) < 1) {
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	if (dbi_result_get_numrows(dbr) < 1) {
 		method  = "init";
 		stop    = "";
+		timeout = 30;
 	}
 	
 	else {
 		dbi_result_first_row(dbr);
 		method  = dbi_result_get_string(dbr, "method");
 		stop    = dbi_result_get_string(dbr, "stop");
+		timeout = dbi_result_get_int(dbr, "timeout");
 	}
 	
-	pid_t pid;
-	int i;
+	if (strcmp(method, "init") == 0)
+		shutdown_init(env);
 	
-	char *vdirbase = cfg_getstr(cfg, "vserver-dir");
-	char *vdir = NULL;
+	else if (strcmp(method, "initng") == 0)
+		shutdown_initng(env);
 	
-	asprintf(&vdir, "%s/%s", vdirbase, name);
+	else if (strcmp(method, "sysvrc") == 0)
+		shutdown_sysvrc(env);
 	
-	signal(SIGCHLD, SIG_IGN);
+	else if (strcmp(method, "gentoo") == 0)
+		shutdown_gentoo(env, stop);
 	
-	switch ((pid = fork())) {
-	case -1:
-		return method_error(MESYS);
+	else
+		method_return_faultf(env, MECONF, "unknown init style: %s", method);
 	
-	case 0:
-		signal(SIGCHLD, SIG_DFL);
-		usleep(200);
-		
-		for (i = 0; i < 100; i++)
-			close(i);
-		
-		if (vx_enter_namespace(xid) == -1 ||
-		    chroot(vdir) == -1 ||
-		    nx_migrate(xid) == -1 ||
-		    vx_migrate(xid, NULL) == -1)
-			exit(EXIT_FAILURE);
-		
-		if (strcmp(method, "init") == 0) {
-			if (!stop || !*stop)
-				stop = "0";
-			
-			exec_replace("/sbin/telinit %s", stop);
-		}
-		
-		exit(EXIT_SUCCESS);
+	m_vx_killer(env, p, c);
+	method_return_if_fault(env);
 	
-	default:
-		break;
-	}
-	
-	response = m_vx_killer(s, r, d);
-	
-	const char *fault_string = XMLRPC_VectorGetStringWithID(response, "faultString");
-	int fault_code           = XMLRPC_VectorGetIntWithID(response, "faultCode");
-	
-	if (fault_string || fault_code != 0)
-		return response;
-	
-	return params;
+	return NULL;
 }

@@ -18,9 +18,7 @@
 INCLUDES = -I$(top_srcdir)/src/lucid \
            -I$(top_srcdir)/src/vcd
 
-M_VX = vx/vx_create.c \
-       vx/vx_killer.c \
-       vx/vx_restart.c \
+M_VX = vx/vx_killer.c \
        vx/vx_start.c \
        vx/vx_stop.c
 
@@ -65,4 +63,5 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
 
 noinst_LIBRARIES = libmethods.a
 
-libmethods_a_SOURCES = $(M_VXDB)
+libmethods_a_SOURCES = $(M_VX) \
+                       $(M_VXDB)
