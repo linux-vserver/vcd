@@ -56,6 +56,8 @@ xmlrpc_value *shutdown_init(xmlrpc_env *env)
 		method_return_faultf(env, MESYS, "%s: fork: %s", __FUNCTION__, strerror(errno));
 	
 	case 0:
+		usleep(200);
+		
 		for (i = 0; i < 100; i++)
 			close(i);
 		
@@ -74,7 +76,6 @@ xmlrpc_value *shutdown_init(xmlrpc_env *env)
 		if (exec_replace("/sbin/telinit 0") == -1)
 			exit(errno);
 		
-		/* never get here */
 		exit(EXIT_SUCCESS);
 	
 	default:
@@ -83,9 +84,6 @@ xmlrpc_value *shutdown_init(xmlrpc_env *env)
 		
 		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 			method_return_faultf(env, MESYS, "shutdown failed: %s", strerror(WEXITSTATUS(status)));
-		
-		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
 	}
 	
 	return NULL;
@@ -130,11 +128,15 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
 	
-	if ((xid = vxdb_getxid(name)))
-		method_return_fault(env, MEEXIST);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
-	if (vx_get_info(xid, NULL) == -1 && errno == ESRCH)
-		method_return_fault(env, MESTOPPED);
+	if (vx_get_info(xid, NULL) == -1) {
+		if (errno == ESRCH)
+			method_return_fault(env, MESTOPPED);
+		else
+			method_return_faultf(env, MESYS, "vx_get_info: %s", strerror(errno));
+	}
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT method,stop,timeout FROM init_method WHERE xid = %d",
@@ -174,5 +176,5 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	m_vx_killer(env, p, c);
 	method_return_if_fault(env);
 	
-	return NULL;
+	return params;
 }

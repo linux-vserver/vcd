@@ -52,7 +52,7 @@ static cfg_opt_t init_method_OPTS[] = {
 	CFG_END()
 };
 
-static cfg_opt_t init_mount_OPTS[] = {
+static cfg_opt_t mount_OPTS[] = {
 	CFG_STR("spec",    NULL, CFGF_NONE),
 	CFG_STR("vfstype", NULL, CFGF_NONE),
 	CFG_STR("mntops",  NULL, CFGF_NONE),
@@ -65,7 +65,7 @@ static cfg_opt_t BUILD_OPTS[] = {
 	
 	CFG_SEC("init_method", init_method_OPTS, CFGF_NONE),
 	
-	CFG_SEC("mount", init_mount_OPTS, CFGF_MULTI|CFGF_TITLE),
+	CFG_SEC("mount", mount_OPTS, CFGF_MULTI|CFGF_TITLE),
 	
 	CFG_STR_LIST("vx_bcaps",  DEFAULT_BCAPS, CFGF_NONE),
 	CFG_STR_LIST("vx_ccaps",  DEFAULT_CCAPS, CFGF_NONE),
@@ -150,16 +150,57 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, int fd)
 }
 
 static
+xid_t find_free_xid()
+{
+	int i;
+	char *name;
+	
+	for (i = 2; i < 65535; i++) {
+		if (!(name = vxdb_getname(i)))
+			return i;
+		
+		free(name);
+	}
+	
+	return 0;
+}
+
+static
 xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
 {
 	STRALLOC sa;
 	cfg_t *init_method_cfg, *mount_cfg;
 	const char *method, *start, *stop;
 	const char *path, *spec, *vfstype, *mntops;
-	int i, timeout, mount_size;
+	int i, timeout, mount_size, max, cnt;
 	int vx_bcaps_size, vx_ccaps_size, vx_flags_size;
 	const char *bcap, *ccap, *flag;
 	char *sql;
+	dbi_result dbr;
+	
+	if (!xid) {
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT xid FROM xid_name_map ORDER BY xid DESC");
+		
+		if (!dbr)
+			method_return_fault(env, MEVXDB);
+		
+		cnt = dbi_result_get_numrows(dbr);
+		dbi_result_first_row(dbr);
+		max = dbi_result_get_int(dbr, "xid");
+		
+		if (max < 2)
+			xid = 2;
+		
+		else if (max < 65535)
+			xid = max + 1;
+		
+		else if (cnt < 65535)
+			xid = find_free_xid();
+		
+		else
+			method_return_faultf(env, MEVXDB, "%s", "no free context id available");
+	}
 	
 	stralloc_init(&sa);
 	stralloc_cats(&sa, "BEGIN TRANSACTION;");
@@ -190,7 +231,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
 			xid, method, start, stop, timeout);
 	}
 	
-	mount_size = cfg_size(tcfg, "init_mount");
+	mount_size = cfg_size(tcfg, "mount");
 	
 	for (i = 0; i < mount_size; i++) {
 		mount_cfg = cfg_getnsec(tcfg, "mount", i);
@@ -210,7 +251,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
 			vfstype = "auto";
 		
 		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO init_mount (xid, path, spec, vfstype, mntops) "
+			"INSERT OR REPLACE INTO mount (xid, path, spec, vfstype, mntops) "
 			"VALUES (%d, '%s', '%s', '%s', '%s');",
 			xid, path, spec, vfstype, mntops);
 		
@@ -277,6 +318,8 @@ commit:
 		method_return_fault(env, MEVXDB);
 	}
 	
+	free(sql);
+	
 	return NULL;
 }
 
@@ -320,12 +363,14 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_fault(env, MEPERM);
 	}
 		
-	else
+	else {
+		xid = 0;
 		rebuild = 0;
+	}
 	
 	datadir = cfg_getstr(cfg, "datadir");
 	
-	asprintf(&templateconf, "%s/%s.conf", datadir, template);
+	asprintf(&templateconf, "%s/templates/%s.conf", datadir, template);
 	
 	tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
 	
@@ -363,5 +408,5 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	create_vxdb_entries(env, tcfg);
 	method_return_if_fault(env);
 	
-	return NULL;
+	return params;
 }

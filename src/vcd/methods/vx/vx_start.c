@@ -90,7 +90,7 @@ xmlrpc_value *context_create(xmlrpc_env *env)
 			method_return_faultf(env, MESYS, "vx_create: %s", strerror(WEXITSTATUS(status)));
 		
 		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+			method_return_faultf(env, MESYS, "%s: caught signal %d", __FUNCTION__, WTERMSIG(status));
 	}
 	
 	return NULL;
@@ -343,7 +343,7 @@ xmlrpc_value *network_create(xmlrpc_env *env)
 			method_return_faultf(env, MESYS, "nx_create: %s", strerror(WEXITSTATUS(status)));
 		
 		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+			method_return_faultf(env, MESYS, "%s: caught signal %d", __FUNCTION__, WTERMSIG(status));
 	}
 	
 	return NULL;
@@ -407,7 +407,7 @@ xmlrpc_value *mount_namespace(xmlrpc_env *env)
 		method_return_fault(env, MESYS);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT spec,file,vfstype,mntops FROM mount WHERE xid = %d",
+		"SELECT spec,path,vfstype,mntops FROM mount WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
@@ -415,7 +415,7 @@ xmlrpc_value *mount_namespace(xmlrpc_env *env)
 	
 	while (dbi_result_next_row(dbr)) {
 		src  = dbi_result_get_string(dbr, "spec");
-		dst  = dbi_result_get_string(dbr, "file");
+		dst  = dbi_result_get_string(dbr, "path");
 		type = dbi_result_get_string(dbr, "vfstype");
 		opts = dbi_result_get_string(dbr, "mntops");
 		
@@ -482,7 +482,7 @@ xmlrpc_value *namespace_create(xmlrpc_env *env)
 			method_return_fault(env, WEXITSTATUS(status));
 		
 		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+			method_return_faultf(env, MESYS, "%s: caught signal %d", __FUNCTION__, WTERMSIG(status));
 	}
 	
 	return NULL;
@@ -494,10 +494,10 @@ xmlrpc_value *disklimit_calc(xmlrpc_env *env)
 	return NULL;
 }
 
-xmlrpc_value *init_init(xmlrpc_env *env)
+xmlrpc_value *init_init(xmlrpc_env *env, char *vdir)
 {
 	pid_t pid;
-	int i, status;
+	int i;
 	
 	struct vx_flags cflags = {
 		.flags = VXF_INFO_INIT,
@@ -519,36 +519,35 @@ xmlrpc_value *init_init(xmlrpc_env *env)
 		for (i = 0; i < 100; i++)
 			close(i);
 		
+		if (vx_enter_namespace(xid) == -1)
+			exit(EXIT_FAILURE);
+		
+		if (chroot_secure_chdir(vdir, "/") == -1)
+			exit(EXIT_FAILURE);
+	
 		if (chroot(".") == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		if (nx_migrate(xid) == -1 || vx_migrate(xid, &migrate_flags) == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		if (exec_replace("/sbin/init") == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		/* never get here */
 		exit(EXIT_SUCCESS);
 	
 	default:
-		if (waitpid(pid, &status, WNOHANG) == -1)
-			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "init_init: %s", strerror(WEXITSTATUS(status)));
-		
-		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+		signal(SIGCHLD, SIG_IGN);
 	}
 	
 	return NULL;
 }
 
-xmlrpc_value *init_initng(xmlrpc_env *env)
+xmlrpc_value *init_initng(xmlrpc_env *env, char *vdir)
 {
 	pid_t pid;
-	int i, status;
+	int i;
 	
 	struct vx_flags cflags = {
 		.flags = VXF_INFO_INIT,
@@ -570,38 +569,36 @@ xmlrpc_value *init_initng(xmlrpc_env *env)
 		for (i = 0; i < 100; i++)
 			close(i);
 		
+		if (vx_enter_namespace(xid) == -1)
+			exit(EXIT_FAILURE);
+		
+		if (chroot_secure_chdir(vdir, "/") == -1)
+			exit(EXIT_FAILURE);
+	
 		if (chroot(".") == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		if (nx_migrate(xid) == -1 || vx_migrate(xid, &migrate_flags) == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		if (exec_replace("/sbin/initng") == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
-		/* never get here */
 		exit(EXIT_SUCCESS);
 	
 	default:
-		if (waitpid(pid, &status, WNOHANG) == -1)
-			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "init_initng: %s", strerror(WEXITSTATUS(status)));
-		
-		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+		signal(SIGCHLD, SIG_IGN);
 	}
 	
 	return NULL;
 }
 
-xmlrpc_value *init_sysvrc(xmlrpc_env *env)
+xmlrpc_value *init_sysvrc(xmlrpc_env *env, char *vdir)
 {
 	return NULL;
 }
 
-xmlrpc_value *init_gentoo(xmlrpc_env *env, const char *runlevel)
+xmlrpc_value *init_gentoo(xmlrpc_env *env, char *vdir, const char *runlevel)
 {
 	pid_t pid;
 	int i, status;
@@ -617,11 +614,17 @@ xmlrpc_value *init_gentoo(xmlrpc_env *env, const char *runlevel)
 		for (i = 0; i < 100; i++)
 			close(i);
 		
+		if (vx_enter_namespace(xid) == -1)
+			exit(EXIT_FAILURE);
+		
+		if (chroot_secure_chdir(vdir, "/") == -1)
+			exit(EXIT_FAILURE);
+	
 		if (chroot(".") == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		if (nx_migrate(xid) == -1 || vx_migrate(xid, NULL) == -1)
-			exit(errno);
+			exit(EXIT_FAILURE);
 		
 		status = exec_fork("/sbin/rc sysinit");
 		
@@ -635,21 +638,16 @@ xmlrpc_value *init_gentoo(xmlrpc_env *env, const char *runlevel)
 		    WIFSIGNALED(status))
 			exit(EXIT_FAILURE);
 		
-		if (exec_replace("/sbin/rc %s", runlevel) == -1)
+		status = exec_fork("/sbin/rc %s", runlevel);
+		
+		if ((WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) ||
+		    WIFSIGNALED(status))
 			exit(EXIT_FAILURE);
 		
-		/* never get here */
 		exit(EXIT_SUCCESS);
 	
 	default:
-		if (waitpid(pid, &status, WNOHANG) == -1)
-			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "%s", "init command failed");
-		
-		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+		signal(SIGCHLD, SIG_IGN);
 	}
 	
 	return NULL;
@@ -660,17 +658,13 @@ xmlrpc_value *call_init(xmlrpc_env *env)
 {
 	dbi_result dbr;
 	const char *method, *start;
+	pid_t pid;
+	int status;
 	
 	char *vserverdir = cfg_getstr(cfg, "vserverdir");
 	char *vdir = NULL;
 	
 	asprintf(&vdir, "%s/%s", vserverdir, name);
-	
-	if (vx_enter_namespace(xid) == -1)
-		method_return_faultf(env, MESYS, "vx_enter_namespace: %s", strerror(errno));
-	
-	if (chroot_secure_chdir(vdir, "/") == -1)
-		method_return_faultf(env, MESYS, "secure_chdir: %s", strerror(errno));
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT method,start FROM init_method WHERE xid = %d",
@@ -690,20 +684,34 @@ xmlrpc_value *call_init(xmlrpc_env *env)
 		start  = dbi_result_get_string(dbr, "start");
 	}
 	
-	if (strcmp(method, "init") == 0)
-		init_init(env);
+	if (!validate_init_method(method))
+		method_return_faultf(env, MECONF, "unknown init method: %s", method);
 	
-	else if (strcmp(method, "initng") == 0)
-		init_initng(env);
+	switch ((pid = fork())) {
+	case -1:
+		method_return_faultf(env, MESYS, "%s: fork: %s", __FUNCTION__, strerror(errno));
 	
-	else if (strcmp(method, "sysvrc") == 0)
-		init_sysvrc(env);
+	case 0:
+		usleep(200);
+		
+		if (strcmp(method, "init") == 0)
+			init_init(env, vdir);
+		
+		else if (strcmp(method, "initng") == 0)
+			init_initng(env, vdir);
+		
+		else if (strcmp(method, "sysvrc") == 0)
+			init_sysvrc(env, vdir);
+		
+		else if (strcmp(method, "gentoo") == 0)
+			init_gentoo(env, vdir, start);
+		
+		exit(EXIT_SUCCESS);
 	
-	else if (strcmp(method, "gentoo") == 0)
-		init_gentoo(env, start);
-	
-	else
-		method_return_faultf(env, MECONF, "unknown init style: %s", method);
+	default:
+		if (waitpid(pid, &status, 0) == -1)
+			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
+	}
 	
 	return NULL;
 }
@@ -729,8 +737,6 @@ void cleanup_on_exit(void)
 xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *name;
-	xid_t xid;
 	
 	params = method_init(env, p, VCD_CAP_INIT, 1);
 	method_return_if_fault(env);
@@ -743,8 +749,8 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
 	
-	if ((xid = vxdb_getxid(name)))
-		method_return_fault(env, MEEXIST);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	if (vx_get_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
@@ -780,5 +786,5 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 cleanup:
 	cleanup_on_exit();
-	return NULL;
+	return params;
 }

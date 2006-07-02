@@ -206,8 +206,8 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
 	
-	if ((xid = vxdb_getxid(name)))
-		method_return_fault(env, MEEXIST);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 	
 	if (vx_get_info(xid, NULL) == -1 && errno == ESRCH)
 		method_return_fault(env, MESTOPPED);
@@ -259,8 +259,6 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	case 0:
 		wait_death(timeout);
-		
-		/* never get here */
 		exit(EXIT_FAILURE);
 	
 	default:
@@ -271,7 +269,7 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_faultf(env, MESYS, "init_init: %s", strerror(WEXITSTATUS(status)));
 		
 		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+			method_return_faultf(env, MESYS, "%s: caught signal %d", __FUNCTION__, WTERMSIG(status));
 	}
 	
 	return params;
