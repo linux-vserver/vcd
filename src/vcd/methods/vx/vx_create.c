@@ -15,27 +15,23 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
+#include <errno.h>
 #include <string.h>
 #include <confuse.h>
 #include <vserver.h>
-#include <archive.h>
-#include <archive_entry.h>
 #include <sys/stat.h>
 
+#include "archive.h"
+#include "archive_entry.h"
 #include "lucid.h"
-#include "xmlrpc.h"
 
 #include "auth.h"
 #include "cfg.h"
 #include "lists.h"
-#include "log.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 #define DEFAULT_BCAPS "{ LINUX_IMMUTABLE, NET_BROADCAST, NET_ADMIN, NET_RAW, " \
@@ -68,7 +64,8 @@ static cfg_opt_t BUILD_OPTS[] = {
 	CFG_STR("description", NULL, CFGF_NONE),
 	
 	CFG_SEC("init_method", init_method_OPTS, CFGF_NONE),
-	CFG_SEC("init_mount",  init_mount_OPTS,  CFGF_MULTI|CFGF_TITLE),
+	
+	CFG_SEC("mount", init_mount_OPTS, CFGF_MULTI|CFGF_TITLE),
 	
 	CFG_STR_LIST("vx_bcaps",  DEFAULT_BCAPS, CFGF_NONE),
 	CFG_STR_LIST("vx_ccaps",  DEFAULT_CCAPS, CFGF_NONE),
@@ -76,12 +73,37 @@ static cfg_opt_t BUILD_OPTS[] = {
 	CFG_END()
 };
 
+static xid_t xid = 0;
+static char *name = NULL;
+static char vdir[PATH_MAX];
+static int rebuild = 0;
+
 static
-int template_extract(const char *filename)
+xmlrpc_value *build_root_filesystem(xmlrpc_env *env, int fd)
 {
+	const char *vserverdir;
+	struct stat sb;
 	struct archive *a;
 	struct archive_entry *entry;
-	int r, flags = 0;
+  int rc, flags = 0;
+	
+	vserverdir = cfg_getstr(cfg, "vserverdir");
+	
+	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
+	
+	if (rebuild && runlink(vdir) == -1)
+		method_return_faultf(env, MESYS, "runlink: %s", strerror(errno));
+	
+	if (lstat(vdir, &sb) == -1) {
+		if (errno != ENOENT)
+			method_return_faultf(env, MESYS, "lstat: %s", strerror(errno));
+	}
+	
+	else
+		method_return_fault(env, MEEXIST);
+	
+	if (mkdirp(vdir, 0755) == -1 || chroot_secure_chdir(vdir, "/") == -1)
+		method_return_faultf(env, MESYS, "secure_chdir: %s", strerror(errno));
 	
 	flags |= ARCHIVE_EXTRACT_OWNER;
 	flags |= ARCHIVE_EXTRACT_PERM;
@@ -94,126 +116,24 @@ int template_extract(const char *filename)
 	archive_read_support_compression_gzip(a);
 	archive_read_support_format_tar(a);
 	
-	if ((r = archive_read_open_file(a, filename, 10240)))
-		return errno = MECONF, -1;
+	if (archive_read_open_fd(a, fd, 10240))
+		method_return_faultf(env, MESYS, "%s", "could not open template archive for reading");
 	
 	while (1) {
-		r = archive_read_next_header(a, &entry);
+		rc = archive_read_next_header(a, &entry);
 		
-		if (r == ARCHIVE_EOF)
+		if (rc == ARCHIVE_EOF)
 			break;
 		
-		if (r != ARCHIVE_OK)
-			return errno = MECONF, -1;
+		if (rc != ARCHIVE_OK)
+			method_return_faultf(env, MESYS, "%s", "could not read template archive");
 		
 		if (archive_read_extract(a, entry, flags))
-			return errno = MECONF, -1;
+			method_return_faultf(env, MESYS, "%s", "could not extract template archive");
 	}
 	
 	archive_read_close(a);
 	archive_read_finish(a);
-	
-	return 0;
-}
-
-/* vx.create(string name, int xid, string template[, int rebuild]) */
-XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
-{
-	int i, errno_orig;
-	XMLRPC_VALUE params = method_get_params(r);
-	
-	const char *name     = XMLRPC_VectorGetStringWithID(params, "name");
-	const char *template = XMLRPC_VectorGetStringWithID(params, "template");
-	
-	xid_t xid   = XMLRPC_VectorGetIntWithID(params, "xid");
-	int rebuild = XMLRPC_VectorGetIntWithID(params, "rebuild");
-	
-	if (!name || !*name || !template || !*template || xid < 2)
-		return method_error(MEREQ);
-	
-	xid_t xid_buf;
-	
-	if (vxdb_getxid(name, &xid_buf) == 0) {
-		if (xid == xid_buf) {
-			if (auth_isadmin(r) || auth_isowner(r)) {
-				if (!rebuild)
-					return method_error(MEEXIST);
-				else if (vx_get_info(xid, NULL) == 0)
-					return method_error(MERUNNING);
-			}
-			
-			else
-				return method_error(MEPERM);
-		}
-		
-		else if (auth_isadmin(r))
-			return method_error(MEEXIST);
-		
-		else
-			return method_error(MEPERM);
-	}
-	
-	else if (!auth_isadmin(r))
-		return method_error(MEPERM);
-	
-	else
-		rebuild = 0;
-	
-	char *vdirbase = cfg_getstr(cfg, "vserver-dir");
-	
-	if (!vdirbase || !*vdirbase)
-		return method_error(MECONF);
-	
-	char vdir[PATH_MAX];
-	snprintf(vdir, PATH_MAX, "%s/%s", vdirbase, name);
-	
-	char *templatedir = cfg_getstr(cfg, "template-dir");
-	
-	if (!templatedir || !*templatedir)
-		return method_error(MENOENT);
-	
-	char templateconf[PATH_MAX];
-	snprintf(templateconf, PATH_MAX, "%s/%s.conf", templatedir, template);
-	
-	cfg_t *build_cfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
-	
-	switch (cfg_parse(build_cfg, templateconf)) {
-	case CFG_FILE_ERROR:
-		return method_error(MENOENT);
-	
-	case CFG_PARSE_ERROR:
-		return method_error(MECONF);
-	
-	default:
-		break;
-	}
-	
-	char *archivefile = cfg_getstr(build_cfg, "archive");
-	
-	if (!archivefile || !*archivefile)
-		return method_error(MECONF);
-	
-	char templatearchive[PATH_MAX];
-	snprintf(templatearchive, PATH_MAX, "%s/%s", templatedir, archivefile);
-	
-	if (rebuild && runlink(vdir) == -1)
-		return method_error(MESYS);
-	
-	struct stat sb;
-	
-	if (lstat(vdir, &sb) == -1) {
-		if (errno != ENOENT)
-			return method_error(MESYS);
-	}
-	
-	else
-		return method_error(MEEXIST);
-	
-	if (mkdirp(vdir, 0755) == -1 || chroot_secure_chdir(vdir, ".") == -1)
-		return method_error(MESYS);
-	
-	if (template_extract(templatearchive) == -1)
-		return method_error(errno);
 	
 	if (runlink("dev") == -1 ||
 	    mkdir("dev", 0755) == -1 ||
@@ -224,144 +144,224 @@ XMLRPC_VALUE m_vx_create(XMLRPC_SERVER s, XMLRPC_REQUEST r, void *d)
 	    mknod("dev/urandom", 0644 | S_IFCHR, makedev(1,9)) == -1 ||
 	    mknod("dev/tty",     0666 | S_IFCHR, makedev(5,0)) == -1 ||
 	    mknod("dev/ptmx",    0666 | S_IFCHR, makedev(5,2)) == -1)
-		return method_error(MESYS);
+		method_return_faultf(env, MESYS, "could not sanitize /dev: %s", strerror(errno));
 	
-	if (!dbi_conn_queryf(vxdb, "BEGIN TRANSACTION"))
-		return method_error(MEVXDB);
+	return NULL;
+}
+
+static
+xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
+{
+	STRALLOC sa;
+	cfg_t *init_method_cfg, *mount_cfg;
+	const char *method, *start, *stop;
+	const char *path, *spec, *vfstype, *mntops;
+	int i, timeout, mount_size;
+	int vx_bcaps_size, vx_ccaps_size, vx_flags_size;
+	const char *bcap, *ccap, *flag;
+	char *sql;
 	
-	cfg_t *init_method_cfg = cfg_getsec(build_cfg, "init_method");
+	stralloc_init(&sa);
+	stralloc_cats(&sa, "BEGIN TRANSACTION;");
+	
+	init_method_cfg = cfg_getsec(tcfg, "init_method");
 	
 	if (init_method_cfg) {
-		char *method  = cfg_getstr(init_method_cfg, "method");
-		char *start   = cfg_getstr(init_method_cfg, "start");
-		char *stop    = cfg_getstr(init_method_cfg, "stop");
-		int   timeout = cfg_getint(init_method_cfg, "timeout");
+		method  = cfg_getstr(init_method_cfg, "method");
+		start   = cfg_getstr(init_method_cfg, "start");
+		stop    = cfg_getstr(init_method_cfg, "stop");
+		timeout = cfg_getint(init_method_cfg, "timeout");
 		
-		if (!method || !*method)
+		if (str_isempty(method))
 			method = "init";
 		
-		if (!start || !*start)
+		if (str_isempty(start))
 			start = "";
 		
-		if (!stop || !*stop)
+		if (str_isempty(stop))
 			stop = "";
 		
 		if (timeout < 0)
 			timeout = 0;
 		
-		if (!dbi_conn_queryf(vxdb,
+		stralloc_catf(&sa,
 			"INSERT OR REPLACE INTO init_method (xid, method, start, stop, timeout) "
-			"VALUES (%d, '%s', '%s', '%s', %d)",
-			xid, method, start, stop, timeout)) goto rolledback;
+			"VALUES (%d, '%s', '%s', '%s', %d);",
+			xid, method, start, stop, timeout);
 	}
 	
-	int init_mount_size = cfg_size(build_cfg, "init_mount");
+	mount_size = cfg_size(tcfg, "init_mount");
 	
-	for (i = 0; i < init_mount_size; i++) {
-		cfg_t *init_mount_cfg = cfg_getnsec(build_cfg, "init_mount", i);
+	for (i = 0; i < mount_size; i++) {
+		mount_cfg = cfg_getnsec(tcfg, "mount", i);
 		
-		const char *file = cfg_title(init_mount_cfg);
+		path    = cfg_title(mount_cfg);
+		spec    = cfg_getstr(mount_cfg, "spec");
+		vfstype = cfg_getstr(mount_cfg, "vfstype");
+		mntops  = cfg_getstr(mount_cfg, "mntops");
 		
-		char *spec    = cfg_getstr(init_mount_cfg, "spec");
-		char *vfstype = cfg_getstr(init_mount_cfg, "vfstype");
-		char *mntops  = cfg_getstr(init_mount_cfg, "mntops");
+		if (!validate_path(path))
+			method_return_faultf(env, MECONF, "invalid mount path: %s", path);
 		
-		if (!file || !*file || !spec || !*spec) {
-			errno = MECONF;
-			goto rollback;
-		}
-		
-		if (!mntops || !*mntops)
+		if (str_isempty(mntops))
 			mntops = "defaults";
 		
-		if (!vfstype || !*vfstype)
+		if (str_isempty(vfstype))
 			vfstype = "auto";
 		
-		if (!dbi_conn_queryf(vxdb,
-			"INSERT OR REPLACE INTO init_mount (xid, file, spec, vfstype, mntops) "
-			"VALUES (%d, '%s', '%s', '%s', '%s')",
-			xid, file, spec, vfstype, mntops)) goto rolledback;
+		stralloc_catf(&sa,
+			"INSERT OR REPLACE INTO init_mount (xid, path, spec, vfstype, mntops) "
+			"VALUES (%d, '%s', '%s', '%s', '%s');",
+			xid, path, spec, vfstype, mntops);
 		
-		if (chroot_mkdirp(vdir, file, 0755) == -1) {
-			errno = MESYS;
-			goto rollback;
-		}
+		if (chroot_mkdirp(vdir, path, 0755) == -1)
+			method_return_faultf(env, MESYS, "chroot_mkdirp: %s", strerror(errno));
 	}
 	
 	if (rebuild)
-		goto out;
+		goto commit;
 	
-	int vx_bcaps_size = cfg_size(build_cfg, "vx_bcaps");
+	vx_bcaps_size = cfg_size(tcfg, "vx_bcaps");
 	
 	for (i = 0; i < vx_bcaps_size; i++) {
-		char *bcap = cfg_getnstr(build_cfg, "vx_bcaps", i);
+		bcap = cfg_getnstr(tcfg, "vx_bcaps", i);
 		
-		if (!flist64_getval(bcaps_list, bcap)) {
-			errno = MECONF;
-			goto rollback;
-		}
+		if (!flist64_getval(bcaps_list, bcap))
+			method_return_faultf(env, MECONF, "invalid bcap: %s", bcap);
 		
-		if (!dbi_conn_queryf(vxdb,
-			"INSERT OR ROLLBACK INTO vx_bcaps (xid, bcap) "
-			"VALUES (%d, '%s')",
-			xid, bcap)) goto rolledback;
+		stralloc_catf(&sa,
+			"INSERT OR REPLACE INTO vx_bcaps (xid, bcap) "
+			"VALUES (%d, '%s');",
+			xid, bcap);
 	}
 	
-	int vx_ccaps_size = cfg_size(build_cfg, "vx_ccaps");
+	vx_ccaps_size = cfg_size(tcfg, "vx_ccaps");
 	
 	for (i = 0; i < vx_ccaps_size; i++) {
-		char *ccap = cfg_getnstr(build_cfg, "vx_ccaps", i);
+		ccap = cfg_getnstr(tcfg, "vx_ccaps", i);
 		
-		if (!flist64_getval(ccaps_list, ccap)) {
-			errno = MECONF;
-			goto rollback;
-		}
+		if (!flist64_getval(ccaps_list, ccap))
+			method_return_faultf(env, MECONF, "invalid ccap: %s", ccap);
 		
-		if (!dbi_conn_queryf(vxdb,
-			"INSERT OR ROLLBACK INTO vx_ccaps (xid, ccap) "
-			"VALUES (%d, '%s')",
-			xid, ccap)) goto rolledback;
+		stralloc_catf(&sa,
+			"INSERT OR REPLACE INTO vx_ccaps (xid, ccap) "
+			"VALUES (%d, '%s');",
+			xid, ccap);
 	}
 	
-	int vx_flags_size = cfg_size(build_cfg, "vx_flags");
+	vx_flags_size = cfg_size(tcfg, "vx_flags");
 	
 	for (i = 0; i < vx_flags_size; i++) {
-		char *flag = cfg_getnstr(build_cfg, "vx_flags", i);
+		flag = cfg_getnstr(tcfg, "vx_flags", i);
 		
-		if (!flist64_getval(cflags_list, flag)) {
-			errno = MECONF;
-			goto rollback;
+		if (!flist64_getval(cflags_list, flag))
+			method_return_faultf(env, MECONF, "invalid cflag: %s", flag);
+		
+		stralloc_catf(&sa,
+			"INSERT OR REPLACE INTO vx_flags (xid, flag) "
+			"VALUES (%d, '%s');",
+			xid, flag);
+	}
+	
+	stralloc_catf(&sa,
+		"INSERT OR REPLACE INTO xid_name_map (xid, name) VALUES (%d, '%s');",
+		xid, name);
+	
+commit:
+	stralloc_cats(&sa, "COMMIT TRANSACTION;");
+	sql = strndup(sa.s, sa.len);
+	stralloc_free(&sa);
+	
+	if (!dbi_conn_queryf(vxdb, sql)) {
+		free(sql);
+		method_return_fault(env, MEVXDB);
+	}
+	
+	return NULL;
+}
+
+/* vx.create(string name, string template, int rebuild) */
+xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
+{
+	xmlrpc_value *params;
+	char *user, *template, *templateconf, *templatearchive;
+	const char *datadir, *archivename;
+	cfg_t *tcfg;
+	int archivefd;
+	
+	method_init(env, p, VCD_CAP_CREATE, 0);
+	method_return_if_fault(env);
+	
+	xmlrpc_decompose_value(env, p,
+		"({s:s,*}V)",
+		"username", &user,
+		&params);
+	method_return_if_fault(env);
+	
+	xmlrpc_decompose_value(env, params,
+		"{s:s,s:s,s:i,*}",
+		"name", &name,
+		"template", &template,
+		"rebuild", &rebuild);
+	method_return_if_fault(env);
+	
+	if (!validate_name(name) || str_isempty(template))
+		method_return_fault(env, MEINVAL);
+	
+	if ((xid = vxdb_getxid(name))) {
+		if (auth_isadmin(user) || auth_isowner(user, name)) {
+			if (!rebuild)
+				method_return_fault(env, MEEXIST);
+			else if (vx_get_info(xid, NULL) == 0)
+				method_return_fault(env, MERUNNING);
 		}
 		
-		if (!dbi_conn_queryf(vxdb,
-			"INSERT OR ROLLBACK INTO vx_flags (xid, flag) "
-			"VALUES (%d, '%s')",
-			xid, flag)) goto rolledback;
+		else
+			method_return_fault(env, MEPERM);
+	}
+		
+	else
+		rebuild = 0;
+	
+	datadir = cfg_getstr(cfg, "datadir");
+	
+	asprintf(&templateconf, "%s/%s.conf", datadir, template);
+	
+	tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
+	
+	switch (cfg_parse(tcfg, templateconf)) {
+	case CFG_FILE_ERROR:
+		free(templateconf);
+		method_return_faultf(env, MECONF, "no template configuration found for '%s'", template);
+	
+	case CFG_PARSE_ERROR:
+		free(templateconf);
+		method_return_faultf(env, MECONF, "%s", "syntax error in template configuration");
+	
+	default:
+		free(templateconf);
+		break;
 	}
 	
-	if (!dbi_conn_queryf(vxdb,
-		"INSERT OR ROLLBACK INTO xid_name_map (xid, name) VALUES (%d, '%s')",
-		xid, name)) goto rolledback;
+	archivename = cfg_getstr(tcfg, "archive");
 	
-	int uid;
+	if (str_isempty(archivename))
+		method_return_faultf(env, MECONF, "invalid archive configuration for '%s'", template);
 	
-	if (!auth_isadmin(r) && (uid = auth_getuid(r)) > 0) {
-		if (!dbi_conn_queryf(vxdb,
-			"INSERT OR ROLLBACK INTO xid_uid_map (xid, uid) VALUES (%d, %d)",
-			xid, uid)) goto rolledback;
+	asprintf(&templatearchive, "%s/templates/%s", datadir, archivename);
+	
+	if ((archivefd = open_read(templatearchive)) == -1) {
+		free(templatearchive);
+		method_return_faultf(env, MECONF, "could not open template archive: %s", strerror(errno));
 	}
 	
-out:
-	if (dbi_conn_queryf(vxdb, "COMMIT TRANSACTION"))
-		return params;
-	/* fall through just in case */
+	free(templatearchive);
 	
-rolledback:
-	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	return method_error(MEVXDB);
+	build_root_filesystem(env, archivefd);
+	method_return_if_fault(env);
 	
-rollback:
-	errno_orig = errno;
-	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	return method_error(errno_orig);
+	create_vxdb_entries(env, tcfg);
+	method_return_if_fault(env);
+	
+	return NULL;
 }

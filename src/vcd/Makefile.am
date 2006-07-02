@@ -23,6 +23,7 @@ INCLUDES = -I$(top_srcdir)/lib/libarchive \
 LIBS = $(top_builddir)/src/vcd/methods/libmethods.a \
        $(top_builddir)/lib/libarchive/libarchive.a \
        $(top_builddir)/lib/lucid/libucid.a \
+       $(BZ2_LIBS) $(Z_LIBS) \
        $(CONFUSE_LIBS) \
        $(DBI_LIBS) \
        $(VSERVER_LIBS) \

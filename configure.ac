@@ -107,8 +107,12 @@ AC_SUBST(XMLRPC_C_SERVER_LIBS)
 AC_CHECK_LIB(bz2, BZ2_bzDecompressInit,
 	BZ2_LIBS="-lbz2", AC_MSG_ERROR([libbz2 not found]),)
 
+AC_SUBST(BZ2_LIBS)
+
 AC_CHECK_LIB(z, inflate,
-	BZ2_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
+	Z_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
+
+AC_SUBST(Z_LIBS)
 
 # Checks for header files.
 

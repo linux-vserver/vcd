@@ -18,7 +18,8 @@
 INCLUDES = -I$(top_srcdir)/lib/lucid \
            -I$(top_srcdir)/src/vcd
 
-M_VX = vx/vx_killer.c \
+M_VX = vx/vx_create.c \
+       vx/vx_killer.c \
        vx/vx_start.c \
        vx/vx_stop.c
 
