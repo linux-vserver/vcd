@@ -1,6 +1,9 @@
 default: all
 
-all:
+libarchive:
+	make -C lib/libarchive -f Makefile.svn
+
+all: libarchive
 	aclocal -I m4
 	autoheader
 	libtoolize --force --copy --automake
