@@ -15,7 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include "lucid.h"
+
 #include "auth.h"
+#include "lists.h"
 #include "vxdb.h"
 
 int auth_isvalid(const char *user, const char *pass)
@@ -56,8 +59,42 @@ int auth_isadmin(const char *user)
 	return rc;
 }
 
+static
+int auth_hascapability(const char *user, uint64_t cap)
+{
+	dbi_result dbr;
+	const char *buf;
+	int uid, rc = 0;
+	
+	if (!(uid = auth_getuid(user)))
+		return 0;
+	
+	if (!(buf = flist64_getkey(vcd_caps_list, cap)))
+		return 0;
+	
+	dbr = dbi_conn_queryf(vxdb,
+		"SELECT uid FROM user_caps WHERE uid = %d and cap = '%s'",
+		uid, buf);
+	
+	if (!dbr)
+		return 0;
+	
+	if (dbi_result_get_numrows(dbr) > 0)
+		rc = 1;
+	
+	dbi_result_free(dbr);
+	return rc;
+}
+
 int auth_capable(const char *user, uint64_t caps)
 {
+	int i;
+	
+	for (i = 0; vcd_caps_list[i].key; i++)
+		if (caps & vcd_caps_list[i].val)
+			if (!auth_hascapability(user, vcd_caps_list[i].val))
+				return 0;
+	
 	return 1;
 }
 

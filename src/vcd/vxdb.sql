@@ -37,6 +37,11 @@ CREATE TABLE IF NOT EXISTS user (
   UNIQUE(uid),
   UNIQUE(name)
 );
+CREATE TABLE IF NOT EXISTS user_caps (
+  uid SMALLINT NOT NULL,
+  cap TEXT NOT NULL,
+  UNIQUE(uid, cap)
+);
 CREATE TABLE IF NOT EXISTS vx_bcaps (
   xid SMALLINT NOT NULL,
   bcap TEXT NOT NULL,

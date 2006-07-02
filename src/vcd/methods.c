@@ -63,6 +63,9 @@ int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry)
 	MREGISTER("vxdb.owner.add",        m_vxdb_owner_add);
 	MREGISTER("vxdb.owner.get",        m_vxdb_owner_get);
 	MREGISTER("vxdb.owner.remove",     m_vxdb_owner_remove);
+	MREGISTER("vxdb.user.caps.add",    m_vxdb_user_caps_add);
+	MREGISTER("vxdb.user.caps.get",    m_vxdb_user_caps_get);
+	MREGISTER("vxdb.user.caps.remove", m_vxdb_user_caps_remove);
 	MREGISTER("vxdb.user.get",         m_vxdb_user_get);
 	MREGISTER("vxdb.user.remove",      m_vxdb_user_remove);
 	MREGISTER("vxdb.user.set",         m_vxdb_user_set);

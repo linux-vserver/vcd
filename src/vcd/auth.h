@@ -20,19 +20,19 @@
 
 #include <stdint.h>
 
-#define VCD_CAP_AUTH    1
-#define VCD_CAP_DLIM    2
-#define VCD_CAP_INIT    3
-#define VCD_CAP_MOUNT   4
-#define VCD_CAP_NET     5
-#define VCD_CAP_BCAP    6
-#define VCD_CAP_CCAP    7
-#define VCD_CAP_CFLAG   8
-#define VCD_CAP_RLIM    9
-#define VCD_CAP_SCHED  10
-#define VCD_CAP_UNAME  11
-#define VCD_CAP_BUILD  12
-#define VCD_CAP_HELPER 13
+#define VCD_CAP_AUTH   (1 <<  0)
+#define VCD_CAP_DLIM   (1 <<  1)
+#define VCD_CAP_INIT   (1 <<  2)
+#define VCD_CAP_MOUNT  (1 <<  3)
+#define VCD_CAP_NET    (1 <<  4)
+#define VCD_CAP_BCAP   (1 <<  5)
+#define VCD_CAP_CCAP   (1 <<  6)
+#define VCD_CAP_CFLAG  (1 <<  7)
+#define VCD_CAP_RLIM   (1 <<  8)
+#define VCD_CAP_SCHED  (1 <<  9)
+#define VCD_CAP_UNAME  (1 << 10)
+#define VCD_CAP_BUILD  (1 << 11)
+#define VCD_CAP_HELPER (1 << 12)
 
 int auth_isvalid(const char *user, const char *pass);
 int auth_isadmin(const char *user);

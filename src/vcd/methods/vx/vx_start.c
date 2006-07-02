@@ -732,7 +732,7 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name;
 	xid_t xid;
 	
-	params = method_init(env, p, VCD_CAP_BUILD, 0);
+	params = method_init(env, p, VCD_CAP_INIT, 1);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

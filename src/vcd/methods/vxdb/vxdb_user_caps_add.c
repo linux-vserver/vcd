@@ -22,35 +22,32 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.uname.set(string name, string uname, string value) */
-xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
+/* vxdb.user.caps.add(string username, string cap) */
+xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *name, *uname, *value;
-	xid_t xid;
+	char *user, *cap;
+	int uid;
 	dbi_result dbr;
 	
-	params = method_init(env, p, VCD_CAP_UNAME, 1);
+	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:s,*}",
-		"name", &name,
-		"uname", &uname,
-		"value", &value);
+		"{s:s,s:s,*}",
+		"username", &user,
+		"cap", &cap);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_uname(str_toupper(uname)) ||
-	    !validate_uname_value(value))
+	if (!validate_username(user) || !validate_vcd_cap(str_toupper(cap)))
 		method_return_fault(env, MEINVAL);
 	
-	if (!(xid = vxdb_getxid(name)))
-		method_return_fault(env, MENOVPS);
+	if (!(uid = auth_getuid(user)))
+		method_return_fault(env, MENOUSER);
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"INSERT OR REPLACE INTO vx_uname (xid, uname, value) "
-		"VALUES (%d, '%s', '%s')",
-		xid, uname, value);
+		"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
+		uid, cap);
 	
 	if (!dbr)
 		method_return_fault(env, MEVXDB);

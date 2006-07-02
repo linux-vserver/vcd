@@ -29,6 +29,9 @@ int validate_name(const char *name)
 	if (str_isempty(name))
 		return 0;
 	
+	if (strlen(name) < 3 || strlen(name) > 64)
+		return 0;
+	
 	return str_isalnum(name);
 }
 
@@ -95,6 +98,14 @@ int validate_password(const char *password)
 		return 0;
 	
 	return strlen(password) >= 8;
+}
+
+int validate_vcd_cap(const char *cap)
+{
+	if (str_isempty(cap))
+		return 0;
+	
+	return flist64_getval(vcd_caps_list, cap) == 0 ? 0 : 1;
 }
 
 int validate_bcap(const char *bcap)

@@ -34,7 +34,7 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xid_t xid;
 	dbi_result dbr;
 	
-	params = method_init(env, p, VCD_CAP_DLIM, 1);
+	params = method_init(env, p, VCD_CAP_RLIM, 1);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

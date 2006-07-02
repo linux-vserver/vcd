@@ -36,6 +36,8 @@ int validate_addr(const char *addr);
 int validate_username(const char *username);
 int validate_password(const char *password);
 
+int validate_vcd_cap(const char *bcap);
+
 int validate_bcap(const char *bcap);
 int validate_ccap(const char *ccap);
 int validate_cflag(const char *cflag);
