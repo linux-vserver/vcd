@@ -17,6 +17,8 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 #include <vserver.h>
 #include <sys/stat.h>
 
@@ -36,8 +38,9 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xid_t xid;
 	dbi_result dbr;
 	const char *vserverdir;
+	struct stat sb;
 	
-	method_init(env, p, VCD_CAP_CREATE, 1);
+	params = method_init(env, p, VCD_CAP_CREATE, 1);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
@@ -88,5 +91,5 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	else
 		method_return_faultf(env, MEEXIST, "vdir still exists after runlink: %s", vdir);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

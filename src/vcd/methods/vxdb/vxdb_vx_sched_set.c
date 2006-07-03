@@ -28,7 +28,7 @@
 xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *name;
+	char *name;
 	int cpuid, fillrate, interval, fillrate2, interval2;
 	int tokensmin, tokensmax, priobias;
 	xid_t xid;
@@ -71,5 +71,5 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

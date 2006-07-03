@@ -25,8 +25,8 @@
 /* vxdb.init.mount.remove(string name[, string path]) */
 xmlrpc_value *m_vxdb_mount_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
-	const char *name, *path;
+	xmlrpc_value *params;
+	char *name, *path;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -39,41 +39,13 @@ xmlrpc_value *m_vxdb_mount_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"path", &path);
 	method_return_if_fault(env);
 	
-	if (str_isempty(path))
-		path = NULL;
+	method_empty_params(1, &path);
 	
 	if (!validate_name(name) || (path && !validate_path(path)))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
-	if (path)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT path,spec,mntops,vfstype FROM mount "
-			"WHERE xid = %d AND path = '%s'",
-			xid, path);
-	
-	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT path,spec,mntops,vfstype FROM mount "
-			"WHERE xid = %d ORDER BY path ASC",
-			xid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	response = xmlrpc_array_new(env);
-	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:s,s:s,s:s}",
-			"path",    dbi_result_get_string(dbr, "path"),
-			"spec",    dbi_result_get_string(dbr, "spec"),
-			"mntops",  dbi_result_get_string(dbr, "mntops"),
-			"vfstype", dbi_result_get_string(dbr, "vfstype")));
-	
-	method_return_if_fault(env);
 	
 	if (path)
 		dbr = dbi_conn_queryf(vxdb,
@@ -88,5 +60,5 @@ xmlrpc_value *m_vxdb_mount_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return response;
+	return xmlrpc_nil_new(env);
 }

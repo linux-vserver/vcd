@@ -24,7 +24,7 @@
 xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *name;
+	char *name;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -55,7 +55,7 @@ xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"method",  "init",
 			"start",   "",
 			"stop",    "",
-			"timeout", 0);
+			"timeout", 30);
 	
 	else {
 		dbi_result_first_row(dbr);

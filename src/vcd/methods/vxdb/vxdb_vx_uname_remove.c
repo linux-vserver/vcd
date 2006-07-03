@@ -25,7 +25,7 @@
 /* vxdb.vx.uname.remove(string name[, string uname]) */
 xmlrpc_value *m_vxdb_vx_uname_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params;
 	char *name, *uname;
 	xid_t xid;
 	dbi_result dbr;
@@ -39,37 +39,13 @@ xmlrpc_value *m_vxdb_vx_uname_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"uname", &uname);
 	method_return_if_fault(env);
 	
-	if (str_isempty(str_toupper(uname)))
-		uname = NULL;
+	method_empty_params(1, &uname);
 	
 	if (!validate_name(name) || (uname && !validate_uname(uname)))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
-	if (uname)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uname,value FROM vx_uname WHERE xid = %d AND uname = '%s'",
-			xid, uname);
-	
-	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uname,value FROM vx_uname WHERE xid = %d",
-			xid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	response = xmlrpc_array_new(env);
-	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:s}",
-			"uname",    dbi_result_get_string(dbr, "uname"),
-			"value",    dbi_result_get_string(dbr, "value")));
-	
-	method_return_if_fault(env);
 	
 	if (uname)
 		dbr = dbi_conn_queryf(vxdb,
@@ -84,5 +60,5 @@ xmlrpc_value *m_vxdb_vx_uname_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return response;
+	return xmlrpc_nil_new(env);
 }

@@ -24,7 +24,7 @@
 xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *user, *pass;
+	char *user, *pass;
 	int uid, admin;
 	dbi_result dbr;
 	
@@ -38,19 +38,21 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"admin", &admin);
 	method_return_if_fault(env);
 	
-	if (!validate_username(user) || !validate_password(pass))
-		method_return_fault(env, MEINVAL);
+	method_empty_params(1, &pass);
 	
-	if (!dbi_conn_queryf(vxdb, "BEGIN TRANSACTION"))
-		method_return_fault(env, MEVXDB);
+	if (!validate_username(user))
+		method_return_fault(env, MEINVAL);
 	
 	uid = auth_getuid(user);
 	
 	if (uid == 0) {
+		if (!validate_password(pass))
+			method_return_fault(env, MEINVAL);
+		
 		dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
 		
 		if (!dbr)
-			goto rollback;
+			method_return_fault(env, MEVXDB);
 		
 		if (dbi_result_get_numrows(dbr) > 0) {
 			dbi_result_first_row(dbr);
@@ -58,23 +60,33 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		}
 		
 		uid++;
+		
+		dbr = dbi_conn_queryf(vxdb,
+			"INSERT INTO user (uid, name, password, admin) "
+			"VALUES (%d, '%s', '%s', %d)",
+			uid, user, pass, admin);
+		
+		if (!dbr)
+			method_return_fault(env, MEVXDB);
 	}
 	
-	/* TODO: password to SHA-1 */
+	else {
+		dbr = dbi_conn_queryf(vxdb,
+			"UPDATE user SET admin = %d WHERE uid = %d",
+			admin, uid);
+		
+		if (!dbr)
+			method_return_fault(env, MEVXDB);
+		
+		if (pass) {
+			dbr = dbi_conn_queryf(vxdb,
+				"UPDATE user SET password = '%s' WHERE uid = %d",
+				pass, uid);
+			
+			if (!dbr)
+				method_return_fault(env, MEVXDB);
+		}
+	}
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"INSERT OR REPLACE INTO user (uid, name, password, admin) "
-		"VALUES (%d, '%s', '%s', %d)",
-		uid, user, pass, admin);
-	
-	if (!dbr)
-		goto rollback;
-	
-	dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
-	
-	return params;
-	
-rollback:
-	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	method_return_fault(env, MEVXDB);
+	return xmlrpc_nil_new(env);
 }

@@ -28,7 +28,7 @@
 xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *name, *method, *start, *stop;
+	char *name, *method, *start, *stop;
 	int timeout;
 	xid_t xid;
 	dbi_result dbr;
@@ -44,6 +44,8 @@ xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"stop", &stop,
 		"timeout", &timeout);
 	method_return_if_fault(env);
+	
+	method_empty_params(2, &start, &stop);
 	
 	if (!validate_name(name) || !validate_init_method(method) ||
 	   (start && !validate_runlevel(start)) ||
@@ -68,21 +70,21 @@ xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (dbi_result_get_numrows(dbr) > 0) {
 		dbi_result_first_row(dbr);
 		
-		if (str_isempty(start))
-			start = dbi_result_get_string(dbr, "start");
+		if (!start)
+			start = (char *) dbi_result_get_string(dbr, "start");
 		
-		if (str_isempty(stop))
-			stop = dbi_result_get_string(dbr, "stop");
+		if (!stop)
+			stop = (char *) dbi_result_get_string(dbr, "stop");
 		
 		if (timeout < 1)
 			timeout = dbi_result_get_int(dbr, "timeout");
 	}
 	
 	else {
-		if (str_isempty(start))
+		if (!start)
 			start = "";
 		
-		if (str_isempty(stop))
+		if (!stop)
 			stop = "";
 		
 		if (timeout < 1)
@@ -102,7 +104,7 @@ xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		goto rollback;
 	
-	return params;
+	return xmlrpc_nil_new(env);
 	
 rollback:
 	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");

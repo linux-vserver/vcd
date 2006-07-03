@@ -786,5 +786,5 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 cleanup:
 	cleanup_on_exit();
-	return params;
+	return xmlrpc_nil_new(env);
 }

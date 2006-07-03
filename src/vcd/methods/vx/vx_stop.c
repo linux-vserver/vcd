@@ -176,5 +176,5 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	m_vx_killer(env, p, c);
 	method_return_if_fault(env);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

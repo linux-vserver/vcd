@@ -25,8 +25,8 @@
 /* vxdb.nx.addr.remove(string name[, string addr]) */
 xmlrpc_value *m_vxdb_nx_addr_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
-	const char *name, *addr;
+	xmlrpc_value *params;
+	char *name, *addr;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -39,40 +39,13 @@ xmlrpc_value *m_vxdb_nx_addr_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"addr", &addr);
 	method_return_if_fault(env);
 	
-	if (str_isempty(addr))
-		addr = NULL;
+	method_empty_params(1, &addr);
 	
 	if (!validate_name(name) || (addr && !validate_addr(addr)))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
-	if (addr)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT addr,broadcast,netmask FROM nx_addr "
-			"WHERE xid = %d AND addr = '%s'",
-			xid, addr);
-	
-	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT addr,broadcast,netmask FROM nx_addr "
-			"WHERE xid = %d",
-			xid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	response = xmlrpc_array_new(env);
-	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:s,s:s}",
-			"addr",      dbi_result_get_string(dbr, "addr"),
-			"broadcast", dbi_result_get_string(dbr, "broadcast"),
-			"netmask",   dbi_result_get_string(dbr, "netmask")));
-	
-	method_return_if_fault(env);
 	
 	if (addr)
 		dbr = dbi_conn_queryf(vxdb,
@@ -87,5 +60,5 @@ xmlrpc_value *m_vxdb_nx_addr_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return response;
+	return xmlrpc_nil_new(env);
 }

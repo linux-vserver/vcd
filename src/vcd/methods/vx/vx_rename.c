@@ -17,8 +17,9 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <string.h>
 #include <vserver.h>
-#include <sys/stat.h>
 
 #include "auth.h"
 #include "cfg.h"
@@ -30,12 +31,12 @@
 xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *name, vdir[PATH_MAX], newvdir[PATH_MAX];
+	char *name, *newname, vdir[PATH_MAX], newvdir[PATH_MAX];
 	xid_t xid;
 	dbi_result dbr;
 	const char *vserverdir;
 	
-	method_init(env, p, VCD_CAP_CREATE, 1);
+	params = method_init(env, p, VCD_CAP_CREATE, 1);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
@@ -71,5 +72,5 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

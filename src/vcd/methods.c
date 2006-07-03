@@ -17,6 +17,8 @@
 
 #include <string.h>
 
+#include "lucid.h"
+
 #include "auth.h"
 #include "methods.h"
 
@@ -43,7 +45,10 @@ int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry)
 	/* vx */
 	MREGISTER("vx.create",  m_vx_create);
 	MREGISTER("vx.killer",  m_vx_killer);
+	MREGISTER("vx.remove",  m_vx_remove);
+	MREGISTER("vx.rename",  m_vx_rename);
 	MREGISTER("vx.start",   m_vx_start);
+	MREGISTER("vx.status",   m_vx_status);
 	MREGISTER("vx.stop",    m_vx_stop);
 	
 	/* vxdb */
@@ -121,13 +126,31 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
 		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
 		method_return_if_fault(env);
 		
-		if (!auth_isowner(user, name)) {
+		if (!str_isempty(name) && !auth_isowner(user, name)) {
 			xmlrpc_env_set_fault(env, MENOVPS, method_strerror(MENOVPS));
 			return NULL;
 		}
 	}
 	
 	return params;
+}
+
+void method_empty_params(int num, ...)
+{
+	int i;
+	va_list ap;
+	char **ptr;
+	
+	va_start(ap, num);
+	
+	for (i = 0; i < num; i++) {
+		ptr = va_arg(ap, char **);
+		
+		if (str_isempty(*ptr))
+			*ptr = NULL;
+	}
+	
+	va_end(ap);
 }
 
 char *method_strerror(int id)

@@ -26,7 +26,7 @@
 xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *name, *path;
+	char *name, *path;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -39,8 +39,7 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"path", &path);
 	method_return_if_fault(env);
 	
-	if (str_isempty(path))
-		path = NULL;
+	method_empty_params(1, &path);
 	
 	if (!validate_name(name) || (path && !validate_path(path)))
 		method_return_fault(env, MEINVAL);

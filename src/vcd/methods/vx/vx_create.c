@@ -408,5 +408,5 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	create_vxdb_entries(env, tcfg);
 	method_return_if_fault(env);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

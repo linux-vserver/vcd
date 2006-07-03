@@ -46,6 +46,7 @@ int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry);
 xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
                           uint64_t caps, int ownercheck);
 
+void method_empty_params(int num, ...);
 char *method_strerror(int errnum);
 
 #define method_cleanup_if_fault(ENV) do { \
@@ -72,7 +73,10 @@ char *method_strerror(int errnum);
 /* vx */
 MPROTO(m_vx_create);
 MPROTO(m_vx_killer);
+MPROTO(m_vx_remove);
+MPROTO(m_vx_rename);
 MPROTO(m_vx_start);
+MPROTO(m_vx_status);
 MPROTO(m_vx_stop);
 
 /* vxdb */

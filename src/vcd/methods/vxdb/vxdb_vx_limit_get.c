@@ -18,17 +18,19 @@
 #include "lucid.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.limit.get(string name[, string limit]) */
+/* vxdb.vx.limit.get(string name, string limit) */
 xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
 	char *name, *limit;
 	xid_t xid;
 	dbi_result dbr;
+	int i;
 	
 	params = method_init(env, p, VCD_CAP_RLIM, 1);
 	method_return_if_fault(env);
@@ -39,40 +41,49 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"limit", &limit);
 	method_return_if_fault(env);
 	
-	if (str_isempty(str_toupper(limit)))
-		limit = NULL;
-	
-	if (!validate_name(name) || (limit && !validate_rlimit(limit)))
-		method_return_fault(env, MEINVAL);
-	
-	if (!(xid = vxdb_getxid(name)))
-		method_return_fault(env, MENOVPS);
-	
-	if (limit)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT type,soft,max FROM vx_limit "
-			"WHERE xid = %d AND limit = '%s'",
-			xid, limit);
-	
-	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT type,soft,max FROM vx_limit "
-			"WHERE xid = %d",
-			xid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	method_empty_params(2, &name, &limit);
 	
 	response = xmlrpc_array_new(env);
 	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:i,s:i}",
-			"limit", dbi_result_get_string(dbr, "type"),
-			"soft",  dbi_result_get_int(dbr, "soft"),
-			"max",   dbi_result_get_int(dbr, "max")));
+	if (!name) {
+		for (i = 0; rlimit_list[i].key; i++)
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:i,s:i}",
+				"limit", rlimit_list[i].key,
+				"soft",  0,
+				"max",   0));
+	}
+	
+	else {
+		if (!validate_name(name) || (limit && !validate_rlimit(limit)))
+			method_return_fault(env, MEINVAL);
+		
+		if (!(xid = vxdb_getxid(name)))
+			method_return_fault(env, MENOVPS);
+		
+		if (limit)
+			dbr = dbi_conn_queryf(vxdb,
+				"SELECT type,soft,max FROM vx_limit "
+				"WHERE xid = %d AND limit = '%s'",
+				xid, limit);
+		
+		else
+			dbr = dbi_conn_queryf(vxdb,
+				"SELECT type,soft,max FROM vx_limit "
+				"WHERE xid = %d",
+				xid);
+		
+		if (!dbr)
+			method_return_fault(env, MEVXDB);
+		
+		while (dbi_result_next_row(dbr))
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:i,s:i}",
+				"limit", dbi_result_get_string(dbr, "type"),
+				"soft",  dbi_result_get_int(dbr, "soft"),
+				"max",   dbi_result_get_int(dbr, "max")));
+	}
 	
 	method_return_if_fault(env);
-	
 	return response;
 }

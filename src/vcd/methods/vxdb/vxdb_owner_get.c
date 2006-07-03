@@ -24,7 +24,7 @@
 xmlrpc_value *m_vxdb_owner_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *name;
+	char *name;
 	xid_t xid;
 	dbi_result dbr;
 	

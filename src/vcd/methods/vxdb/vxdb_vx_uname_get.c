@@ -18,6 +18,7 @@
 #include "lucid.h"
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -29,6 +30,7 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name, *uname;
 	xid_t xid;
 	dbi_result dbr;
+	int i;
 	
 	params = method_init(env, p, VCD_CAP_UNAME, 1);
 	method_return_if_fault(env);
@@ -39,37 +41,47 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"uname", &uname);
 	method_return_if_fault(env);
 	
-	if (str_isempty(str_toupper(uname)))
-		uname = NULL;
-	
-	if (!validate_name(name) || (uname && !validate_uname(uname)))
-		method_return_fault(env, MEINVAL);
-	
-	if (!(xid = vxdb_getxid(name)))
-		method_return_fault(env, MENOVPS);
-	
-	if (uname)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uname,value FROM vx_uname WHERE xid = %d AND uname = '%s'",
-			xid, uname);
-	
-	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uname,value FROM vx_uname WHERE xid = %d",
-			xid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	method_empty_params(2, &name, &uname);
 	
 	response = xmlrpc_array_new(env);
 	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:s}",
-			"uname",    dbi_result_get_string(dbr, "uname"),
-			"value",    dbi_result_get_string(dbr, "value")));
+	if (!name) {
+		for (i = 0; vhiname_list[i].key; i++)
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:s}",
+				"uname", vhiname_list[i].key,
+				"value", ""));
+		
+		return response;
+	}
+	
+	else {
+		if (!validate_name(name) || (uname && !validate_uname(uname)))
+			method_return_fault(env, MEINVAL);
+		
+		if (!(xid = vxdb_getxid(name)))
+			method_return_fault(env, MENOVPS);
+		
+		if (uname)
+			dbr = dbi_conn_queryf(vxdb,
+				"SELECT uname,value FROM vx_uname WHERE xid = %d AND uname = '%s'",
+				xid, uname);
+		
+		else
+			dbr = dbi_conn_queryf(vxdb,
+				"SELECT uname,value FROM vx_uname WHERE xid = %d",
+				xid);
+		
+		if (!dbr)
+			method_return_fault(env, MEVXDB);
+		
+		while (dbi_result_next_row(dbr))
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:s}",
+				"uname", dbi_result_get_string(dbr, "uname"),
+				"value", dbi_result_get_string(dbr, "value")));
+	}
 	
 	method_return_if_fault(env);
-	
 	return response;
 }

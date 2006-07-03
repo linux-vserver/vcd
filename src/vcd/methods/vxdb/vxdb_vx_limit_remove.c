@@ -25,8 +25,8 @@
 /* vxdb.vx.limit.remove(string name[, string limit]) */
 xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
-	const char *name, *limit;
+	xmlrpc_value *params;
+	char *name, *limit;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -39,40 +39,13 @@ xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"limit", &limit);
 	method_return_if_fault(env);
 	
-	if (str_isempty(limit))
-		limit = NULL;
+	method_empty_params(1, &limit);
 	
 	if (!validate_name(name) || (limit && !validate_rlimit(limit)))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
-	if (limit)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT type,soft,max FROM vx_limit "
-			"WHERE xid = %d AND type = '%s'",
-			xid, limit);
-	
-	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT type,soft,max FROM vx_limit "
-			"WHERE xid = %d",
-			xid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	response = xmlrpc_array_new(env);
-	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:i,s:i}",
-			"limit", dbi_result_get_string(dbr, "type"),
-			"soft",  dbi_result_get_int(dbr, "soft"),
-			"max",   dbi_result_get_int(dbr, "max")));
-	
-	method_return_if_fault(env);
 	
 	if (limit)
 		dbr = dbi_conn_queryf(vxdb,
@@ -87,5 +60,5 @@ xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return response;
+	return xmlrpc_nil_new(env);
 }

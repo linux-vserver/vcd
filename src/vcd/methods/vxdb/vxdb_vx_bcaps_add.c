@@ -52,5 +52,5 @@ xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

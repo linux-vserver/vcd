@@ -24,7 +24,7 @@
 xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *user;
+	char *user;
 	dbi_result dbr;
 	int uid;
 	
@@ -39,23 +39,19 @@ xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!validate_username(user))
 		method_return_fault(env, MEINVAL);
 	
-	if (!dbi_conn_queryf(vxdb, "BEGIN TRANSACTION"))
-		method_return_fault(env, MEINVAL);
-	
 	if ((uid = auth_getuid(user)) == 0)
 		method_return_fault(env, MENOUSER);
 	
 	dbr = dbi_conn_queryf(vxdb,
+		"BEGIN TRANSACTION;"
 		"DELETE FROM xid_uid_map WHERE uid = %1$d;"
-		"DELETE FROM user WHERE uid = %1$d;",
+		"DELETE FROM user_caps WHERE uid = %1$d;"
+		"DELETE FROM user WHERE uid = %1$d;"
+		"COMMIT TRANSACTION;",
 		uid);
 	
-	if (!dbr) {
-		dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
+	if (!dbr)
 		method_return_fault(env, MEVXDB);
-	}
 	
-	dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
-	
-	return params;
+	return xmlrpc_nil_new(env);
 }

@@ -25,8 +25,8 @@
 /* vxdb.dx.limit.remove(string name[, string path]) */
 xmlrpc_value *m_vxdb_dx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
-	const char *name, *path;
+	xmlrpc_value *params;
+	char *name, *path;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -39,41 +39,13 @@ xmlrpc_value *m_vxdb_dx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"path", &path);
 	method_return_if_fault(env);
 	
-	if (str_isempty(path))
-		path = NULL;
+	method_empty_params(1, &path);
 	
 	if (!validate_name(name) || (path && !validate_path(path)))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
-	if (path)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT path,space,inodes,reserved FROM dx_limit "
-			"WHERE xid = %d AND path = '%s'",
-			xid, path);
-	
-	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT path,space,inodes,reserved FROM dx_limit "
-			"WHERE xid = %d",
-			xid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	response = xmlrpc_array_new(env);
-	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:i,s:i,s:i}",
-			"path",     dbi_result_get_string(dbr, "path"),
-			"space",    dbi_result_get_int(dbr, "space"),
-			"inodes",   dbi_result_get_int(dbr, "inodes"),
-			"reserved", dbi_result_get_int(dbr, "reserved")));
-	
-	method_return_if_fault(env);
 	
 	if (path)
 		dbr = dbi_conn_queryf(vxdb,
@@ -88,5 +60,5 @@ xmlrpc_value *m_vxdb_dx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return response;
+	return xmlrpc_nil_new(env);
 }

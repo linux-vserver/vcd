@@ -39,8 +39,7 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"path", &path);
 	method_return_if_fault(env);
 	
-	if (str_isempty(path))
-		path = NULL;
+	method_empty_params(1, &path);
 	
 	if (!validate_name(name) || (path && !validate_path(path)))
 		method_return_fault(env, MEINVAL);

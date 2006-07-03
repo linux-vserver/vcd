@@ -26,7 +26,7 @@
 xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *name, *addr;
+	char *name, *addr;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -39,8 +39,7 @@ xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"addr", &addr);
 	method_return_if_fault(env);
 	
-	if (str_isempty(addr))
-		addr = NULL;
+	method_empty_params(1, &addr);
 	
 	if (!validate_name(name) || (addr && !validate_addr(addr)))
 		method_return_fault(env, MEINVAL);

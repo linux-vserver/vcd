@@ -32,11 +32,11 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xid_t xid;
 	int running = 0;
 	
-	method_init(env, p, VCD_CAP_INIT, 1);
+	params = method_init(env, p, VCD_CAP_INIT, 1);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
+		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
 	

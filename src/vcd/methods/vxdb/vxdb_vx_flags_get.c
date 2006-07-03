@@ -25,7 +25,7 @@
 xmlrpc_value *m_vxdb_vx_flags_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *name;
+	char *name;
 	xid_t xid;
 	dbi_result dbr;
 	int i;
@@ -38,8 +38,7 @@ xmlrpc_value *m_vxdb_vx_flags_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"name", &name);
 	method_return_if_fault(env);
 	
-	if (str_isempty(name))
-		name = NULL;
+	method_empty_params(1, &name);
 	
 	response = xmlrpc_array_new(env);
 	
@@ -60,8 +59,6 @@ xmlrpc_value *m_vxdb_vx_flags_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		while (dbi_result_next_row(dbr))
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"s", dbi_result_get_string(dbr, "flag")));
-		
-		method_return_if_fault(env);
 	}
 	
 	else {
@@ -70,5 +67,6 @@ xmlrpc_value *m_vxdb_vx_flags_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"s", cflags_list[i].key));
 	}
 	
+	method_return_if_fault(env);
 	return response;
 }

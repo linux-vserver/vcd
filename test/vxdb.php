@@ -84,6 +84,7 @@ $DUMMYUSER = "dummy";
 $DUMMYPASS = "dummypass";
 
 $NAME     = "testdummy";
+$NEWNAME  = "testdummynew";
 $TEMPLATE = "testdummy";
 $REBUILD  = 1;
 
@@ -155,16 +156,23 @@ $TOKENSMAX2 = 300;
 /* users */
 call("vxdb.user.get",    array("username"=>NULL));
 call("vxdb.user.set",    array("username"=>$DUMMYUSER,"password"=>$DUMMYPASS,"admin"=>1));
-call("vxdb.user.get",    array("username"=>$DUMMYUSER));
-call("vxdb.user.set",    array("username"=>$DUMMYUSER,"password"=>$DUMMYPASS,"admin"=>0));
-call("vxdb.user.get",    array("username"=>$DUMMYUSER));
 call("vxdb.user.get",    array("username"=>NULL));
+call("vxdb.user.set",    array("username"=>$DUMMYUSER,"password"=>$DUMMYPASS,"admin"=>0));
+call("vxdb.user.get",    array("username"=>NULL));
+call("vxdb.user.remove", array("username"=>$DUMMYUSER));
+call("vxdb.user.get",    array("username"=>NULL));
+
 
 call("vxdb.list", array());
 call("vx.create", array("name"=>$NAME,"template"=>$TEMPLATE,"rebuild"=>$REBUILD));
-call("vxdb.name.get", array("xid"=>$XID));
+//call("vxdb.name.get", array("xid"=>$XID));
 call("vxdb.xid.get", array("name"=>$NAME));
 call("vxdb.list", array());
+
+call("vx.status", array("name"=>$NAME));
+call("vx.start", array("name"=>$NAME));
+call("vx.status", array("name"=>$NAME));
+call("vx.stop", array("name"=>$NAME,"wait"=>1,"reboot"=>0));
 
 call("vxdb.dx.limit.get",    array("name"=>$NAME,"path"=>NULL));
 call("vxdb.dx.limit.set",    array("name"=>$NAME,"path"=>$DXPATH, "space"=>$DXSPACE,"inodes"=>$DXINODES,"reserved"=>$DXRESERV));
@@ -179,8 +187,6 @@ call("vxdb.dx.limit.remove", array("name"=>$NAME,"path"=>NULL));
 call("vxdb.dx.limit.get",    array("name"=>$NAME,"path"=>NULL));
 
 
-call("vxdb.init.method.get", array("name"=>$NAME));
-call("vxdb.init.method.set", array("name"=>$NAME,"method"=>$INITMETHOD,"start"=>$INITSTART,"stop"=>$INITSTOP,"timeout"=>$INITTIMEOUT));
 call("vxdb.init.method.get", array("name"=>$NAME));
 call("vxdb.init.method.set", array("name"=>$NAME,"method"=>$INITMETHOD,"start"=>$INITSTART,"stop"=>$INITSTOP,"timeout"=>$INITTIMEOUT));
 call("vxdb.init.method.get", array("name"=>$NAME));
@@ -218,11 +224,12 @@ call("vxdb.vx.bcaps.get",    array("name"=>$NAME));
 call("vxdb.vx.bcaps.add",    array("name"=>$NAME,"bcap"=>$BCAP2));
 call("vxdb.vx.bcaps.get",    array("name"=>$NAME));
 call("vxdb.vx.bcaps.remove", array("name"=>$NAME,"bcap"=>$BCAP1));
-call("vxdb.vx.bcaps.get",    array("name"=>$NAME,"bcap"=>NULL));
+call("vxdb.vx.bcaps.get",    array("name"=>$NAME));
 call("vxdb.vx.bcaps.add",    array("name"=>$NAME,"bcap"=>$BCAP1));
 call("vxdb.vx.bcaps.get",    array("name"=>$NAME));
 call("vxdb.vx.bcaps.remove", array("name"=>$NAME,"bcap"=>NULL));
 call("vxdb.vx.bcaps.get",    array("name"=>$NAME));
+call("vxdb.vx.bcaps.get",    array("name"=>NULL));
 
 
 call("vxdb.vx.ccaps.get",    array("name"=>$NAME));
@@ -231,11 +238,12 @@ call("vxdb.vx.ccaps.get",    array("name"=>$NAME));
 call("vxdb.vx.ccaps.add",    array("name"=>$NAME,"ccap"=>$CCAP2));
 call("vxdb.vx.ccaps.get",    array("name"=>$NAME));
 call("vxdb.vx.ccaps.remove", array("name"=>$NAME,"ccap"=>$CCAP1));
-call("vxdb.vx.ccaps.get",    array("name"=>$NAME,"ccap"=>NULL));
+call("vxdb.vx.ccaps.get",    array("name"=>$NAME));
 call("vxdb.vx.ccaps.add",    array("name"=>$NAME,"ccap"=>$CCAP1));
 call("vxdb.vx.ccaps.get",    array("name"=>$NAME));
 call("vxdb.vx.ccaps.remove", array("name"=>$NAME,"ccap"=>NULL));
 call("vxdb.vx.ccaps.get",    array("name"=>$NAME));
+call("vxdb.vx.ccaps.get",    array("name"=>NULL));
 
 
 call("vxdb.vx.flags.get",    array("name"=>$NAME));
@@ -244,11 +252,12 @@ call("vxdb.vx.flags.get",    array("name"=>$NAME));
 call("vxdb.vx.flags.add",    array("name"=>$NAME,"flag"=>$CFLAG2));
 call("vxdb.vx.flags.get",    array("name"=>$NAME));
 call("vxdb.vx.flags.remove", array("name"=>$NAME,"flag"=>$CFLAG1));
-call("vxdb.vx.flags.get",    array("name"=>$NAME,"flag"=>NULL));
+call("vxdb.vx.flags.get",    array("name"=>$NAME));
 call("vxdb.vx.flags.add",    array("name"=>$NAME,"flag"=>$CFLAG1));
 call("vxdb.vx.flags.get",    array("name"=>$NAME));
 call("vxdb.vx.flags.remove", array("name"=>$NAME,"flag"=>NULL));
 call("vxdb.vx.flags.get",    array("name"=>$NAME));
+call("vxdb.vx.flags.get",    array("name"=>NULL));
 
 
 call("vxdb.vx.limit.get",    array("name"=>$NAME,"limit"=>NULL));
@@ -262,18 +271,22 @@ call("vxdb.vx.limit.set",    array("name"=>$NAME,"limit"=>$VXLIM1,"soft"=>$VXLIM
 call("vxdb.vx.limit.get",    array("name"=>$NAME,"limit"=>NULL));
 call("vxdb.vx.limit.remove", array("name"=>$NAME,"limit"=>NULL));
 call("vxdb.vx.limit.get",    array("name"=>$NAME,"limit"=>NULL));
+call("vxdb.vx.limit.get",    array("name"=>NULL,"limit"=>NULL));
 
 
 call("vxdb.vx.sched.get",    array("name"=>$NAME,"cpuid"=>$CPUID1));
 call("vxdb.vx.sched.set",    array("name"=>$NAME,"cpuid"=>$CPUID1,"fillrate"=>$FILLRATE1,"interval"=>$INTERVAL1,"fillrate2"=>$FILLRATE1,"interval2"=>$INTERVAL1,"tokensmin"=>$TOKENSMIN1,"tokensmax"=>$TOKENSMAX1,"priobias"=>0));
 call("vxdb.vx.sched.get",    array("name"=>$NAME,"cpuid"=>$CPUID1));
-call("vxdb.vx.sched.set",    array("name"=>$NAME,"cpuid"=>$CPUID2,"fillrate"=>$FILLRATE2,"interval"=>$INTERVAL2,"fillrate2"=>$FILLRATE2,"interval2"=>$INTERVAL2,"tokensmin"=>$TOKENSMIN2,"tokensmax"=>$TOKENSMAX2,"priobias"=>0));
-call("vxdb.vx.sched.get",    array("name"=>$NAME,"cpuid"=>$CPUID2));
 call("vxdb.vx.sched.remove", array("name"=>$NAME,"cpuid"=>$CPUID1));
 call("vxdb.vx.sched.get",    array("name"=>$NAME,"cpuid"=>$CPUID1));
+
+/*
+call("vxdb.vx.sched.get",    array("name"=>$NAME,"cpuid"=>$CPUID2));
+call("vxdb.vx.sched.set",    array("name"=>$NAME,"cpuid"=>$CPUID2,"fillrate"=>$FILLRATE2,"interval"=>$INTERVAL2,"fillrate2"=>$FILLRATE2,"interval2"=>$INTERVAL2,"tokensmin"=>$TOKENSMIN2,"tokensmax"=>$TOKENSMAX2,"priobias"=>0));
+call("vxdb.vx.sched.get",    array("name"=>$NAME,"cpuid"=>$CPUID2));
 call("vxdb.vx.sched.remove", array("name"=>$NAME,"cpuid"=>$CPUID2));
 call("vxdb.vx.sched.get",    array("name"=>$NAME,"cpuid"=>$CPUID2));
-
+*/
 
 call("vxdb.vx.uname.get",    array("name"=>$NAME,"uname"=>NULL));
 call("vxdb.vx.uname.set",    array("name"=>$NAME,"uname"=>$UNAME1,"value"=>$UVALUE1));
@@ -286,6 +299,8 @@ call("vxdb.vx.uname.set",    array("name"=>$NAME,"uname"=>$UNAME1,"value"=>$UVAL
 call("vxdb.vx.uname.get",    array("name"=>$NAME,"uname"=>NULL));
 call("vxdb.vx.uname.remove", array("name"=>$NAME,"uname"=>NULL));
 call("vxdb.vx.uname.get",    array("name"=>$NAME,"uname"=>NULL));
+call("vxdb.vx.uname.get",    array("name"=>NULL,"uname"=>NULL));
+
 
 call("vxdb.owner.get",    array("name"=>$NAME));
 call("vxdb.owner.add",    array("name"=>$NAME,"username"=>$ADMINUSER));
@@ -299,9 +314,6 @@ call("vxdb.owner.get",    array("name"=>$NAME));
 call("vxdb.owner.remove", array("name"=>$NAME,"username"=>NULL));
 call("vxdb.owner.get",    array("name"=>$NAME));
 
-call("vxdb.user.remove", array("username"=>$DUMMYUSER));
-call("vxdb.user.get",    array("username"=>NULL));
-
-call("vx.start", array("name"=>$NAME));
-call("vx.stop", array("name"=>$NAME,"wait"=>1,"reboot"=>0));
+call("vx.rename", array("name"=>$NAME,"newname"=>$NEWNAME));
+call("vx.remove", array("name"=>$NEWNAME));
 ?>

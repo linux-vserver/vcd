@@ -272,5 +272,5 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_faultf(env, MESYS, "%s: caught signal %d", __FUNCTION__, WTERMSIG(status));
 	}
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

@@ -24,7 +24,7 @@
 xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *user, *name;
+	char *user, *name;
 	dbi_result dbr;
 	xid_t xid;
 	int uid;
@@ -60,5 +60,5 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

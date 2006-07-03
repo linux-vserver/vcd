@@ -26,7 +26,7 @@
 xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *name, *path, *spec, *mntops, *vfstype;
+	char *name, *path, *spec, *mntops, *vfstype;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -42,22 +42,24 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"vfstype", &vfstype);
 	method_return_if_fault(env);
 	
+	method_empty_params(3, &spec, &mntops, &vfstype);
+	
 	if (!validate_name(name) || !validate_path(path))
 		method_return_fault(env, MEINVAL);
 	
-	if (str_isempty(spec) && str_isempty(vfstype))
+	if (!spec && !vfstype)
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (str_isempty(spec))
+	if (!spec)
 		spec = "none";
 	
-	if (str_isempty(mntops))
+	if (!mntops)
 		mntops = "defaults";
 	
-	if (str_isempty(vfstype))
+	if (!vfstype)
 		vfstype = "auto";
 	
 	dbr = dbi_conn_queryf(vxdb,
@@ -68,5 +70,5 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

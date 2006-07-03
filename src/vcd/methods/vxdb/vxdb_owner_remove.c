@@ -26,10 +26,10 @@
 xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *name, *user;
+	char *name, *user;
 	xid_t xid;
 	dbi_result dbr;
-	int uid;
+	int uid = 0;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -40,8 +40,7 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"username", &user);
 	method_return_if_fault(env);
 	
-	if (str_isempty(user))
-		user = NULL;
+	method_empty_params(1, &user);
 	
 	if (!validate_name(name) || (user && !validate_username(user)))
 		method_return_fault(env, MEINVAL);
@@ -49,9 +48,7 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	uid = auth_getuid(user);
-	
-	if (user && uid == 0)
+	if (user && (uid = auth_getuid(user)) == 0)
 		method_return_fault(env, MENOUSER);
 	
 	if (uid)
@@ -67,5 +64,5 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

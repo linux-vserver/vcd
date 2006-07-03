@@ -26,7 +26,7 @@
 xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *name, *addr, *netm, *bcas;
+	char *name, *addr, *netm, *bcas;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -41,18 +41,20 @@ xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"broadcast", &bcas);
 	method_return_if_fault(env);
 	
+	method_empty_params(2, &netm, &bcas);
+	
 	if (!validate_name(name) || !validate_addr(addr) ||
-	   (!str_isempty(netm) && !validate_addr(netm))  ||
-	   (!str_isempty(bcas) && !validate_addr(bcas)))
+	   (netm && !validate_addr(netm)) ||
+	   (bcas && !validate_addr(bcas)))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (str_isempty(netm))
+	if (!netm)
 		netm = "";
 	
-	if (str_isempty(bcas))
+	if (!bcas)
 		bcas = "";
 	
 	dbr = dbi_conn_queryf(vxdb,
@@ -63,5 +65,5 @@ xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

@@ -41,8 +41,7 @@ xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"cap", &cap);
 	method_return_if_fault(env);
 	
-	if (str_isempty(str_toupper(cap)))
-		cap = NULL;
+	method_empty_params(1, &cap);
 	
 	if (!validate_username(user) || (cap && !validate_vcd_cap(cap)))
 		method_return_fault(env, MEINVAL);
@@ -53,15 +52,15 @@ xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (cap)
 		dbr = dbi_conn_queryf(vxdb,
 			"DELETE FROM user_caps WHERE uid = %d AND cap = '%s'",
-			uid, cap);
+			uid, str_toupper(cap));
 	
 	else
 		dbr = dbi_conn_queryf(vxdb,
-			"DELETE FROM vx_bcaps WHERE uid = %d",
+			"DELETE FROM user_caps WHERE uid = %d",
 			uid);
 	
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	return params;
+	return xmlrpc_nil_new(env);
 }

@@ -24,7 +24,7 @@
 xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *name;
+	char *name;
 	int cpuid;
 	xid_t xid;
 	dbi_result dbr;

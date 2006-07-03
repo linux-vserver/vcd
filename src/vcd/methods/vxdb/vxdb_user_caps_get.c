@@ -25,7 +25,7 @@
 xmlrpc_value *m_vxdb_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *user;
+	char *user;
 	int uid;
 	dbi_result dbr;
 	int i;
@@ -38,8 +38,7 @@ xmlrpc_value *m_vxdb_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"username", &user);
 	method_return_if_fault(env);
 	
-	if (str_isempty(user))
-		user = NULL;
+	method_empty_params(1, &user);
 	
 	response = xmlrpc_array_new(env);
 	

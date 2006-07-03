@@ -26,7 +26,7 @@
 xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
-	const char *user;
+	char *user;
 	dbi_result dbr;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
@@ -37,7 +37,9 @@ xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"username", &user);
 	method_return_if_fault(env);
 	
-	if (!str_isempty(user)) {
+	method_empty_params(1, &user);
+	
+	if (user) {
 		if (!validate_username(user))
 			method_return_fault(env, MEINVAL);
 		
