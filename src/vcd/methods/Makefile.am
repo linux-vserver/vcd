@@ -20,7 +20,10 @@ INCLUDES = -I$(top_srcdir)/lib/lucid \
 
 M_VX = vx/vx_create.c \
        vx/vx_killer.c \
+       vx/vx_remove.c \
+       vx/vx_rename.c \
        vx/vx_start.c \
+       vx/vx_status.c \
        vx/vx_stop.c
 
 M_VXDB = vxdb/vxdb_dx_limit_get.c \
