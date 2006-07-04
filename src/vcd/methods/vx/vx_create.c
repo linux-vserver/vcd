@@ -137,6 +137,7 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, int fd)
 	
 	if (runlink("dev") == -1 ||
 	    mkdir("dev", 0755) == -1 ||
+	    mkdir("dev/pts", 0755) == -1 ||
 	    mknod("dev/null",    0666 | S_IFCHR, makedev(1,3)) == -1 ||
 	    mknod("dev/zero",    0666 | S_IFCHR, makedev(1,5)) == -1 ||
 	    mknod("dev/full",    0666 | S_IFCHR, makedev(1,7)) == -1 ||

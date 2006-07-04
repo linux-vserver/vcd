@@ -27,6 +27,7 @@
 #include "auth.h"
 #include "cfg.h"
 #include "lists.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -102,8 +103,8 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	dbi_result dbr;
 	
 	struct vx_bcaps bcaps = {
-		.bcaps = ~(0ULL),
-		.bmask = ~(0ULL),
+		.bcaps = 0,
+		.bmask = 0,
 	};
 	
 	struct vx_ccaps ccaps = {
@@ -122,9 +123,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 		method_return_fault(env, MEVXDB);
 	
 	while (dbi_result_next_row(dbr))
-		bcaps.bcaps |= flist64_getval(bcaps_list, dbi_result_get_string(dbr, "bcap"));
-	
-	bcaps.bmask = bcaps.bcaps;
+		bcaps.bmask |= flist64_getval(bcaps_list, dbi_result_get_string(dbr, "bcap"));
 	
 	if (vx_set_bcaps(xid, &bcaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_bcaps: %s", strerror(errno));
@@ -388,9 +387,8 @@ static
 xmlrpc_value *mount_namespace(xmlrpc_env *env)
 {
 	dbi_result dbr;
-	int mtabfd;
+	int mtabfd, status;
 	const char *src, *dst, *type, *opts;
-	char *cmd;
 	
 	char *vserverdir = cfg_getstr(cfg, "vserverdir");
 	char *vdir = NULL;
@@ -398,20 +396,20 @@ xmlrpc_value *mount_namespace(xmlrpc_env *env)
 	asprintf(&vdir, "%s/%s", vserverdir, name);
 	
 	if (chroot_secure_chdir(vdir, "/etc") == -1)
-		method_return_fault(env, MESYS);
+		log_warn_and_die("chroot_secure_chdir: %s", strerror(errno));
 	
 	if ((mtabfd = open_trunc("mtab")) == -1)
-		method_return_fault(env, MESYS);
+		log_warn_and_die("open_trunc: %s", strerror(errno));
 	
 	if (write(mtabfd, "/dev/hdv1 / ufs rw 0 0\n", 23) == -1)
-		method_return_fault(env, MESYS);
+		log_warn_and_die("write: %s", strerror(errno));
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT spec,path,vfstype,mntops FROM mount WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
-		method_return_fault(env, MEVXDB);
+		log_warn_and_die("error in vxdb");
 	
 	while (dbi_result_next_row(dbr)) {
 		src  = dbi_result_get_string(dbr, "spec");
@@ -419,37 +417,38 @@ xmlrpc_value *mount_namespace(xmlrpc_env *env)
 		type = dbi_result_get_string(dbr, "vfstype");
 		opts = dbi_result_get_string(dbr, "mntops");
 		
-		if (!type || !*type)
+		if (str_isempty(type))
 			type = "auto";
 		
-		if (!opts || !*opts)
+		if (str_isempty(opts))
 			opts = "defaults";
 		
 		if (chroot_secure_chdir(vdir, dst) == -1)
-			method_return_fault(env, MESYS);
+			log_warn_and_die("chroot_secure_chdir: %s", strerror(errno));
 		
-		asprintf(&cmd, "mount -n -t %s -o %s %s .", type, opts, src);
+		status = exec_fork("mount -n -t %s -o %s %s .", type, opts, src);
 		
-		if (exec_fork(cmd) != 0)
-			method_return_fault(env, MESYS);
+		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+			log_warn_and_die("mount failed (%d)", WEXITSTATUS(status));
 		
-		free(cmd);
+		if (WIFSIGNALED(status))
+			log_warn_and_die("mount caught signal (%d)", WTERMSIG(status));
 		
 		dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
 	}
 	
 	if (chroot_secure_chdir(vdir, "/") == -1)
-		method_return_fault(env, MESYS);
+		log_warn_and_die("chroot_secure_chdir: %s", strerror(errno));
 	
 	free(vdir);
 	
 	if (mount(".", "/", NULL, MS_BIND|MS_REC, NULL) == -1)
-		method_return_fault(env, MESYS);
+		log_warn_and_die("mount: %s", strerror(errno));
 	
 	close(mtabfd);
 	
 	if (vx_set_namespace(xid) == -1)
-		method_return_fault(env, MESYS);
+		log_warn_and_die("vx_set_namespace: %s", strerror(errno));
 	
 	return NULL;
 }
@@ -479,7 +478,7 @@ xmlrpc_value *namespace_create(xmlrpc_env *env)
 			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
 		
 		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_fault(env, WEXITSTATUS(status));
+			method_return_faultf(env, MESYS, "mount failed (%d)", WEXITSTATUS(status));
 		
 		if (WIFSIGNALED(status))
 			method_return_faultf(env, MESYS, "%s: caught signal %d", __FUNCTION__, WTERMSIG(status));
