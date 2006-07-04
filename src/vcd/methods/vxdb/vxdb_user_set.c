@@ -20,7 +20,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.user.set(string name, string password, int admin) */
 xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

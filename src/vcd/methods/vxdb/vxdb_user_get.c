@@ -22,7 +22,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.user.get([string username]) */
 xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;

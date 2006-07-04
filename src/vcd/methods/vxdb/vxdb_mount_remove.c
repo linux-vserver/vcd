@@ -22,7 +22,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.init.mount.remove(string name[, string path]) */
 xmlrpc_value *m_vxdb_mount_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

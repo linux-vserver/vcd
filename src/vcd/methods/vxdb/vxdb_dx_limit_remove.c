@@ -22,7 +22,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.dx.limit.remove(string name[, string path]) */
 xmlrpc_value *m_vxdb_dx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

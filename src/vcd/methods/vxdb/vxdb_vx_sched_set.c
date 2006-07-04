@@ -20,11 +20,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.sched.set(string name, int fillrate, int interval,
-                  int tokensmin, int tokensmax[,
-                  int fillrate2[, int interval2[,
-                  int priobias[, int cpuid]]]])
-*/
 xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

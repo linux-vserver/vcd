@@ -20,7 +20,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.init.method.get(string name) */
 xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;
@@ -49,6 +48,7 @@ xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
+	/* TODO: is the result ever empty? */
 	if (dbi_result_get_numrows(dbr) < 1)
 		response = xmlrpc_build_value(env,
 			"{s:s,s:s,s:s,s:i}",

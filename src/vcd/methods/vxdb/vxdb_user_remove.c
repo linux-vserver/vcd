@@ -20,7 +20,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.user.remove(string username) */
 xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

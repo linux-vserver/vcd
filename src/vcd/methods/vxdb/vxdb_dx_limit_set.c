@@ -20,7 +20,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.dx.limit.set(string name, string path, int space, int inodes, int reserved) */
 xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

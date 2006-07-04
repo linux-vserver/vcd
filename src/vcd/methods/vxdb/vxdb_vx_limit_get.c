@@ -23,7 +23,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.limit.get(string name, string limit) */
 xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;

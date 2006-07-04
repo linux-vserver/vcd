@@ -22,7 +22,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.user.caps.add(string username, string cap) */
 xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

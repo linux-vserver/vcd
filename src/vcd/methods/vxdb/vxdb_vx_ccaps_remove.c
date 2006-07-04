@@ -15,8 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <string.h>
-
 #include "lucid.h"
 
 #include "auth.h"
@@ -24,7 +22,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.ccaps.remove(string name[, string ccap]) */
 xmlrpc_value *m_vxdb_vx_ccaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
@@ -41,8 +38,7 @@ xmlrpc_value *m_vxdb_vx_ccaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"ccap", &ccap);
 	method_return_if_fault(env);
 	
-	if (str_isempty(str_toupper(ccap)))
-		ccap = NULL;
+	method_empty_params(1, &ccap);
 	
 	if (!validate_name(name) || (ccap && !validate_ccap(ccap)))
 		method_return_fault(env, MEINVAL);

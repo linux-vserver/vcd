@@ -15,17 +15,13 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <string.h>
-
 #include "lucid.h"
-#include "xmlrpc.h"
 
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.limit.set(string name, string type, int soft, int max) */
 xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

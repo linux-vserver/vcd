@@ -15,29 +15,16 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "auth.h"
-#include "methods.h"
-#include "vxdb.h"
+#ifndef _VCC_MSG_H
+#define _VCC_MSG_H
 
-xmlrpc_value *m_vxdb_xid_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
-{
-	char *user, *name;
-	xid_t xid;
-	
-	method_init(env, p, 0, 0);
-	method_return_if_fault(env);
-	
-	xmlrpc_decompose_value(env, p,
-		"({s:s,*}{s:s,*})",
-		"username", &user,
-		"name", &name);
-	method_return_if_fault(env);
-	
-	if (!auth_isadmin(user) && !auth_capable(user, VCD_CAP_HELPER))
-		method_return_fault(env, MEPERM);
-	
-	if (!(xid = vxdb_getxid(name)))
-		method_return_fault(env, MENOVPS);
-	
-	return xmlrpc_build_value(env, "i", xid);
-}
+#define INIT_ARGV0 argv0 = argv[0];
+
+extern const char *argv0;
+
+void warn (const char *fmt, ...);
+void pwarn(const char *fmt, ...);
+void err  (const char *fmt, ...);
+void perr (const char *fmt, ...);
+
+#endif

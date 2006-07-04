@@ -19,7 +19,6 @@
 #include "methods.h"
 #include "vxdb.h"
 
-/* vxdb.list() */
 xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response;

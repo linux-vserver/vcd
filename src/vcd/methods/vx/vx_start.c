@@ -122,7 +122,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 		method_return_fault(env, MEVXDB);
 	
 	while (dbi_result_next_row(dbr))
-		bcaps.bcaps &= ~flist64_getval(bcaps_list, dbi_result_get_string(dbr, "bcap"));
+		bcaps.bcaps |= flist64_getval(bcaps_list, dbi_result_get_string(dbr, "bcap"));
 	
 	bcaps.bmask = bcaps.bcaps;
 	

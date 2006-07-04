@@ -15,7 +15,14 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = tools \
-          vcc \
-          vcd \
-          vstatd
+INCLUDES = -I$(top_srcdir)/lib/lucid
+
+LIBS = $(top_builddir)/lib/lucid/libucid.a \
+       $(XMLRPC_C_CLIENT_LIBS)
+
+noinst_HEADERS = msg.h
+
+sbin_PROGRAMS = vcc
+
+vcc_SOURCES = main.c \
+              msg.c

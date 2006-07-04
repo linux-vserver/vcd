@@ -22,7 +22,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.uname.set(string name, string uname, string value) */
 xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

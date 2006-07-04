@@ -15,8 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <string.h>
-
 #include "lucid.h"
 
 #include "auth.h"
@@ -24,7 +22,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.vx.flags.add(string name, string flag) */
 xmlrpc_value *m_vxdb_vx_flags_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;

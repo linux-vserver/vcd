@@ -16,15 +16,12 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "lucid.h"
-#include "xmlrpc.h"
 
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-/* vxdb.init.method.set(string name,
-     string method[, string stop[, string start[,int timeout]]]) */
 xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
@@ -55,41 +52,14 @@ xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION");
+	if (!start)
+		start = "";
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (!stop)
+		stop = "";
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT stop,start,timeout FROM init_method WHERE xid = %d",
-		xid);
-	
-	if (!dbr)
-		goto rollback;
-	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		
-		if (!start)
-			start = (char *) dbi_result_get_string(dbr, "start");
-		
-		if (!stop)
-			stop = (char *) dbi_result_get_string(dbr, "stop");
-		
-		if (timeout < 1)
-			timeout = dbi_result_get_int(dbr, "timeout");
-	}
-	
-	else {
-		if (!start)
-			start = "";
-		
-		if (!stop)
-			stop = "";
-		
-		if (timeout < 1)
-			timeout = 30;
-	}
+	if (timeout < 1)
+		timeout = 30;
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"INSERT OR REPLACE INTO init_method (xid, method, start, stop, timeout) "
@@ -97,16 +67,7 @@ xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		xid, method, start, stop, timeout);
 	
 	if (!dbr)
-		goto rollback;
-	
-	dbr = dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
-	
-	if (!dbr)
-		goto rollback;
+		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);
-	
-rollback:
-	dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
-	method_return_fault(env, MEVXDB);
 }
