@@ -48,6 +48,7 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_user_get.c \
          vxdb/vxdb_user_remove.c \
          vxdb/vxdb_user_set.c \
+         vxdb/vxdb_vdir_get.c \
          vxdb/vxdb_vx_bcaps_add.c \
          vxdb/vxdb_vx_bcaps_get.c \
          vxdb/vxdb_vx_bcaps_remove.c \

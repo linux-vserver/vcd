@@ -21,20 +21,17 @@
 
 xmlrpc_value *m_vxdb_name_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	char *user, *name;
+	xmlrpc_value *params;
+	char *name;
 	xid_t xid;
 	
-	method_init(env, p, 0, 0);
+	params = method_init(env, p, VCD_CAP_HELPER, 0);
 	method_return_if_fault(env);
 	
-	xmlrpc_decompose_value(env, p,
-		"({s:s,*}{s:i,*})",
-		"username", &user,
+	xmlrpc_decompose_value(env, params,
+		"{s:i,*}",
 		"xid", &xid);
 	method_return_if_fault(env);
-	
-	if (!auth_isadmin(user) && !auth_capable(user, VCD_CAP_HELPER))
-		method_return_fault(env, MEPERM);
 	
 	if (!(name = vxdb_getname(xid)))
 		method_return_fault(env, MENOVPS);

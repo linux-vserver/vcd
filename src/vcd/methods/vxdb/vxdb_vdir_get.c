@@ -16,13 +16,14 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
+#include "cfg.h"
 #include "methods.h"
 #include "vxdb.h"
 
-xmlrpc_value *m_vxdb_xid_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vxdb_vdir_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params;
-	char *name;
+	xmlrpc_value *params, *response;
+	char *name, *vserverdir, *vdir;
 	xid_t xid;
 	
 	params = method_init(env, p, VCD_CAP_HELPER, 0);
@@ -36,5 +37,12 @@ xmlrpc_value *m_vxdb_xid_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	return xmlrpc_build_value(env, "i", xid);
+	vserverdir = cfg_getstr(cfg, "vserverdir");
+	
+	asprintf(&vdir, "%s/%s", vserverdir, name);
+	
+	response = xmlrpc_build_value(env, "s", vdir);
+	
+	free(vdir);
+	return response;
 }
