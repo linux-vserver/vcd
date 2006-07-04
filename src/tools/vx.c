@@ -50,7 +50,6 @@ struct option long_opts[] = {
 	{ "get-vhi",     1, 0, 0x1C },
 	{ "kill",        1, 0, 0x1D },
 	{ "wait",        1, 0, 0x1E },
-	{ "login",       1, 0, 0x1F },
 	{ "reset-limit", 1, 0, 0x20 },
 	{ NULL,          0, 0, 0 },
 };
@@ -77,8 +76,8 @@ char *rlim_to_str(uint64_t lim)
 	
 	if (lim == CRLIM_INFINITY)
 		asprintf(&buf, "%s", "inf");
-	
-	asprintf(&buf, "%llu", lim);
+	else
+		asprintf(&buf, "%llu", lim);
 	
 	return buf;
 }
@@ -190,7 +189,6 @@ int main(int argc, char *argv[])
 			CASE_GOTO(0x1C, getvhi);
 			CASE_GOTO(0x1D, kill);
 			CASE_GOTO(0x1E, wait);
-			CASE_GOTO(0x1F, login);
 			CASE_GOTO(0x20, resetlimit);
 			
 			DEFAULT_GETOPT_CASES
@@ -220,20 +218,6 @@ migrate:
 	
 	if (argc > optind+1)
 		execvp(argv[optind+1], argv+optind+1);
-	
-	goto out;
-	
-login:
-	if (vx_enter_namespace(xid) == -1)
-		perr("vx_enter_namespace");
-	
-	if (chroot(".") == -1)
-		perr("chroot");
-	
-	if (vx_migrate(xid, NULL) == -1)
-		perr("vx_migrate");
-	
-	do_vlogin(argc, argv, optind);
 	
 	goto out;
 	
@@ -388,6 +372,8 @@ setvhi:
 		if (!(vhiname.field = flist32_getval(vhiname_list, buf)))
 			perr("flist32_getval");
 		
+		vhiname.field = flist32_val2index(vhiname.field);
+		
 		buf = strtok(NULL, "=");
 		
 		if (buf == NULL)
@@ -449,6 +435,8 @@ getlimit:
 		if (!(rlimit.id = flist32_getval(rlimit_list, argv[i])))
 			perr("flist32_getval");
 		
+		rlimit.id = flist32_val2index(rlimit.id);
+		
 		if (vx_get_rlimit(xid, &rlimit) == -1)
 			perr("vx_get_rlimit");
 		
@@ -474,6 +462,8 @@ getvhi:
 	for (i = optind; argc > i; i++) {
 		if (!(vhiname.field = flist32_getval(vhiname_list, argv[i])))
 			perr("flist32_getval");
+		
+		vhiname.field = flist32_val2index(vhiname.field);
 		
 		if (vx_get_vhi_name(xid, &vhiname) == -1)
 			perr("vx_get_vhi_name");

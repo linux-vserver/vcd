@@ -15,10 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -33,7 +29,7 @@
 #include <pty.h>
 #include <vserver.h>
 
-#include "tools.h"
+#include "msg.h"
 
 struct terminal {
 	int fd;                          /* terminal file descriptor */
@@ -185,11 +181,14 @@ void signal_handler(int sig)
 	}
 }
 
-void do_vlogin(int argc, char *argv[], int ind)
+void do_vlogin(int argc, char **argv)
 {
-	int i, n, slave;
+	int n, slave;
 	pid_t pid;
 	fd_set rfds;
+	
+	if (argc < 1)
+		err("vlogin: invalid command");
 	
 	/* set terminal to raw mode */
 	terminal_raw();
@@ -222,14 +221,9 @@ void do_vlogin(int argc, char *argv[], int ind)
 		if (slave > 2)
 			close(slave);
 		
-		/* check shell */
-		if (argc > optind) {
-			if (execv(argv[ind], argv+ind) == -1)
-				perr("execv");
-		} else {
-			if (execl("/bin/sh", "/bin/sh", "-l", NULL) == -1)
-				perr("execl");
-		}
+		/* run command */
+		if (execvp(argv[0], argv) == -1)
+			perr("execvp");
 	}
 	
 	/* setup SIGINT and SIGWINCH here, as they can cause loops in the child */
@@ -239,14 +233,6 @@ void do_vlogin(int argc, char *argv[], int ind)
 	/* save terminals pid */
 	t.pid = pid;
 	
-	/* set process title for ps */
-	n = strlen(argv[0]);
-	
-	for (i = 0; i < argc; i++)
-		bzero(argv[i], strlen(argv[i]));
-	
-	strcpy(argv[0], "login");
-	
 	/* reset terminal to its original mode */
 	atexit(terminal_reset);
 	
@@ -254,7 +240,6 @@ void do_vlogin(int argc, char *argv[], int ind)
 	terminal_redraw();
 	
 	/* main loop */
-	
 	while (1) {
 		/* init file descriptors for select */
 		FD_ZERO(&rfds);

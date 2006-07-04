@@ -103,6 +103,7 @@ MPROTO(m_vxdb_user_caps_remove);
 MPROTO(m_vxdb_user_get);
 MPROTO(m_vxdb_user_remove);
 MPROTO(m_vxdb_user_set);
+MPROTO(m_vxdb_vdir_get);
 MPROTO(m_vxdb_vx_bcaps_add);
 MPROTO(m_vxdb_vx_bcaps_get);
 MPROTO(m_vxdb_vx_bcaps_remove);

@@ -25,12 +25,15 @@
 #include <string.h>
 #include <getopt.h>
 #include <termios.h>
+#include <vserver.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
 
 #include "lucid.h"
 
 #include "msg.h"
+
+extern void do_vlogin(int argc, char **argv);
 
 static char *uri  = NULL;
 static char *user = "admin";
@@ -43,12 +46,15 @@ void usage(int rc)
 	printf("Usage: vcc <opts>* <command>\n"
 	       "\n"
 	       "Available commands:\n"
-	       "   create <name> <template> [<rebuild>]\n"
-	       "   remove <name>\n"
-	       "   rename <name> <newname>\n"
-	       "   start  <name>\n"
-	       "   status <name>\n"
-	       "   stop   <name>\n"
+	       "   create  <name> <template> [<rebuild>]\n"
+	       "   exec    <name> <program> <args>*\n"
+	       "   login   <name>\n"
+	       "   remove  <name>\n"
+	       "   rename  <name> <newname>\n"
+	       "   restart <name>\n"
+	       "   start   <name>\n"
+	       "   status  <name>\n"
+	       "   stop    <name>\n"
 	       "\n"
 	       "Available options:\n"
 	       "   -h <host>     server hostname (default: localhost)\n"
@@ -117,6 +123,109 @@ void cmd_create(xmlrpc_env *env, int argc, char **argv)
 }
 
 static
+void cmd_exec(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_value *result;
+	xid_t xid;
+	char *vdir;
+	
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+	
+	read_password();
+	
+	result = xmlrpc_client_call(env, uri, "vxdb.xid.get",
+		SIGNATURE("{s:s}"),
+		"name", name);
+	return_if_fault(env);
+	
+	xmlrpc_decompose_value(env, result, "i", &xid);
+	return_if_fault(env);
+	
+	xmlrpc_DECREF(result);
+	
+	result = xmlrpc_client_call(env, uri, "vxdb.vdir.get",
+		SIGNATURE("{s:s}"),
+		"name", name);
+	return_if_fault(env);
+	
+	xmlrpc_decompose_value(env, result, "s", &vdir);
+	return_if_fault(env);
+	
+	xmlrpc_DECREF(result);
+	
+	if (vx_enter_namespace(xid) == -1)
+		perr("vx_enter_namespace");
+	
+	if (chroot_secure_chdir(vdir, "/") == -1)
+		perr("chroot_secure_chdir");
+	
+	if (chroot(".") == -1)
+		perr("chroot");
+	
+	if (nx_migrate(xid) == -1)
+		perr("nx_migrate");
+	
+	if (vx_migrate(xid, NULL) == -1)
+		perr("vx_migrate");
+	
+	do_vlogin(argc, argv);
+}
+
+static
+void cmd_login(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_value *result;
+	xid_t xid;
+	char *vdir;
+	
+	char cmd[] = "/bin/login"; /* this form prevents storage in ro section */
+	char *av[2];
+	int ac;
+	
+	ac = argv_from_str(cmd, av, 2);
+	
+	read_password();
+	
+	result = xmlrpc_client_call(env, uri, "vxdb.xid.get",
+		SIGNATURE("{s:s}"),
+		"name", name);
+	return_if_fault(env);
+	
+	xmlrpc_decompose_value(env, result, "i", &xid);
+	return_if_fault(env);
+	
+	xmlrpc_DECREF(result);
+	
+	result = xmlrpc_client_call(env, uri, "vxdb.vdir.get",
+		SIGNATURE("{s:s}"),
+		"name", name);
+	return_if_fault(env);
+	
+	xmlrpc_decompose_value(env, result, "s", &vdir);
+	return_if_fault(env);
+	
+	xmlrpc_DECREF(result);
+	
+	if (vx_enter_namespace(xid) == -1)
+		perr("vx_enter_namespace");
+	
+	if (chroot_secure_chdir(vdir, "/") == -1)
+		perr("chroot_secure_chdir");
+	
+	if (chroot(".") == -1)
+		perr("chroot");
+	
+	if (nx_migrate(xid) == -1)
+		perr("nx_migrate");
+	
+	if (vx_migrate(xid, NULL) == -1)
+		perr("vx_migrate");
+	
+	do_vlogin(ac, av);
+}
+
+static
 void cmd_remove(xmlrpc_env *env, int argc, char **argv)
 {
 	read_password();
@@ -132,16 +241,28 @@ void cmd_rename(xmlrpc_env *env, int argc, char **argv)
 	char *newname;
 	
 	if (argc != 1)
-		exit(EXIT_FAILURE);
+		usage(EXIT_FAILURE);
 	
 	newname = argv[0];
 	
 	read_password();
 	
 	xmlrpc_client_call(env, uri, "vx.rename",
-		SIGNATURE("{s:s}"),
+		SIGNATURE("{s:s,s:s}"),
 		"name", name,
 		"newname", newname);
+}
+
+static
+void cmd_restart(xmlrpc_env *env, int argc, char **argv)
+{
+	read_password();
+	
+	xmlrpc_client_call(env, uri, "vx.stop",
+		SIGNATURE("{s:s,s:i,s:i}"),
+		"name", name,
+		"wait", 1,
+		"reboot", 1);
 }
 
 static
@@ -180,21 +301,13 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 static
 void cmd_stop(xmlrpc_env *env, int argc, char **argv)
 {
-	int wait, reboot;
-	
-	if (argc != 2)
-		usage(EXIT_FAILURE);
-	
-	wait   = atoi(argv[0]);
-	reboot = atoi(argv[1]);
-	
 	read_password();
 	
 	xmlrpc_client_call(env, uri, "vx.stop",
 		SIGNATURE("{s:s,s:i,s:i}"),
 		"name", name,
-		"wait", wait,
-		"reboot", reboot);
+		"wait", 1,
+		"reboot", 0);
 }
 
 int main(int argc, char **argv)
@@ -245,11 +358,20 @@ int main(int argc, char **argv)
 	if (strcmp(cmd, "create") == 0)
 		cmd_create(&env, argc - optind, argv + optind);
 	
+	else if (strcmp(cmd, "exec") == 0)
+		cmd_exec(&env, argc - optind, argv + optind);
+	
+	else if (strcmp(cmd, "login") == 0)
+		cmd_login(&env, argc - optind, argv + optind);
+	
 	else if (strcmp(cmd, "remove") == 0)
 		cmd_remove(&env, argc - optind, argv + optind);
 	
 	else if (strcmp(cmd, "rename") == 0)
 		cmd_rename(&env, argc - optind, argv + optind);
+	
+	else if (strcmp(cmd, "restart") == 0)
+		cmd_restart(&env, argc - optind, argv + optind);
 	
 	else if (strcmp(cmd, "start") == 0)
 		cmd_start(&env, argc - optind, argv + optind);

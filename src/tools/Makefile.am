@@ -34,5 +34,4 @@ ix_SOURCES = ix.c msg.c lists.c
 ns_SOURCES = ns.c msg.c
 nx_SOURCES = nx.c msg.c lists.c
 vr_SOURCES = vr.c msg.c
-vx_SOURCES = vx.c msg.c lists.c vlogin.c
-vx_LDADD   = $(LDADD) $(UTIL_LIBS)
+vx_SOURCES = vx.c msg.c lists.c
