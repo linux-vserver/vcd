@@ -25,6 +25,7 @@
 #include <string.h>
 #include <getopt.h>
 #include <termios.h>
+#include <confuse.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
 
@@ -32,6 +33,17 @@
 
 #include "cmd.h"
 #include "msg.h"
+
+static char *host = "localhost";
+static int   port = 13386;
+
+static cfg_opt_t CFG_OPTS[] = {
+	CFG_STR("host", "localhost", CFGF_NONE),
+	CFG_INT("port", 13386,       CFGF_NONE),
+	CFG_STR("user", "admin",     CFGF_NONE),
+	CFG_STR("pass", NULL,        CFGF_NONE),
+	CFG_END()
+};
 
 void usage(int rc)
 {
@@ -49,16 +61,49 @@ void usage(int rc)
 	       "   stop    <name>\n"
 	       "\n"
 	       "Available options:\n"
+	       "   -c <path>     configuration file (default: %s/vcc.conf)\n"
 	       "   -h <host>     server hostname (default: localhost)\n"
 	       "   -p <port>     server port     (default: 13386)\n"
-	       "   -u <user>     server username (default: admin)\n");
+	       "   -u <user>     server username (default: admin)\n",
+	       SYSCONFDIR);
 	exit(rc);
+}
+
+static
+void read_config(char *file, int ignore_noent)
+{
+	cfg_t *cfg;
+	
+	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
+	
+	switch (cfg_parse(cfg, file)) {
+	case CFG_FILE_ERROR:
+		if (ignore_noent)
+			break;
+		else
+			perr("cfg_parse");
+	
+	case CFG_PARSE_ERROR:
+		dprintf(STDERR_FILENO, "cfg_parse: Parse error\n");
+		exit(EXIT_FAILURE);
+	
+	default:
+		break;
+	}
+	
+	host = cfg_getstr(cfg, "host");
+	port = cfg_getint(cfg, "port");
+	user = cfg_getstr(cfg, "user");
+	pass = cfg_getstr(cfg, "pass");
 }
 
 static
 void read_password(void)
 {
 	struct termios tty, oldtty;
+	
+	if (pass)
+		return;
 	
 	write(STDOUT_FILENO, "password: ", 10);
 	
@@ -90,13 +135,18 @@ int main(int argc, char **argv)
 	INIT_ARGV0
 	
 	char c, *cmd;
-	char *host = "localhost";
-	int i, port = 13386;
+	int i;
 	xmlrpc_env env;
 	
+	read_config(SYSCONFDIR "/vcc.conf", 1);
+	
 	/* parse command line */
-	while ((c = getopt(argc, argv, "h:p:u:")) != -1) {
+	while ((c = getopt(argc, argv, "c:h:p:u:")) != -1) {
 		switch (c) {
+		case 'c':
+			read_config(optarg, 0);
+			break;
+		
 		case 'h':
 			host = optarg;
 			break;

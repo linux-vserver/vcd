@@ -23,7 +23,7 @@ void cmd_rename(xmlrpc_env *env, int argc, char **argv)
 {
 	char *newname;
 	
-	if (argc != 1)
+	if (argc < 1)
 		usage(EXIT_FAILURE);
 	
 	newname = argv[0];

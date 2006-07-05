@@ -18,9 +18,16 @@
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
 LIBS = $(top_builddir)/lib/lucid/libucid.a \
+       $(CONFUSE_LIBS) \
        $(UTIL_LIBS) \
        $(VSERVER_LIBS) \
        $(XMLRPC_C_CLIENT_LIBS)
+
+sysconf_DATA = vcc.conf
+
+EXTRA_DIST = $(sysconf_DATA)
+
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
 noinst_HEADERS = cmd.h \
                  msg.h
