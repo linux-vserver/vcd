@@ -86,7 +86,7 @@ int checkdir (char *dirname) {
     xid_t xid;
    
     if ((dirp = opendir(dirname)) == NULL)
-     log_error_and_die("collector directory: %s", strerror(errno));
+     log_error_and_die("collector directory %s: %s", dirname, strerror(errno));
    
     while (( ditp = readdir(dirp)) != NULL) {
 	if ((fp = fpath(ditp->d_name, dirname)) != NULL) {
