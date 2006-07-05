@@ -25,22 +25,14 @@
 #include <string.h>
 #include <getopt.h>
 #include <termios.h>
-#include <vserver.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
 
 #include "lucid.h"
 
+#include "cmd.h"
 #include "msg.h"
 
-extern void do_vlogin(int argc, char **argv);
-
-static char *uri  = NULL;
-static char *user = "admin";
-static char *pass = NULL;
-static char *name = NULL;
-
-static inline
 void usage(int rc)
 {
 	printf("Usage: vcc <opts>* <command>\n"
@@ -93,230 +85,13 @@ void read_password(void)
 	write(STDOUT_FILENO, "\n", 1);
 }
 
-#define return_if_fault(ENV) do { \
-	if (ENV->fault_occurred) return; \
-} while(0)
-
-#define SIGNATURE(S) "({s:s,s:s}" S ")", "username", user, "password", pass
-
-static
-void cmd_create(xmlrpc_env *env, int argc, char **argv)
-{
-	char *template;
-	int rebuild = 0;
-	
-	if (argc != 1 && argc != 2)
-		usage(EXIT_FAILURE);
-	
-	template = argv[0];
-	
-	if (argc == 2)
-		rebuild = atoi(argv[1]);
-	
-	read_password();
-	
-	xmlrpc_client_call(env, uri, "vx.create",
-		SIGNATURE("{s:s,s:s,s:i}"),
-		"name", name,
-		"template", template,
-		"rebuild", rebuild);
-}
-
-static
-void cmd_exec(xmlrpc_env *env, int argc, char **argv)
-{
-	xmlrpc_value *result;
-	xid_t xid;
-	char *vdir;
-	
-	if (argc < 1)
-		usage(EXIT_FAILURE);
-	
-	read_password();
-	
-	result = xmlrpc_client_call(env, uri, "vxdb.xid.get",
-		SIGNATURE("{s:s}"),
-		"name", name);
-	return_if_fault(env);
-	
-	xmlrpc_decompose_value(env, result, "i", &xid);
-	return_if_fault(env);
-	
-	xmlrpc_DECREF(result);
-	
-	result = xmlrpc_client_call(env, uri, "vxdb.vdir.get",
-		SIGNATURE("{s:s}"),
-		"name", name);
-	return_if_fault(env);
-	
-	xmlrpc_decompose_value(env, result, "s", &vdir);
-	return_if_fault(env);
-	
-	xmlrpc_DECREF(result);
-	
-	if (vx_enter_namespace(xid) == -1)
-		perr("vx_enter_namespace");
-	
-	if (chroot_secure_chdir(vdir, "/") == -1)
-		perr("chroot_secure_chdir");
-	
-	if (chroot(".") == -1)
-		perr("chroot");
-	
-	if (nx_migrate(xid) == -1)
-		perr("nx_migrate");
-	
-	if (vx_migrate(xid, NULL) == -1)
-		perr("vx_migrate");
-	
-	do_vlogin(argc, argv);
-}
-
-static
-void cmd_login(xmlrpc_env *env, int argc, char **argv)
-{
-	xmlrpc_value *result;
-	xid_t xid;
-	char *vdir;
-	
-	char cmd[] = "/bin/login"; /* this form prevents storage in ro section */
-	char *av[2];
-	int ac;
-	
-	ac = argv_from_str(cmd, av, 2);
-	
-	read_password();
-	
-	result = xmlrpc_client_call(env, uri, "vxdb.xid.get",
-		SIGNATURE("{s:s}"),
-		"name", name);
-	return_if_fault(env);
-	
-	xmlrpc_decompose_value(env, result, "i", &xid);
-	return_if_fault(env);
-	
-	xmlrpc_DECREF(result);
-	
-	result = xmlrpc_client_call(env, uri, "vxdb.vdir.get",
-		SIGNATURE("{s:s}"),
-		"name", name);
-	return_if_fault(env);
-	
-	xmlrpc_decompose_value(env, result, "s", &vdir);
-	return_if_fault(env);
-	
-	xmlrpc_DECREF(result);
-	
-	if (vx_enter_namespace(xid) == -1)
-		perr("vx_enter_namespace");
-	
-	if (chroot_secure_chdir(vdir, "/") == -1)
-		perr("chroot_secure_chdir");
-	
-	if (chroot(".") == -1)
-		perr("chroot");
-	
-	if (nx_migrate(xid) == -1)
-		perr("nx_migrate");
-	
-	if (vx_migrate(xid, NULL) == -1)
-		perr("vx_migrate");
-	
-	do_vlogin(ac, av);
-}
-
-static
-void cmd_remove(xmlrpc_env *env, int argc, char **argv)
-{
-	read_password();
-	
-	xmlrpc_client_call(env, uri, "vx.remove",
-		SIGNATURE("{s:s}"),
-		"name", name);
-}
-
-static
-void cmd_rename(xmlrpc_env *env, int argc, char **argv)
-{
-	char *newname;
-	
-	if (argc != 1)
-		usage(EXIT_FAILURE);
-	
-	newname = argv[0];
-	
-	read_password();
-	
-	xmlrpc_client_call(env, uri, "vx.rename",
-		SIGNATURE("{s:s,s:s}"),
-		"name", name,
-		"newname", newname);
-}
-
-static
-void cmd_restart(xmlrpc_env *env, int argc, char **argv)
-{
-	read_password();
-	
-	xmlrpc_client_call(env, uri, "vx.stop",
-		SIGNATURE("{s:s,s:i,s:i}"),
-		"name", name,
-		"wait", 1,
-		"reboot", 1);
-}
-
-static
-void cmd_start(xmlrpc_env *env, int argc, char **argv)
-{
-	read_password();
-	
-	xmlrpc_client_call(env, uri, "vx.start",
-		SIGNATURE("{s:s}"),
-		"name", name);
-}
-
-static
-void cmd_status(xmlrpc_env *env, int argc, char **argv)
-{
-	xmlrpc_value *result;
-	int running;
-	
-	read_password();
-	
-	result = xmlrpc_client_call(env, uri, "vx.status",
-		SIGNATURE("{s:s}"),
-		"name", name);
-	return_if_fault(env);
-	
-	xmlrpc_decompose_value(env, result,
-		"{s:i,*}",
-		"running", &running);
-	return_if_fault(env);
-	
-	xmlrpc_DECREF(result);
-	
-	printf("running: %d\n", running == 0 ? 0 : 1);
-}
-
-static
-void cmd_stop(xmlrpc_env *env, int argc, char **argv)
-{
-	read_password();
-	
-	xmlrpc_client_call(env, uri, "vx.stop",
-		SIGNATURE("{s:s,s:i,s:i}"),
-		"name", name,
-		"wait", 1,
-		"reboot", 0);
-}
-
 int main(int argc, char **argv)
 {
 	INIT_ARGV0
 	
 	char c, *cmd;
 	char *host = "localhost";
-	int port = 13386;
+	int i, port = 13386;
 	xmlrpc_env env;
 	
 	/* parse command line */
@@ -346,6 +121,13 @@ int main(int argc, char **argv)
 	cmd  = argv[optind++];
 	name = argv[optind++];
 	
+	for (i = 0; CMDS[i].name; i++)
+		if (strcmp(cmd, CMDS[i].name) == 0)
+			goto init;
+	
+	err("invalid command: %s", cmd);
+	
+init:
 	xmlrpc_env_init(&env);
 	
 	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, argv[0], PACKAGE_VERSION, NULL, 0);
@@ -355,35 +137,11 @@ int main(int argc, char **argv)
 	
 	asprintf(&uri, "http://%s:%d/RPC2", host, port);
 	
-	if (strcmp(cmd, "create") == 0)
-		cmd_create(&env, argc - optind, argv + optind);
+	read_password();
 	
-	else if (strcmp(cmd, "exec") == 0)
-		cmd_exec(&env, argc - optind, argv + optind);
-	
-	else if (strcmp(cmd, "login") == 0)
-		cmd_login(&env, argc - optind, argv + optind);
-	
-	else if (strcmp(cmd, "remove") == 0)
-		cmd_remove(&env, argc - optind, argv + optind);
-	
-	else if (strcmp(cmd, "rename") == 0)
-		cmd_rename(&env, argc - optind, argv + optind);
-	
-	else if (strcmp(cmd, "restart") == 0)
-		cmd_restart(&env, argc - optind, argv + optind);
-	
-	else if (strcmp(cmd, "start") == 0)
-		cmd_start(&env, argc - optind, argv + optind);
-	
-	else if (strcmp(cmd, "status") == 0)
-		cmd_status(&env, argc - optind, argv + optind);
-	
-	else if (strcmp(cmd, "stop") == 0)
-		cmd_stop(&env, argc - optind, argv + optind);
-	
-	else
-		err("invalid command: '%s'\n", cmd);
+	for (i = 0; CMDS[i].name; i++)
+		if (strcmp(cmd, CMDS[i].name) == 0)
+			CMDS[i].func(&env, argc - optind, argv + optind);
 	
 	free(pass);
 	free(uri);

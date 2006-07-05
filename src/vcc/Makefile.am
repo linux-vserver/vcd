@@ -22,10 +22,21 @@ LIBS = $(top_builddir)/lib/lucid/libucid.a \
        $(VSERVER_LIBS) \
        $(XMLRPC_C_CLIENT_LIBS)
 
-noinst_HEADERS = msg.h
+noinst_HEADERS = cmd.h \
+                 msg.h
 
 sbin_PROGRAMS = vcc
 
-vcc_SOURCES = main.c \
+vcc_SOURCES = cmd.c \
+              create.c \
+              exec.c \
+              login.c \
+              main.c \
               msg.c \
+              remove.c \
+              rename.c \
+              restart.c \
+              start.c \
+              status.c \
+              stop.c \
               vlogin.c
