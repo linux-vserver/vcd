@@ -26,8 +26,12 @@ CREATE TABLE IF NOT EXISTS nx_addr (
   xid SMALLINT NOT NULL,
   addr TEXT NOT NULL,
   netmask TEXT NOT NULL,
-  broadcast TEXT NOT NULL,
   UNIQUE(xid, addr)
+);
+CREATE TABLE IF NOT EXISTS nx_broadcast (
+  xid SMALLINT NOT NULL,
+  broadcast TEXT NOT NULL,
+  UNIQUE(xid)
 );
 CREATE TABLE IF NOT EXISTS user (
   uid SMALLINT NOT NULL,

@@ -39,6 +39,9 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_nx_addr_get.c \
          vxdb/vxdb_nx_addr_remove.c \
          vxdb/vxdb_nx_addr_set.c \
+         vxdb/vxdb_nx_broadcast_get.c \
+         vxdb/vxdb_nx_broadcast_remove.c \
+         vxdb/vxdb_nx_broadcast_set.c \
          vxdb/vxdb_owner_add.c \
          vxdb/vxdb_owner_get.c \
          vxdb/vxdb_owner_remove.c \

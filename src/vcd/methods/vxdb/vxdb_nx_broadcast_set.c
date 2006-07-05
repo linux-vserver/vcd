@@ -22,10 +22,10 @@
 #include "validate.h"
 #include "vxdb.h"
 
-xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vxdb_nx_broadcast_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *name, *addr, *netmask;
+	char *name, *broadcast;
 	xid_t xid;
 	dbi_result dbr;
 	
@@ -33,28 +33,21 @@ xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:s,*}",
+		"{s:s,s:s,*}",
 		"name", &name,
-		"addr", &addr,
-		"netmask", &netmask);
+		"broadcast", &broadcast);
 	method_return_if_fault(env);
 	
-	method_empty_params(1, &netmask);
-	
-	if (!validate_name(name) || !validate_addr(addr) ||
-	   (netmask && !validate_addr(netmask)))
+	if (!validate_name(name) || !validate_addr(broadcast))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (!netmask)
-		netmask = "255.255.255.255";
-	
 	dbr = dbi_conn_queryf(vxdb,
-		"INSERT OR REPLACE INTO nx_addr (xid, addr, netmask) "
-		"VALUES (%d, '%s', '%s')",
-		xid, addr, netmask);
+		"INSERT OR REPLACE INTO nx_broadcast (xid, broadcast) "
+		"VALUES (%d, '%s')",
+		xid, broadcast);
 	
 	if (!dbr)
 		method_return_fault(env, MEVXDB);

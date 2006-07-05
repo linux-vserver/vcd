@@ -357,6 +357,33 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env)
 	struct nx_addr addr;
 	
 	dbr = dbi_conn_queryf(vxdb,
+		"SELECT broadcast FROM nx_broadcast WHERE xid = %d",
+		xid);
+	
+	if (!dbr)
+		method_return_fault(env, MEVXDB);
+	
+	if (dbi_result_get_numrows(dbr) > 0) {
+		dbi_result_first_row(dbr);
+		
+		addr.type    = NXA_TYPE_IPV4 | NXA_MOD_BCAST;
+		addr.count   = 1;
+		
+		ip = dbi_result_get_string(dbr, "broadcast");
+		
+		if (addr_from_str(ip, &addr.ip[0], &addr.mask[0]) == -1)
+			method_return_faultf(env, MECONF, "invalid interface: %s", buf);
+		
+		addr.mask[0] = 0;
+		
+		log_debug("type: %d, count: %d, ip: %u, mask: %u", addr.type, addr.count, addr.ip[0], addr.mask[0]);
+		
+		if (nx_add_addr(xid, &addr) == -1)
+			method_return_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
+		
+	}
+	
+	dbr = dbi_conn_queryf(vxdb,
 		"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
 		xid);
 	
@@ -377,7 +404,7 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env)
 			method_return_faultf(env, MECONF, "invalid interface: %s", buf);
 		
 		if (nx_add_addr(xid, &addr) == -1)
-			method_return_faultf(env, MESYS, "nx_addr_addr: %s", strerror(errno));
+			method_return_faultf(env, MESYS, "nx_add_addr : %s", strerror(errno));
 	}
 	
 	return NULL;
@@ -758,22 +785,22 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_cleanup_if_fault(env);
 	
 	context_caps_and_flags(env);
-	method_return_if_fault(env);
+	method_cleanup_if_fault(env);
 	
 	context_resource_limits(env);
-	method_return_if_fault(env);
+	method_cleanup_if_fault(env);
 	
 	context_scheduler(env);
-	method_return_if_fault(env);
+	method_cleanup_if_fault(env);
 	
 	context_uname(env);
-	method_return_if_fault(env);
+	method_cleanup_if_fault(env);
 	
 	network_create(env);
 	method_cleanup_if_fault(env);
 	
 	network_interfaces(env);
-	method_return_if_fault(env);
+	method_cleanup_if_fault(env);
 	
 	namespace_create(env);
 	method_cleanup_if_fault(env);

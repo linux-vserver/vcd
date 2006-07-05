@@ -48,13 +48,13 @@ xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	if (addr)
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT addr,broadcast,netmask FROM nx_addr "
+			"SELECT addr,netmask FROM nx_addr "
 			"WHERE xid = %d AND addr = '%s'",
 			xid, addr);
 	
 	else
 		dbr = dbi_conn_queryf(vxdb,
-			"SELECT addr,broadcast,netmask FROM nx_addr "
+			"SELECT addr,netmask FROM nx_addr "
 			"WHERE xid = %d",
 			xid);
 	
@@ -65,10 +65,9 @@ xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	while (dbi_result_next_row(dbr))
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:s,s:s}",
-			"addr",      dbi_result_get_string(dbr, "addr"),
-			"broadcast", dbi_result_get_string(dbr, "broadcast"),
-			"netmask",   dbi_result_get_string(dbr, "netmask")));
+			"{s:s,s:s}",
+			"addr",    dbi_result_get_string(dbr, "addr"),
+			"netmask", dbi_result_get_string(dbr, "netmask")));
 	
 	method_return_if_fault(env);
 	
