@@ -2,11 +2,6 @@
 #define _VSTATD_VSTATS_H
 #include <vserver.h>
 
-//#define LIMIT_FILE "limit"
-//#define INFO_FILE "cvirt"
-//#define NET_FILE "cacct"
-   
-
 #define ST_BUF 128
 
 #define VS_LIM_VL 3
