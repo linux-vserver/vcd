@@ -193,6 +193,9 @@ void do_vlogin(int argc, char **argv)
 	/* set terminal to raw mode */
 	terminal_raw();
 	
+	/* reset terminal to its original mode */
+	atexit(terminal_reset);
+	
 	/* fork new pseudo terminal */
 	if (openpty(&t.fd, &slave, NULL, NULL, NULL) == -1)
 		perr("openpty");
@@ -232,9 +235,6 @@ void do_vlogin(int argc, char **argv)
 	
 	/* save terminals pid */
 	t.pid = pid;
-	
-	/* reset terminal to its original mode */
-	atexit(terminal_reset);
 	
 	/* we want a redraw */
 	terminal_redraw();
