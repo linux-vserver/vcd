@@ -8,9 +8,7 @@
 #include <errno.h>
 #include <vserver.h>
 
-#include "collector.h"
 #include "log.h"
-#include "vstats.h"
 #include "vs_rrd.h"
 
 int vserver_collector (char *dir, int xid, char *vname) {
@@ -44,6 +42,9 @@ int vserver_collector (char *dir, int xid, char *vname) {
        return -1;
     }	
 
+    if (vs_rrd_update (xid, CUR, MIN, MAX, INFO, NET) < 0)
+     return -1;
+    
     return 0;
 }
 

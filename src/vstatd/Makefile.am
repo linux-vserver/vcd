@@ -4,7 +4,6 @@ LIBS = $(top_builddir)/lib/lucid/libucid.a \
        -lvserver
 
 noinst_HEADERS = cfg.h \
-                 collector.h \
                  log.h \
 		 vs_rrd.h \
 		 vstats.h

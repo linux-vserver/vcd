@@ -35,7 +35,7 @@ int vs_rrd_check (xid_t xid) {
 
 
 int vs_rrd_create (xid_t xid) {
-    char db[128];
+    char db[ST_BUF];
     snprintf(db, sizeof(db) - 1, vs_rrd_build_dbname(xid));
     
     char *cargv[] = {
@@ -55,6 +55,34 @@ int vs_rrd_create (xid_t xid) {
        "DS:ipc_SEMA:GAUGE:30:0:9223372036854775807", 
        "DS:ipc_SEMS:GAUGE:30:0:9223372036854775807", 
        "DS:sys_PROC:GAUGE:30:0:9223372036854775807", 
+
+       "DS:mem_VM_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:mem_VML_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:mem_RSS_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:mem_ANON_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:mem_SHM_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:file_FILES_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:file_OFD_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:file_LOCKS_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:file_SOCK_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:ipc_MSGQ_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:ipc_SEMA_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:ipc_SEMS_MIN:GAUGE:30:0:9223372036854775807",
+       "DS:sys_PROC_MIN:GAUGE:30:0:9223372036854775807",
+
+       "DS:mem_VM_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:mem_VML_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:mem_RSS_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:mem_ANON_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:mem_SHM_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:file_FILES_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:file_OFD_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:file_LOCKS_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:file_SOCK_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:ipc_MSGQ_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:ipc_SEMA_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:ipc_SEMS_MAX:GAUGE:30:0:9223372036854775807",
+       "DS:sys_PROC_MAX:GAUGE:30:0:9223372036854775807",
 
 	 
        "DS:sys_LOADAVG:GAUGE:30:0:9223372036854775807", 
@@ -110,9 +138,9 @@ int vs_rrd_create (xid_t xid) {
        "RRA:MAX:0:17520:60", 
        "RRA:AVERAGE:0:17520:60",
     };
-    int argc = sizeof(cargv) / sizeof(*cargv), ret;
+    int cargc = sizeof(cargv) / sizeof(*cargv), ret;
    
-    if ((ret = rrd_create(argc, cargv))) {
+    if ((ret = rrd_create(cargc, cargv))) {
        log_error("cannot create '%s' for vserver with xid '%d'", db, xid);
        return -1;
     }
@@ -120,4 +148,8 @@ int vs_rrd_create (xid_t xid) {
     return 0;
 }
 
+int vs_rrd_update (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET) {
+    // rrd_update(cargc, cargv)
+    return 0;
+}
    
