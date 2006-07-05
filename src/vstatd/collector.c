@@ -27,7 +27,9 @@ int vserver_collector (char *dir, int xid, char *vname) {
 	 return -1;   
     } 
    
-    if (vstats_init (LIMIT_FILE, xid, MIN, MAX, CUR, NET, INFO) < 0) {
+   vs_parse_init(xid);
+   //vs_limit_init(LIMIT_FILE, xid, CUR, MIN, MAX);
+   /*    if (vstats_init (LIMIT_FILE, xid, MIN, MAX, CUR, NET, INFO) < 0) {
        log_error("vserver xid: '%d' -> cannot collect all the Limit datas", xid);
        return -1;
     }	  
@@ -41,10 +43,11 @@ int vserver_collector (char *dir, int xid, char *vname) {
        log_error("vserver with xid '%d' -> cannot collect all the Net datas", xid);
        return -1;
     }	
+*/
+   
+    //if (vs_rrd_update (xid, CUR, MIN, MAX, INFO, NET) < 0)
+     //return -1;
 
-    if (vs_rrd_update (xid, CUR, MIN, MAX, INFO, NET) < 0)
-     return -1;
-    
     return 0;
 }
 

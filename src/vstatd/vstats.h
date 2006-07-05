@@ -2,9 +2,10 @@
 #define _VSTATD_VSTATS_H
 #include <vserver.h>
 
-#define LIMIT_FILE "limit"
-#define INFO_FILE "cvirt"
-#define NET_FILE "cacct"
+//#define LIMIT_FILE "limit"
+//#define INFO_FILE "cvirt"
+//#define NET_FILE "cacct"
+   
 
 #define ST_BUF 128
 
@@ -66,7 +67,6 @@ struct vs_net {
        int net_OTHER_FAIL_B;
 };
 
-
-int vstats_init (char *fp, xid_t xid, struct vs_limit MIN, struct vs_limit MAX, struct vs_limit AVG, struct vs_net NET, struct vs_info INFO);
+int vs_parse_init (xid_t xid);
 
 #endif
