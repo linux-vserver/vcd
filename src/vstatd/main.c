@@ -1,21 +1,49 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the
-// Free Software Foundation, Inc.,
-// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
 
-int main(int argc, char **argv)
-{
-	return 0;
+#include "log.h"
+#include "cfg.h"
+#include "lucid.h"
+
+int checkdir (char *dirname);
+
+static cfg_opt_t CFG_OPTS[] = {   
+    CFG_STR("statsdir", "/proc/virtual", CFGF_NONE),
+    CFG_STR("logfile", "/var/log/vstatd.log", CFGF_NONE),
+    CFG_STR("dbdir", "/etc/vstatd/", CFGF_NONE),   
+    CFG_END()
+};
+
+cfg_t *cfg;
+
+int main (int argc, char *argv[]) {
+    char *cfg_file = "/etc/vstatd.conf";
+   
+    cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
+
+    int debug = 0;
+    char *statsdir;
+   
+    switch (cfg_parse(cfg, cfg_file)) {
+     case CFG_FILE_ERROR:
+      perror("cfg_parse");
+      exit(EXIT_FAILURE);
+     case CFG_PARSE_ERROR:
+      fprintf(stderr, "cfg_parse: Parse error\n");
+      exit(EXIT_FAILURE);
+     default:
+      break;
+    }
+   
+    if (log_init(debug) < 0) {
+       perror("log_init");
+       exit(EXIT_FAILURE);
+    }
+   
+    statsdir = cfg_getstr(cfg, "statsdir");
+   
+    checkdir(statsdir);
 }
