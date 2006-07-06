@@ -157,7 +157,21 @@ int validate_token_bucket(int32_t fillrate, int32_t interval,
                           int32_t tokensmin, int32_t tokensmax,
                           int32_t priobias)
 {
+	if (fillrate  < 1 ||
+	    interval  < 1 ||
+	    tokensmax < 1)
+		return 0;
+	
+	if (fillrate2 < 1 && interval2 > 0)
+		return 0;
+	
+	if (interval2 < 1 && fillrate2 > 0)
+		return 0;
+	
 	if (interval < fillrate || interval2 < fillrate2)
+		return 0;
+	
+	if (tokensmax < fillrate || tokensmax < fillrate2)
 		return 0;
 	
 	if (tokensmin > tokensmax)

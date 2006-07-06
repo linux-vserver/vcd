@@ -16,6 +16,7 @@
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 INCLUDES = -I$(top_srcdir)/lib/libarchive/libarchive \
+           -I$(top_builddir)/lib/libarchive/libarchive \
            -I$(top_srcdir)/lib/lucid \
            -I$(top_srcdir)/src/vcd
 

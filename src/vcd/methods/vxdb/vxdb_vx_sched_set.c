@@ -45,7 +45,7 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"priobias", &priobias);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_cpuid(cpuid))
+	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
 	
 	if (!validate_token_bucket(fillrate, interval,

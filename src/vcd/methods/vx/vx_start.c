@@ -226,40 +226,36 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 	};
 	
 	dbr = dbi_conn_queryf(vxdb,
-		"SELECT fillrate,interval,priobias,tokensmin,tokensmax "
-		"FROM vx_sched WHERE xid = %d",
+		"SELECT * FROM vx_sched WHERE xid = %d",
 		xid);
 	
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		
+	while (dbi_result_next_row(dbr)) {
+		sched.cpu_id     = dbi_result_get_int(dbr, "cpuid");
 		sched.fill_rate  = dbi_result_get_int(dbr, "fillrate");
 		sched.interval   = dbi_result_get_int(dbr, "interval");
 		sched.prio_bias  = dbi_result_get_int(dbr, "priobias");
 		sched.tokens_min = dbi_result_get_int(dbr, "tokensmin");
 		sched.tokens_max = dbi_result_get_int(dbr, "tokensmax");
 		
-		if (sched.fill_rate == 0 || sched.interval == 0 || sched.tokens_max == 0)
-			method_return_faultf(env, MECONF, "%s", "fillrate, interval or tokensmax is 0");
-		
-		if (sched.fill_rate > sched.interval)
-			sched.fill_rate = sched.interval;
-		
-		if (sched.tokens_max < sched.fill_rate)
-			sched.tokens_max = sched.fill_rate;
-		
-		if (sched.tokens_min > sched.tokens_max)
-			sched.tokens_min = sched.tokens_max;
-		
-		sched.set_mask |= VXSM_FILL_RATE|VXSM_INTERVAL|VXSM_TOKENS;
-		sched.set_mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX|VXSM_PRIO_BIAS;
 		sched.tokens = sched.tokens_max;
+		
+		sched.set_mask |= VXSM_CPU_ID|VXSM_FILL_RATE|VXSM_INTERVAL|VXSM_TOKENS;
+		sched.set_mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX|VXSM_PRIO_BIAS;
 		
 		if (vx_set_sched(xid, &sched) == -1)
 			method_return_faultf(env, MESYS, "vx_set_sched: %s", strerror(errno));
+		
+		sched.fill_rate  = dbi_result_get_int(dbr, "fillrate2");
+		sched.interval   = dbi_result_get_int(dbr, "interval2");
+		
+		sched.set_mask = 0|VXSM_FILL_RATE2|VXSM_INTERVAL2;
+		
+		if (sched.fill_rate > 0 && sched.interval > 0)
+			if (vx_set_sched(xid, &sched) == -1)
+				method_return_faultf(env, MESYS, "vx_set_sched2: %s", strerror(errno));
 	}
 	
 	return NULL;

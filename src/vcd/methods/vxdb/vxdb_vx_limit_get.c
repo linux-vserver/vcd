@@ -63,7 +63,7 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (limit)
 			dbr = dbi_conn_queryf(vxdb,
 				"SELECT type,soft,max FROM vx_limit "
-				"WHERE xid = %d AND limit = '%s'",
+				"WHERE xid = %d AND type = '%s'",
 				xid, limit);
 		
 		else

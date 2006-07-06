@@ -37,36 +37,38 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"cpuid", &cpuid);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_cpuid(cpuid))
+	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT * FROM vx_sched WHERE xid = %d AND cpuid = %d",
-		xid, cpuid);
+	if (cpuid == -1)
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT * FROM vx_sched WHERE xid = %d",
+			xid);
+	
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"SELECT * FROM vx_sched WHERE xid = %d AND cpuid = %d",
+			xid, cpuid);
 	
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
 	
 	response = xmlrpc_array_new(env);
 	
-	if (dbi_result_get_numrows(dbr) < 1)
-		return response;
-	
-	dbi_result_first_row(dbr);
-	
-	xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-		"{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
-		"fillrate",  dbi_result_get_int(dbr, "fillrate"),
-		"interval",  dbi_result_get_int(dbr, "interval"),
-		"fillrate2", dbi_result_get_int(dbr, "fillrate2"),
-		"interval2", dbi_result_get_int(dbr, "interval2"),
-		"tokensmin", dbi_result_get_int(dbr, "tokensmin"),
-		"tokensmax", dbi_result_get_int(dbr, "tokensmax"),
-		"priobias",  dbi_result_get_int(dbr, "priobias")));
-	
+	while (dbi_result_next_row(dbr))
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+			"cpuid",     dbi_result_get_int(dbr, "cpuid"),
+			"fillrate",  dbi_result_get_int(dbr, "fillrate"),
+			"interval",  dbi_result_get_int(dbr, "interval"),
+			"fillrate2", dbi_result_get_int(dbr, "fillrate2"),
+			"interval2", dbi_result_get_int(dbr, "interval2"),
+			"tokensmin", dbi_result_get_int(dbr, "tokensmin"),
+			"tokensmax", dbi_result_get_int(dbr, "tokensmax"),
+			"priobias",  dbi_result_get_int(dbr, "priobias")));
 	method_return_if_fault(env);
 	
 	return response;

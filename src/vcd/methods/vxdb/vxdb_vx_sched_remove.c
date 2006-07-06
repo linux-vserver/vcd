@@ -37,15 +37,21 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"cpuid", &cpuid);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_cpuid(cpuid))
+	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
-		xid, cpuid);
+	if (cpuid == -1)
+		dbr = dbi_conn_queryf(vxdb,
+			"DELETE FROM vx_sched WHERE xid = %d",
+			xid);
+	
+	else
+		dbr = dbi_conn_queryf(vxdb,
+			"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
+			xid, cpuid);
 	
 	if (!dbr)
 		method_return_fault(env, MEVXDB);
