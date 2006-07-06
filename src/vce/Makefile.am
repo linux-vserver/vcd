@@ -15,8 +15,36 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = tools \
-          vcc \
-          vcd \
-          vce \
-          vstatd
+INCLUDES = -I$(top_srcdir)/lib/lucid
+
+LIBS = $(top_builddir)/lib/lucid/libucid.a \
+       $(CONFUSE_LIBS) \
+       $(UTIL_LIBS) \
+       $(VSERVER_LIBS) \
+       $(XMLRPC_C_CLIENT_LIBS)
+
+sysconf_DATA = vce.conf
+
+EXTRA_DIST = $(sysconf_DATA)
+
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
+
+noinst_HEADERS = cmd.h \
+                 msg.h
+
+sbin_PROGRAMS = vce
+
+vce_SOURCES = cmd.c \
+              dx_limit.c \
+              init_method.c \
+              main.c \
+              mount.c \
+              msg.c \
+              nx_addr.c \
+              nx_broadcast.c \
+              vx_bcaps.c \
+              vx_ccaps.c \
+              vx_flags.c \
+              vx_limit.c \
+              vx_sched.c \
+              vx_uname.c

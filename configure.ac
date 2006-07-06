@@ -174,6 +174,7 @@ AC_CONFIG_FILES([Makefile
                  src/vcc/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
+                 src/vce/Makefile
                  src/vstatd/Makefile
                  src/Makefile])
 
