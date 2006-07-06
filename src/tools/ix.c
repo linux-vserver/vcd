@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <string.h>
 #include <vserver.h>
 
@@ -115,7 +116,7 @@ getxid:
 		perr("vx_get_iattr");
 	
 	if (iattr.mask & IATTR_TAG)
-		printf("%d\n", iattr.xid);
+		printf("%" PRIu32 "\n", iattr.xid);
 	
 	goto out;
 	

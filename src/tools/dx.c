@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 #include <vserver.h>
 
 #include "tools.h"
@@ -166,7 +167,7 @@ getlimit:
 	
 #define LIM2OUT(LIM, DELIM) do { \
 	if (LIM == CDLIM_INFINITY) printf("%s", "inf"); \
-	else printf("%d", LIM); \
+	else printf("%" PRIu32, LIM); \
 	printf("%c", DELIM); \
 } while(0)
 	

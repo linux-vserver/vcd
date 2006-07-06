@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <string.h>
 #include <signal.h>
 #include <vserver.h>
@@ -77,7 +78,7 @@ char *rlim_to_str(uint64_t lim)
 	if (lim == CRLIM_INFINITY)
 		asprintf(&buf, "%s", "inf");
 	else
-		asprintf(&buf, "%llu", lim);
+		asprintf(&buf, "%" PRIu64, lim);
 	
 	return buf;
 }
@@ -477,8 +478,8 @@ wait:
 	if (vx_wait(xid, &wait_result) == -1)
 		perr("vx_wait");
 	
-	printf("reboot_cmd: %d\n", wait_result.reboot_cmd);
-	printf("exit_code:  %d\n", wait_result.exit_code);
+	printf("reboot_cmd: %" PRIi32 "\n", wait_result.reboot_cmd);
+	printf("exit_code:  %" PRIi32 "\n", wait_result.exit_code);
 	
 	goto out;
 	
