@@ -11,7 +11,7 @@
 #include "lucid.h"
 
 char *vs_rrd_build_dbname (xid_t xid) {
-    char *dbdir, dbname[511];
+    char *dbdir, dbname[ST_BUF - 1];
    
     dbdir = cfg_getstr(cfg, "dbdir");
     snprintf(dbname, sizeof(dbname) - 1, "%s/%d.rrd", dbdir, xid);
@@ -22,7 +22,7 @@ char *vs_rrd_build_dbname (xid_t xid) {
 
 int vs_rrd_check (xid_t xid) {
     struct stat statinfo;
-    char db[512];
+    char db[ST_BUF];
    
     snprintf(db, sizeof(db) - 1, vs_rrd_build_dbname(xid));
    
@@ -36,7 +36,7 @@ int vs_rrd_check (xid_t xid) {
 }
 
 int vs_rrd_create (xid_t xid) {
-    char db[511];
+    char db[ST_BUF - 1];
     snprintf(db, sizeof(db) - 1, vs_rrd_build_dbname(xid));
     
     char *cargv[] = {
@@ -141,22 +141,39 @@ int vs_rrd_create (xid_t xid) {
 }  
    
 
-int vs_rrd_update (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET) {
-    char db[ST_BUF], *buf, *cargv[3];
+int vs_rrd_update 
+  (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET) {
     int cargc = 3, ret = 0;
+    char db[ST_BUF], *buf, *cargv[cargc];
     snprintf(db, sizeof(db) - 1, vs_rrd_build_dbname(xid));
 
-    asprintf(&buf, "update %s N:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%f:%f:%f:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d",
-	     db, CUR.mem_VM, CUR.mem_VML, CUR.mem_RSS, CUR.mem_ANON, CUR.mem_SHM, CUR.file_FILES, CUR.file_OFD, CUR.file_LOCKS, CUR.file_SOCK, CUR.ipc_MSGQ, CUR.ipc_SEMA, CUR.ipc_SEMS, CUR.sys_PROC,
-	     MIN.mem_VM, MIN.mem_VML, MIN.mem_RSS, MIN.mem_ANON, MIN.mem_SHM, MIN.file_FILES, MIN.file_OFD, MIN.file_LOCKS, MIN.file_SOCK, MIN.ipc_MSGQ, MIN.ipc_SEMA, MIN.ipc_SEMS, MIN.sys_PROC,
-	     MAX.mem_VM, MAX.mem_VML, MAX.mem_RSS, MAX.mem_ANON, MAX.mem_SHM, MAX.file_FILES, MAX.file_OFD, MAX.file_LOCKS, MAX.file_SOCK, MAX.ipc_MSGQ, MAX.ipc_SEMA, MAX.ipc_SEMS, MAX.sys_PROC,
-             INFO.sys_LOADAVG_1M, INFO.sys_LOADAVG_5M, INFO.sys_LOADAVG_15M, INFO.thread_TOTAL, INFO.thread_RUN, INFO.thread_NOINT, INFO.thread_HOLD,
-             NET.net_UNIX_RECV, NET.net_UNIX_RECV_B, NET.net_UNIX_SEND, NET.net_UNIX_SEND_B, NET.net_UNIX_FAIL, NET.net_UNIX_FAIL_B,
-             NET.net_INET_RECV, NET.net_INET_RECV_B, NET.net_INET_SEND, NET.net_INET_SEND_B, NET.net_INET_FAIL, NET.net_INET_FAIL_B,
-             NET.net_INET6_RECV, NET.net_INET6_RECV_B, NET.net_INET6_SEND, NET.net_INET6_SEND_B, NET.net_INET6_FAIL, NET.net_INET6_FAIL_B,
-             NET.net_OTHER_RECV, NET.net_OTHER_RECV_B, NET.net_OTHER_SEND, NET.net_OTHER_SEND_B, NET.net_OTHER_FAIL, NET.net_OTHER_FAIL_B);
+    asprintf(&buf, "update %s \
+		     N:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d"
+		     ":%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d"
+		     ":%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d"
+		     ":%f:%f:%f:%d:%d:%d:%d"
+		     ":%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d"
+		     ":%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d",
+	     db, 
+	     CUR.mem_VM, CUR.mem_VML, CUR.mem_RSS, CUR.mem_ANON, CUR.mem_SHM, CUR.file_FILES, CUR.file_OFD, 
+	     CUR.file_LOCKS, CUR.file_SOCK, CUR.ipc_MSGQ, CUR.ipc_SEMA, CUR.ipc_SEMS, CUR.sys_PROC,
+	     MIN.mem_VM, MIN.mem_VML, MIN.mem_RSS, MIN.mem_ANON, MIN.mem_SHM, MIN.file_FILES, MIN.file_OFD, 
+	     MIN.file_LOCKS, MIN.file_SOCK, MIN.ipc_MSGQ, MIN.ipc_SEMA, MIN.ipc_SEMS, MIN.sys_PROC,
+	     MAX.mem_VM, MAX.mem_VML, MAX.mem_RSS, MAX.mem_ANON, MAX.mem_SHM, MAX.file_FILES, MAX.file_OFD, 
+	     MAX.file_LOCKS, MAX.file_SOCK, MAX.ipc_MSGQ, MAX.ipc_SEMA, MAX.ipc_SEMS, MAX.sys_PROC,
+             INFO.sys_LOADAVG_1M, INFO.sys_LOADAVG_5M, INFO.sys_LOADAVG_15M, 
+	     INFO.thread_TOTAL, INFO.thread_RUN, INFO.thread_NOINT, INFO.thread_HOLD,
+             NET.net_UNIX_RECV, NET.net_UNIX_RECV_B, NET.net_UNIX_SEND, 
+	     NET.net_UNIX_SEND_B, NET.net_UNIX_FAIL, NET.net_UNIX_FAIL_B,
+             NET.net_INET_RECV, NET.net_INET_RECV_B, NET.net_INET_SEND, 
+	     NET.net_INET_SEND_B, NET.net_INET_FAIL, NET.net_INET_FAIL_B,
+             NET.net_INET6_RECV, NET.net_INET6_RECV_B, NET.net_INET6_SEND, 
+	     NET.net_INET6_SEND_B, NET.net_INET6_FAIL, NET.net_INET6_FAIL_B,
+             NET.net_OTHER_RECV, NET.net_OTHER_RECV_B, NET.net_OTHER_SEND, 
+	     NET.net_OTHER_SEND_B, NET.net_OTHER_FAIL, NET.net_OTHER_FAIL_B);
    
-    argv_from_str(buf, cargv, 4);
+    argv_from_str(buf, cargv, cargc+1);
+    
     if ((ret = rrd_update(cargc, cargv)) < 0) {
        log_error("cannot update db '%s', vserver xid '%d': %s", db, xid, rrd_get_error());
        rrd_clear_error();

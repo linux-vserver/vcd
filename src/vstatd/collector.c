@@ -88,5 +88,5 @@ int checkdir (char *dirname) {
    	}
     }
     closedir(dirp);
-    exit(EXIT_SUCCESS);
+    return 0;
 }

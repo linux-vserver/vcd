@@ -1,8 +1,8 @@
 #ifndef _VSTATD_VSTATS_H
 #define _VSTATD_VSTATS_H
-#include <vserver.h>   
+#include <vserver.h>
 
-#define ST_BUF 128
+#define ST_BUF 512
 
 #define VS_LIM_VL 3
 #define VS_LAVG_VL 3
@@ -63,7 +63,6 @@ struct vs_net {
        int net_OTHER_FAIL_B;
 };
 
-int vs_parse_init (xid_t xid);
 int vs_init (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET);
 
 #endif
