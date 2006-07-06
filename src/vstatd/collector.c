@@ -15,21 +15,23 @@ int vserver_collector (char *dir, int xid, char *vname) {
     struct vs_limit MIN, MAX, CUR;
     struct vs_net NET;
     struct vs_info INFO;
-
+    int ret = 0;
+    
     if ( chdir(dir) < 0) {
        log_error("cannot chdir to directory %s: %s", dir, strerror(errno));
        return -1;
     }   
 	
     if (vs_rrd_check(xid) < 0) {
-       log_info("creating database for vserver with xid '%d'", xid);
+       log_info("creating database, vserver xid '%d'", xid);
        if (vs_rrd_create(xid) < 0)
 	 return -1;   
     } 
    
-   vs_parse_init(xid);
-
-    return 0;
+   if ((ret = vs_init(xid, CUR, MIN, MAX, INFO, NET)) == -1)
+    log_error("cannot collect all datas, vserver xid '%d'", xid);
+   
+   return ret;
 }
 
 

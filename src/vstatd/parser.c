@@ -71,7 +71,7 @@ int vstats_getname (char *buf) {
    return -1;
 }
 
-int  vs_limit_init (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET) {
+int  vs_init (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET) {
     FILE *vfp;
     char rd[4096], *fp;
     int nm, ret, i, ct = sizeof(VS_FILES) / sizeof(*VS_FILES);
@@ -177,23 +177,11 @@ int  vs_limit_init (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct 
        fclose(vfp);
        }
        else
-        log_error("vserver-xid -> %d - filename -> %s: %s", xid, fp, strerror(errno)); 
+        log_error("vserver xid '%d', filename '%s': %s", xid, fp, strerror(errno)); 
     }
-
-    vs_rrd_update(xid, CUR, MIN, MAX, INFO, NET); 
-    return 0;
-}
-
-
-int vs_parse_init (xid_t xid) {
-    struct vs_limit CUR, MIN, MAX;
-    struct vs_info INFO;
-    struct vs_net NET;
    
-    if (vs_limit_init(xid, CUR, MIN, MAX, INFO, NET) < 0) {
-     log_error("cannot collect all data for vserver with xid '%d'", xid);
-     return -1;
-    }	
+    if (vs_rrd_update(xid, CUR, MIN, MAX, INFO, NET) < 0)
+     return -2;
     return 0;
 }
 

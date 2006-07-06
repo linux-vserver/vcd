@@ -1,6 +1,6 @@
 #ifndef _VSTATD_VSTATS_H
 #define _VSTATD_VSTATS_H
-#include <vserver.h>
+#include <vserver.h>   
 
 #define ST_BUF 128
 
@@ -8,6 +8,7 @@
 #define VS_LAVG_VL 3
 #define VS_INFO_VL 1
 #define VS_NET_VL 6
+#define VS_ALL 70
 
 struct vs_limit {
        int mem_VM;
@@ -63,5 +64,6 @@ struct vs_net {
 };
 
 int vs_parse_init (xid_t xid);
+int vs_init (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET);
 
 #endif

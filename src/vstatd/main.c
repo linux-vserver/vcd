@@ -25,6 +25,7 @@ void usage (int rc) {
 	    "Usage: vstatd [<opts>]\n\n"
 	    "Available options:\n"
 	    "   -c <path>     configuration file (default: /etc/vstatd/vstatd.conf)\n"
+            "   -d            enable debug mode\n"
 	    "   -h            prints this help\n");
     exit(rc);
 }
@@ -33,11 +34,15 @@ void usage (int rc) {
 int main (int argc, char *argv[]) {
     char *cfg_file = "/etc/vstatd/vstatd.conf";
     char c;
+    int debug = 0;
    
-    while ((c = getopt(argc, argv, "c:h")) != -1) {
+    while ((c = getopt(argc, argv, "c:hd")) != -1) {
        switch (c) {
 	case 'c':
 	 cfg_file = optarg;
+	 break;
+        case 'd':
+	 debug = 1;
 	 break;
 	case 'h':
 	 usage(EXIT_SUCCESS);
@@ -50,7 +55,6 @@ int main (int argc, char *argv[]) {
    
     cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
 
-    int debug = 0;
     char *statsdir = "/proc/virtual";
    
     switch (cfg_parse(cfg, cfg_file)) {
