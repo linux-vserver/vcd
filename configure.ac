@@ -114,6 +114,11 @@ AC_CHECK_LIB(z, inflate,
 
 AC_SUBST(Z_LIBS)
 
+AC_CHECK_LIB(rrd, rrd_create,
+	RRDTOOL_LIBS="-lrrd", AC_MSG_ERROR([librrd not found]),)
+
+AC_SUBST(RRDTOOL_LIBS)
+
 # Checks for header files.
 
 # Checks for typedefs, structures, and compiler characteristics.
