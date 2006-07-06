@@ -1,3 +1,20 @@
+// Copyright 2006 Remo Lemma <coloss7@gmail.com>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -27,7 +44,7 @@ void usage (int rc) {
 	    "Usage: vstatd [<opts>]\n\n"
 	    "Available options:\n"
 	    "   -c <path>     configuration file (default: /etc/vstatd/vstatd.conf)\n"
-            "   -d            debug mode\n"
+           "   -d            debug mode\n"
 	    "   -h            prints this help\n");
     exit(rc);
 }
@@ -73,7 +90,7 @@ int main (int argc, char *argv[]) {
      default:
       break;
     }
-   
+
     if (log_init(debug) < 0) {
        perror("log_init");
        exit(EXIT_FAILURE);
@@ -105,7 +122,7 @@ int main (int argc, char *argv[]) {
        fprintf(fp, "%d\n", getpid());
        fclose(fp);
     }
-   
+ 
     log_info("Starting vstatd with config file: %s", cfg_file);
     
     statsdir = cfg_getstr(cfg, "statsdir");

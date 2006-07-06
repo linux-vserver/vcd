@@ -1,3 +1,20 @@
+// Copyright 2006 Remo Lemma <coloss7@gmail.com>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,13 +27,11 @@
 #include "log.h"
 #include "lucid.h"
 
-char *vs_rrd_build_dbname (xid_t xid) {
-    char *dbdir, dbname[ST_BUF - 1];
-   
+void vs_rrd_build_dbname (xid_t xid, char *dbname) {
+    char *dbdir = NULL;
     dbdir = cfg_getstr(cfg, "dbdir");
-    snprintf(dbname, sizeof(dbname) - 1, "%s/%d.rrd", dbdir, xid);
-   
-    return dbname;
+
+    snprintf(dbname, ST_BUF, "%s/%d.rrd", dbdir, xid);
 }
 
 
@@ -24,8 +39,8 @@ int vs_rrd_check (xid_t xid) {
     struct stat statinfo;
     char db[ST_BUF];
    
-    snprintf(db, sizeof(db) - 1, vs_rrd_build_dbname(xid));
-   
+    vs_rrd_build_dbname(xid, db);
+    
     if (lstat(db, &statinfo) < 0)
      return -1;
    
@@ -36,8 +51,8 @@ int vs_rrd_check (xid_t xid) {
 }
 
 int vs_rrd_create (xid_t xid) {
-    char db[ST_BUF - 1];
-    snprintf(db, sizeof(db) - 1, vs_rrd_build_dbname(xid));
+    char db[ST_BUF];
+    vs_rrd_build_dbname(xid, db);
     
     char *cargv[] = {
        "create",
@@ -145,7 +160,8 @@ int vs_rrd_update
   (xid_t xid, struct vs_limit CUR, struct vs_limit MIN, struct vs_limit MAX, struct vs_info INFO, struct vs_net NET) {
     int cargc = 3, ret = 0;
     char db[ST_BUF], *buf, *cargv[cargc];
-    snprintf(db, sizeof(db) - 1, vs_rrd_build_dbname(xid));
+
+    vs_rrd_build_dbname(xid, db);
 
     asprintf(&buf, "update %s \
 		     N:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d"
