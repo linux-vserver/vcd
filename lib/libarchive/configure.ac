@@ -55,16 +55,13 @@ AC_CHECK_TOOL([STRIP],[strip])
 AC_HEADER_STDC
 AC_HEADER_DIRENT
 AC_HEADER_SYS_WAIT
-AC_CHECK_HEADERS([attr/xattr.h])
-AC_CHECK_HEADERS([bzlib.h errno.h ext2fs/ext2_fs.h fcntl.h])
-AC_CHECK_HEADERS([inttypes.h langinfo.h limits.h linux/ext2_fs.h])
+AC_CHECK_HEADERS([bzlib.h errno.h fcntl.h])
+AC_CHECK_HEADERS([inttypes.h langinfo.h limits.h])
 AC_CHECK_HEADERS([locale.h paths.h])
-AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/acl.h sys/ioctl.h])
+AC_CHECK_HEADERS([stdint.h stdlib.h string.h sys/ioctl.h])
 AC_CHECK_HEADERS([sys/param.h sys/time.h unistd.h wchar.h zlib.h])
 
 # Checks for libraries.
-AC_CHECK_LIB(acl,acl_set_file)
-AC_CHECK_LIB(attr,setxattr)
 AC_CHECK_LIB(bz2,BZ2_bzDecompressInit)
 AC_CHECK_LIB(z,inflate)
 
