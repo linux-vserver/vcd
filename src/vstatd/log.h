@@ -15,8 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_LOG_H
-#define _VCD_LOG_H
+#ifndef _VSTATD_LOG_H
+#define _VSTATD_LOG_H
 
 #define LOG_DEBG  4
 #define LOG_INFO  3

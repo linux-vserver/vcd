@@ -31,8 +31,6 @@ static int log_fd     = -1;
 static int log_level  = LOG_INFO;
 static int log_stderr = 0;
 
-
-
 int log_init(int debug)
 {
 	const char *logfile = cfg_getstr(cfg, "logfile");
@@ -61,6 +59,7 @@ void _log_internal(int level, const char *fmt, va_list ap)
 {
 	time_t curtime = time(0);
 	char *levelstr = NULL, timestr[64];
+	va_list ap2;
 	
 	if (level > log_level)
 		return;
@@ -86,17 +85,21 @@ void _log_internal(int level, const char *fmt, va_list ap)
 	bzero(timestr, 64);
 	strftime(timestr, 63, "%a %b %d %H:%M:%S %Y", localtime(&curtime));
 	
+	if (log_stderr) {
+		va_copy(ap2, ap);
+		
+		dprintf(STDERR_FILENO, "[%s] [%5d] [%s] ",
+		        timestr, getpid(), levelstr);
+		vdprintf(STDERR_FILENO, fmt, ap2);
+		dprintf(STDERR_FILENO, "\n");
+		
+		va_end(ap2);
+	}
+	
 	if (log_fd > -1 && level < LOG_DEBG) {
 		dprintf(log_fd, "[%s] [%5d] [%s] ", timestr, getpid(), levelstr);
 		vdprintf(log_fd, fmt, ap);
 		dprintf(log_fd, "\n");
-	}
-	
-	if (log_stderr) {
-		dprintf(STDERR_FILENO, "[%s] [%5d] [%s] ",
-		        timestr, getpid(), levelstr);
-		vdprintf(STDERR_FILENO, fmt, ap);
-		dprintf(STDERR_FILENO, "\n");
 	}
 }
 
@@ -106,6 +109,8 @@ void log_debug(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_DEBG, fmt, ap);
+	
+	va_end(ap);
 }
 
 void log_info(const char *fmt, ...)
@@ -114,6 +119,8 @@ void log_info(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_INFO, fmt, ap);
+	
+	va_end(ap);
 }
 
 void log_warn(const char *fmt, ...)
@@ -122,6 +129,8 @@ void log_warn(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_WARN, fmt, ap);
+	
+	va_end(ap);
 }
 
 void log_error(const char *fmt, ...)
@@ -130,6 +139,8 @@ void log_error(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_ERR, fmt, ap);
+	
+	va_end(ap);
 }
 
 
@@ -139,6 +150,8 @@ void log_debug_and_die(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_DEBG, fmt, ap);
+	
+	va_end(ap);
 	exit(EXIT_FAILURE);
 }
 
@@ -148,6 +161,8 @@ void log_info_and_die(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_INFO, fmt, ap);
+	
+	va_end(ap);
 	exit(EXIT_FAILURE);
 }
 
@@ -157,6 +172,8 @@ void log_warn_and_die(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_WARN, fmt, ap);
+	
+	va_end(ap);
 	exit(EXIT_FAILURE);
 }
 
@@ -166,5 +183,7 @@ void log_error_and_die(const char *fmt, ...)
 	va_start(ap, fmt);
 	
 	_log_internal(LOG_ERR, fmt, ap);
+	
+	va_end(ap);
 	exit(EXIT_FAILURE);
 }

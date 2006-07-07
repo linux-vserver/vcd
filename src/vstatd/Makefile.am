@@ -17,10 +17,7 @@
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-LIBS = $(top_builddir)/lib/lucid/libucid.a \
-       $(CONFUSE_LIBS) \
-       $(RRDTOOL_LIBS) \
-       $(VSERVER_LIBS)
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
 noinst_HEADERS = cfg.h \
                  log.h \
@@ -35,3 +32,8 @@ vstatd_SOURCES = cfg.c \
                  main.c \
                  parser.c \
                  vs_rrd.c
+
+vstatd_LDADD = $(top_builddir)/lib/lucid/libucid.a \
+               $(CONFUSE_LIBS) \
+               $(RRDTOOL_LIBS) \
+               $(VSERVER_LIBS)

@@ -15,19 +15,13 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_CFG_H
-#define _VCD_CFG_H
+#ifndef _VSTATD_CFG_H
+#define _VSTATD_CFG_H
 
 #include <confuse.h>
 
 extern cfg_t *cfg;
 
-int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result);
-int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result);
-int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
-                         const char *value, void *result);
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result);
 

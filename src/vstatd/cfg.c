@@ -15,55 +15,11 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <stdlib.h>
 #include <sys/stat.h>
-#include <arpa/inet.h>
 
 #include "lucid.h"
 
 #include "cfg.h"
-
-int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result)
-{
-	struct in_addr inaddr;
-	
-	if (inet_pton(AF_INET, value, &inaddr) == 0) {
-		cfg_error(cfg, "Invalid address for %s = '%s'", opt->name, value);
-		return -1;
-	}
-	
-	*(const char **) result = (const char *) value;
-	return 0;
-}
-
-int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result)
-{
-	long int port = strtol(value, NULL, 0);
-	
-	if (port < 1 || port > 65536) {
-		cfg_error(cfg, "Port out of range for %s = '%s'", opt->name, value);
-		return -1;
-	}
-	
-	*(long int *) result = port;
-	return 0;
-}
-
-int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
-                         const char *value, void *result)
-{
-	long int timeout = strtol(value, NULL, 0);
-	
-	if (timeout < 1 || timeout > 3600) {
-		cfg_error(cfg, "Timeout out of range for %s = '%s'", opt->name, value);
-		return -1;
-	}
-	
-	*(long int *) result = timeout;
-	return 0;
-}
 
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
