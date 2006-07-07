@@ -19,7 +19,8 @@ SUBDIRS = methods
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-sysconf_DATA = vcd.conf
+sysconf_DATA = vcd.conf \
+               vshelper.conf
 
 EXTRA_DIST = $(sysconf_DATA)
 
@@ -33,7 +34,8 @@ noinst_HEADERS = auth.h \
                  validate.h \
                  vxdb.h
 
-sbin_PROGRAMS = vcd
+sbin_PROGRAMS = vcd \
+                vshelper
 
 vcd_SOURCES = auth.c \
               cfg.c \
@@ -52,6 +54,11 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(DBI_LIBS) \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_SERVER_LIBS)
+
+vshelper_SOURCES = vshelper.c
+
+vshelper_LDADD = $(CONFUSE_LIBS) \
+                 $(XMLRPC_C_CLIENT_LIBS)
 
 pkglib_PROGRAMS = gensql
 

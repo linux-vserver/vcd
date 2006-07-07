@@ -372,8 +372,6 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env)
 		
 		addr.mask[0] = 0;
 		
-		log_debug("type: %d, count: %d, ip: %u, mask: %u", addr.type, addr.count, addr.ip[0], addr.mask[0]);
-		
 		if (nx_add_addr(xid, &addr) == -1)
 			method_return_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
 		
@@ -626,7 +624,7 @@ xmlrpc_value *init_gentoo(xmlrpc_env *env, char *vdir, const char *runlevel)
 	int i, status;
 	
 	if (str_isempty(runlevel))
-		runlevel = "shutdown";
+		runlevel = "default";
 	
 	switch ((pid = fork())) {
 	case -1:

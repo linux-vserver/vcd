@@ -132,7 +132,7 @@ static
 xmlrpc_value *shutdown_gentoo(xmlrpc_env *env, const char *runlevel)
 {
 	pid_t pid;
-	int i, status;
+	int i;
 	
 	char *vserverdir = cfg_getstr(cfg, "vserverdir");
 	char *vdir = NULL;
@@ -169,14 +169,7 @@ xmlrpc_value *shutdown_gentoo(xmlrpc_env *env, const char *runlevel)
 		exit(EXIT_SUCCESS);
 	
 	default:
-		if (waitpid(pid, &status, WNOHANG) == -1)
-			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "shutdown failed: %s", strerror(WEXITSTATUS(status)));
-		
-		if (WIFSIGNALED(status))
-			kill(getpid(), WTERMSIG(status));
+		signal(SIGCHLD, SIG_IGN);
 	}
 	
 	return NULL;
@@ -232,25 +225,33 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		timeout = dbi_result_get_int(dbr, "timeout");
 	}
 	
-	if (strcmp(method, "init") == 0)
-		shutdown_init(env);
+	signal(SIGCHLD, SIG_DFL);
 	
-	else if (strcmp(method, "initng") == 0)
-		shutdown_initng(env);
+	switch ((pid = fork())) {
+	case -1:
+		method_return_faultf(env, MESYS, "%s: fork: %s", __FUNCTION__, strerror(errno));
 	
-	else if (strcmp(method, "sysvrc") == 0)
-		shutdown_sysvrc(env);
+	case 0:
+		usleep(200);
+		
+		if (strcmp(method, "init") == 0)
+			shutdown_init(env);
+		
+		else if (strcmp(method, "initng") == 0)
+			shutdown_initng(env);
+		
+		else if (strcmp(method, "sysvrc") == 0)
+			shutdown_sysvrc(env);
+		
+		else if (strcmp(method, "gentoo") == 0)
+			shutdown_gentoo(env, stop);
+		
+		exit(EXIT_SUCCESS);
 	
-	else if (strcmp(method, "gentoo") == 0)
-		shutdown_gentoo(env, stop);
-	
-	else
-		method_return_faultf(env, MECONF, "unknown init style: %s", method);
-	
-	if (wait)
-		signal(SIGCHLD, SIG_DFL);
-	else
-		signal(SIGCHLD, SIG_IGN);
+	default:
+		if (waitpid(pid, &status, 0) == -1)
+			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
+	}
 	
 	switch((pid = fork())) {
 	case -1:
@@ -264,12 +265,6 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	default:
 		if (waitpid(pid, &status, wait == 0 ? WNOHANG : 0) == -1)
 			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "init_init: %s", strerror(WEXITSTATUS(status)));
-		
-		if (WIFSIGNALED(status))
-			method_return_faultf(env, MESYS, "%s: caught signal %d", __FUNCTION__, WTERMSIG(status));
 	}
 	
 	return xmlrpc_nil_new(env);

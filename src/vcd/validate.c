@@ -37,7 +37,7 @@ int validate_name(const char *name)
 
 int validate_xid(xid_t xid)
 {
-	return (xid > 2 && xid < 65535);
+	return (xid > 1 && xid < 65535);
 }
 
 int validate_path(const char *path)
