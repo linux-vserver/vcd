@@ -37,3 +37,4 @@ vstatd_LDADD = $(top_builddir)/lib/lucid/libucid.a \
                $(CONFUSE_LIBS) \
                $(RRDTOOL_LIBS) \
                $(VSERVER_LIBS)
+
