@@ -17,9 +17,6 @@
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-LIBS = $(top_builddir)/lib/lucid/libucid.a \
-       $(VSERVER_LIBS)
-
 noinst_HEADERS = tools.h
 
 sbin_PROGRAMS = dx \
@@ -29,9 +26,23 @@ sbin_PROGRAMS = dx \
                 vr \
                 vx
 
+TOOLLIBS = $(top_builddir)/lib/lucid/libucid.a \
+           $(VSERVER_LIBS)
+
 dx_SOURCES = dx.c msg.c
+dx_LDADD = $(TOOLLIBS)
+
 ix_SOURCES = ix.c msg.c lists.c
+ix_LDADD = $(TOOLLIBS)
+
 ns_SOURCES = ns.c msg.c
+ns_LDADD = $(TOOLLIBS)
+
 nx_SOURCES = nx.c msg.c lists.c
+nx_LDADD = $(TOOLLIBS)
+
 vr_SOURCES = vr.c msg.c
+vr_LDADD = $(TOOLLIBS)
+
 vx_SOURCES = vx.c msg.c lists.c
+vx_LDADD = $(TOOLLIBS)

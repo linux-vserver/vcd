@@ -17,12 +17,6 @@
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-LIBS = $(top_builddir)/lib/lucid/libucid.a \
-       $(CONFUSE_LIBS) \
-       $(UTIL_LIBS) \
-       $(VSERVER_LIBS) \
-       $(XMLRPC_C_CLIENT_LIBS)
-
 sysconf_DATA = vce.conf
 
 EXTRA_DIST = $(sysconf_DATA)
@@ -48,3 +42,9 @@ vce_SOURCES = cmd.c \
               vx_limit.c \
               vx_sched.c \
               vx_uname.c
+
+vce_LDADD = $(top_builddir)/lib/lucid/libucid.a \
+            $(CONFUSE_LIBS) \
+            $(UTIL_LIBS) \
+            $(VSERVER_LIBS) \
+            $(XMLRPC_C_CLIENT_LIBS)

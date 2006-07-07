@@ -19,15 +19,6 @@ SUBDIRS = methods
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-LIBS = $(top_builddir)/src/vcd/methods/libmethods.a \
-       $(top_builddir)/lib/libarchive/libarchive.a \
-       $(top_builddir)/lib/lucid/libucid.a \
-       $(BZ2_LIBS) $(Z_LIBS) \
-       $(CONFUSE_LIBS) \
-       $(DBI_LIBS) \
-       $(VSERVER_LIBS) \
-       $(XMLRPC_C_SERVER_LIBS)
-
 sysconf_DATA = vcd.conf
 pkgdata_DATA = vxdb.sql
 
@@ -54,6 +45,15 @@ vcd_SOURCES = auth.c \
               methods.c \
               validate.c \
               vxdb.c
+
+vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
+            $(top_builddir)/lib/libarchive/libarchive.a \
+            $(top_builddir)/lib/lucid/libucid.a \
+            $(BZ2_LIBS) $(Z_LIBS) \
+            $(CONFUSE_LIBS) \
+            $(DBI_LIBS) \
+            $(VSERVER_LIBS) \
+            $(XMLRPC_C_SERVER_LIBS)
 
 install-data-hook:
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd
