@@ -20,10 +20,8 @@ SUBDIRS = methods
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
 sysconf_DATA = vcd.conf
-pkgdata_DATA = vxdb.sql
 
-EXTRA_DIST = $(sysconf_DATA) \
-             $(pkgdata_DATA)
+EXTRA_DIST = $(sysconf_DATA)
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
@@ -54,6 +52,11 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(DBI_LIBS) \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_SERVER_LIBS)
+
+pkglib_PROGRAMS = gensql
+
+gensql_SOURCES = gensql.c
+gensql_LDADD = $(top_builddir)/lib/lucid/libucid.a
 
 install-data-hook:
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd

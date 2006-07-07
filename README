@@ -1,1 +1,4 @@
-See http://dev.croup.de/proj/vserver-utils for details
+Howto initialize vxdb
+======================
+
+# $(pkglibdir)/gensql | sqlite3 $(localstatedir)/vcd/vxdb

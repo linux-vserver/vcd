@@ -25,10 +25,13 @@ int auth_isvalid(const char *user, const char *pass)
 {
 	int rc = 0;
 	dbi_result dbr;
+	char *sha1_pass = sha1_digest(pass);
 	
 	dbr = dbi_conn_queryf(vxdb,
 		"SELECT uid FROM user WHERE name = '%s' AND password = '%s'",
-		user, pass);
+		user, sha1_pass);
+	
+	free(sha1_pass);
 	
 	if (!dbr)
 		return 0;

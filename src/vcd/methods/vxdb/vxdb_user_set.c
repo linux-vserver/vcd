@@ -15,6 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include "lucid.h"
+
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
@@ -23,7 +25,7 @@
 xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *user, *pass;
+	char *user, *pass, *sha1_pass;
 	int uid, admin;
 	dbi_result dbr;
 	
@@ -60,10 +62,14 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		
 		uid++;
 		
+		sha1_pass = sha1_digest(pass);
+		
 		dbr = dbi_conn_queryf(vxdb,
 			"INSERT INTO user (uid, name, password, admin) "
 			"VALUES (%d, '%s', '%s', %d)",
-			uid, user, pass, admin);
+			uid, user, sha1_pass, admin);
+		
+		free(sha1_pass);
 		
 		if (!dbr)
 			method_return_fault(env, MEVXDB);
@@ -78,9 +84,13 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_fault(env, MEVXDB);
 		
 		if (pass) {
+			sha1_pass = sha1_digest(pass);
+			
 			dbr = dbi_conn_queryf(vxdb,
 				"UPDATE user SET password = '%s' WHERE uid = %d",
-				pass, uid);
+				sha1_pass, uid);
+			
+			free(sha1_pass);
 			
 			if (!dbr)
 				method_return_fault(env, MEVXDB);
