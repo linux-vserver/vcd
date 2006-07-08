@@ -27,29 +27,29 @@
 
 
 vs_rrd_db RRD_DB[] = {
-	{ "mem_VM.rrd", vs_rrd_create_limit },
-	{ "mem_VML.rrd", vs_rrd_create_limit },
-	{ "mem_RSS.rrd", vs_rrd_create_limit },
-	{ "mem_ANON.rrd", vs_rrd_create_limit },
-	{ "mem_SHM.rrd", vs_rrd_create_limit },
-	{ "file_FILES.rrd", vs_rrd_create_limit },
-	{ "file_OFD.rrd", vs_rrd_create_limit },
-	{ "file_LOCKS.rrd", vs_rrd_create_limit },
-	{ "file_SOCK.rrd", vs_rrd_create_limit },
-	{ "ipc_MSGQ.rrd", vs_rrd_create_limit },
-	{ "ipc_SEMA.rrd", vs_rrd_create_limit },
-	{ "ipc_SEMS.rrd", vs_rrd_create_limit },
-	{ "sys_PROC.rrd", vs_rrd_create_limit },
-	{ "sys_LOADAVG.rrd", vs_rrd_create_loadavg },
-	{ "thread_TOTAL.rrd", vs_rrd_create_info },
-	{ "thread_RUN.rrd", vs_rrd_create_info },
-	{ "thread_NOINT.rrd", vs_rrd_create_info },
-	{ "thread_HOLD.rrd", vs_rrd_create_info },
-	{ "net_UNIX.rrd", vs_rrd_create_net },
-	{ "net_INET.rrd", vs_rrd_create_net },
-	{ "net_INET6.rrd", vs_rrd_create_net },
-	{ "net_OTHER.rrd", vs_rrd_create_net },
-	{ NULL, NULL }
+	{ "mem_VM.rrd", "VM:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "mem_VML.rrd", "VML:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "mem_RSS.rrd", "RSS:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "mem_ANON.rrd", "ANON:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "mem_SHM.rrd", "SHM:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "file_FILES.rrd", "FILES:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "file_OFD.rrd", "OFD:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "file_LOCKS.rrd", "LOCKS:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "file_SOCK.rrd", "SOCK:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "ipc_MSGQ.rrd", "MSGQ:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "ipc_SEMA.rrd", "SEMA:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "ipc_SEMS.rrd", "SEMS:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "sys_PROC.rrd", "PROC:", vs_rrd_create_limit, vs_rrd_update_limit },
+	{ "sys_LOADAVG.rrd", "loadavg:", vs_rrd_create_loadavg, vs_rrd_update_loadavg },
+	{ "thread_TOTAL.rrd", "nr_threads:", vs_rrd_create_info, vs_rrd_update_info },
+	{ "thread_RUN.rrd", "nr_running:", vs_rrd_create_info, vs_rrd_update_info },
+	{ "thread_NOINT.rrd", "nr_unintr:", vs_rrd_create_info, vs_rrd_update_info },
+	{ "thread_HOLD.rrd", "nr_onhold:", vs_rrd_create_info, vs_rrd_update_info },
+	{ "net_UNIX.rrd", "UNIX:", vs_rrd_create_net, vs_rrd_update_net },
+	{ "net_INET.rrd", "INET:", vs_rrd_create_net, vs_rrd_update_net },
+	{ "net_INET6.rrd", "INET6:", vs_rrd_create_net, vs_rrd_update_net },
+	{ "net_OTHER.rrd", "OTHER:", vs_rrd_create_net, vs_rrd_update_net },
+	{ NULL, NULL, NULL, NULL }
 };
 
 
@@ -69,7 +69,7 @@ int vs_rrd_check (xid_t xid, char *vname)
 		for (i=0; RRD_DB[i].db; i++) {
 			if (isfile(RRD_DB[i].db) == 0) {
 				log_info("creating database '%s' for vserver '%s', xid '%d'", RRD_DB[i].db, vname, xid);
-				RRD_DB[i].func(xid, RRD_DB[i].db, path);
+				RRD_DB[i].func_cr(xid, RRD_DB[i].db, path);
 			}
 		}
 	}

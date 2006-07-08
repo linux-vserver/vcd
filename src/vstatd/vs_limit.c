@@ -91,3 +91,31 @@ int vs_rrd_create_limit (xid_t xid, char *dbname, char *path)
 	} 
 	return 0;
 }  
+
+int vs_rrd_update_limit (xid_t xid, char *dbname, char *name, char *path) 
+{ 
+	int i, ret;
+	char *db, *buf, *uargv[UARGC];
+	uint64_t cur = 0, min = 0, max = 0;
+
+	for (i=0; LIMITS[i].name; i++) {
+		if (strcmp(name, LIMITS[i].name) == 0) {
+			cur = LIMITS[i].cur;
+			min = LIMITS[i].min;
+			max = LIMITS[i].max;
+		}
+	}
+
+	db = path_concat(path, dbname);
+
+	asprintf(&buf, "update %s N:%" PRIu64 ":%" PRIu64 ":%" PRIu64, db, cur, min, max);
+
+	argv_from_str(buf, uargv, UARGC+1);
+
+	if ((ret = rrd_update(UARGC, uargv)) == -1) {
+		log_error("cannot update database '%s', vserver xid '%d': %s", db, xid, rrd_get_error());
+		rrd_clear_error();
+		return -1;
+	}
+	return 0;
+}

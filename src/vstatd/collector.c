@@ -104,7 +104,7 @@ void handle_xid(char *path, xid_t xid, char *vname)
 			return;
 		} 
 		for (i=0; RRD_DB[i].db; i++) {
-			if (RRD_DB[i].func(xid, RRD_DB[i].db, npath) < 0)
+			if (RRD_DB[i].func_cr(xid, RRD_DB[i].db, npath) < 0)
 				return;
 		}
 	}
@@ -120,7 +120,13 @@ void handle_xid(char *path, xid_t xid, char *vname)
 		log_error("cannot collect all load average datas, vserver xid '%d'", xid);
 	else if (vs_parse_net(xid) == -1)
 		log_error("cannot collect all net datas, vserver xid '%d'", xid);
-
+	else {
+                npath = path_concat(datadir, vnm);
+		for (i=0; RRD_DB[i].db; i++) {
+			if (RRD_DB[i].func_up(xid, RRD_DB[i].db, RRD_DB[i].name, npath) < 0)
+				break;
+		}
+	}
 	return;
 }
 
@@ -150,4 +156,5 @@ void collector_main(void)
 	}
 	
 	closedir(dirp);
+	return;
 }

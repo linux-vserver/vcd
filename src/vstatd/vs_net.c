@@ -98,3 +98,35 @@ int vs_rrd_create_net (xid_t xid, char *dbname, char *path)
 	}
 	return 0;
 }
+
+int vs_rrd_update_net (xid_t xid, char *dbname, char *name, char *path)
+{
+	int i, ret;
+	char *db, *buf, *uargv[UARGC];
+	uint64_t netr = 0, netr_b = 0, nets = 0, nets_b = 0, netf = 0, netf_b = 0;
+
+	for (i=0; NET[i].name; i++) {
+		if (strcmp(name, NET[i].name) == 0) {
+			netr = NET[i].netr;
+			netr_b = NET[i].netr_b;
+			nets = NET[i].nets;
+			nets_b = NET[i].nets_b;
+			netf = NET[i].netf;
+			netf_b = NET[i].netf_b;
+		}
+	}
+
+	db = path_concat(path, dbname);
+
+	asprintf(&buf, "update %s N:%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64, 
+		db, netr, netr_b, nets, nets_b, netf, netf_b);
+
+	argv_from_str(buf, uargv, UARGC+1);
+
+	if ((ret = rrd_update(UARGC, uargv)) == -1) {
+		log_error("cannot update database '%s', vserver xid '%d': %s", db, xid, rrd_get_error());
+		rrd_clear_error();
+		return -1;
+	}
+	return 0;
+}

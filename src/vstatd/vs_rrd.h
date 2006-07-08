@@ -20,17 +20,26 @@
 
 #include "vstats.h"
 
+#define UARGC 3
+
 typedef struct {
 	char *db;
-	int (* func)(xid_t, char *, char *);
+	char *name;
+	int (* func_cr)(xid_t, char *, char *);
+	int (* func_up)(xid_t, char *, char *, char *);
 } vs_rrd_db;
 
 extern vs_rrd_db RRD_DB[];
 
 int vs_rrd_check (xid_t xid, char *vname);
+
 int vs_rrd_create_limit (xid_t xid, char *dbname, char *path);
 int vs_rrd_create_info (xid_t xid, char *dbname, char *path);
 int vs_rrd_create_loadavg (xid_t xid, char *dbname, char *path);
 int vs_rrd_create_net (xid_t xid, char *dbname, char *path);
 
+int vs_rrd_update_limit (xid_t xid, char *dbname, char *name, char *path);
+int vs_rrd_update_info (xid_t xid, char *dbname, char *name, char *path);
+int vs_rrd_update_loadavg (xid_t xid, char *dbname, char *name, char *path);
+int vs_rrd_update_net (xid_t xid, char *dbname, char *name, char *path);
 #endif
