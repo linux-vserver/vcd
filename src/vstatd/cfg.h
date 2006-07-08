@@ -25,4 +25,7 @@ extern cfg_t *cfg;
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result);
 
+int cfg_validate_graphs(cfg_t *cfg, cfg_opt_t *opt,
+			const char *value, void *result);
+
 #endif

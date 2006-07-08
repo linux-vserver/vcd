@@ -30,7 +30,7 @@
 #define VS_LAVG_VL 3
 #define VS_INFO_VL 1
 #define VS_NET_VL 6
-#define VS_ALL 70
+#define VS_GRAPHS_VL 15
 
 typedef struct {
 	char *name;
@@ -61,11 +61,17 @@ typedef struct {
 	uint64_t netf_b;
 } vstats_net_t;
 
+typedef struct {
+	int dur;
+	char *res;
+} vstats_graphs_t;
+
+extern int vs_graphs_counter;
 extern vstats_limit_t LIMITS[];
 extern vstats_info_t INFO[];
 extern vstats_loadavg_t LAVG[];
 extern vstats_net_t NET[];
-
+extern vstats_graphs_t GRAPHS[VS_GRAPHS_VL];
 
 int vs_parse_limit (xid_t xid);
 int vs_parse_info (xid_t xid);
