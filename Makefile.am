@@ -19,3 +19,5 @@
 SUBDIRS = lib \
           scripts \
           src
+
+EXTRA_DIST = doc

@@ -1,0 +1,7 @@
+This folder contains various documentation ans specifications:
+
+ - README.vcd
+   Instructions for setting up the VServer Control Daemon
+
+ - vcd.spec
+   VServer Control Daemon Specification

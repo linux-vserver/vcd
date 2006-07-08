@@ -1,0 +1,17 @@
+Setup the VServer Control Daemon
+=================================
+
+# ./configure --prefix=/usr \
+              --localstatedir=/var/lib \
+              --sysconfdir=/etc \
+              --with-vserverdir=/vservers
+# make && sudo make install
+
+# /usr/lib/vserver-utils/gensql | sqlite3 /var/lib/vcd/vxdb
+# chmod 600 /var/lib/vcd/vxdb
+
+# ix -set-attr /vservers BARRIER
+
+# $EDITOR /etc/vshelper.conf
+# echo 'kernel.vshelper = /usr/sbin/vshelper' >> /etc/sysctl.conf
+# sysctl -p
