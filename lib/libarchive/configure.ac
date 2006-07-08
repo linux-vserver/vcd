@@ -1,55 +1,60 @@
-#Process this file with autoconf to produce a configure script.
+# Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the
+# Free Software Foundation, Inc.,
+# 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-# M4 magic to pull in the version from a separate file
-# so we don't have to edit this file for routine version updates
+# Generic configuration
 m4_define([ARCHIVE_VERS],m4_include([version]))
 
+AC_PREREQ(2.59)
 AC_INIT([libarchive],ARCHIVE_VERS(),[kientzle@freebsd.org])
-# Make sure the srcdir contains "libarchive" directory
-AC_CONFIG_SRCDIR([libarchive])
-# Use auxiliary subscripts from this subdirectory (cleans up root)
-AC_CONFIG_AUX_DIR([config.aux])
-# Must follow AC_CONFIG macros above...
-AM_INIT_AUTOMAKE()
+AC_CONFIG_HEADER([config.h])
 
-# Shell magic to compute Major/minor/etc from full version stamp.
-# This gets a little hairy...
-AC_CONFIG_COMMANDS_PRE([
-# Autoconf assigns the version above to PACKAGE_VERSION
-ARCHIVE_VERSION=$PACKAGE_VERSION
-# Peel off first three numbers major.minor.revision
-ARCHIVE_MAJOR=`echo $ARCHIVE_VERSION | sed -e 's/\..*//'`
-ARCHIVE_MINOR=`echo $ARCHIVE_VERSION | sed -e 's/^[[0-9]]*\.//' | sed -e 's/\..*//'`
-ARCHIVE_REVISION=`echo $ARCHIVE_VERSION | sed -e 's/^[[0-9]]*\.[[0-9]]*\.//' | sed -e 's/\..*//'`
-# Major/minor indicate the API version
-ARCHIVE_API_MAJOR=$ARCHIVE_MAJOR
-ARCHIVE_API_MINOR=$ARCHIVE_MINOR
-# Libtool versioning uses different conventions on different platforms.
-# FreeBSD libtool still uses this old (and very dumb) convention,
-# which doesn't match FreeBSD system conventions, nor anything else
-# I'm familiar with.
-ARCHIVE_LIBTOOL_MAJOR=`echo $((${ARCHIVE_MAJOR} + ${ARCHIVE_MINOR}))`
-ARCHIVE_LIBTOOL_VERSION=$ARCHIVE_LIBTOOL_MAJOR:$ARCHIVE_REVISION:$ARCHIVE_MINOR
-])
+AC_GNU_SOURCE
 
-# Substitute the above version numbers into the various files below.
-AC_SUBST(ARCHIVE_MAJOR)
-AC_SUBST(ARCHIVE_MINOR)
-AC_SUBST(ARCHIVE_REVISION)
-AC_SUBST(ARCHIVE_API_MAJOR)
-AC_SUBST(ARCHIVE_API_MINOR)
-AC_SUBST(ARCHIVE_LIBTOOL_VERSION)
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
 
-AC_CONFIG_HEADERS([config.h])
+# Automake
+AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2])
+AM_MAINTAINER_MODE
+
 AC_CONFIG_FILES([Makefile])
-AC_CONFIG_FILES([libarchive/archive.h])
+
+# prevent building of libarchive with --disable-server
+AC_ARG_ENABLE([server],
+              [AC_HELP_STRING([--disable-server],
+                              [Disable the VServer Control Daemon])],
+              [case "${enableval}" in
+                yes) enable_server=true;;
+                no)  enable_server=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-server);;
+              esac],
+              [enable_server=true])
+AM_CONDITIONAL(ENABLE_SERVER, test x$enable_server = xtrue)
 
 # Checks for programs.
 AC_PROG_CC
 AM_PROG_CC_C_O
-AC_PROG_YACC
 AC_PROG_LIBTOOL
-AC_CHECK_TOOL([STRIP],[strip])
+AC_PROG_INSTALL
+AC_PROG_LN_S
+AC_PROG_MAKE_SET
+
+if test x$enable_server = xtrue; then
 
 # Checks for header files.
 AC_HEADER_STDC
@@ -64,13 +69,6 @@ AC_CHECK_HEADERS([sys/param.h sys/time.h unistd.h wchar.h zlib.h])
 # Checks for libraries.
 AC_CHECK_LIB(bz2,BZ2_bzDecompressInit)
 AC_CHECK_LIB(z,inflate)
-
-# TODO: Give the user the option of using a pre-existing system
-# libarchive.  This will define HAVE_LIBARCHIVE which will cause
-# bsdtar_platform.h to use #include <...> for the libarchive headers.
-# Need to include Makefile.am magic to link against system
-# -larchive in that case.
-#AC_CHECK_LIB(archive,archive_version)
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -116,7 +114,6 @@ AC_CHECK_DECL([EILSEQ],
 AC_HEADER_TIME
 
 # Checks for library functions.
-AC_PROG_GCC_TRADITIONAL
 AC_HEADER_MAJOR
 AC_FUNC_MEMCMP
 AC_FUNC_LSTAT
@@ -124,10 +121,9 @@ AC_FUNC_STAT
 AC_FUNC_STRERROR_R
 AC_FUNC_STRFTIME
 AC_FUNC_VPRINTF
-AC_CHECK_FUNCS([chflags fchdir fchflags fchmod fchown futimes])
-AC_CHECK_FUNCS([ftruncate getopt_long getxattr])
+AC_CHECK_FUNCS([fchdir fchmod fchown futimes])
+AC_CHECK_FUNCS([ftruncate getopt_long])
 AC_CHECK_FUNCS([lchflags lchmod lchown])
-AC_CHECK_FUNCS([lgetxattr listxattr llistxattr fsetxattr lsetxattr])
 AC_CHECK_FUNCS([lutimes memmove])
 AC_CHECK_FUNCS([memset mkdir mkfifo nl_langinfo reallocf setlocale])
 AC_CHECK_FUNCS([strchr strdup strerror strrchr timegm])
@@ -165,48 +161,10 @@ AC_CHECK_MEMBER(struct dirent.d_namlen,,,
 #endif
 ])
 
-# Check for ACL support
-#
-# The ACL support in libarchive is written against the POSIX1e draft,
-# which was never officially approved and varies quite a bit across
-# platforms.  Worse, some systems have completely non-POSIX acl functions,
-# which makes the following checks rather more complex than I would like.
-#
-AC_CHECK_HEADERS([sys/acl.h])
-AC_CHECK_LIB([acl],[acl_get_file])
-AC_CHECK_FUNCS([acl_create_entry acl_init acl_set_fd acl_set_fd_np acl_set_file])
-
-AC_CHECK_TYPES(acl_permset_t,,,
-[#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_SYS_ACL_H
-#include <sys/acl.h>
-#endif
-])
-
-# The "acl_get_perm()" function was omitted from the POSIX draft.
-# (It's a pretty obvious oversight; otherwise, there's no way to
-# test for specific permissions in a permset.)  Linux uses the obvious
-# name, FreeBSD adds _np to mark it as "non-Posix extension."
-# Test for both as a double-check that we really have POSIX-style ACL support.
-AC_CHECK_FUNCS(acl_get_perm_np acl_get_perm,,,
-[#if HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-#if HAVE_SYS_ACL_H
-#include <sys/acl.h>
-#endif
-])
-
-# MacOS has an acl.h that isn't POSIX.  It can be detected by
-# checking for ACL_USER
-AC_CHECK_DECL([ACL_USER],
-		[AC_DEFINE(HAVE_ACL_USER, 1, [True for systems with POSIX ACL support])],
-		[],
-		[#include <sys/acl.h>])
-
 # Additional requirements
 AC_SYS_LARGEFILE
+
+# $enable_server
+fi
 
 AC_OUTPUT
