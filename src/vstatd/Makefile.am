@@ -19,6 +19,8 @@ if ENABLE_STATS
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
+EXTRA_DIST = vstatd.conf
+
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
 noinst_HEADERS = cfg.h \
@@ -42,5 +44,9 @@ vstatd_LDADD = $(top_builddir)/lib/lucid/libucid.a \
                $(CONFUSE_LIBS) \
                $(RRDTOOL_LIBS) \
                $(VSERVER_LIBS)
+
+install-data-local:
+	$(install_sh)    -m 600 $(srcdir)/vstatd.conf $(DESTDIR)$(sysconfdir)/vstatd.conf
+	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vstatd
 
 endif

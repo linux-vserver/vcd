@@ -219,16 +219,18 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 
 # Output
 AC_CONFIG_FILES([Makefile
-                 scripts/Makefile
+                 doc/Makefile
                  lib/lucid/Makefile
                  lib/Makefile
+                 scripts/Makefile
                  src/tools/Makefile
                  src/vcc/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
                  src/vce/Makefile
                  src/vstatd/Makefile
-                 src/Makefile])
+                 src/Makefile
+                 test/Makefile])
 
 AC_OUTPUT
 
