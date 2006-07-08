@@ -48,6 +48,7 @@ int vs_parse_info (xid_t xid)
 			}
 		}
 	}
+	fclose(vfp);
 	return 0;
 }
 

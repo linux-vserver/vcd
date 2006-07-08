@@ -50,6 +50,7 @@ int vs_parse_loadavg (xid_t xid)
 			}
 		}
 	}
+	fclose(vfp);
 	return 0;
 }
 

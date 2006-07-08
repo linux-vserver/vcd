@@ -50,6 +50,13 @@ int vs_parse_limit (xid_t xid)
 			}
 		}
 	}
+	fclose(vfp);
+
+	/* Resets min / max */
+	if ((ret = vx_reset_rminmax(xid, NULL)) == -1) {
+		log_error("cannot reset min / max, vserver xid '%d'", xid);
+		return -2;
+	}	
 	return 0;
 }
 

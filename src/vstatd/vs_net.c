@@ -55,6 +55,7 @@ int vs_parse_net (xid_t xid)
 			}
 		}
 	}
+	fclose(vfp);
 	return 0;
 }
 
