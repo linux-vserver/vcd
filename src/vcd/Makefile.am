@@ -15,6 +15,8 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+if ENABLE_SERVER
+
 SUBDIRS = methods
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
@@ -68,3 +70,5 @@ gensql_LDADD = $(top_builddir)/lib/lucid/libucid.a
 install-data-hook:
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd
 	$(mkinstalldirs) -m 000 $(DESTDIR)$(vserverdir)
+
+endif

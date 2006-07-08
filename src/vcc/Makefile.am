@@ -15,6 +15,8 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+if ENABLE_CLIENT
+
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
 sysconf_DATA = vcc.conf
@@ -47,3 +49,5 @@ vcc_LDADD = $(top_builddir)/lib/lucid/libucid.a \
             $(UTIL_LIBS) \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_CLIENT_LIBS)
+
+endif

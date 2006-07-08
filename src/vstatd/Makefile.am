@@ -15,6 +15,8 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+if ENABLE_STATS
+
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
@@ -38,3 +40,4 @@ vstatd_LDADD = $(top_builddir)/lib/lucid/libucid.a \
                $(RRDTOOL_LIBS) \
                $(VSERVER_LIBS)
 
+endif

@@ -38,19 +38,42 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+# Parts to build
+AC_ARG_ENABLE([server],
+              [AC_HELP_STRING([--disable-server],
+                              [Disable the VServer Control Daemon])],
+              [case "${enableval}" in
+                yes) enable_server=true;;
+                no)  enable_server=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-server);;
+              esac],
+              [enable_server=true])
+AM_CONDITIONAL(ENABLE_SERVER, test x$enable_server = xtrue)
+
+AC_ARG_ENABLE([client],
+              [AC_HELP_STRING([--disable-client],
+                              [Disable the VServer Control Client])],
+              [case "${enableval}" in
+                yes) enable_client=true;;
+                no)  enable_client=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-client);;
+              esac],
+              [enable_client=true])
+AM_CONDITIONAL(ENABLE_CLIENT, test x$enable_client = xtrue)
+
+AC_ARG_ENABLE([stats],
+              [AC_HELP_STRING([--disable-stats],
+                              [Disable the VServer Control Daemon])],
+              [case "${enableval}" in
+                yes) enable_stats=true;;
+                no)  enable_stats=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-stats);;
+              esac],
+              [enable_stats=true])
+AM_CONDITIONAL(ENABLE_STATS, test x$enable_stats = xtrue)
+
+
 # Checks for libraries.
-AC_CHECK_FUNC(dlopen, DL_LIBS="",[
-	AC_CHECK_LIB(dl, dlopen, DL_LIBS="-ldl", AC_MSG_ERROR([libdl not found]))
-])
-
-AC_SUBST(DL_LIBS)
-
-AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
-	AC_CHECK_LIB(util, openpty, UTIL_LIBS="-lutil", AC_MSG_ERROR([libutil not found]))
-])
-
-AC_SUBST(UTIL_LIBS)
-
 AC_PATH_PROG(CONFUSE_CONFIG, confuse-config)
 if test -z "$CONFUSE_CONFIG"; then
 	AC_MSG_ERROR([confuse-config not found])
@@ -59,6 +82,28 @@ fi
 CONFUSE_LIBS="$($CONFUSE_CONFIG --libs)"
 
 AC_SUBST(CONFUSE_LIBS)
+
+AC_CHECK_LIB(vserver, vx_clone_namespace, 
+	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
+
+AC_SUBST(VSERVER_LIBS)
+
+
+if test x$enable_client = xtrue; then
+AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
+	AC_CHECK_LIB(util, openpty, UTIL_LIBS="-lutil", AC_MSG_ERROR([libutil not found]))
+])
+
+AC_SUBST(UTIL_LIBS)
+fi
+
+
+if test x$enable_server = xtrue; then
+AC_CHECK_FUNC(dlopen, DL_LIBS="",[
+	AC_CHECK_LIB(dl, dlopen, DL_LIBS="-ldl", AC_MSG_ERROR([libdl not found]))
+])
+
+AC_SUBST(DL_LIBS)
 
 AC_CHECK_LIB(dbi, dbi_result_get_int,
 	DBI_LIBS="$DL_LIBS -ldbi", AC_MSG_ERROR([libdbi >= 0.8 not found]),)
@@ -72,11 +117,19 @@ AC_RUN_IFELSE(
 
 AC_SUBST(DBI_LIBS)
 
-AC_CHECK_LIB(vserver, vx_clone_namespace, 
-	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
+AC_CHECK_LIB(bz2, BZ2_bzDecompressInit,
+	BZ2_LIBS="-lbz2", AC_MSG_ERROR([libbz2 not found]),)
 
-AC_SUBST(VSERVER_LIBS)
+AC_SUBST(BZ2_LIBS)
 
+AC_CHECK_LIB(z, inflate,
+	Z_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
+
+AC_SUBST(Z_LIBS)
+fi
+
+
+if test x$enable_client = xtrue || test y$enable_server = xtrue; then
 AC_PATH_PROG(XMLRPC_C_CONFIG, xmlrpc-c-config)
 if test -z "$XMLRPC_C_CONFIG"; then
 	AC_MSG_ERROR([xmlrpc-c-config not found])
@@ -103,21 +156,15 @@ XMLRPC_C_SERVER_LIBS="$($XMLRPC_C_CONFIG abyss-server --libs)"
 
 AC_SUBST(XMLRPC_C_CLIENT_LIBS)
 AC_SUBST(XMLRPC_C_SERVER_LIBS)
+fi
 
-AC_CHECK_LIB(bz2, BZ2_bzDecompressInit,
-	BZ2_LIBS="-lbz2", AC_MSG_ERROR([libbz2 not found]),)
 
-AC_SUBST(BZ2_LIBS)
-
-AC_CHECK_LIB(z, inflate,
-	Z_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
-
-AC_SUBST(Z_LIBS)
-
+if test x$enable_stats = xtrue; then
 AC_CHECK_LIB(rrd, rrd_create,
 	RRDTOOL_LIBS="-lrrd", AC_MSG_ERROR([librrd not found]),)
 
 AC_SUBST(RRDTOOL_LIBS)
+fi
 
 # Checks for header files.
 
