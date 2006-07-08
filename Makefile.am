@@ -20,4 +20,5 @@ SUBDIRS = lib \
           scripts \
           src
 
-EXTRA_DIST = doc
+EXTRA_DIST = doc \
+             test

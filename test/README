@@ -1,0 +1,8 @@
+Test instructions for vxdb.php
+===============================
+
+  1. Copy testdummy.tar.bz2 and testdummy.conf
+     to your templates folder
+  2. Edit vxdb.php and set $ADMINUSER and $ADMINPASS
+  3. Run "php vxdb.php"
+  4. Send the output to hollow@gentoo.org

@@ -47,7 +47,7 @@ function call($method, $params)
 	
 	$request = xmlrpc_encode_request($method,
 		array(
-			array("username"=>$ADMINUSER,"password"=>md5($ADMINPASS)),
+			array("username"=>$ADMINUSER,"password"=>$ADMINPASS),
 			$params
 		),
 		array(
@@ -111,11 +111,11 @@ $MOUNTTYPE2 = "devpts";
 
 $NXADDR1  = "192.168.0.123";
 $NXMASK1  = "255.255.255.0";
-$NXBCAST1 = "192.168.0.255";
 
 $NXADDR2  = "192.168.0.124";
 $NXMASK2  = "255.255.255.255";
-$NXBCAST2 = "192.168.0.255";
+
+$NXBCAST = "192.168.0.255";
 
 $BCAP1 = "MKNOD";
 $BCAP2 = "SYS_ADMIN";
@@ -206,16 +206,23 @@ call("vxdb.mount.get",    array("name"=>$NAME,"path"=>NULL));
 
 
 call("vxdb.nx.addr.get",    array("name"=>$NAME,"addr"=>NULL));
-call("vxdb.nx.addr.set",    array("name"=>$NAME,"addr"=>$NXADDR1,"netmask"=>$NXMASK1,"broadcast"=>$NXBCAST1));
+call("vxdb.nx.addr.set",    array("name"=>$NAME,"addr"=>$NXADDR1,"netmask"=>$NXMASK1));
 call("vxdb.nx.addr.get",    array("name"=>$NAME,"addr"=>NULL));
-call("vxdb.nx.addr.set",    array("name"=>$NAME,"addr"=>$NXADDR2,"netmask"=>$NXMASK2,"broadcast"=>$NXBCAST2));
+call("vxdb.nx.addr.set",    array("name"=>$NAME,"addr"=>$NXADDR2,"netmask"=>$NXMASK2));
 call("vxdb.nx.addr.get",    array("name"=>$NAME,"addr"=>NULL));
 call("vxdb.nx.addr.remove", array("name"=>$NAME,"addr"=>$NXADDR1));
 call("vxdb.nx.addr.get",    array("name"=>$NAME,"addr"=>NULL));
-call("vxdb.nx.addr.set",    array("name"=>$NAME,"addr"=>$NXADDR1,"netmask"=>$NXMASK1,"broadcast"=>$NXBCAST1));
+call("vxdb.nx.addr.set",    array("name"=>$NAME,"addr"=>$NXADDR1,"netmask"=>$NXMASK1));
 call("vxdb.nx.addr.get",    array("name"=>$NAME,"addr"=>NULL));
 call("vxdb.nx.addr.remove", array("name"=>$NAME,"addr"=>NULL));
 call("vxdb.nx.addr.get",    array("name"=>$NAME,"addr"=>NULL));
+
+
+call("vxdb.nx.broadcast.get",    array("name"=>$NAME));
+call("vxdb.nx.broadcast.set",    array("name"=>$NAME,"broadcast"=>$NXBCAST));
+call("vxdb.nx.broadcast.get",    array("name"=>$NAME));
+call("vxdb.nx.broadcast.remove", array("name"=>$NAME));
+call("vxdb.nx.broadcast.get",    array("name"=>$NAME));
 
 
 call("vxdb.vx.bcaps.get",    array("name"=>$NAME));

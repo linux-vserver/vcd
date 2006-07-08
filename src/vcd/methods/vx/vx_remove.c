@@ -62,6 +62,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"DELETE FROM init_method  WHERE xid = %1$d;"
 		"DELETE FROM mount        WHERE xid = %1$d;"
 		"DELETE FROM nx_addr      WHERE xid = %1$d;"
+		"DELETE FROM nx_broadcast WHERE xid = %1$d;"
 		"DELETE FROM vx_bcaps     WHERE xid = %1$d;"
 		"DELETE FROM vx_ccaps     WHERE xid = %1$d;"
 		"DELETE FROM vx_flags     WHERE xid = %1$d;"
