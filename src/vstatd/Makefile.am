@@ -32,7 +32,10 @@ vstatd_SOURCES = cfg.c \
                  collector.c \
                  log.c \
                  main.c \
-                 parser.c \
+                 vs_info.c \
+                 vs_limit.c \
+                 vs_loadavg.c \
+                 vs_net.c \
                  vs_rrd.c
 
 vstatd_LDADD = $(top_builddir)/lib/lucid/libucid.a \

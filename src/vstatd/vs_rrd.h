@@ -18,7 +18,6 @@
 #ifndef _VSTATD_RRD
 #define _VSTATD_RRD
 
-#include <vserver.h>
 #include "vstats.h"
 
 typedef struct {
@@ -29,6 +28,9 @@ typedef struct {
 extern vs_rrd_db RRD_DB[];
 
 int vs_rrd_check (xid_t xid, char *vname);
-int vs_rrd_create (xid_t xid);
+int vs_rrd_create_limit (xid_t xid, char *dbname, char *path);
+int vs_rrd_create_info (xid_t xid, char *dbname, char *path);
+int vs_rrd_create_loadavg (xid_t xid, char *dbname, char *path);
+int vs_rrd_create_net (xid_t xid, char *dbname, char *path);
 
 #endif

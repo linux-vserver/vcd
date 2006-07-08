@@ -16,18 +16,13 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
-#include <stdio.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <vserver.h>
-
-#include <inttypes.h>
 
 #include "lucid.h"
-
 #include "log.h"
 #include "cfg.h"
 #include "vs_rrd.h"

@@ -1,0 +1,92 @@
+// Copyright 2006 Remo Lemma <coloss7@gmail.com>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+#include <string.h>
+#include <inttypes.h>
+#include <rrd.h>
+
+#include "vs_rrd.h"
+#include "log.h"
+#include "cfg.h"
+#include "lucid.h"
+
+
+int vs_parse_loadavg (xid_t xid) 
+{
+	FILE *vfp;
+	char str[ST_BUF * 4], *name;
+	float omin, fmin, ftmin;
+	int i, ret;
+
+	if ((vfp = fopen(INFO_FILE, "r")) == NULL) {
+		log_error("cannot open '%s', vserver xid '%d'", INFO_FILE, xid);
+		return -1;
+	}
+
+	while (fgets(str, sizeof(str) - 1, vfp)) {
+		name = (char *) malloc(strlen(str));
+		ret = sscanf(str, "%s %f %f %f", name, &omin, &fmin, &ftmin);
+		for (i = 0; LAVG[i].name; i++) {
+			if (strcmp(name, LAVG[i].name) == 0) {
+				if (ret != VS_LAVG_VL + 1)
+					return -1;
+				LAVG[i].omin = omin;
+				LAVG[i].fmin = fmin;
+				LAVG[i].ftmin = ftmin;
+			}
+		}
+	}
+	return 0;
+}
+
+int vs_rrd_create_loadavg (xid_t xid, char *dbname, char *path)
+{
+	char *db;
+	db = path_concat(path, dbname);
+
+	char *cargv[] = {
+        	"create",
+	        db,
+        	"-s 30",
+	        "DS:lavg_OMIN:GAUGE:30:0:9223372036854775807",
+        	"DS:lavg_FMIN:GAUGE:30:0:9223372036854775807",
+	        "DS:lavg_FTMIN:GAUGE:30:0:9223372036854775807",
+        	"RRA:MIN:0:1:60",
+	        "RRA:MAX:0:1:60",
+        	"RRA:AVERAGE:0:1:60",
+	        "RRA:MIN:0:12:60",
+        	"RRA:MAX:0:12:60",
+	        "RRA:AVERAGE:0:12:60",
+        	"RRA:MIN:0:48:60",
+	        "RRA:MAX:0:48:60",
+        	"RRA:AVERAGE:0:48:60",
+	        "RRA:MIN:0:1440:60",
+        	"RRA:MAX:0:1440:60",
+	        "RRA:AVERAGE:0:1440:60",
+	        "RRA:MIN:0:17520:60",
+        	"RRA:MAX:0:17520:60",
+        	"RRA:AVERAGE:0:17520:60",
+	};
+	int cargc = sizeof(cargv) / sizeof(*cargv), ret = 0;
+
+	if ((ret = rrd_create(cargc, cargv)) < 0) {
+		log_error("cannot create db '%s', vserver xid '%d': %s", db, xid, rrd_get_error());
+		rrd_clear_error();
+		return -1;
+	}
+	return 0;
+}
