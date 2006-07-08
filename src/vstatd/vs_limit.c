@@ -56,11 +56,17 @@ int vs_parse_limit (xid_t xid)
 
 int vs_rrd_create_limit (xid_t xid, char *dbname, char *path) 
 {
-	char *db;
+	char *db, start[ST_BUF];
+	time_t curtime;
+	
+	curtime = time(NULL);
+	snprintf(start, sizeof(start) - 1, "-b %d", (int) (curtime - curtime %30));
+
 	db = path_concat(path, dbname);
 
 	char *cargv[] = {
         	"create",
+	        start,
 	        db,
         	"-s 30",
 	        "DS:lim_CUR:GAUGE:30:0:9223372036854775807",
@@ -68,7 +74,7 @@ int vs_rrd_create_limit (xid_t xid, char *dbname, char *path)
 	        "DS:lim_MAX:GAUGE:30:0:9223372036854775807", 
         	"RRA:MIN:0:1:60",
 	        "RRA:MAX:0:1:60", 
-        	"RRA:AVERAGE:0:1:60", 
+        	"RRA:AVERAGE:0:1:60",
 	        "RRA:MIN:0:12:60",
         	"RRA:MAX:0:12:60", 
 	        "RRA:AVERAGE:0:12:60", 
@@ -94,9 +100,13 @@ int vs_rrd_create_limit (xid_t xid, char *dbname, char *path)
 
 int vs_rrd_update_limit (xid_t xid, char *dbname, char *name, char *path) 
 { 
-	int i, ret;
-	char *db, *buf, *uargv[UARGC];
+	int i, ret, tm;
+	char *db, *buf, *uargv[UARGC + 1];
 	uint64_t cur = 0, min = 0, max = 0;
+	time_t curtime;
+	
+	curtime = time(NULL);
+	tm = (int) vs_rrd_gettime(curtime);
 
 	for (i=0; LIMITS[i].name; i++) {
 		if (strcmp(name, LIMITS[i].name) == 0) {
@@ -108,7 +118,7 @@ int vs_rrd_update_limit (xid_t xid, char *dbname, char *name, char *path)
 
 	db = path_concat(path, dbname);
 
-	asprintf(&buf, "update %s N:%" PRIu64 ":%" PRIu64 ":%" PRIu64, db, cur, min, max);
+	asprintf(&buf, "update %s %d:%" PRIu64 ":%" PRIu64 ":%" PRIu64, db, tm, cur, min, max);
 
 	argv_from_str(buf, uargv, UARGC+1);
 

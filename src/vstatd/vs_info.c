@@ -53,11 +53,16 @@ int vs_parse_info (xid_t xid)
 
 int vs_rrd_create_info (xid_t xid, char *dbname, char *path) 
 {
-	char *db;
+	char *db, start[ST_BUF];
+	time_t curtime;
+
+	curtime = time(NULL);
+	snprintf(start, sizeof(start) - 1, "-b %d", (int) (curtime - curtime %30));
 	db = path_concat(path, dbname);
 
 	char *cargv[] = {
         	"create",
+	        start,
 	        db,
         	"-s 30",
 	        "DS:info_VALUE:GAUGE:30:0:9223372036854775807",
@@ -89,9 +94,14 @@ int vs_rrd_create_info (xid_t xid, char *dbname, char *path)
 
 int vs_rrd_update_info (xid_t xid, char *dbname, char *name, char *path)
 {
-	int i, ret;
-	char *db, *buf, *uargv[UARGC];
+	int i, ret, tm;
+	char *db, *buf, *uargv[UARGC + 1];
 	uint64_t value = 0;
+	time_t curtime;
+
+	curtime = time(NULL);
+	tm = (int) vs_rrd_gettime(curtime);
+
 
 	for (i=0; INFO[i].name; i++) {
 		if (strcmp(name, INFO[i].name) == 0)
@@ -100,7 +110,7 @@ int vs_rrd_update_info (xid_t xid, char *dbname, char *name, char *path)
 
 	db = path_concat(path, dbname);
 
-	asprintf(&buf, "update %s N:%" SCNu64, db, value);
+	asprintf(&buf, "update %s %d:%" SCNu64, db, tm, value);
 
 	argv_from_str(buf, uargv, UARGC+1);
 

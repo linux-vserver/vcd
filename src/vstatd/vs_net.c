@@ -60,11 +60,16 @@ int vs_parse_net (xid_t xid)
 
 int vs_rrd_create_net (xid_t xid, char *dbname, char *path)
 {
-	char *db;
+	char *db, start[ST_BUF];
+	time_t curtime;
+
+	curtime = time(NULL);
+	snprintf(start, sizeof(start) - 1, "-b %d", (int) (curtime - curtime %30));
 	db = path_concat(path, dbname);
 
 	char *cargv[] = {
 	        "create",
+	        start,
 	        db,
         	"-s 30",
 	        "DS:net_RECV:GAUGE:30:0:9223372036854775807",
@@ -101,9 +106,13 @@ int vs_rrd_create_net (xid_t xid, char *dbname, char *path)
 
 int vs_rrd_update_net (xid_t xid, char *dbname, char *name, char *path)
 {
-	int i, ret;
-	char *db, *buf, *uargv[UARGC];
+	int i, ret, tm;
+	char *db, *buf, *uargv[UARGC + 1];
 	uint64_t netr = 0, netr_b = 0, nets = 0, nets_b = 0, netf = 0, netf_b = 0;
+	time_t curtime;
+
+	curtime = time(NULL);
+	tm = (int) vs_rrd_gettime(curtime);
 
 	for (i=0; NET[i].name; i++) {
 		if (strcmp(name, NET[i].name) == 0) {
@@ -118,8 +127,8 @@ int vs_rrd_update_net (xid_t xid, char *dbname, char *name, char *path)
 
 	db = path_concat(path, dbname);
 
-	asprintf(&buf, "update %s N:%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64, 
-		db, netr, netr_b, nets, nets_b, netf, netf_b);
+	asprintf(&buf, "update %s %d:%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64 ":%" SCNu64, 
+		db, tm, netr, netr_b, nets, nets_b, netf, netf_b);
 
 	argv_from_str(buf, uargv, UARGC+1);
 

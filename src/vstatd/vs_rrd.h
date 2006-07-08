@@ -18,6 +18,7 @@
 #ifndef _VSTATD_RRD
 #define _VSTATD_RRD
 
+#include <time.h>
 #include "vstats.h"
 
 #define UARGC 3
@@ -31,6 +32,7 @@ typedef struct {
 
 extern vs_rrd_db RRD_DB[];
 
+time_t vs_rrd_gettime (time_t curtime);
 int vs_rrd_check (xid_t xid, char *vname);
 
 int vs_rrd_create_limit (xid_t xid, char *dbname, char *path);

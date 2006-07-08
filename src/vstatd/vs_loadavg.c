@@ -55,11 +55,16 @@ int vs_parse_loadavg (xid_t xid)
 
 int vs_rrd_create_loadavg (xid_t xid, char *dbname, char *path)
 {
-	char *db;
+	char *db, start[ST_BUF];
+	time_t curtime;
+
+	curtime = time(NULL);
+	snprintf(start, sizeof(start) - 1, "-b %d", (int) (curtime - curtime %30));
 	db = path_concat(path, dbname);
 
 	char *cargv[] = {
         	"create",
+	        start,
 	        db,
         	"-s 30",
 	        "DS:lavg_OMIN:GAUGE:30:0:9223372036854775807",
@@ -93,10 +98,14 @@ int vs_rrd_create_loadavg (xid_t xid, char *dbname, char *path)
 
 int vs_rrd_update_loadavg (xid_t xid, char *dbname, char *name, char *path)
 {
-	int i, ret;
-	char *db, *buf, *uargv[UARGC];
+	int i, ret, tm;
+	char *db, *buf, *uargv[UARGC + 1];
 	float omin = 0, fmin = 0, ftmin = 0;
-	
+	time_t curtime;
+
+	curtime = time(NULL);
+	tm = (int) vs_rrd_gettime(curtime);	
+
 	for (i=0; LAVG[i].name; i++) {
 		if (strcmp(name, LAVG[i].name) == 0) {
 			omin = LAVG[i].omin;
@@ -107,7 +116,7 @@ int vs_rrd_update_loadavg (xid_t xid, char *dbname, char *name, char *path)
 
 	db = path_concat(path, dbname);
 
-	asprintf(&buf, "update %s N:%f:%f:%f", db, omin, fmin, ftmin);
+	asprintf(&buf, "update %s %d:%f:%f:%f", db, tm, omin, fmin, ftmin);
 
 	ret = argv_from_str(buf, uargv, UARGC+1);
 

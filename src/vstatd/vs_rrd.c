@@ -53,6 +53,16 @@ vs_rrd_db RRD_DB[] = {
 };
 
 
+time_t vs_rrd_gettime (time_t curtime)
+{
+	int rest = curtime % 30;
+
+	if (rest > 15)
+		return (curtime + 30 - rest);
+	else
+		return (curtime - rest);
+}
+
 int vs_rrd_check (xid_t xid, char *vname) 
 {
 	char *datadir = NULL, *path;
