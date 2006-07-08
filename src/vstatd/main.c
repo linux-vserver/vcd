@@ -32,7 +32,6 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("logfile", NULL, CFGF_NONE),
 	CFG_STR("pidfile", NULL, CFGF_NONE),
 
-	CFG_INT_LIST_CB("graphs", "{1-days, 1-years}", CFGF_NONE, &cfg_validate_graphs),	
 	CFG_STR_CB("datadir", LOCALSTATEDIR "/vstatd", CFGF_NONE, &cfg_validate_path),
 	CFG_END()
 };

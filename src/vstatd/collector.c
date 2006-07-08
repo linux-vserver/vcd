@@ -29,8 +29,6 @@
 
 #define STATSDIR "/proc/virtual"
 
-int vs_graphs_counter = 0;
-
 vstats_limit_t LIMITS[] = {
         { "VM:", 0, 0, 0 },
         { "VML:", 0, 0, 0 },
@@ -68,8 +66,6 @@ vstats_net_t NET[] = {
         { "OTHER:", 0, 0, 0, 0, 0, 0 },
         { NULL, 0, 0, 0, 0, 0, 0 }
 };
-
-vstats_graphs_t GRAPHS[VS_GRAPHS_VL];
 
 
 char *vs_get_vname(xid_t xid, struct vx_vhi_name vhi_name) {

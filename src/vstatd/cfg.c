@@ -17,12 +17,9 @@
 
 #include <sys/stat.h>
 
-#include <string.h>
-#include <stdlib.h>
 #include "lucid.h"
 
 #include "cfg.h"
-#include "vstats.h"
 
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
@@ -42,47 +39,3 @@ int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
 	*(const char **) result = (const char *) value;
 	return 0;
 }
-
-int cfg_validate_graphs (cfg_t *cfg, cfg_opt_t *opt,
-			const char *value, void *result)
-{
-	char *pch;
-	int dur;
-
-	pch = strchr(value, '-');
-	dur = atoi(value);
-
-	if (strcmp(pch, "-mins") == 0)
-		*(long int *) result = 2;
-	else if (strcmp(pch, "-hrs") == 0)
-		*(long int *) result = 1;
-	else if (strcmp(pch, "-days") == 0)
-		*(long int *) result = 1;
-	else if (strcmp(pch, "-months") == 0)
-		*(long int *) result = 1;
-	else if (strcmp(pch, "-years") == 0)
-		*(long int *) result = 1;
-	else {
-		cfg_error(cfg, "Invalid value for option %s = '%s'", opt->name, value);
-		return -1;
-	}
-
-	if (dur == 0) {
-		cfg_error(cfg, "Invalid 0 duration for option %s = '%s'", opt->name, value);
-		return -1;
-	}
-	else if ((dur < 30) && ( *(long int *) result == 2)) {
-		cfg_error(cfg, "Minimal minutes resolution is 30, %s = '%s'", opt->name, value);
-		return -1;
-	}
-	else if (vs_graphs_counter == VS_GRAPHS_VL) {
-		cfg_error(cfg, "Max graphic definitions exceeded from %s = '%s'", opt->name, value);
-		return -1;
-	}
-
-	GRAPHS[vs_graphs_counter].dur = dur;
-	GRAPHS[vs_graphs_counter].res = pch;
-	vs_graphs_counter++;
-
-	return 0;
-} 
