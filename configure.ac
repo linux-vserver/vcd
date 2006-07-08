@@ -74,15 +74,6 @@ AM_CONDITIONAL(ENABLE_STATS, test x$enable_stats = xtrue)
 
 
 # Checks for libraries.
-AC_PATH_PROG(CONFUSE_CONFIG, confuse-config)
-if test -z "$CONFUSE_CONFIG"; then
-	AC_MSG_ERROR([confuse-config not found])
-fi
-
-CONFUSE_LIBS="$($CONFUSE_CONFIG --libs)"
-
-AC_SUBST(CONFUSE_LIBS)
-
 AC_CHECK_LIB(vserver, vx_clone_namespace, 
 	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
 
@@ -95,6 +86,50 @@ AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
 ])
 
 AC_SUBST(UTIL_LIBS)
+fi
+
+
+if test x$enable_client = xtrue || \
+   test x$enable_server = xtrue || \
+   test x$enable_stats  = xtrue; then
+AC_PATH_PROG(CONFUSE_CONFIG, confuse-config)
+if test -z "$CONFUSE_CONFIG"; then
+	AC_MSG_ERROR([confuse-config not found])
+fi
+
+CONFUSE_LIBS="$($CONFUSE_CONFIG --libs)"
+
+AC_SUBST(CONFUSE_LIBS)
+fi
+
+
+if test x$enable_client = xtrue || test x$enable_server = xtrue; then
+AC_PATH_PROG(XMLRPC_C_CONFIG, xmlrpc-c-config)
+if test -z "$XMLRPC_C_CONFIG"; then
+	AC_MSG_ERROR([xmlrpc-c-config not found])
+fi
+
+XMLRPC_C_VERSION="$($XMLRPC_C_CONFIG --version)"
+XMLRPC_C_MAJOR="${XMLRPC_C_VERSION/.*}"
+XMLRPC_C_MINOR="${XMLRPC_C_VERSION#*.}"
+
+AC_MSG_CHECKING([for xmlrpc-c >= 1.05])
+
+if test $XMLRPC_C_MAJOR -lt 1; then
+	AC_MSG_ERROR([xmlrpc-c-$XMLRPC_VERSION does not match])
+fi
+
+if test $XMLRPC_C_MAJOR -eq 1 && test $XMLRPC_C_MINOR -lt 05; then
+	AC_MSG_ERROR([xmlrpc-c-$XMLRPC_VERSION does not match])
+fi
+
+AC_MSG_RESULT([found])
+
+XMLRPC_C_CLIENT_LIBS="$($XMLRPC_C_CONFIG client --libs)"
+XMLRPC_C_SERVER_LIBS="$($XMLRPC_C_CONFIG abyss-server --libs)"
+
+AC_SUBST(XMLRPC_C_CLIENT_LIBS)
+AC_SUBST(XMLRPC_C_SERVER_LIBS)
 fi
 
 
@@ -126,36 +161,6 @@ AC_CHECK_LIB(z, inflate,
 	Z_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
 
 AC_SUBST(Z_LIBS)
-fi
-
-
-if test x$enable_client = xtrue || test y$enable_server = xtrue; then
-AC_PATH_PROG(XMLRPC_C_CONFIG, xmlrpc-c-config)
-if test -z "$XMLRPC_C_CONFIG"; then
-	AC_MSG_ERROR([xmlrpc-c-config not found])
-fi
-
-XMLRPC_C_VERSION="$($XMLRPC_C_CONFIG --version)"
-XMLRPC_C_MAJOR="${XMLRPC_C_VERSION/.*}"
-XMLRPC_C_MINOR="${XMLRPC_C_VERSION#*.}"
-
-AC_MSG_CHECKING([for xmlrpc-c >= 1.05])
-
-if test $XMLRPC_C_MAJOR -lt 1; then
-	AC_MSG_ERROR([xmlrpc-c-$XMLRPC_VERSION does not match])
-fi
-
-if test $XMLRPC_C_MAJOR -eq 1 && test $XMLRPC_C_MINOR -lt 05; then
-	AC_MSG_ERROR([xmlrpc-c-$XMLRPC_VERSION does not match])
-fi
-
-AC_MSG_RESULT([found])
-
-XMLRPC_C_CLIENT_LIBS="$($XMLRPC_C_CONFIG client --libs)"
-XMLRPC_C_SERVER_LIBS="$($XMLRPC_C_CONFIG abyss-server --libs)"
-
-AC_SUBST(XMLRPC_C_CLIENT_LIBS)
-AC_SUBST(XMLRPC_C_SERVER_LIBS)
 fi
 
 

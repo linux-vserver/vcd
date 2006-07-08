@@ -35,24 +35,6 @@ __FBSDID("$FreeBSD: src/lib/libarchive/archive_util.c,v 1.10 2005/09/21 04:25:05
 #include "archive_private.h"
 
 int
-archive_api_feature(void)
-{
-	return (ARCHIVE_API_FEATURE);
-}
-
-int
-archive_api_version(void)
-{
-	return (ARCHIVE_API_VERSION);
-}
-
-const char *
-archive_version(void)
-{
-	return (PACKAGE_NAME " " PACKAGE_VERSION);
-}
-
-int
 archive_errno(struct archive *a)
 {
 	return (a->archive_error_number);

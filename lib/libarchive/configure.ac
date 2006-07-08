@@ -32,8 +32,6 @@ AC_CANONICAL_TARGET
 AM_INIT_AUTOMAKE([1.9 foreign dist-bzip2])
 AM_MAINTAINER_MODE
 
-AC_CONFIG_FILES([Makefile])
-
 # prevent building of libarchive with --disable-server
 AC_ARG_ENABLE([server],
               [AC_HELP_STRING([--disable-server],
@@ -166,5 +164,8 @@ AC_SYS_LARGEFILE
 
 # $enable_server
 fi
+
+AC_CONFIG_FILES([Makefile
+                 src/Makefile])
 
 AC_OUTPUT

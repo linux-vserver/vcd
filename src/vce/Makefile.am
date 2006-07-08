@@ -19,9 +19,7 @@ if ENABLE_CLIENT
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-sysconf_DATA = vce.conf
-
-EXTRA_DIST = $(sysconf_DATA)
+EXTRA_DIST = vce.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
@@ -50,5 +48,8 @@ vce_LDADD = $(top_builddir)/lib/lucid/libucid.a \
             $(UTIL_LIBS) \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_CLIENT_LIBS)
+
+install-data-local:
+	$(install_sh) -m 600 $(srcdir)/vce.conf $(DESTDIR)$(sysconfdir)/vce.conf
 
 endif

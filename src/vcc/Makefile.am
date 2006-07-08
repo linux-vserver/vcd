@@ -19,9 +19,7 @@ if ENABLE_CLIENT
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-sysconf_DATA = vcc.conf
-
-EXTRA_DIST = $(sysconf_DATA)
+EXTRA_DIST = vcc.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
@@ -49,5 +47,8 @@ vcc_LDADD = $(top_builddir)/lib/lucid/libucid.a \
             $(UTIL_LIBS) \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_CLIENT_LIBS)
+
+install-data-local:
+	$(install_sh) -m 600 $(srcdir)/vcc.conf $(DESTDIR)$(sysconfdir)/vcc.conf
 
 endif

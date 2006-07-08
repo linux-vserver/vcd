@@ -44,29 +44,6 @@ extern "C" {
 #endif
 
 
-/*
- * If ARCHIVE_API_VERSION != archive_api_version(), then the library you
- * were linked with is using an incompatible API.  This is almost
- * certainly a fatal problem.
- *
- * ARCHIVE_API_FEATURE is incremented with each significant feature
- * addition, so you can test (at compile or run time) if a particular
- * feature is implemented.  It's no big deal if ARCHIVE_API_FEATURE !=
- * archive_api_feature(), as long as both are high enough to include
- * the features you're relying on.  Specific values of FEATURE are
- * documented here:
- *
- *    1 - Version tests are available.
- *    2 - archive_{read,write}_close available separately from _finish.
- */
-#define	ARCHIVE_API_VERSION	@ARCHIVE_API_MAJOR@
-int		archive_api_version(void);
-#define	ARCHIVE_API_FEATURE	@ARCHIVE_API_MINOR@
-int		archive_api_feature(void);
-/* Textual name/version of the library. */
-#define	ARCHIVE_LIBRARY_VERSION	"libarchive @VERSION@"
-const char *	archive_version(void);
-
 #define	ARCHIVE_BYTES_PER_RECORD	  512
 #define	ARCHIVE_DEFAULT_BYTES_PER_BLOCK	10240
 

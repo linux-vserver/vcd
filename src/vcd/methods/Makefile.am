@@ -15,8 +15,7 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)/lib/libarchive/libarchive \
-           -I$(top_builddir)/lib/libarchive/libarchive \
+INCLUDES = -I$(top_srcdir)/lib/libarchive/src \
            -I$(top_srcdir)/lib/lucid \
            -I$(top_srcdir)/src/vcd
 

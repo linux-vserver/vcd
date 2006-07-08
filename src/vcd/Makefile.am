@@ -21,10 +21,8 @@ SUBDIRS = methods
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-sysconf_DATA = vcd.conf \
-               vshelper.conf
-
-EXTRA_DIST = $(sysconf_DATA)
+EXTRA_DIST = vcd.conf \
+             vshelper.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
@@ -49,7 +47,7 @@ vcd_SOURCES = auth.c \
               vxdb.c
 
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
-            $(top_builddir)/lib/libarchive/libarchive.a \
+            $(top_builddir)/lib/libarchive/src/libarchive.a \
             $(top_builddir)/lib/lucid/libucid.a \
             $(BZ2_LIBS) $(Z_LIBS) \
             $(CONFUSE_LIBS) \
@@ -67,7 +65,9 @@ pkglib_PROGRAMS = gensql
 gensql_SOURCES = gensql.c
 gensql_LDADD = $(top_builddir)/lib/lucid/libucid.a
 
-install-data-hook:
+install-data-local:
+	$(install_sh)    -m 600 $(srcdir)/vcd.conf $(DESTDIR)$(sysconfdir)/vcd.conf
+	$(install_sh)    -m 600 $(srcdir)/vshelper.conf $(DESTDIR)$(sysconfdir)/vshelper.conf
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd
 	$(mkinstalldirs) -m 000 $(DESTDIR)$(vserverdir)
 
