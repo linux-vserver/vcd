@@ -90,8 +90,8 @@ getattr:
 	if (vx_get_iattr(&iattr) == -1)
 		perr("vx_get_iattr");
 	
-	if (!(buf = flist32_tostr(iattr_list, iattr.flags & iattr.mask, ',')))
-		perr("flist32_tostr");
+	if (!(buf = flist32_to_str(iattr_list, iattr.flags & iattr.mask, ',')))
+		perr("flist32_to_str");
 	
 	if (strlen(buf) > 0)
 		printf("%s\n", buf);
@@ -103,7 +103,7 @@ setattr:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist32_parse(argv[optind], iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
+	if (flist32_from_str(argv[optind], iattr_list, &iattr.flags, &iattr.mask, '~', ',') == -1)
 		perr("flist32_parse");
 	
 	if (vx_set_iattr(&iattr) == -1)

@@ -147,8 +147,8 @@ int main(int argc, char *argv[])
 	
 create:
 	if (argc > optind && strcmp(argv[optind], "--") != 0)
-		if (flist64_parse(argv[optind], nflags_list, &cf.flags, &mask, '~', ',') == -1)
-			perr("flist64_parse");
+		if (flist64_from_str(argv[optind], nflags_list, &cf.flags, &mask, '~', ',') == -1)
+			perr("flist64_from_str");
 	
 	if (nx_create(nid, &cf) == -1)
 		perr("nx_create");
@@ -171,8 +171,8 @@ setflags:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-		perr("flist64_parse");
+	if (flist64_from_str(argv[optind], nflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+		perr("flist64_from_str");
 	
 	if (nx_set_flags(nid, &flags) == -1)
 		perr("nx_set_flags");
@@ -183,8 +183,8 @@ getflags:
 	if (nx_get_flags(nid, &flags) == -1)
 		perr("nx_get_flags");
 	
-	if (!(buf = flist64_tostr(nflags_list, flags.flags, '\n')))
-		perr("flist64_tostr");
+	if (!(buf = flist64_to_str(nflags_list, flags.flags, '\n')))
+		perr("flist64_to_str");
 	
 	printf("%s", buf);
 	free(buf);

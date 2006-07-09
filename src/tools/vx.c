@@ -202,8 +202,8 @@ int main(int argc, char *argv[])
 	
 create:
 	if (argc > optind && strcmp(argv[optind], "--") != 0)
-		if (flist64_parse(argv[optind], cflags_list, &cf.flags, &mask, '~', ',') == -1)
-			perr("flist64_parse");
+		if (flist64_from_str(argv[optind], cflags_list, &cf.flags, &mask, '~', ',') == -1)
+			perr("flist64_from_str");
 	
 	if (vx_create(xid, &cf) == -1)
 		perr("vx_create");
@@ -226,8 +226,8 @@ setbcaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], bcaps_list, &bcaps.bcaps, &bcaps.bmask, '~', ',') == -1)
-		perr("flist64_parse");
+	if (flist64_from_str(argv[optind], bcaps_list, &bcaps.bcaps, &bcaps.bmask, '~', ',') == -1)
+		perr("flist64_from_str");
 	
 	if (vx_set_bcaps(xid, &bcaps) == -1)
 		perr("vx_set_bcaps");
@@ -238,8 +238,8 @@ setccaps:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], ccaps_list, &ccaps.ccaps, &ccaps.cmask, '~', ',') == -1)
-		perr("flist64_parse");
+	if (flist64_from_str(argv[optind], ccaps_list, &ccaps.ccaps, &ccaps.cmask, '~', ',') == -1)
+		perr("flist64_from_str");
 	
 	if (vx_set_ccaps(xid, &ccaps) == -1)
 		perr("vx_set_ccaps");
@@ -250,8 +250,8 @@ setflags:
 	if (argc <= optind)
 		goto usage;
 	
-	if (flist64_parse(argv[optind], cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
-		perr("flist64_parse");
+	if (flist64_from_str(argv[optind], cflags_list, &flags.flags, &flags.mask, '~', ',') == -1)
+		perr("flist64_from_str");
 	
 	if (vx_set_flags(xid, &flags) == -1)
 		perr("vx_set_flags");
@@ -271,7 +271,7 @@ setlimit:
 		if (!(rlimit.id = flist32_getval(rlimit_list, buf)))
 			perr("flist32_getval");
 		
-		rlimit.id = flist32_val2index(rlimit.id);
+		rlimit.id = v2i32(rlimit.id);
 		
 		if ((buf = strtok(NULL, ",")) == NULL)
 			goto usage;
@@ -373,7 +373,7 @@ setvhi:
 		if (!(vhiname.field = flist32_getval(vhiname_list, buf)))
 			perr("flist32_getval");
 		
-		vhiname.field = flist32_val2index(vhiname.field);
+		vhiname.field = v2i32(vhiname.field);
 		
 		buf = strtok(NULL, "=");
 		
@@ -393,7 +393,7 @@ getbcaps:
 	if (vx_get_bcaps(xid, &bcaps) == -1)
 		perr("vx_get_bcaps");
 	
-	buf = flist64_tostr(bcaps_list, bcaps.bcaps, '\n');
+	buf = flist64_to_str(bcaps_list, bcaps.bcaps, '\n');
 	
 	if (!str_isempty(buf))
 		printf("%s\n", buf);
@@ -406,7 +406,7 @@ getccaps:
 	if (vx_get_ccaps(xid, &ccaps) == -1)
 		perr("vx_get_ccaps");
 	
-	buf = flist64_tostr(ccaps_list, ccaps.ccaps, '\n');
+	buf = flist64_to_str(ccaps_list, ccaps.ccaps, '\n');
 	
 	if (!str_isempty(buf))
 		printf("%s\n", buf);
@@ -419,7 +419,7 @@ getflags:
 	if (vx_get_flags(xid, &flags) == -1)
 		perr("vx_get_flags");
 	
-	buf = flist64_tostr(cflags_list, flags.flags, '\n');
+	buf = flist64_to_str(cflags_list, flags.flags, '\n');
 	
 	if (!str_isempty(buf))
 		printf("%s\n", buf);
@@ -436,7 +436,7 @@ getlimit:
 		if (!(rlimit.id = flist32_getval(rlimit_list, argv[i])))
 			perr("flist32_getval");
 		
-		rlimit.id = flist32_val2index(rlimit.id);
+		rlimit.id = v2i32(rlimit.id);
 		
 		if (vx_get_rlimit(xid, &rlimit) == -1)
 			perr("vx_get_rlimit");
@@ -464,7 +464,7 @@ getvhi:
 		if (!(vhiname.field = flist32_getval(vhiname_list, argv[i])))
 			perr("flist32_getval");
 		
-		vhiname.field = flist32_val2index(vhiname.field);
+		vhiname.field = v2i32(vhiname.field);
 		
 		if (vx_get_vhi_name(xid, &vhiname) == -1)
 			perr("vx_get_vhi_name");

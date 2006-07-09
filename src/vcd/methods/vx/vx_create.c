@@ -169,7 +169,7 @@ xid_t find_free_xid()
 static
 xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
 {
-	STRALLOC sa;
+	stralloc_t sa;
 	cfg_t *init_method_cfg, *mount_cfg;
 	const char *method, *start, *stop;
 	const char *path, *spec, *vfstype, *mntops;

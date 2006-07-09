@@ -197,7 +197,7 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 		    (rlimit_mask.maximum   & buf32) != buf32)
 			continue;
 		
-		rlimit.id        = flist32_val2index(buf32);
+		rlimit.id        = v2i32(buf32);
 		rlimit.softlimit = dbi_result_get_longlong(dbr, "soft");
 		rlimit.maximum   = dbi_result_get_longlong(dbr, "max");
 		
@@ -286,7 +286,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env)
 		if (!(buf32 = flist32_getval(vhiname_list, uname)))
 			continue;
 		
-		vhiname.field = flist32_val2index(buf32);
+		vhiname.field = v2i32(buf32);
 		
 		bzero(vhiname.name, VHILEN);
 		strncpy(vhiname.name, dbi_result_get_string(dbr, "value"), VHILEN-1);
