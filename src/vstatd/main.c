@@ -21,10 +21,14 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/stat.h>
+#include <dirent.h>
 
-#include "log.h"
-#include "cfg.h"
 #include "lucid.h"
+
+#include "cfg.h"
+#include "log.h"
+#include "proc.h"
+#include "vrrd.h"
 
 void collector_main(void);
 
@@ -48,6 +52,71 @@ void usage (int rc)
 	       "   -d            debug mode (do not fork to background)\n",
 	       SYSCONFDIR);
 	exit(rc);
+}
+
+static
+void handle_xid(xid_t xid)
+{
+	time_t cacct_time, cvirt_time, limit_time, loadavg_time;
+	char *name;
+	struct vx_vhi_name vhi_name;
+	
+	if (cacct_parse(xid, &cacct_time) == -1 ||
+	    cvirt_parse(xid, &cvirt_time) == -1 ||
+	    limit_parse(xid, &limit_time) == -1 ||
+	    loadavg_parse(xid, &loadavg_time) == -1)
+		return;
+	
+	vhi_name.field = VHIN_CONTEXT;
+	
+	if (vx_get_vhi_name(xid, &vhi_name) == -1) {
+		log_error("vx_get_vhi_name(%d): %s", xid, strerror(errno));
+		return;
+	}
+	
+	/* For util-vserver guests */
+	if (vhi_name.name[0] == '/')
+		name = strrchr(vhi_name.name, '/') + 1;
+	
+	/* For vserver-utils guests */
+	else
+		name = vhi_name.name;
+
+	if (cacct_rrd_check(name) == -1 ||
+	    cvirt_rrd_check(name) == -1 ||
+	    limit_rrd_check(name) == -1 ||
+	    loadavg_rrd_check(name) == -1)
+		return;
+	
+	if (cacct_rrd_update(name, cacct_time) == -1 ||
+	    cvirt_rrd_update(name, cvirt_time) == -1 ||
+	    limit_rrd_update(name, limit_time) == -1 ||
+	    loadavg_rrd_update(name, loadavg_time) == -1)
+		return;
+}
+
+static
+void read_proc(void)
+{
+	DIR *dirp;
+	struct dirent *ditp;
+	xid_t xid;
+	
+	if ((dirp = opendir(PROC_VIRTUAL)) == NULL) {
+		log_error("opendir(%s): %s", PROC_VIRTUAL, strerror(errno));
+		return;
+	}
+	
+	while ((ditp = readdir(dirp)) != NULL) {
+		if (!str_isdigit(ditp->d_name))
+			continue;
+		
+		xid = atoi(ditp->d_name);
+		handle_xid(xid);
+	}
+	
+	closedir(dirp);
+	return;
 }
 
 int main (int argc, char *argv[]) {
@@ -135,7 +204,7 @@ int main (int argc, char *argv[]) {
 	log_info("Starting vstatd with config file: %s", cfg_file);
 	
 	while (1) {
-		collector_main();
+		read_proc();
 		sleep(30);
 	}
 	

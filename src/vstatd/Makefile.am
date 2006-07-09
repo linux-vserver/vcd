@@ -25,20 +25,18 @@ AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
 noinst_HEADERS = cfg.h \
                  log.h \
-                 vs_rrd.h \
-                 vstats.h
+                 proc.h \
+                 vrrd.h
 
 sbin_PROGRAMS = vstatd
 
-vstatd_SOURCES = cfg.c \
-                 collector.c \
+vstatd_SOURCES = cacct.c \
+                 cfg.c \
+                 cvirt.c \
+                 limit.c \
+                 loadavg.c \
                  log.c \
-                 main.c \
-                 vs_info.c \
-                 vs_limit.c \
-                 vs_loadavg.c \
-                 vs_net.c \
-                 vs_rrd.c
+                 main.c
 
 vstatd_LDADD = $(top_builddir)/lib/lucid/libucid.a \
                $(CONFUSE_LIBS) \
