@@ -89,7 +89,7 @@ int loadavg_rrd_create(char *path)
 	
 	int argc = sizeof(argv) / sizeof(*argv);
 	
-	snprintf(timestr, 32, "%ld", curtime - (curtime % STEP));
+	snprintf(timestr, 32, "%ld", curtime - STEP - (curtime % STEP));
 	
 	if (mkdirnamep(path, 0700) == -1) {
 		log_error("mkdirnamep(%s): %s", path, strerror(errno));
