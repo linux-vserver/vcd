@@ -28,6 +28,7 @@
 #include <getopt.h>
 
 #include "lucid.h"
+#include "tools.h"
 
 #define BUF 256
 #define PROCDIR "/proc"
@@ -35,8 +36,10 @@
 
 #define min(x, y) (((x)<=(y))?(x):(y))
 
-struct option const CMD_OPTS[] = {
-	{ "help", 0, 0, 0x10 },
+static const char *rcsid = "$Id$";
+
+static struct option long_opts[] = {
+	COMMON_LONG_OPTS
 	{ NULL, 0, 0, 0 },
 };
 
@@ -57,12 +60,6 @@ struct vs_proc_t{
 
 void usage (int rc)
 {
-	fprintf(stderr,	"\nUsage: vserver-stat takes no arguments, use --help (-h) for help on output\n");
-	exit(rc);
-}
-
-void help ()
-{
 	fprintf(stdout,
 		"Usage: vserver-stat takes no arguments\n\n"
 		"Information about vserver-stat output:\n"
@@ -73,7 +70,7 @@ void help ()
 		"UTIME  User-mode time accumulated\n"
 		"CTIME: Kernel-mode time accumulated\n"
 		"NAME:  Vserver Name\n");
-	exit(EXIT_SUCCESS);
+	exit(rc);
 }
 
 uint64_t mst(uint64_t value)
@@ -117,7 +114,7 @@ char *convt(uint64_t value)
 					value += ((y %4) - 1);
 		}
 		else {
-			y = value %365;
+			y = value %365; 
 			if (y > 0)
 				value /= 365;
 				if (y >= 4)
@@ -233,10 +230,10 @@ int main(int argc, char *argv[])
 	}
 
 	/* Parse command line */
-	while ((c = getopt_long(argc, argv, "h", CMD_OPTS, 0)) != -1) {
+	while (GETOPT(c)) {
 		switch (c) {
-			case 0x10: case 'h': help();
-			default: usage(EXIT_FAILURE);
+			COMMON_GETOPT_CASES
+			DEFAULT_GETOPT_CASES
 		}
 	}
 
