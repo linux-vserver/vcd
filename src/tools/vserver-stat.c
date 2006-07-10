@@ -226,6 +226,12 @@ int main(int argc, char *argv[])
 	char c, *file, buffer[BUF], *vargv[BUF], name[VHILEN];
 	uint64_t stime = 0;
 
+	/* root access is needed */
+	if (getuid() != 0) {
+		fprintf(stderr, "root access is needed\n");
+		exit(EXIT_FAILURE);
+	}
+
 	/* Parse command line */
 	while ((c = getopt_long(argc, argv, "h", CMD_OPTS, 0)) != -1) {
 		switch (c) {
@@ -240,12 +246,6 @@ int main(int argc, char *argv[])
 	uptime = get_uptime();
 
 	INIT_LIST_HEAD(&vsp.list);
-
-	/* Root access is needed */
-	if (getuid() != 0) {
-		fprintf(stderr, "root access is needed\n");
-		exit(EXIT_FAILURE);
-	}
 
 	/* Migrate to root server */
 	if (vx_migrate(masterxid, NULL) == -1) {

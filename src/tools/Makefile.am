@@ -25,7 +25,7 @@ sbin_PROGRAMS = dx \
                 nx \
                 vr \
                 vx \
-		vserver-stat
+                vserver-stat
 
 TOOLLIBS = $(top_builddir)/lib/lucid/libucid.a \
            $(VSERVER_LIBS)
