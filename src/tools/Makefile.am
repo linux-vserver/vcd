@@ -24,10 +24,14 @@ sbin_PROGRAMS = dx \
                 ns \
                 nx \
                 vr \
-                vx
+                vx \
+		vserver-stat
 
 TOOLLIBS = $(top_builddir)/lib/lucid/libucid.a \
            $(VSERVER_LIBS)
+
+vserver_stat_SOURCES = vserver-stat.c
+vserver_stat_LDADD = $(TOOLLIBS)
 
 dx_SOURCES = dx.c msg.c
 dx_LDADD = $(TOOLLIBS)
