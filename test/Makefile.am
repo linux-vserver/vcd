@@ -19,4 +19,5 @@
 EXTRA_DIST = README \
              testdummy.conf \
              testdummy.tar.bz2 \
+             vstat-graph.sh \
              vxdb.php

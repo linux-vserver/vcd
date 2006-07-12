@@ -69,7 +69,6 @@ int main(int argc, char **argv)
 	pid_t pid;
 	
 	xmlrpc_env env;
-	xmlrpc_registry *registry;
 	xmlrpc_server_abyss_parms serverparm;
 	
 	/* parse command line */
@@ -107,6 +106,8 @@ int main(int argc, char **argv)
 	default:
 		break;
 	}
+	
+	atexit(cfg_atexit);
 	
 	/* start logging & debugging */
 	if (log_init(debug) == -1) {
@@ -149,6 +150,7 @@ int main(int argc, char **argv)
 	
 	/* open connection to vxdb */
 	vxdb_init();
+	atexit(vxdb_atexit);
 	
 	/* setup listen socket */
 	port = cfg_getint(cfg, "port");
@@ -161,7 +163,8 @@ int main(int argc, char **argv)
 	xmlrpc_env_init(&env);
 	
 	registry = xmlrpc_registry_new(&env);
-	method_registry_init(&env, registry);
+	method_registry_init(&env);
+	atexit(method_registry_atexit);
 	
 	timeout = cfg_getint(cfg, "timeout");
 	

@@ -23,6 +23,11 @@
 
 #include "cfg.h"
 
+void cfg_atexit(void)
+{
+	cfg_free(cfg);
+}
+
 int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {

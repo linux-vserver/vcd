@@ -40,8 +40,10 @@ typedef struct {
 #define MESYS     500
 
 extern m_err_t method_error_codes[];
+extern xmlrpc_registry *registry;
 
-int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry);
+int method_registry_init(xmlrpc_env *env);
+void method_registry_atexit(void);
 
 xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
                           uint64_t caps, int ownercheck);

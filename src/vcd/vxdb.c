@@ -68,7 +68,7 @@ void vxdb_init(void)
 	vxdb_sanity_check();
 }
 
-void vxdb_close(void)
+void vxdb_atexit(void)
 {
 	if (vxdb)
 		dbi_conn_close(vxdb);

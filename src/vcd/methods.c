@@ -36,11 +36,13 @@ m_err_t method_error_codes[] = {
 	{ 0,         NULL },
 };
 
+xmlrpc_registry *registry;
+
 #define MREGISTER(NAME,FUNC) do { \
 	xmlrpc_registry_add_method(env, registry, NULL, NAME, &FUNC, NULL); \
 } while (0)
 
-int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry)
+int method_registry_init(xmlrpc_env *env)
 {
 	/* vx */
 	MREGISTER("vx.create",  m_vx_create);
@@ -102,6 +104,11 @@ int method_registry_init(xmlrpc_env *env, xmlrpc_registry *registry)
 }
 
 #undef MREGISTER
+
+void method_registry_atexit(void)
+{
+	xmlrpc_registry_free(registry);
+}
 
 xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
                           uint64_t caps, int ownercheck)
