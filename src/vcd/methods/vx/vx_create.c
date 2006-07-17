@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <limits.h>
 #include <confuse.h>
 #include <vserver.h>
 #include <sys/stat.h>
@@ -173,35 +174,39 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
 	cfg_t *init_method_cfg, *mount_cfg;
 	const char *method, *start, *stop;
 	const char *path, *spec, *vfstype, *mntops;
-	int i, timeout, mount_size, max, cnt;
+	int rc, i, timeout, mount_size, max, cnt;
 	int vx_bcaps_size, vx_ccaps_size, vx_flags_size;
 	const char *bcap, *ccap, *flag;
 	char *sql;
-	dbi_result dbr;
+	vxdb_result *dbr;
 	
 	if (!xid) {
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT xid FROM xid_name_map ORDER BY xid DESC");
+		rc = vxdb_prepare(&dbr, "SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
 		
-		if (!dbr)
-			method_return_fault(env, MEVXDB);
+		if (rc || vxdb_step(dbr) < 1)
+			method_set_fault(env, MEVXDB);
 		
-		cnt = dbi_result_get_numrows(dbr);
-		dbi_result_first_row(dbr);
-		max = dbi_result_get_int(dbr, "xid");
+		else {
+			cnt = sqlite3_column_int(dbr, 0);
+			max = sqlite3_column_int(dbr, 1);
+			
+			if (max < 2)
+				xid = 2;
+			
+			else if (max < 65535)
+				xid = max + 1;
+			
+			else if (cnt < 65535)
+				xid = find_free_xid();
+			
+			else
+				method_set_faultf(env, MEVXDB, "%s", "no free context id available");
+		}
 		
-		if (max < 2)
-			xid = 2;
-		
-		else if (max < 65535)
-			xid = max + 1;
-		
-		else if (cnt < 65535)
-			xid = find_free_xid();
-		
-		else
-			method_return_faultf(env, MEVXDB, "%s", "no free context id available");
+		sqlite3_finalize(dbr);
 	}
+	
+	method_return_if_fault(env);
 	
 	stralloc_init(&sa);
 	stralloc_cats(&sa, "BEGIN TRANSACTION;");
@@ -314,12 +319,12 @@ commit:
 	sql = strndup(sa.s, sa.len);
 	stralloc_free(&sa);
 	
-	if (!dbi_conn_queryf(vxdb, sql)) {
-		free(sql);
-		method_return_fault(env, MEVXDB);
-	}
+	rc = vxdb_exec(sql);
 	
 	free(sql);
+	
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
 	return NULL;
 }

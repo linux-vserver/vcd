@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_vx_bcaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *bcap;
 	xid_t xid;
-	dbi_result dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_BCAP, 1);
 	method_return_if_fault(env);
@@ -47,16 +47,16 @@ xmlrpc_value *m_vxdb_vx_bcaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 	
 	if (bcap)
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_exec(
 			"DELETE FROM vx_bcaps WHERE xid = %d AND bcap = '%s'",
 			xid, bcap);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_exec(
 			"DELETE FROM vx_bcaps WHERE xid = %d",
 			xid);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

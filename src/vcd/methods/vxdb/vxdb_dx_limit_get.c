@@ -24,10 +24,11 @@
 
 xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params, *response = NULL;
 	char *name, *path;
 	xid_t xid;
-	dbi_result dbr;
+	vxdb_result *dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_DLIM, 1);
 	method_return_if_fault(env);
@@ -47,31 +48,36 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 	
 	if (path)
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_prepare(&dbr,
 			"SELECT path,space,inodes,reserved FROM dx_limit "
 			"WHERE xid = %d AND path = '%s'",
 			xid, path);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_prepare(&dbr,
 			"SELECT path,space,inodes,reserved FROM dx_limit "
 			"WHERE xid = %d",
 			xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	response = xmlrpc_array_new(env);
+	else {
+		response = xmlrpc_array_new(env);
+		
+		vxdb_foreach_step(rc, dbr)
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:i,s:i,s:i}",
+				"path",     sqlite3_column_text(dbr, 0),
+				"space",    sqlite3_column_int(dbr, 1),
+				"inodes",   sqlite3_column_int(dbr, 2),
+				"reserved", sqlite3_column_int(dbr, 3)));
+		
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+	}
 	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:i,s:i,s:i}",
-			"path",     dbi_result_get_string(dbr, "path"),
-			"space",    dbi_result_get_int(dbr, "space"),
-			"inodes",   dbi_result_get_int(dbr, "inodes"),
-			"reserved", dbi_result_get_int(dbr, "reserved")));
-	
-	method_return_if_fault(env);
+	sqlite3_finalize(dbr);
 	
 	return response;
 }

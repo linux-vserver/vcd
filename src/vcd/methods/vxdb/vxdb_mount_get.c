@@ -24,10 +24,11 @@
 
 xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params, *response = NULL;
 	char *name, *path;
 	xid_t xid;
-	dbi_result dbr;
+	vxdb_result *dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_MOUNT, 1);
 	method_return_if_fault(env);
@@ -47,31 +48,36 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 	
 	if (path)
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_prepare(&dbr,
 			"SELECT path,spec,mntops,vfstype FROM mount "
 			"WHERE xid = %d AND path = '%s'",
 			xid, path);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_prepare(&dbr,
 			"SELECT path,spec,mntops,vfstype FROM mount "
 			"WHERE xid = %d ORDER BY path ASC",
 			xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	response = xmlrpc_array_new(env);
+	else {
+		response = xmlrpc_array_new(env);
+		
+		vxdb_foreach_step(rc, dbr)
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:s,s:s,s:s}",
+				"path",    sqlite3_column_text(dbr, 0),
+				"spec",    sqlite3_column_text(dbr, 1),
+				"mntops",  sqlite3_column_text(dbr, 2),
+				"vfstype", sqlite3_column_text(dbr, 3)));
+		
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+	}
 	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:s,s:s,s:s}",
-			"path",    dbi_result_get_string(dbr, "path"),
-			"spec",    dbi_result_get_string(dbr, "spec"),
-			"mntops",  dbi_result_get_string(dbr, "mntops"),
-			"vfstype", dbi_result_get_string(dbr, "vfstype")));
-	
-	method_return_if_fault(env);
+	sqlite3_finalize(dbr);
 	
 	return response;
 }

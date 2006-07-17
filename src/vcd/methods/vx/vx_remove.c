@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <limits.h>
 #include <vserver.h>
 #include <sys/stat.h>
 
@@ -36,7 +37,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, vdir[PATH_MAX];
 	xid_t xid;
-	dbi_result dbr;
+	int rc;
 	const char *vserverdir;
 	struct stat sb;
 	
@@ -57,7 +58,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_get_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
 	
-	dbr = dbi_conn_queryf(vxdb, "BEGIN TRANSACTION;"
+	rc = vxdb_exec("BEGIN TRANSACTION;"
 		"DELETE FROM dx_limit     WHERE xid = %1$d;"
 		"DELETE FROM init_method  WHERE xid = %1$d;"
 		"DELETE FROM mount        WHERE xid = %1$d;"
@@ -74,7 +75,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"COMMIT TRANSACTION;",
 		xid);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	vserverdir = cfg_getstr(cfg, "vserverdir");

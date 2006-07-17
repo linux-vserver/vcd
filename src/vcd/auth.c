@@ -15,59 +15,68 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <stdlib.h>
+
 #include "lucid.h"
 
 #include "auth.h"
 #include "lists.h"
+#include "log.h"
 #include "vxdb.h"
 
 int auth_isvalid(const char *user, const char *pass)
 {
-	int rc = 0;
-	dbi_result dbr;
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	int rc;
+	vxdb_result *dbr;
 	char *sha1_pass = sha1_digest(pass);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT uid FROM user WHERE name = '%s' AND password = '%s'",
 		user, sha1_pass);
 	
 	free(sha1_pass);
 	
-	if (!dbr)
-		return 0;
-	
-	if (dbi_result_get_numrows(dbr) > 0)
+	if (rc == SQLITE_OK && sqlite3_step(dbr) == SQLITE_ROW)
 		rc = 1;
+	else
+		rc = 0;
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
+	
 	return rc;
 }
 
 int auth_isadmin(const char *user)
 {
-	int rc = 0;
-	dbi_result dbr;
+	log_debug("[trace] %s", __FUNCTION__);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	int rc;
+	vxdb_result *dbr;
+	
+	rc = vxdb_prepare(&dbr,
 		"SELECT uid FROM user WHERE name = '%s' AND admin = 1",
 		user);
 	
-	if (!dbr)
-		return 0;
-	
-	if (dbi_result_get_numrows(dbr) > 0)
+	if (rc == SQLITE_OK && sqlite3_step(dbr) == SQLITE_ROW)
 		rc = 1;
+	else
+		rc = 0;
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
+	
 	return rc;
 }
 
 static
 int auth_hascapability(const char *user, uint64_t cap)
 {
-	dbi_result dbr;
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	vxdb_result *dbr;
 	const char *buf;
-	int uid, rc = 0;
+	int uid, rc;
 	
 	if (!(uid = auth_getuid(user)))
 		return 0;
@@ -75,22 +84,24 @@ int auth_hascapability(const char *user, uint64_t cap)
 	if (!(buf = flist64_getkey(vcd_caps_list, cap)))
 		return 0;
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT uid FROM user_caps WHERE uid = %d and cap = '%s'",
 		uid, buf);
 	
-	if (!dbr)
-		return 0;
-	
-	if (dbi_result_get_numrows(dbr) > 0)
+	if (rc == SQLITE_OK && sqlite3_step(dbr) == SQLITE_ROW)
 		rc = 1;
+	else
+		rc = 0;
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
+	
 	return rc;
 }
 
 int auth_capable(const char *user, uint64_t caps)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	int i;
 	
 	for (i = 0; vcd_caps_list[i].key; i++)
@@ -103,9 +114,11 @@ int auth_capable(const char *user, uint64_t caps)
 
 int auth_isowner(const char *user, const char *name)
 {
-	int uid, rc = 0;
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	int uid, rc;
 	xid_t xid;
-	dbi_result dbr;
+	vxdb_result *dbr;
 	
 	if ((uid = auth_getuid(user)) == 0)
 		return 0;
@@ -116,37 +129,37 @@ int auth_isowner(const char *user, const char *name)
 	if ((xid = vxdb_getxid(name)) == 0)
 		return 0;
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT uid FROM xid_uid_map WHERE uid = %d AND xid = %d",
 		uid, xid);
 	
-	if (!dbr)
-		return 0;
-	
-	if (dbi_result_get_numrows(dbr) > 0)
+	if (rc == SQLITE_OK && sqlite3_step(dbr) == SQLITE_ROW)
 		rc = 1;
+	else
+		rc = 0;
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
+	
 	return rc;
 }
 
 int auth_getuid(const char *user)
 {
-	int uid = 0;
-	dbi_result dbr;
+	log_debug("[trace] %s", __FUNCTION__);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	int uid, rc;
+	vxdb_result *dbr;
+	
+	rc = vxdb_prepare(&dbr,
 		"SELECT uid FROM user WHERE name = '%s'",
 		user);
 	
-	if (!dbr)
-		return 0;
+	if (rc == SQLITE_OK && sqlite3_step(dbr) == SQLITE_ROW)
+		uid = sqlite3_column_int(dbr, 0);
+	else
+		uid = 0;
 	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
-		uid = dbi_result_get_int(dbr, "uid");
-	}
+	sqlite3_finalize(dbr);
 	
-	dbi_result_free(dbr);
 	return uid;
 }

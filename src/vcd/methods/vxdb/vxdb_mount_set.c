@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *path, *spec, *mntops, *vfstype;
 	xid_t xid;
-	dbi_result dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_MOUNT, 1);
 	method_return_if_fault(env);
@@ -61,12 +61,12 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!vfstype)
 		vfstype = "auto";
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO mount (xid, spec, path, vfstype, mntops) "
 		"VALUES (%d, '%s', '%s', '%s', '%s')",
 		xid, spec, path, vfstype, mntops);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

@@ -16,6 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <string.h>
 #include <errno.h>
 #include <vserver.h>
@@ -100,7 +101,8 @@ xmlrpc_value *context_create(xmlrpc_env *env)
 static
 xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 {
-	dbi_result dbr;
+	int rc;
+	vxdb_result *dbr;
 	
 	struct vx_bcaps bcaps = {
 		.bcaps = 0,
@@ -117,39 +119,60 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 		.mask  = 0,
 	};
 	
-	dbr = dbi_conn_queryf(vxdb, "SELECT bcap FROM vx_bcaps WHERE xid = %d", xid);
+	rc = vxdb_prepare(&dbr, "SELECT bcap FROM vx_bcaps WHERE xid = %d", xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr))
-		bcaps.bmask |= flist64_getval(bcaps_list, dbi_result_get_string(dbr, "bcap"));
+	else
+		vxdb_foreach_step(rc, dbr)
+			bcaps.bmask |= flist64_getval(bcaps_list, sqlite3_column_text(dbr, 0));
+	
+	if (rc == -1)
+		method_set_fault(env, MEVXDB);
+	
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
 	
 	if (vx_set_bcaps(xid, &bcaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_bcaps: %s", strerror(errno));
 	
-	dbr = dbi_conn_queryf(vxdb, "SELECT ccap FROM vx_ccaps WHERE xid = %d", xid);
+	rc = vxdb_prepare(&dbr, "SELECT ccap FROM vx_ccaps WHERE xid = %d", xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr))
-		ccaps.ccaps |= flist64_getval(ccaps_list, dbi_result_get_string(dbr, "ccap"));
+	else
+		vxdb_foreach_step(rc, dbr)
+			ccaps.ccaps |= flist64_getval(ccaps_list, sqlite3_column_text(dbr, 0));
 	
 	ccaps.cmask = ccaps.ccaps;
+	
+	if (rc == -1)
+		method_set_fault(env, MEVXDB);
+	
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
 	
 	if (vx_set_ccaps(xid, &ccaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_ccaps: %s", strerror(errno));
 	
-	dbr = dbi_conn_queryf(vxdb, "SELECT flag FROM vx_flags WHERE xid = %d", xid);
+	rc = vxdb_prepare(&dbr, "SELECT flag FROM vx_flags WHERE xid = %d", xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr))
-		cflags.flags |= flist64_getval(cflags_list, dbi_result_get_string(dbr, "flag"));
+	else
+		vxdb_foreach_step(rc, dbr)
+			cflags.flags |= flist64_getval(cflags_list, sqlite3_column_text(dbr, 0));
 	
 	cflags.mask = cflags.flags;
+	
+	if (rc == -1)
+		method_set_fault(env, MEVXDB);
+	
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
 	
 	if (vx_set_flags(xid, &cflags) == -1)
 		method_return_faultf(env, MESYS, "vx_set_flags: %s", strerror(errno));
@@ -160,7 +183,8 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 static
 xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 {
-	dbi_result dbr;
+	vxdb_result *dbr;
+	int rc;
 	const char *type;
 	uint32_t buf32;
 	
@@ -180,30 +204,39 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 	if (vx_get_rlimit_mask(&rlimit_mask) == -1)
 		method_return_faultf(env, MESYS, "vx_get_rlimit_mask: %s", strerror(errno));
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT type,soft,max FROM vx_limit WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr)) {
-		type = dbi_result_get_string(dbr, "type");
+	else {
+		vxdb_foreach_step(rc, dbr) {
+			type = sqlite3_column_text(dbr, 0);
+			
+			if (!(buf32 = flist32_getval(rlimit_list, type)))
+				continue;
+			
+			if ((rlimit_mask.softlimit & buf32) != buf32 &&
+					(rlimit_mask.maximum   & buf32) != buf32)
+				continue;
+			
+			rlimit.id        = v2i32(buf32);
+			rlimit.softlimit = sqlite3_column_int64(dbr, 1);
+			rlimit.maximum   = sqlite3_column_int64(dbr, 2);
+			
+			if (vx_set_rlimit(xid, &rlimit) == -1) {
+				method_set_faultf(env, MESYS, "vx_set_rlimit: %s", strerror(errno));
+				break;
+			}
+		}
 		
-		if (!(buf32 = flist32_getval(rlimit_list, type)))
-			continue;
-		
-		if ((rlimit_mask.softlimit & buf32) != buf32 &&
-		    (rlimit_mask.maximum   & buf32) != buf32)
-			continue;
-		
-		rlimit.id        = v2i32(buf32);
-		rlimit.softlimit = dbi_result_get_longlong(dbr, "soft");
-		rlimit.maximum   = dbi_result_get_longlong(dbr, "max");
-		
-		if (vx_set_rlimit(xid, &rlimit) == -1)
-			method_return_faultf(env, MESYS, "vx_set_rlimit: %s", strerror(errno));
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
 	}
+	
+	sqlite3_finalize(dbr);
 	
 	return NULL;
 }
@@ -211,7 +244,8 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 static
 xmlrpc_value *context_scheduler(xmlrpc_env *env)
 {
-	dbi_result dbr;
+	int rc;
+	vxdb_result *dbr;
 	
 	struct vx_sched sched = {
 		.set_mask = 0,
@@ -225,46 +259,58 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 		.bucket_id = 0,
 	};
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT * FROM vx_sched WHERE xid = %d",
+	rc = vxdb_prepare(&dbr,
+		"SELECT cpuid,fillrate,interval,priobias,tokensmin,tokensmax,fillrate2,interval2 "
+		"FROM vx_sched WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr)) {
-		sched.cpu_id     = dbi_result_get_int(dbr, "cpuid");
-		sched.fill_rate  = dbi_result_get_int(dbr, "fillrate");
-		sched.interval   = dbi_result_get_int(dbr, "interval");
-		sched.prio_bias  = dbi_result_get_int(dbr, "priobias");
-		sched.tokens_min = dbi_result_get_int(dbr, "tokensmin");
-		sched.tokens_max = dbi_result_get_int(dbr, "tokensmax");
+	else {
+		vxdb_foreach_step(rc, dbr) {
+			sched.cpu_id     = sqlite3_column_int(dbr, 0);
+			sched.fill_rate  = sqlite3_column_int(dbr, 1);
+			sched.interval   = sqlite3_column_int(dbr, 2);
+			sched.prio_bias  = sqlite3_column_int(dbr, 3);
+			sched.tokens_min = sqlite3_column_int(dbr, 4);
+			sched.tokens_max = sqlite3_column_int(dbr, 5);
+			
+			sched.tokens = sched.tokens_max;
+			
+			sched.set_mask |= VXSM_CPU_ID|VXSM_FILL_RATE|VXSM_INTERVAL|VXSM_TOKENS;
+			sched.set_mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX|VXSM_PRIO_BIAS;
+			
+			if (vx_set_sched(xid, &sched) == -1) {
+				method_set_faultf(env, MESYS, "vx_set_sched: %s", strerror(errno));
+				break;
+			}
+			
+			sched.fill_rate  = sqlite3_column_int(dbr, 6);
+			sched.interval   = sqlite3_column_int(dbr, 7);
+			
+			sched.set_mask = 0|VXSM_FILL_RATE2|VXSM_INTERVAL2;
+			
+			if (sched.fill_rate > 0 && sched.interval > 0 &&
+			    vx_set_sched(xid, &sched) == -1) {
+				method_set_faultf(env, MESYS, "vx_set_sched2: %s", strerror(errno));
+				break;
+			}
+		}
 		
-		sched.tokens = sched.tokens_max;
-		
-		sched.set_mask |= VXSM_CPU_ID|VXSM_FILL_RATE|VXSM_INTERVAL|VXSM_TOKENS;
-		sched.set_mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX|VXSM_PRIO_BIAS;
-		
-		if (vx_set_sched(xid, &sched) == -1)
-			method_return_faultf(env, MESYS, "vx_set_sched: %s", strerror(errno));
-		
-		sched.fill_rate  = dbi_result_get_int(dbr, "fillrate2");
-		sched.interval   = dbi_result_get_int(dbr, "interval2");
-		
-		sched.set_mask = 0|VXSM_FILL_RATE2|VXSM_INTERVAL2;
-		
-		if (sched.fill_rate > 0 && sched.interval > 0)
-			if (vx_set_sched(xid, &sched) == -1)
-				method_return_faultf(env, MESYS, "vx_set_sched2: %s", strerror(errno));
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
 	}
 	
+	sqlite3_finalize(dbr);
 	return NULL;
 }
 
 static
 xmlrpc_value *context_uname(xmlrpc_env *env)
 {
-	dbi_result dbr;
+	int rc;
+	vxdb_result *dbr;
 	const char *uname;
 	uint32_t buf32;
 	
@@ -273,27 +319,37 @@ xmlrpc_value *context_uname(xmlrpc_env *env)
 		.name  = "",
 	};
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT uname,value FROM vx_uname WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr)) {
-		uname = dbi_result_get_string(dbr, "uname");
+	else {
+		vxdb_foreach_step(rc, dbr) {
+			uname = sqlite3_column_text(dbr, 0);
+			
+			if (!(buf32 = flist32_getval(vhiname_list, uname)))
+				continue;
+			
+			vhiname.field = v2i32(buf32);
+			
+			bzero(vhiname.name, VHILEN);
+			strncpy(vhiname.name, sqlite3_column_text(dbr, 1), VHILEN-1);
+			
+			if (vx_set_vhi_name(xid, &vhiname) == -1) {
+				method_set_faultf(env, MESYS, "vx_set_vhi_name: %s", strerror(errno));
+				break;
+			}
+		}
 		
-		if (!(buf32 = flist32_getval(vhiname_list, uname)))
-			continue;
-		
-		vhiname.field = v2i32(buf32);
-		
-		bzero(vhiname.name, VHILEN);
-		strncpy(vhiname.name, dbi_result_get_string(dbr, "value"), VHILEN-1);
-		
-		if (vx_set_vhi_name(xid, &vhiname) == -1)
-			method_return_faultf(env, MESYS, "vx_set_vhi_name: %s", strerror(errno));
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
 	}
+	
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
 	
 	if (!str_isempty(name)) {
 		vhiname.field = VHIN_CONTEXT;
@@ -302,7 +358,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env)
 		strncpy(vhiname.name, name, VHILEN-1);
 		
 		if (vx_set_vhi_name(xid, &vhiname) == -1)
-			method_return_faultf(env, MESYS, "vx_set_vhi_name: %s", strerror(errno));
+			method_set_faultf(env, MESYS, "vx_set_vhi_name: %s", strerror(errno));
 	}
 	
 	return NULL;
@@ -347,67 +403,90 @@ xmlrpc_value *network_create(xmlrpc_env *env)
 static
 xmlrpc_value *network_interfaces(xmlrpc_env *env)
 {
-	dbi_result dbr;
+	int rc;
+	vxdb_result *dbr;
 	const char *ip, *netm;
 	char buf[32];
 	struct nx_addr addr;
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT broadcast FROM nx_broadcast WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	if (dbi_result_get_numrows(dbr) > 0) {
-		dbi_result_first_row(dbr);
+	else {
+		rc = vxdb_step(dbr);
 		
-		addr.type    = NXA_TYPE_IPV4 | NXA_MOD_BCAST;
-		addr.count   = 1;
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
 		
-		ip = dbi_result_get_string(dbr, "broadcast");
-		
-		if (addr_from_str(ip, &addr.ip[0], &addr.mask[0]) == -1)
-			method_return_faultf(env, MECONF, "invalid interface: %s", buf);
-		
-		addr.mask[0] = 0;
-		
-		if (nx_add_addr(xid, &addr) == -1)
-			method_return_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
-		
+		else if (rc == 1) {
+			addr.type  = NXA_TYPE_IPV4 | NXA_MOD_BCAST;
+			addr.count = 1;
+			
+			ip = sqlite3_column_text(dbr, 0);
+			
+			if (addr_from_str(ip, &addr.ip[0], &addr.mask[0]) == -1)
+				method_set_faultf(env, MECONF, "invalid interface: %s", buf);
+			
+			else {
+				addr.mask[0] = 0;
+				
+				if (nx_add_addr(xid, &addr) == -1)
+					method_set_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
+			}
+		}
 	}
 	
-	dbr = dbi_conn_queryf(vxdb,
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
+	
+	rc = vxdb_prepare(&dbr,
 		"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	while (dbi_result_next_row(dbr)) {
-		ip   = dbi_result_get_string(dbr, "addr");
-		netm = dbi_result_get_string(dbr, "netmask");
+	else {
+		vxdb_foreach_step(rc, dbr) {
+			ip   = sqlite3_column_text(dbr, 0);
+			netm = sqlite3_column_text(dbr, 1);
+			
+			bzero(buf, 32);
+			snprintf(buf, 31, "%s/%s", ip, netm);
+			
+			addr.type  = NXA_TYPE_IPV4;
+			addr.count = 1;
+			
+			if (addr_from_str(buf, &addr.ip[0], &addr.mask[0]) == -1) {
+				method_set_faultf(env, MECONF, "invalid interface: %s", buf);
+				break;
+			}
+			
+			else if (nx_add_addr(xid, &addr) == -1) {
+				method_set_faultf(env, MESYS, "nx_add_addr : %s", strerror(errno));
+				break;
+			}
+		}
 		
-		bzero(buf, 32);
-		snprintf(buf, 31, "%s/%s", ip, netm);
-		
-		addr.type  = NXA_TYPE_IPV4;
-		addr.count = 1;
-		
-		if (addr_from_str(buf, &addr.ip[0], &addr.mask[0]) == -1)
-			method_return_faultf(env, MECONF, "invalid interface: %s", buf);
-		
-		if (nx_add_addr(xid, &addr) == -1)
-			method_return_faultf(env, MESYS, "nx_add_addr : %s", strerror(errno));
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
 	}
+	
+	sqlite3_finalize(dbr);
 	
 	return NULL;
 }
 
+/* TODO: we need better error management here */
 static
 xmlrpc_value *mount_namespace(xmlrpc_env *env)
 {
-	dbi_result dbr;
+	int rc;
+	vxdb_result *dbr;
 	int mtabfd, status;
 	const char *src, *dst, *type, *opts;
 	
@@ -425,38 +504,46 @@ xmlrpc_value *mount_namespace(xmlrpc_env *env)
 	if (write(mtabfd, "/dev/hdv1 / ufs rw 0 0\n", 23) == -1)
 		log_warn_and_die("write: %s", strerror(errno));
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT spec,path,vfstype,mntops FROM mount WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
+	if (rc)
 		log_warn_and_die("error in vxdb");
 	
-	while (dbi_result_next_row(dbr)) {
-		src  = dbi_result_get_string(dbr, "spec");
-		dst  = dbi_result_get_string(dbr, "path");
-		type = dbi_result_get_string(dbr, "vfstype");
-		opts = dbi_result_get_string(dbr, "mntops");
-		
-		if (str_isempty(type))
-			type = "auto";
-		
-		if (str_isempty(opts))
-			opts = "defaults";
-		
-		if (chroot_secure_chdir(vdir, dst) == -1)
-			log_warn_and_die("chroot_secure_chdir: %s", strerror(errno));
-		
-		status = exec_fork("mount -n -t %s -o %s %s .", type, opts, src);
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			log_warn_and_die("mount failed (%d)", WEXITSTATUS(status));
-		
-		if (WIFSIGNALED(status))
-			log_warn_and_die("mount caught signal (%d)", WTERMSIG(status));
-		
-		dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+	else {
+		vxdb_foreach_step(rc, dbr) {
+			src  = sqlite3_column_text(dbr, 0);
+			dst  = sqlite3_column_text(dbr, 1);
+			type = sqlite3_column_text(dbr, 2);
+			opts = sqlite3_column_text(dbr, 3);
+			
+			if (str_isempty(type))
+				type = "auto";
+			
+			if (str_isempty(opts))
+				opts = "defaults";
+			
+			if (chroot_secure_chdir(vdir, dst) == -1)
+				log_warn_and_die("chroot_secure_chdir: %s", strerror(errno));
+			
+			status = exec_fork("mount -n -t %s -o %s %s .", type, opts, src);
+			
+			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+				log_warn_and_die("mount failed (%d)", WEXITSTATUS(status));
+			
+			if (WIFSIGNALED(status))
+				log_warn_and_die("mount caught signal (%d)", WTERMSIG(status));
+			
+			dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+		}
+	
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
 	}
+	
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
 	
 	if (chroot_secure_chdir(vdir, "/") == -1)
 		log_warn_and_die("chroot_secure_chdir: %s", strerror(errno));
@@ -676,8 +763,9 @@ xmlrpc_value *init_gentoo(xmlrpc_env *env, char *vdir, const char *runlevel)
 static
 xmlrpc_value *call_init(xmlrpc_env *env)
 {
-	dbi_result dbr;
-	const char *method, *start;
+	int rc;
+	vxdb_result *dbr;
+	const char *method = NULL, *start = NULL;
 	pid_t pid;
 	int status;
 	
@@ -686,23 +774,32 @@ xmlrpc_value *call_init(xmlrpc_env *env)
 	
 	asprintf(&vdir, "%s/%s", vserverdir, name);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT method,start FROM init_method WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	if (dbi_result_get_numrows(dbr) < 1) {
-		method = "init";
-		start = "";
-	}
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
 	else {
-		dbi_result_first_row(dbr);
-		method = dbi_result_get_string(dbr, "method");
-		start  = dbi_result_get_string(dbr, "start");
+		rc = vxdb_step(dbr);
+		
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+		
+		else if (rc == 0) {
+			method = "init";
+			start = "";
+		}
+		
+		else {
+			method = sqlite3_column_text(dbr, 0);
+			start  = sqlite3_column_text(dbr, 1);
+		}
 	}
+	
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
 	
 	if (!validate_init_method(method))
 		method_return_faultf(env, MECONF, "unknown init method: %s", method);

@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_nx_broadcast_remove(xmlrpc_env *env, xmlrpc_value *p, void 
 	xmlrpc_value *params;
 	char *name;
 	xid_t xid;
-	dbi_result dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_NET, 1);
 	method_return_if_fault(env);
@@ -43,11 +43,11 @@ xmlrpc_value *m_vxdb_nx_broadcast_remove(xmlrpc_env *env, xmlrpc_value *p, void 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"DELETE FROM nx_broadcast WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

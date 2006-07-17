@@ -24,9 +24,10 @@
 
 xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params, *response = NULL;
 	char *user;
-	dbi_result dbr;
+	vxdb_result *dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -42,28 +43,33 @@ xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (!validate_username(user))
 			method_return_fault(env, MEINVAL);
 		
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uid,name,admin FROM user WHERE name = '%s'",
+		rc = vxdb_prepare(&dbr,
+			"SELECT name,uid,admin FROM user WHERE name = '%s'",
 			user);
 	}
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT uid,name,admin FROM user ORDER BY name ASC");
+		rc = vxdb_prepare(&dbr,
+			"SELECT name,uid,admin FROM user ORDER BY name ASC");
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	response = xmlrpc_array_new(env);
+	else {
+		response = xmlrpc_array_new(env);
+		
+		vxdb_foreach_step(rc, dbr)
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:i,s:i}",
+				"username", sqlite3_column_text(dbr, 0),
+				"uid",      sqlite3_column_int(dbr, 1),
+				"admin",    sqlite3_column_int(dbr, 2)));
+		
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+	}
 	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:i,s:i}",
-			"username", dbi_result_get_string(dbr, "name"),
-			"uid",      dbi_result_get_int(dbr, "uid"),
-			"admin",    dbi_result_get_int(dbr, "admin")));
-	
-	method_return_if_fault(env);
+	sqlite3_finalize(dbr);
 	
 	return response;
 }

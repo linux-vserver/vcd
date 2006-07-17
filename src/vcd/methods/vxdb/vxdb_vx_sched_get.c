@@ -26,7 +26,8 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name;
 	int cpuid;
 	xid_t xid;
-	dbi_result dbr;
+	vxdb_result *dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_SCHED, 1);
 	method_return_if_fault(env);
@@ -44,32 +45,37 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 	
 	if (cpuid == -1)
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT * FROM vx_sched WHERE xid = %d",
+		rc = vxdb_prepare(&dbr,
+			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax,priobias "
+			"FROM vx_sched WHERE xid = %d",
 			xid);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
-			"SELECT * FROM vx_sched WHERE xid = %d AND cpuid = %d",
+		rc = vxdb_prepare(&dbr,
+			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax,priobias "
+			"FROM vx_sched WHERE xid = %d AND cpuid = %d",
 			xid, cpuid);
-	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
 	
 	response = xmlrpc_array_new(env);
 	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
-			"cpuid",     dbi_result_get_int(dbr, "cpuid"),
-			"fillrate",  dbi_result_get_int(dbr, "fillrate"),
-			"interval",  dbi_result_get_int(dbr, "interval"),
-			"fillrate2", dbi_result_get_int(dbr, "fillrate2"),
-			"interval2", dbi_result_get_int(dbr, "interval2"),
-			"tokensmin", dbi_result_get_int(dbr, "tokensmin"),
-			"tokensmax", dbi_result_get_int(dbr, "tokensmax"),
-			"priobias",  dbi_result_get_int(dbr, "priobias")));
-	method_return_if_fault(env);
+	if (rc)
+		method_set_fault(env, MEVXDB);
+	
+	else {
+		for (rc = vxdb_step(dbr); rc == 1; rc = vxdb_step(dbr))
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+				"cpuid",     sqlite3_column_int(dbr, 0),
+				"fillrate",  sqlite3_column_int(dbr, 1),
+				"interval",  sqlite3_column_int(dbr, 2),
+				"fillrate2", sqlite3_column_int(dbr, 3),
+				"interval2", sqlite3_column_int(dbr, 4),
+				"tokensmin", sqlite3_column_int(dbr, 5),
+				"tokensmax", sqlite3_column_int(dbr, 6),
+				"priobias",  sqlite3_column_int(dbr, 7)));
+	}
+	
+	sqlite3_finalize(dbr);
 	
 	return response;
 }

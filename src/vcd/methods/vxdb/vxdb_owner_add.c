@@ -24,9 +24,8 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	char *user, *name;
-	dbi_result dbr;
 	xid_t xid;
-	int uid;
+	int uid, rc;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -43,21 +42,14 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (!dbi_conn_queryf(vxdb, "BEGIN TRANSACTION"))
-		method_return_fault(env, MEVXDB);
-	
 	uid = auth_getuid(user);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO xid_uid_map (xid, uid) VALUES (%d, %d)",
 		xid, uid);
 	
-	if (!dbr) {
-		dbi_conn_queryf(vxdb, "ROLLBACK TRANSACTION");
+	if (rc)
 		method_return_fault(env, MEVXDB);
-	}
-	
-	dbi_conn_queryf(vxdb, "COMMIT TRANSACTION");
 	
 	return xmlrpc_nil_new(env);
 }

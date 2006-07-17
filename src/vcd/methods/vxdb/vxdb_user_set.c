@@ -15,6 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <stdlib.h>
+
 #include "lucid.h"
 
 #include "auth.h"
@@ -26,8 +28,8 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	char *user, *pass, *sha1_pass;
-	int uid, admin;
-	dbi_result dbr;
+	int uid, admin, rc;
+	vxdb_result *dbr;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -50,50 +52,57 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (!validate_password(pass))
 			method_return_fault(env, MEINVAL);
 		
-		dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
+		rc = vxdb_prepare(&dbr, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
 		
-		if (!dbr)
-			method_return_fault(env, MEVXDB);
+		if (rc)
+			method_set_fault(env, MEVXDB);
 		
-		if (dbi_result_get_numrows(dbr) > 0) {
-			dbi_result_first_row(dbr);
-			uid = dbi_result_get_int(dbr, "uid");
+		else {
+			rc = vxdb_step(dbr);
+			
+			if (rc == -1)
+				method_set_fault(env, MEVXDB);
+			
+			else if (rc == 1)
+				uid = sqlite3_column_int(dbr, 0);
+			
+			uid++;
+			
+			sqlite3_finalize(dbr);
+		
+			sha1_pass = sha1_digest(pass);
+			
+			rc = vxdb_exec(
+				"INSERT INTO user (uid, name, password, admin) "
+				"VALUES (%d, '%s', '%s', %d)",
+				uid, user, sha1_pass, admin);
+			
+			free(sha1_pass);
+			
+			if (rc)
+				method_set_fault(env, MEVXDB);
 		}
-		
-		uid++;
-		
-		sha1_pass = sha1_digest(pass);
-		
-		dbr = dbi_conn_queryf(vxdb,
-			"INSERT INTO user (uid, name, password, admin) "
-			"VALUES (%d, '%s', '%s', %d)",
-			uid, user, sha1_pass, admin);
-		
-		free(sha1_pass);
-		
-		if (!dbr)
-			method_return_fault(env, MEVXDB);
 	}
 	
 	else {
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_exec(
 			"UPDATE user SET admin = %d WHERE uid = %d",
 			admin, uid);
 		
-		if (!dbr)
-			method_return_fault(env, MEVXDB);
+		if (rc)
+			method_set_fault(env, MEVXDB);
 		
-		if (pass) {
+		else if (pass) {
 			sha1_pass = sha1_digest(pass);
 			
-			dbr = dbi_conn_queryf(vxdb,
+			rc = vxdb_exec(
 				"UPDATE user SET password = '%s' WHERE uid = %d",
 				sha1_pass, uid);
 			
 			free(sha1_pass);
 			
-			if (!dbr)
-				method_return_fault(env, MEVXDB);
+			if (rc)
+				method_set_fault(env, MEVXDB);
 		}
 	}
 	

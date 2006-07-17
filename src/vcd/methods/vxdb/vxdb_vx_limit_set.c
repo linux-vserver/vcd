@@ -28,7 +28,7 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name, *limit;
 	int soft, max;
 	xid_t xid;
-	dbi_result dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_RLIM, 1);
 	method_return_if_fault(env);
@@ -47,12 +47,12 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO vx_limit (xid, type, soft, max) "
 		"VALUES (%d, '%s', %d, %d)",
 		xid, limit, soft, max);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

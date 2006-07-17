@@ -26,9 +26,8 @@ xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	char *name, *method, *start, *stop;
-	int timeout;
+	int timeout, rc;
 	xid_t xid;
-	dbi_result dbr;
 	
 	params = method_init(env, p, VCD_CAP_INIT, 1);
 	method_return_if_fault(env);
@@ -61,12 +60,12 @@ xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (timeout < 1)
 		timeout = 30;
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO init_method (xid, method, start, stop, timeout) "
 		"VALUES (%d, '%s', '%s', '%s', %d)",
 		xid, method, start, stop, timeout);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

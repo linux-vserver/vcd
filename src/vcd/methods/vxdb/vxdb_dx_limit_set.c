@@ -24,9 +24,8 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	char *name, *path;
-	int space, inodes, reserved;
+	int space, inodes, reserved, rc;
 	xid_t xid;
-	dbi_result dbr;
 	
 	params = method_init(env, p, VCD_CAP_DLIM, 1);
 	method_return_if_fault(env);
@@ -47,12 +46,12 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO dx_limit (xid, path, space, inodes, reserved) "
 		"VALUES (%d, '%s', %d, %d, %d)",
 		xid, path, space, inodes, reserved);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

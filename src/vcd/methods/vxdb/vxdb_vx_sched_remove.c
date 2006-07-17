@@ -24,9 +24,8 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	char *name;
-	int cpuid;
+	int cpuid, rc;
 	xid_t xid;
-	dbi_result dbr;
 	
 	params = method_init(env, p, VCD_CAP_SCHED, 1);
 	method_return_if_fault(env);
@@ -44,16 +43,16 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 	
 	if (cpuid == -1)
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_exec(
 			"DELETE FROM vx_sched WHERE xid = %d",
 			xid);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_exec(
 			"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
 			xid, cpuid);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

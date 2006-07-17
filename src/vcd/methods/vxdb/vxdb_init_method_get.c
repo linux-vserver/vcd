@@ -22,10 +22,11 @@
 
 xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params, *response = NULL;
 	char *name;
 	xid_t xid;
-	dbi_result dbr;
+	vxdb_result *dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_INIT, 1);
 	method_return_if_fault(env);
@@ -41,34 +42,37 @@ xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT method,start,stop,timeout FROM init_method WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	/* TODO: is the result ever empty? */
-	if (dbi_result_get_numrows(dbr) < 1)
-		response = xmlrpc_build_value(env,
-			"{s:s,s:s,s:s,s:i}",
-			"method",  "init",
-			"start",   "",
-			"stop",    "",
-			"timeout", 30);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
 	else {
-		dbi_result_first_row(dbr);
+		rc = vxdb_step(dbr);
 		
-		response = xmlrpc_build_value(env,
-			"{s:s,s:s,s:s,s:i}",
-			"method",  dbi_result_get_string(dbr, "method"),
-			"start",   dbi_result_get_string(dbr, "start"),
-			"stop",    dbi_result_get_string(dbr, "stop"),
-			"timeout", dbi_result_get_int(dbr, "timeout"));
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+		
+		else if (rc == 0)
+			response = xmlrpc_build_value(env,
+				"{s:s,s:s,s:s,s:i}",
+				"method",  "init",
+				"start",   "",
+				"stop",    "",
+				"timeout", 30);
+		
+		else
+			response = xmlrpc_build_value(env,
+				"{s:s,s:s,s:s,s:i}",
+				"method",  sqlite3_column_text(dbr, 0),
+				"start",   sqlite3_column_text(dbr, 1),
+				"stop",    sqlite3_column_text(dbr, 2),
+				"timeout", sqlite3_column_int(dbr, 3));
 	}
 	
-	method_return_if_fault(env);
+	sqlite3_finalize(dbr);
 	
 	return response;
 }

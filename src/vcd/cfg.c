@@ -22,15 +22,20 @@
 #include "lucid.h"
 
 #include "cfg.h"
+#include "log.h"
 
 void cfg_atexit(void)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	cfg_free(cfg);
 }
 
 int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	struct in_addr inaddr;
 	
 	if (inet_pton(AF_INET, value, &inaddr) == 0) {
@@ -45,6 +50,8 @@ int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
 int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	long int port = strtol(value, NULL, 0);
 	
 	if (port < 1 || port > 65536) {
@@ -59,6 +66,8 @@ int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
 int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
                          const char *value, void *result)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	long int timeout = strtol(value, NULL, 0);
 	
 	if (timeout < 1 || timeout > 3600) {
@@ -73,6 +82,8 @@ int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	struct stat sb;
 	
 	if (!str_path_isabs(value)) {

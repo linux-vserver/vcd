@@ -28,8 +28,8 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params, *response;
 	char *name, *limit;
 	xid_t xid;
-	dbi_result dbr;
-	int i;
+	vxdb_result *dbr;
+	int i, rc;
 	
 	params = method_init(env, p, VCD_CAP_RLIM, 1);
 	method_return_if_fault(env);
@@ -61,28 +61,34 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_fault(env, MENOVPS);
 		
 		if (limit)
-			dbr = dbi_conn_queryf(vxdb,
+			rc = vxdb_prepare(&dbr,
 				"SELECT type,soft,max FROM vx_limit "
 				"WHERE xid = %d AND type = '%s'",
 				xid, limit);
 		
 		else
-			dbr = dbi_conn_queryf(vxdb,
+			rc = vxdb_prepare(&dbr,
 				"SELECT type,soft,max FROM vx_limit "
 				"WHERE xid = %d",
 				xid);
 		
-		if (!dbr)
-			method_return_fault(env, MEVXDB);
+		if (rc)
+			method_set_fault(env, MEVXDB);
 		
-		while (dbi_result_next_row(dbr))
-			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i,s:i}",
-				"limit", dbi_result_get_string(dbr, "type"),
-				"soft",  dbi_result_get_int(dbr, "soft"),
-				"max",   dbi_result_get_int(dbr, "max")));
+		else {
+			vxdb_foreach_step(rc, dbr)
+				xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+					"{s:s,s:i,s:i}",
+					"limit", sqlite3_column_text(dbr, 0),
+					"soft",  sqlite3_column_int(dbr, 1),
+					"max",   sqlite3_column_int(dbr, 2)));
+			
+			if (rc == -1)
+				method_set_fault(env, MEVXDB);
+		}
+		
+		sqlite3_finalize(dbr);
 	}
 	
-	method_return_if_fault(env);
 	return response;
 }

@@ -22,10 +22,13 @@
 #include "lucid.h"
 
 #include "lists.h"
+#include "log.h"
 #include "validate.h"
 
 int validate_name(const char *name)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(name))
 		return 0;
 	
@@ -37,11 +40,15 @@ int validate_name(const char *name)
 
 int validate_xid(xid_t xid)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	return (xid > 1 && xid < 65535);
 }
 
 int validate_path(const char *path)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(path))
 		return 0;
 	
@@ -50,11 +57,15 @@ int validate_path(const char *path)
 
 int validate_dlimits(uint32_t inodes, uint32_t space, int reserved)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	return (reserved > 0 && reserved < 100);
 }
 
 int validate_init_method(const char *method)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(method))
 		return 0;
 	
@@ -69,6 +80,8 @@ int validate_init_method(const char *method)
 
 int validate_runlevel(const char *runlevel)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(runlevel))
 		return 0;
 	
@@ -77,6 +90,8 @@ int validate_runlevel(const char *runlevel)
 
 int validate_addr(const char *addr)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(addr))
 		return 0;
 	
@@ -86,6 +101,8 @@ int validate_addr(const char *addr)
 
 int validate_username(const char *username)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(username))
 		return 0;
 	
@@ -94,6 +111,8 @@ int validate_username(const char *username)
 
 int validate_password(const char *password)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(password))
 		return 0;
 	
@@ -102,6 +121,8 @@ int validate_password(const char *password)
 
 int validate_vcd_cap(const char *cap)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(cap))
 		return 0;
 	
@@ -110,6 +131,8 @@ int validate_vcd_cap(const char *cap)
 
 int validate_bcap(const char *bcap)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(bcap))
 		return 0;
 	
@@ -118,6 +141,8 @@ int validate_bcap(const char *bcap)
 
 int validate_ccap(const char *ccap)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(ccap))
 		return 0;
 	
@@ -126,6 +151,8 @@ int validate_ccap(const char *ccap)
 
 int validate_cflag(const char *cflag)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(cflag))
 		return 0;
 	
@@ -134,6 +161,8 @@ int validate_cflag(const char *cflag)
 
 int validate_rlimit(const char *rlimit)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(rlimit))
 		return 0;
 	
@@ -142,11 +171,15 @@ int validate_rlimit(const char *rlimit)
 
 int validate_rlimits(int soft, int max)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	return (max >= soft);
 }
 
 int validate_cpuid(int cpuid)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	long ncpu = sysconf(_SC_NPROCESSORS_ONLN);
 	
 	return (cpuid < ncpu && cpuid >= 0);
@@ -157,6 +190,8 @@ int validate_token_bucket(int32_t fillrate, int32_t interval,
                           int32_t tokensmin, int32_t tokensmax,
                           int32_t priobias)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (fillrate  < 1 ||
 	    interval  < 1 ||
 	    tokensmax < 1)
@@ -182,6 +217,8 @@ int validate_token_bucket(int32_t fillrate, int32_t interval,
 
 int validate_uname(const char *uname)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(uname))
 		return 0;
 	
@@ -190,6 +227,8 @@ int validate_uname(const char *uname)
 
 int validate_uname_value(const char *value)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	if (str_isempty(value))
 		return 0;
 	

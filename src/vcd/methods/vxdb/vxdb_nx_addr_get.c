@@ -24,10 +24,11 @@
 
 xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params, *response = NULL;
 	char *name, *addr;
 	xid_t xid;
-	dbi_result dbr;
+	vxdb_result *dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_NET, 1);
 	method_return_if_fault(env);
@@ -47,29 +48,34 @@ xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 	
 	if (addr)
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_prepare(&dbr,
 			"SELECT addr,netmask FROM nx_addr "
 			"WHERE xid = %d AND addr = '%s'",
 			xid, addr);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_prepare(&dbr,
 			"SELECT addr,netmask FROM nx_addr "
 			"WHERE xid = %d",
 			xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
-	response = xmlrpc_array_new(env);
+	else {
+		response = xmlrpc_array_new(env);
+		
+		vxdb_foreach_step(rc, dbr)
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:s}",
+				"addr",    sqlite3_column_text(dbr, 0),
+				"netmask", sqlite3_column_text(dbr, 1)));
+		
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+	}
 	
-	while (dbi_result_next_row(dbr))
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"{s:s,s:s}",
-			"addr",    dbi_result_get_string(dbr, "addr"),
-			"netmask", dbi_result_get_string(dbr, "netmask")));
-	
-	method_return_if_fault(env);
+	sqlite3_finalize(dbr);
 	
 	return response;
 }

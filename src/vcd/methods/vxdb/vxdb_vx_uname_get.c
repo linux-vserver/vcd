@@ -25,11 +25,11 @@
 
 xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params, *response = NULL;
 	char *name, *uname;
 	xid_t xid;
-	dbi_result dbr;
-	int i;
+	vxdb_result *dbr;
+	int i, rc;
 	
 	params = method_init(env, p, VCD_CAP_UNAME, 1);
 	method_return_if_fault(env);
@@ -42,16 +42,14 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	method_empty_params(2, &name, &uname);
 	
-	response = xmlrpc_array_new(env);
-	
 	if (!name) {
+		response = xmlrpc_array_new(env);
+		
 		for (i = 0; vhiname_list[i].key; i++)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s}",
 				"uname", vhiname_list[i].key,
 				"value", ""));
-		
-		return response;
 	}
 	
 	else {
@@ -62,25 +60,33 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_fault(env, MENOVPS);
 		
 		if (uname)
-			dbr = dbi_conn_queryf(vxdb,
+			rc = vxdb_prepare(&dbr,
 				"SELECT uname,value FROM vx_uname WHERE xid = %d AND uname = '%s'",
 				xid, uname);
 		
 		else
-			dbr = dbi_conn_queryf(vxdb,
+			rc = vxdb_prepare(&dbr,
 				"SELECT uname,value FROM vx_uname WHERE xid = %d",
 				xid);
 		
-		if (!dbr)
-			method_return_fault(env, MEVXDB);
+		if (rc)
+			method_set_fault(env, MEVXDB);
 		
-		while (dbi_result_next_row(dbr))
-			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:s}",
-				"uname", dbi_result_get_string(dbr, "uname"),
-				"value", dbi_result_get_string(dbr, "value")));
+		else {
+			response = xmlrpc_array_new(env);
+			
+			for (rc = vxdb_step(dbr); rc == 1; rc = vxdb_step(dbr))
+				xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+					"{s:s,s:s}",
+					"uname", sqlite3_column_text(dbr, 0),
+					"value", sqlite3_column_text(dbr, 0)));
+			
+			if (rc == -1)
+				method_set_fault(env, MEVXDB);
+		}
+		
+		sqlite3_finalize(dbr);
 	}
 	
-	method_return_if_fault(env);
 	return response;
 }

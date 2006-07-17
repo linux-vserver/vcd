@@ -27,8 +27,7 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *user;
 	xid_t xid;
-	dbi_result dbr;
-	int uid = 0;
+	int uid = 0, rc;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -51,16 +50,16 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOUSER);
 	
 	if (uid)
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_exec(
 			"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
 			xid, uid);
 	
 	else
-		dbr = dbi_conn_queryf(vxdb,
+		rc = vxdb_exec(
 			"DELETE FROM xid_uid_map WHERE xid = %d",
 			xid);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

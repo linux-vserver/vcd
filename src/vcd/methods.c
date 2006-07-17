@@ -15,11 +15,13 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "lucid.h"
 
 #include "auth.h"
+#include "log.h"
 #include "methods.h"
 
 m_err_t method_error_codes[] = {
@@ -44,6 +46,8 @@ xmlrpc_registry *registry;
 
 int method_registry_init(xmlrpc_env *env)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	/* vx */
 	MREGISTER("vx.create",  m_vx_create);
 	MREGISTER("vx.killer",  m_vx_killer);
@@ -107,12 +111,16 @@ int method_registry_init(xmlrpc_env *env)
 
 void method_registry_atexit(void)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	xmlrpc_registry_free(registry);
 }
 
 xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
                           uint64_t caps, int ownercheck)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	char *user, *pass, *name;
 	xmlrpc_value *params;
 	
@@ -123,31 +131,36 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
 		&params);
 	method_return_if_fault(env);
 	
-	if (!auth_isvalid(user, pass)) {
+	if (!auth_isvalid(user, pass))
 		xmlrpc_env_set_fault(env, MEAUTH, method_strerror(MEAUTH));
-		return NULL;
-	}
 	
-	if (!auth_capable(user, caps)) {
+	else if (!auth_capable(user, caps))
 		xmlrpc_env_set_fault(env, MEPERM, method_strerror(MEPERM));
-		return NULL;
-	}
 	
-	if (ownercheck) {
+	else if (ownercheck) {
 		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
-		method_return_if_fault(env);
 		
-		if (!str_isempty(name) && !auth_isowner(user, name)) {
-			xmlrpc_env_set_fault(env, MENOVPS, method_strerror(MENOVPS));
-			return NULL;
+		if (!env->fault_occurred) {
+			if (!str_isempty(name) && !auth_isowner(user, name))
+				xmlrpc_env_set_fault(env, MENOVPS, method_strerror(MENOVPS));
+			
+			free(name);
 		}
 	}
 	
-	return params;
+	free(user);
+	free(pass);
+	
+	if (env->fault_occurred)
+		return NULL;
+	else
+		return params;
 }
 
 void method_empty_params(int num, ...)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	int i;
 	va_list ap;
 	char **ptr;
@@ -157,8 +170,13 @@ void method_empty_params(int num, ...)
 	for (i = 0; i < num; i++) {
 		ptr = va_arg(ap, char **);
 		
-		if (str_isempty(*ptr))
+		if (!*ptr)
+			continue;
+		
+		if (str_isempty(*ptr)) {
+			free(*ptr);
 			*ptr = NULL;
+		}
 	}
 	
 	va_end(ap);
@@ -166,6 +184,8 @@ void method_empty_params(int num, ...)
 
 char *method_strerror(int id)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
 	int i;
 	
 	for (i = 0; method_error_codes[i].msg; i++)

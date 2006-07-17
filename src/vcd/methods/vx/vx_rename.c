@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
+#include <limits.h>
 #include <vserver.h>
 
 #include "auth.h"
@@ -33,7 +34,7 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *newname, vdir[PATH_MAX], newvdir[PATH_MAX];
 	xid_t xid;
-	dbi_result dbr;
+	int rc;
 	const char *vserverdir;
 	
 	params = method_init(env, p, VCD_CAP_CREATE, 1);
@@ -65,11 +66,11 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (rename(vdir, newvdir) == -1)
 		method_return_faultf(env, MESYS, "rename: %s", strerror(errno));
 	
-	dbr = dbi_conn_queryf(vxdb, 
+	rc = vxdb_exec(
 		"UPDATE xid_name_map SET name = '%s' WHERE xid = %d",
 		newname, xid);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

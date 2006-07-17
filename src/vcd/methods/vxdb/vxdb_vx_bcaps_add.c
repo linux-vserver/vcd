@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *bcap;
 	xid_t xid;
-	dbi_result dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_BCAP, 1);
 	method_return_if_fault(env);
@@ -44,11 +44,11 @@ xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO vx_bcaps (xid, bcap) VALUES (%d, '%s')",
 		xid, bcap);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

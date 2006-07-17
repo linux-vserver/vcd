@@ -15,6 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <stdlib.h>
 #include <string.h>
 
 #include "lucid.h"
@@ -24,108 +25,179 @@
 #include "validate.h"
 #include "vxdb.h"
 
-dbi_conn vxdb = NULL;
+static sqlite3 *dbc = NULL;
 
 static
 void vxdb_sanity_check(void)
 {
-	dbi_result dbr;
+	int rc;
+	vxdb_result *dbr;
 	
-	dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user WHERE admin = 1");
+	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE admin = 1");
 	
-	if (!dbr || dbi_result_get_numrows(dbr) < 1)
+	if (rc != SQLITE_OK || sqlite3_step(dbr) != SQLITE_ROW)
 		log_warn("No admin user found");
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
 	
-	dbr = dbi_conn_queryf(vxdb, "SELECT uid FROM user WHERE name = 'vshelper'");
+	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE name = 'vshelper'");
 	
-	if (!dbr || dbi_result_get_numrows(dbr) < 1)
+	if (rc != SQLITE_OK || sqlite3_step(dbr) != SQLITE_ROW)
 		log_warn("No vshelper user found");
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
+}
+
+static
+void vxdb_trace(void *data, const char *sql)
+{
+	log_debug("[vxdb] %s", sql);
 }
 
 void vxdb_init(void)
 {
-	if (vxdb)
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	int rc;
+	
+	if (dbc)
 		return;
 	
 	char *datadir = cfg_getstr(cfg, "datadir");
+	char *vxdb = path_concat(datadir, "vxdb");
 	
-	dbi_initialize(NULL);
-	vxdb = dbi_conn_new("sqlite3");
+	rc = sqlite3_open(vxdb, &dbc);
 	
-	if (!vxdb)
-		log_error_and_die("Unable to load sqlite3 driver");
+	free(vxdb);
 	
-	dbi_conn_set_option(vxdb, "dbname", "vxdb");
-	dbi_conn_set_option(vxdb, "sqlite3_dbdir", datadir);
+	if (rc != SQLITE_OK) {
+		log_error("sqlite3_open(%s): %s", vxdb, sqlite3_errmsg(dbc));
+		sqlite3_close(dbc);
+		exit(EXIT_FAILURE);
+	}
 	
-	if (dbi_conn_connect(vxdb) < 0)
-		log_error_and_die("Could not open vxdb");
+	sqlite3_busy_timeout(dbc, 500);
+	sqlite3_trace(dbc, vxdb_trace, NULL);
 	
 	vxdb_sanity_check();
 }
 
 void vxdb_atexit(void)
 {
-	if (vxdb)
-		dbi_conn_close(vxdb);
+	log_debug("[trace] %s", __FUNCTION__);
 	
-	dbi_shutdown();
+	sqlite3_close(dbc);
+}
+
+int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
+{
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	va_list ap;
+	char *sql;
+	int rc;
+	
+	va_start(ap, fmt);
+	vasprintf(&sql, fmt, ap);
+	va_end(ap);
+	
+	rc = sqlite3_prepare(dbc, sql, -1, dbr, NULL);
+	
+	free(sql);
+	
+	if (rc != SQLITE_OK)
+		log_warn("vxdb_prepare(%s): %s", sqlite3_errmsg(dbc));
+	
+	return rc;
+}
+
+int vxdb_step(vxdb_result *dbr)
+{
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	switch (sqlite3_step(dbr)) {
+		case SQLITE_BUSY:
+			/* the timeout handler will sleep */
+			return vxdb_step(dbr);
+		
+		case SQLITE_DONE:
+			return 0;
+		
+		case SQLITE_ERROR:
+			log_warn("vxdb_step: %s", sqlite3_errmsg(dbc));
+			return -1;
+		
+		case SQLITE_ROW:
+			return 1;
+	}
+	
+	return 0;
+}
+
+int vxdb_exec(const char *fmt, ...)
+{
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	va_list ap;
+	char *sql;
+	int rc;
+	
+	va_start(ap, fmt);
+	vasprintf(&sql, fmt, ap);
+	va_end(ap);
+	
+	rc = sqlite3_exec(dbc, sql, NULL, NULL, NULL);
+	
+	free(sql);
+	
+	if (rc != SQLITE_OK)
+		log_warn("vxdb_exec(%s): %s", sqlite3_errmsg(dbc));
+	
+	return rc;
 }
 
 xid_t vxdb_getxid(const char *name)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	int rc;
 	xid_t xid;
-	dbi_result dbr;
+	vxdb_result *dbr;
 	
 	if (!validate_name(name))
 		return 0;
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT xid FROM xid_name_map WHERE name = '%s'",
-		name);
+	rc = vxdb_prepare(&dbr, "SELECT xid FROM xid_name_map WHERE name = '%s'", name);
 	
-	if (!dbr)
-		return 0;
-	
-	if (dbi_result_get_numrows(dbr) < 1)
+	if (rc != SQLITE_OK || vxdb_step(dbr) < 1)
 		xid = 0;
 	
-	else {
-		dbi_result_first_row(dbr);
-		xid = dbi_result_get_int(dbr, "xid");
-	}
+	else
+		xid = sqlite3_column_int(dbr, 0);
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
 	return xid;
 }
 
 char *vxdb_getname(xid_t xid)
 {
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	int rc;
 	char *name;
-	dbi_result dbr;
+	vxdb_result *dbr;
 	
 	if (!validate_xid(xid))
 		return NULL;
 	
-	dbr = dbi_conn_queryf(vxdb,
-		"SELECT name FROM xid_name_map WHERE xid = '%d'",
-		xid);
+	rc = vxdb_prepare(&dbr, "SELECT name FROM xid_name_map WHERE xid = '%d'", xid);
 	
-	if (!dbr)
-		return NULL;
-	
-	if (dbi_result_get_numrows(dbr) < 1)
+	if (rc != SQLITE_OK || vxdb_step(dbr) < 1)
 		name = NULL;
 	
-	else {
-		dbi_result_first_row(dbr);
-		name = strdup(dbi_result_get_string(dbr, "name"));
-	}
+	else
+		name = strdup((const char *) sqlite3_column_text(dbr, 0));
 	
-	dbi_result_free(dbr);
+	sqlite3_finalize(dbr);
 	return name;
 }

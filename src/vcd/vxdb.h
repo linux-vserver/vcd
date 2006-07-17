@@ -18,13 +18,25 @@
 #ifndef _VCD_VXDB_H
 #define _VCD_VXDB_H
 
-#include <dbi/dbi.h>
+#include <sqlite3.h>
 #include <vserver.h>
+#include <xmlrpc-c/base.h>
 
-extern dbi_conn vxdb;
+/* sqlite3 api returns unsigned char, we always want signed char though */
+#define sqlite3_column_text  (const char *) sqlite3_column_text
+
+typedef sqlite3_stmt vxdb_result;
 
 void vxdb_init(void);
 void vxdb_atexit(void);
+
+int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...);
+int vxdb_step(vxdb_result *dbr);
+
+#define vxdb_foreach_step(RC, DBR) \
+	for (RC = vxdb_step(DBR); RC == 1; RC = vxdb_step(DBR))
+
+int vxdb_exec(const char *fmt, ...);
 
 xid_t vxdb_getxid(const char *name);
 char *vxdb_getname(xid_t xid);

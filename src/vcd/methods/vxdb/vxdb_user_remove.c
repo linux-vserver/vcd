@@ -24,8 +24,7 @@ xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	char *user;
-	dbi_result dbr;
-	int uid;
+	int uid, rc;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -41,7 +40,7 @@ xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if ((uid = auth_getuid(user)) == 0)
 		method_return_fault(env, MENOUSER);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"BEGIN TRANSACTION;"
 		"DELETE FROM xid_uid_map WHERE uid = %1$d;"
 		"DELETE FROM user_caps WHERE uid = %1$d;"
@@ -49,7 +48,7 @@ xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"COMMIT TRANSACTION;",
 		uid);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

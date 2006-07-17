@@ -134,23 +134,11 @@ fi
 
 
 if test x$enable_server = xtrue; then
-AC_CHECK_FUNC(dlopen, DL_LIBS="",[
-	AC_CHECK_LIB(dl, dlopen, DL_LIBS="-ldl", AC_MSG_ERROR([libdl not found]))
-])
+AC_CHECK_LIB(sqlite3, sqlite3_open,
+             SQLITE3_LIBS="-lsqlite3", AC_MSG_ERROR([sqlite3 not found]))
 
-AC_SUBST(DL_LIBS)
+AC_SUBST(SQLITE3_LIBS)
 
-AC_CHECK_LIB(dbi, dbi_result_get_int,
-	DBI_LIBS="$DL_LIBS -ldbi", AC_MSG_ERROR([libdbi >= 0.8 not found]),)
-
-AC_MSG_CHECKING([for libdbi sqlite3 driver])
-LIBS="$DBI_LIBS"
-AC_RUN_IFELSE(
-	[AC_LANG_PROGRAM(,[[dbi_initialize(0);dbi_conn_new("sqlite3");]])],
-	[AC_MSG_RESULT([yes])],
-	[AC_MSG_ERROR([sqlite3 driver not found])])
-
-AC_SUBST(DBI_LIBS)
 
 AC_CHECK_LIB(bz2, BZ2_bzDecompressInit,
 	BZ2_LIBS="-lbz2", AC_MSG_ERROR([libbz2 not found]),)

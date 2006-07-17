@@ -16,6 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
+#include <stdlib.h>
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
@@ -179,9 +180,9 @@ xmlrpc_value *shutdown_gentoo(xmlrpc_env *env, const char *runlevel)
 xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *method, *stop;
-	int wait, timeout, status;
-	dbi_result dbr;
+	const char *method = NULL, *stop = NULL;
+	int wait, timeout = 30, status, rc;
+	vxdb_result *dbr;
 	pid_t pid;
 	
 	params = method_init(env, p, VCD_CAP_INIT, 1);
@@ -205,25 +206,35 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_get_info(xid, NULL) == -1 && errno == ESRCH)
 		method_return_fault(env, MESTOPPED);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_prepare(&dbr,
 		"SELECT method,stop,timeout FROM init_method WHERE xid = %d",
 		xid);
 	
-	if (!dbr)
-		method_return_fault(env, MEVXDB);
-	
-	if (dbi_result_get_numrows(dbr) < 1) {
-		method  = "init";
-		stop    = "";
-		timeout = 30;
-	}
+	if (rc)
+		method_set_fault(env, MEVXDB);
 	
 	else {
-		dbi_result_first_row(dbr);
-		method  = dbi_result_get_string(dbr, "method");
-		stop    = dbi_result_get_string(dbr, "stop");
-		timeout = dbi_result_get_int(dbr, "timeout");
+		rc = vxdb_step(dbr);
+		
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+		
+		else if (rc == 0) {
+			method  = "init";
+			stop    = "";
+			timeout = 30;
+		}
+		
+		else {
+			method  = sqlite3_column_text(dbr, 0);
+			stop    = sqlite3_column_text(dbr, 1);
+			timeout = sqlite3_column_int(dbr, 2);
+		}
+		
+		sqlite3_finalize(dbr);
 	}
+	
+	method_return_if_fault(env);
 	
 	signal(SIGCHLD, SIG_DFL);
 	

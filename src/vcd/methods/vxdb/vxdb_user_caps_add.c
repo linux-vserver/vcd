@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *user, *cap;
 	int uid;
-	dbi_result dbr;
+	int rc;
 	
 	params = method_init(env, p, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -44,11 +44,11 @@ xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(uid = auth_getuid(user)))
 		method_return_fault(env, MENOUSER);
 	
-	dbr = dbi_conn_queryf(vxdb,
+	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
 		uid, cap);
 	
-	if (!dbr)
+	if (rc)
 		method_return_fault(env, MEVXDB);
 	
 	return xmlrpc_nil_new(env);

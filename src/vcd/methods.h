@@ -59,13 +59,21 @@ char *method_strerror(int errnum);
 	if (ENV->fault_occurred) return NULL; \
 } while (0)
 
-#define method_return_fault(ENV, ID) do { \
+#define method_set_fault(ENV, ID) do { \
 	xmlrpc_env_set_fault(ENV, ID, method_strerror(ID)); \
+} while(0)
+
+#define method_set_faultf(ENV, ID, FMT, ...) do { \
+	xmlrpc_env_set_fault_formatted(ENV, ID, FMT, __VA_ARGS__); \
+} while(0)
+
+#define method_return_fault(ENV, ID) do { \
+	method_set_fault(ENV, ID); \
 	return NULL; \
 } while (0)
 
 #define method_return_faultf(ENV, ID, FMT, ...) do { \
-	xmlrpc_env_set_fault_formatted(ENV, ID, FMT, __VA_ARGS__); \
+	method_set_faultf(ENV, ID, FMT, __VA_ARGS__); \
 	return NULL; \
 } while(0)
 
