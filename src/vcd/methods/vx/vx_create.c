@@ -209,7 +209,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
 	method_return_if_fault(env);
 	
 	stralloc_init(&sa);
-	stralloc_cats(&sa, "BEGIN TRANSACTION;");
+	stralloc_cats(&sa, "BEGIN EXCLUSIVE TRANSACTION;");
 	
 	init_method_cfg = cfg_getsec(tcfg, "init_method");
 	
@@ -338,7 +338,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	cfg_t *tcfg;
 	int archivefd;
 	
-	method_init(env, p, VCD_CAP_CREATE, 0);
+	method_init(env, p, VCD_CAP_CREATE, M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, p,

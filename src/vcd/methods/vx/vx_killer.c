@@ -185,7 +185,7 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_result *dbr;
 	pid_t pid;
 	
-	params = method_init(env, p, VCD_CAP_INIT, 1);
+	params = method_init(env, p, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	_params_orig = p;

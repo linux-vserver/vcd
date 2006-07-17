@@ -29,7 +29,7 @@ xmlrpc_value *m_vxdb_vx_ccaps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_result *dbr;
 	int i, rc;
 	
-	params = method_init(env, p, VCD_CAP_CCAP, 1);
+	params = method_init(env, p, VCD_CAP_CCAP, M_OWNER);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

@@ -17,10 +17,13 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
+#include <sys/file.h>
 
 #include "lucid.h"
 
 #include "auth.h"
+#include "cfg.h"
 #include "log.h"
 #include "methods.h"
 
@@ -116,12 +119,48 @@ void method_registry_atexit(void)
 	xmlrpc_registry_free(registry);
 }
 
-xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
-                          uint64_t caps, int ownercheck)
+static
+void method_check_flags(xmlrpc_env *env, xmlrpc_value *params,
+                        char *user, uint64_t flags)
 {
 	log_debug("[trace] %s", __FUNCTION__);
 	
-	char *user, *pass, *name;
+	int lockfd;
+	char *name, *datadir, lockfile[PATH_MAX];
+	
+	if (flags & M_OWNER) {
+		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
+		
+		if (!env->fault_occurred) {
+			if (str_isempty(name) || !auth_isowner(user, name))
+				xmlrpc_env_set_fault(env, MENOVPS, method_strerror(MENOVPS));
+			
+			free(name);
+		}
+	}
+	
+	if (flags & M_LOCK) {
+		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
+		
+		if (!env->fault_occurred && !str_isempty(name)) {
+			datadir = cfg_getstr(cfg, "datadir");
+			snprintf(lockfile, PATH_MAX, "%s/lock/%s", datadir, name);
+			
+			mkdirnamep(lockfile, 0755);
+			lockfd = open_trunc(lockfile);
+			flock(lockfd, LOCK_EX);
+			
+			free(name);
+		}
+	}
+}
+
+xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
+                          uint64_t caps, uint64_t flags)
+{
+	log_debug("[trace] %s", __FUNCTION__);
+	
+	char *user, *pass;
 	xmlrpc_value *params;
 	
 	xmlrpc_decompose_value(env, p,
@@ -137,16 +176,8 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
 	else if (!auth_capable(user, caps))
 		xmlrpc_env_set_fault(env, MEPERM, method_strerror(MEPERM));
 	
-	else if (ownercheck) {
-		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
-		
-		if (!env->fault_occurred) {
-			if (!str_isempty(name) && !auth_isowner(user, name))
-				xmlrpc_env_set_fault(env, MENOVPS, method_strerror(MENOVPS));
-			
-			free(name);
-		}
-	}
+	else
+		method_check_flags(env, params, user, flags);
 	
 	free(user);
 	free(pass);

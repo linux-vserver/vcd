@@ -39,6 +39,9 @@ typedef struct {
 #define MENOVPS   401
 #define MESYS     500
 
+#define M_OWNER 0x0001
+#define M_LOCK  0x0002
+
 extern m_err_t method_error_codes[];
 extern xmlrpc_registry *registry;
 
@@ -46,7 +49,7 @@ int method_registry_init(xmlrpc_env *env);
 void method_registry_atexit(void);
 
 xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
-                          uint64_t caps, int ownercheck);
+                          uint64_t caps, uint64_t flags);
 
 void method_empty_params(int num, ...);
 char *method_strerror(int errnum);

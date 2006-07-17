@@ -28,7 +28,7 @@ xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_result *dbr;
 	int rc;
 	
-	params = method_init(env, p, VCD_CAP_INIT, 1);
+	params = method_init(env, p, VCD_CAP_INIT, M_OWNER);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
