@@ -25,10 +25,14 @@ sbin_PROGRAMS = dx \
                 nx \
                 vr \
                 vx \
-                vserver-stat
+                vserver-stat \
+                vps
 
 TOOLLIBS = $(top_builddir)/lib/lucid/libucid.a \
            $(VSERVER_LIBS)
+
+vps_SOURCES = vps.c
+vps_LDADD = $(TOOLLIBS)
 
 vserver_stat_SOURCES = vserver-stat.c
 vserver_stat_LDADD = $(TOOLLIBS)
