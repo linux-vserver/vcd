@@ -39,7 +39,6 @@ struct option long_opts[] = {
 	COMMON_LONG_OPTS
 	{ "create",    1, 0, 0x10 },
 	{ "migrate",   1, 0, 0x11 },
-	{ "cleanup",   1, 0, 0x12 },
 	{ NULL,        0, 0, 0 },
 };
 
@@ -48,8 +47,7 @@ void usage(int rc)
 {
 	printf("Usage:\n\n"
 	          "ns -create  <xid>\n"
-	          "   -migrate <xid> -- <program> <args>*\n"
-	          "   -cleanup <xid>\n");
+	          "   -migrate <xid> -- <program> <args>*\n");
 	exit(rc);
 }
 
@@ -70,7 +68,6 @@ int main(int argc, char *argv[])
 			
 			CASE_GOTO(0x10, create);
 			CASE_GOTO(0x11, migrate);
-			CASE_GOTO(0x12, cleanup);
 			
 			DEFAULT_GETOPT_CASES
 		}
@@ -110,15 +107,6 @@ migrate:
 	
 	if (argc > optind+1)
 		execvp(argv[optind+1], argv+optind+1);
-	
-	goto out;
-	
-cleanup:
-	if (xid != 0 && vx_enter_namespace(xid) == -1)
-			perr("vx_enter_namespace");
-	
-	if (vx_cleanup_namespace() == -1)
-		perr("vx_cleanup_namespace");
 	
 	goto out;
 	
