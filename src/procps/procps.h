@@ -20,6 +20,7 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
@@ -31,21 +32,31 @@
 
 static char vdir[PATH_MAX];
 
-static inline
-void die(const char *msg)
+static
+void die(const char *msg, ...)
 {
-	dprintf(STDERR_FILENO, msg);
+	va_list ap;
+	va_start(ap, msg);
+	
+	vdprintf(STDERR_FILENO, msg, ap);
 	dprintf(STDERR_FILENO, "\n");
+	
+	va_end(ap);
 	exit(EXIT_FAILURE);
 }
 
-static inline
-void pdie(const char *msg)
+static
+void pdie(const char *msg, ...)
 {
 	char *errstr = strerror(errno);
 	
-	dprintf(STDERR_FILENO, msg);
+	va_list ap;
+	va_start(ap, msg);
+	
+	vdprintf(STDERR_FILENO, msg, ap);
 	dprintf(STDERR_FILENO, ": %s\n", errstr);
+	
+	va_end(ap);
 	exit(EXIT_FAILURE);
 }
 

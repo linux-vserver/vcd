@@ -24,118 +24,130 @@
 
 #include "lucid.h"
 
+#include "procps.h"
+
 #define PS_BIN "/bin/ps"
 
-xid_t masterxid = 1;
-int error_mode = 0, spaces=0;
+int error_mode = 0;
 
-char *tail_name (char *vname) 
-{   
+static
+char *tail_name(char *vname)
+{
 	char *pch;
 	pch = strrchr(vname, '/') + 1;
-	
 	return strdup(pch);
 }
 
-void parse_line (char *line, int n) 
+static
+void parse_line(char *line, int n)
 {
-	char *pid_pos, *pargv[128], *dupl, xid_string[128], *name = NULL;
-	int max, i = 0;
-	pid_t pid = -1;
+	char *pid_pos, *name = NULL;
+	static int pid_start;
+	pid_t pid;
 	xid_t xid;
 	struct vx_vhi_name vhi_name;
 	
-	vhi_name.field = VHIN_CONTEXT;
-
 	if (n == 0) {
-		if ((pid_pos = strstr(line, "PID")) == 0) {
-			fprintf(stderr, "vps: cannot find the PID column, writing ps output\n");
-			fprintf(stderr, "%s", line);
+		if ((pid_pos = strstr(line, "  PID")) == 0) {
+			dprintf(STDERR_FILENO, "vps: PID column not found, writing ps output\n");
+			printf(line);
 			error_mode = 1;
 			return;
 		}
-		max = pid_pos-line+1;
-
-		for (i=0; i < max + 3; i++)
-			fprintf(stdout, "%c", line[i]);		
-		fprintf(stdout, " XID            %s", line+max+3);
+		
+		pid_start = pid_pos - line;
+		
+		printf("  XID NAME     %s\n", line);
 		return;
 	}
-	dupl = strdup(line);
-
-	argv_from_str(line, pargv, 128);
-	for(i=0;pargv[i];i++) {
-		if (isdigit(*pargv[i])) {
-			pid = atoi(pargv[i]);
-			break;
-		}
-	}
-
-	if(pid < 0)
-		return;
-
-	if ((xid = vx_get_task_xid(pid)) == -1)
-		return;
-
-	if (xid == 0)
-		name = "ALL";
-	else if (xid == 1)
-		name = "WATCH";
+	
 	else {
-		if (vx_get_vhi_name(xid, &vhi_name) == -1)
+		pid = atoi(line + pid_start);
+		
+		if (pid < 0)
 			return;
-		if (vhi_name.name[0] == '/')
-			name = tail_name(vhi_name.name);
-		else
-			name = vhi_name.name;
+		
+		if ((xid = vx_get_task_xid(pid)) == -1)
+			return;
+		
+		if (xid == 0)
+			name = "ADMIN";
+		
+		else if (xid == 1)
+			name = "WATCH";
+		
+		else {
+			vhi_name.field = VHIN_CONTEXT;
+			
+			if (vx_get_vhi_name(xid, &vhi_name) == -1)
+				return;
+			
+			if (vhi_name.name[0] == '/')
+				name = tail_name(vhi_name.name);
+			
+			else
+				name = vhi_name.name;
+		}
+		
+		printf("%5d %-8.8s %s\n", xid, name, line);
 	}
+}
 
-	snprintf(xid_string, sizeof(xid_string), "%d %s", xid, name);
-
-	if ((pid_pos = strstr(dupl, pargv[i])) == 0)
-		return;
-	max = pid_pos-dupl+strlen(pargv[i])+1;
-
-	for (i=0; i < max; i++)
-		fprintf(stdout, "%c", dupl[i]);
-	fprintf(stdout, " %-14s %s", xid_string, dupl+max);
-	return;
-}	
-
-int main (int argc, char *argv[])
+int main(int argc, char **argv)
 {
-	FILE *res;
-	int i=0;
-	char c, buffer[1024];
-
-	/* Root access is needed */
-	if (getuid()) {
-		fprintf(stderr, "root access is needed\n");
-		exit(EXIT_FAILURE);
+	int p[2], fd, i, status, len;
+	pid_t pid;
+	char *line;
+	
+	/* root access is needed */
+	if (getuid())
+		die("root access is needed");
+	
+	argv[0] = PS_BIN;
+	
+	pipe(p);
+	
+	switch ((pid = fork())) {
+	case -1:
+		pdie("fork");
+	
+	case 0:
+		fd = open_read("/dev/null");
+		
+		dup2(fd,   0);
+		dup2(p[1], 1);
+		
+		close(p[0]);
+		close(p[1]);
+		close(fd);
+		
+		if (vx_migrate(1, NULL) == -1)
+			pdie("vx_migrate");
+		
+		if (execvp(argv[0], argv) == -1)
+			pdie("execvp");
+	
+	default:
+		close(p[1]);
+		
+		for (i = 0; ; i++) {
+			if ((len = io_read_eol(p[0], &line)) == -1)
+				pdie("io_read_eol");
+			
+			if (!len)
+				break;
+			
+			if (error_mode)
+				printf("%s\n", line);
+			else
+				parse_line(line, i);
+		}
+		
+		close(p[0]);
+		
+		if (waitpid(pid, &status, 0) == -1)
+			pdie("waitpid");
 	}
-
-	/* Migrate to watch server */
-	if (vx_migrate(masterxid, NULL) == -1) {
-		fprintf(stderr, "cannot migrate to watch server, xid = %d\n", masterxid);
-		exit(EXIT_FAILURE);
-	}
-
-	snprintf(buffer, sizeof(buffer) - 1, "%s ", PS_BIN);
-	for(i=1;argv[i];i++)
-		strncat(buffer, argv[i], sizeof(buffer)-strlen(buffer));
-
-	i=0;
-	res = popen(buffer, "r");
-	while(!feof(res)) {
-		memset(buffer, 0, sizeof(buffer));
-		fgets(buffer, sizeof(buffer), res);
-		if (error_mode)
-			fprintf(stderr, "%s", buffer);
-		else
-			parse_line(buffer, i);
-		i++;
-	}
-	pclose(res);
-
+	
 	exit(EXIT_SUCCESS);
 }
