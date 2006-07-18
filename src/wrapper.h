@@ -15,8 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _PROCPS_H
-#define _PROCPS_H
+#ifndef _WRAPPER_H
+#define _WRAPPER_H
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -60,7 +60,7 @@ void pdie(const char *msg, ...)
 	exit(EXIT_FAILURE);
 }
 
-static inline
+static
 void lookup_vdir(xid_t xid)
 {
 	int p[2], fd, status;
@@ -126,8 +126,8 @@ void lookup_vdir(xid_t xid)
 	}
 }
 
-static inline
-int procps_default_wrapper(int argc, char **argv, char *proc)
+static
+int default_wrapper(int argc, char **argv, char *proc, int needxid)
 {
 	xid_t xid;
 	
@@ -143,6 +143,9 @@ int procps_default_wrapper(int argc, char **argv, char *proc)
 		xid = 1;
 		argv[0] = proc;
 	}
+	
+	if (needxid && xid < 2)
+		die("xid must be between 2 and 65535");
 	
 	if (xid > 1) {
 		lookup_vdir(xid);
@@ -164,6 +167,11 @@ int procps_default_wrapper(int argc, char **argv, char *proc)
 		pdie("execvp");
 	
 	return EXIT_FAILURE;
+}
+
+#define DEFAULT_WRAPPER(PROC, NEEDXID) \
+int main(int argc, char **argv) { \
+	return default_wrapper(argc, argv, PROC, NEEDXID); \
 }
 
 #endif

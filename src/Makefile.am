@@ -17,8 +17,12 @@
 
 SUBDIRS = coreutils \
           procps \
+          sysvinit \
           tools \
+          util-linux \
           vcc \
           vcd \
           vce \
           vstatd
+
+noinst_HEADERS = wrapper.h

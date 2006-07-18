@@ -24,7 +24,7 @@
 
 #include "lucid.h"
 
-#include "procps.h"
+#include "../wrapper.h"
 
 #define PS_BIN "/bin/ps"
 

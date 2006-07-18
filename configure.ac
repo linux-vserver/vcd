@@ -63,7 +63,7 @@ AM_CONDITIONAL(ENABLE_CLIENT, test x$enable_client = xtrue)
 
 AC_ARG_ENABLE([stats],
               [AC_HELP_STRING([--disable-stats],
-                              [Disable the VServer Control Daemon])],
+                              [Disable the VServer Statistic Daemon])],
               [case "${enableval}" in
                 yes) enable_stats=true;;
                 no)  enable_stats=false;;
@@ -71,6 +71,50 @@ AC_ARG_ENABLE([stats],
               esac],
               [enable_stats=true])
 AM_CONDITIONAL(ENABLE_STATS, test x$enable_stats = xtrue)
+
+AC_ARG_ENABLE([coreutils],
+              [AC_HELP_STRING([--disable-coreutils],
+                              [Disable the coreutil wrappers])],
+              [case "${enableval}" in
+                yes) enable_coreutils=true;;
+                no)  enable_coreutils=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-coreutils);;
+              esac],
+              [enable_coreutils=true])
+AM_CONDITIONAL(ENABLE_COREUTILS, test x$enable_coreutils = xtrue)
+
+AC_ARG_ENABLE([procps],
+              [AC_HELP_STRING([--disable-procps],
+                              [Disable the procps wrappers])],
+              [case "${enableval}" in
+                yes) enable_procps=true;;
+                no)  enable_procps=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-procps);;
+              esac],
+              [enable_procps=true])
+AM_CONDITIONAL(ENABLE_PROCPS, test x$enable_procps = xtrue)
+
+AC_ARG_ENABLE([sysvinit],
+              [AC_HELP_STRING([--disable-sysvinit],
+                              [Disable the sysvinit wrappers])],
+              [case "${enableval}" in
+                yes) enable_sysvinit=true;;
+                no)  enable_sysvinit=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-sysvinit);;
+              esac],
+              [enable_sysvinit=true])
+AM_CONDITIONAL(ENABLE_SYSVINIT, test x$enable_sysvinit = xtrue)
+
+AC_ARG_ENABLE([util-linux],
+              [AC_HELP_STRING([--disable-util-linux],
+                              [Disable the util-linux wrappers])],
+              [case "${enableval}" in
+                yes) enable_util_linux=true;;
+                no)  enable_util_linux=false;;
+                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-util-linux);;
+              esac],
+              [enable_util_linux=true])
+AM_CONDITIONAL(ENABLE_UTIL_LINUX, test x$enable_util_linux = xtrue)
 
 
 # Checks for libraries.
@@ -213,7 +257,9 @@ AC_CONFIG_FILES([Makefile
                  scripts/Makefile
                  src/coreutils/Makefile
                  src/procps/Makefile
+                 src/sysvinit/Makefile
                  src/tools/Makefile
+                 src/util-linux/Makefile
                  src/vcc/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile

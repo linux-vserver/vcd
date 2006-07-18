@@ -17,4 +17,4 @@
 
 #include "../wrapper.h"
 
-DEFAULT_WRAPPER("/usr/bin/pstree", 0)
+DEFAULT_WRAPPER("/sbin/runlevel", 1)

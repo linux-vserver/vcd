@@ -15,11 +15,6 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include "procps.h"
+#include "../wrapper.h"
 
-#define PROC "/usr/bin/w"
-
-int main(int argc, char **argv)
-{
-	return procps_default_wrapper(argc, argv, PROC);
-}
+DEFAULT_WRAPPER("/usr/bin/w", 0)

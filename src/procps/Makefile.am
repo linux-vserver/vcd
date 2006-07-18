@@ -17,8 +17,6 @@
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-noinst_HEADERS = procps.h
-
 sbin_PROGRAMS = vfuser \
                 vkillall \
                 vpgrep \

@@ -17,25 +17,29 @@
 
 INCLUDES = -I$(top_srcdir)/lib/lucid
 
-sbin_PROGRAMS = vdf \
-                vdu \
-                vuname \
-                vusers \
-                vwho
+sbin_PROGRAMS = vdmesg \
+                vipcrm \
+                vipcs \
+                vmount \
+                vrenice \
+                vumount
 
 LUCID_LIBS = $(top_builddir)/lib/lucid/libucid.a
 
-vdf_SOURCES = vdf.c
-vdf_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+vdmesg_SOURCES = vdmesg.c
+vdmesg_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
 
-vdu_SOURCES = vdu.c
-vdu_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+vipcrm_SOURCES = vipcrm.c
+vipcrm_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
 
-vuname_SOURCES = vuname.c
-vuname_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+vipcs_SOURCES = vipcs.c
+vipcs_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
 
-vusers_SOURCES = vusers.c
-vusers_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+vmount_SOURCES = vmount.c
+vmount_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
 
-vwho_SOURCES = vwho.c
-vwho_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+vrenice_SOURCES = vrenice.c
+vrenice_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+
+vumount_SOURCES = vumount.c
+vumount_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
