@@ -24,6 +24,7 @@ sbin_PROGRAMS = vfuser \
                 vpgrep \
                 vpkill \
                 vpmap \
+                vps \
                 vpstree \
                 vskill \
                 vsnice \
@@ -47,6 +48,9 @@ vpkill_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
 
 vpmap_SOURCES = vpmap.c
 vpmap_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+
+vps_SOURCES = vps.c
+vps_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
 
 vpstree_SOURCES = vpstree.c
 vpstree_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)

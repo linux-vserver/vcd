@@ -24,18 +24,11 @@ sbin_PROGRAMS = dx \
                 ns \
                 nx \
                 vr \
-                vx \
                 vserver-stat \
-                vps
+                vx
 
 TOOLLIBS = $(top_builddir)/lib/lucid/libucid.a \
            $(VSERVER_LIBS)
-
-vps_SOURCES = vps.c
-vps_LDADD = $(TOOLLIBS)
-
-vserver_stat_SOURCES = vserver-stat.c
-vserver_stat_LDADD = $(TOOLLIBS)
 
 dx_SOURCES = dx.c msg.c
 dx_LDADD = $(TOOLLIBS)
@@ -51,6 +44,9 @@ nx_LDADD = $(TOOLLIBS)
 
 vr_SOURCES = vr.c msg.c
 vr_LDADD = $(TOOLLIBS)
+
+vserver_stat_SOURCES = vserver-stat.c
+vserver_stat_LDADD = $(TOOLLIBS)
 
 vx_SOURCES = vx.c msg.c lists.c
 vx_LDADD = $(TOOLLIBS)

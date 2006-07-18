@@ -22,27 +22,12 @@
 #include <ctype.h>
 #include <vserver.h>
 
-#include "tools.h"
 #include "lucid.h"
 
 #define PS_BIN "/bin/ps"
 
-static const char *rcsid = "$Id$";
-
-static struct option long_opts[] = {
-	COMMON_LONG_OPTS
-	{ NULL, 0, 0, 0 },
-};
-
 xid_t masterxid = 1;
 int error_mode = 0, spaces=0;
-
-void usage (int rc) {
-	fprintf(stdout,
-		"Usage: vps <ps options>\n"
-		"vps has the same options as 'ps'\n");
-	exit(rc);
-}
 
 char *tail_name (char *vname) 
 {   
@@ -133,15 +118,6 @@ int main (int argc, char *argv[])
 	if (vx_migrate(masterxid, NULL) == -1) {
 		fprintf(stderr, "cannot migrate to watch server, xid = %d\n", masterxid);
 		exit(EXIT_FAILURE);
-	}
-
-
-	/* Parse command line */
-	while (GETOPT(c)) {
-		switch (c) {
-			COMMON_GETOPT_CASES
-			DEFAULT_GETOPT_CASES
-		}
 	}
 
 	snprintf(buffer, sizeof(buffer) - 1, "%s ", PS_BIN);
