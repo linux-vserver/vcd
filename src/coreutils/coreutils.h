@@ -15,8 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _PROCPS_H
-#define _PROCPS_H
+#ifndef _COREUTILS_H
+#define _COREUTILS_H
 
 #include <unistd.h>
 #include <stdlib.h>
@@ -127,7 +127,7 @@ void lookup_vdir(xid_t xid)
 }
 
 static inline
-int procps_default_wrapper(int argc, char **argv, char *proc)
+int coreutils_default_wrapper(int argc, char **argv, char *proc)
 {
 	xid_t xid;
 	

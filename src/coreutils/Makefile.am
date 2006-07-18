@@ -15,10 +15,25 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = coreutils \
-          procps \
-          tools \
-          vcc \
-          vcd \
-          vce \
-          vstatd
+INCLUDES = -I$(top_srcdir)/lib/lucid
+
+noinst_HEADERS = coreutils.h
+
+sbin_PROGRAMS = vdf \
+                vdu \
+                vuname \
+                vwho
+
+LUCID_LIBS = $(top_builddir)/lib/lucid/libucid.a
+
+vdf_SOURCES = vdf.c
+vdf_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+
+vdu_SOURCES = vdu.c
+vdu_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+
+vuname_SOURCES = vuname.c
+vuname_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)
+
+vwho_SOURCES = vwho.c
+vwho_LDADD = $(VSERVER_LIBS) $(LUCID_LIBS)

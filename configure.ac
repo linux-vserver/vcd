@@ -211,6 +211,7 @@ AC_CONFIG_FILES([Makefile
                  lib/lucid/Makefile
                  lib/Makefile
                  scripts/Makefile
+                 src/coreutils/Makefile
                  src/procps/Makefile
                  src/tools/Makefile
                  src/vcc/Makefile
