@@ -18,7 +18,7 @@
 
 # Generic configuration
 AC_PREREQ(2.59)
-AC_INIT(vserver-utils, 1.0.3.99, hollow@gentoo.org)
+AC_INIT(vserver-utils, 1.0.4_pre, hollow@gentoo.org)
 AC_CONFIG_HEADER([config.h])
 AC_GNU_SOURCE
 

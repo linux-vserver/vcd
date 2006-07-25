@@ -207,7 +207,7 @@ void test_check(int fcnt, bool  immutable, bool iunlink)
 	DIR* d = opendir(".");
 	if (d) {
 		struct dirent *de;
-		while (de = readdir(d)) {
+		while ((de = readdir(d))) {
 			if (strncmp(de->d_name, buf, 4) == 0 && strlen(de->d_name) == 6) {
 				printf("[W]  Unexpected file '%.5s\\%o' found\n", de->d_name, (uint8_t)de->d_name[5]);
 				unlink(de->d_name);

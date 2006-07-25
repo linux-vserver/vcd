@@ -132,7 +132,10 @@ vps.network() {
 	case ${subcmd} in
 		setup)
 			for i in ${NX_ADDR[@]}; do
-				${_VNCONTEXT} -A -n ${VX_XID} -a ${i}
+				${_VNCONTEXT} -A -n ${VX_XID} -4 -a ${i}
+			done
+			for i in ${NX_ADDR6[@]}; do
+				${_VNCONTEXT} -A -n ${VX_XID} -6 -a ${i}
 			done
 			;;
 		

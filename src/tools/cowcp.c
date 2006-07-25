@@ -67,7 +67,7 @@ void cmd_help()
 	       GLOBAL_HELP
 	       "    -f            Force overwriting existing files\n"
 	       "    -r            Process subdirectories recursively\n"
-	       "\n"
+	       "\n",
 	       NAME);
 	exit(EXIT_SUCCESS);
 }
