@@ -21,6 +21,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <vserver.h>
+#include <getopt.h>
 
 #include "lucid.h"
 
@@ -28,9 +29,19 @@
 
 #define PS_BIN "/bin/ps"
 
-int error_mode = 0;
+int error_mode = 0, fxid = -1;
 
-static
+static const char *rcsid = "$Id$";
+
+static 
+struct option long_opts[] = {
+	{ "xid", 1, 0, 0x01 },
+	{ "help", 0, 0, 0x02 },
+	{ "version", 0, 0, 0x03 },
+	{ NULL, 0, 0, 0 },
+};
+
+static 
 char *tail_name(char *vname)
 {
 	char *pch;
@@ -88,23 +99,52 @@ void parse_line(char *line, int n)
 			else
 				name = vhi_name.name;
 		}
-		
-		printf("%5d %-8.8s %s\n", xid, name, line);
+		if (fxid == -1 || xid == fxid)
+			printf("%5d %-8.8s %s\n", xid, name, line);
 	}
 }
 
 int main(int argc, char **argv)
 {
-	int p[2], fd, i, status, len;
+	int p[2], fd, i, status, len, j = 0;
 	pid_t pid;
-	char *line;
+	char *line, c, *nargv[argc];
 	
 	/* root access is needed */
 	if (getuid())
 		die("root access is needed");
 	
+	while ((c = getopt_long_only(argc, argv, "", long_opts, NULL)) != -1) {
+		switch (c) {
+			case 0x01:
+				fxid = atoi(optarg);
+				break;
+			case 0x02:
+				printf("Usage: vps <ps options> [--xid <xid>]\n");
+				break;
+			case 0x03:
+				printf("%s\n", rcsid);
+				exit(EXIT_SUCCESS);
+				break;
+			case ':':
+			case '?':
+				exit(EXIT_FAILURE);
+		}
+	}
+
 	argv[0] = PS_BIN;
-	
+
+	if (fxid >= 0) {
+		for (i = 0; i < argc; i++) {
+			if (!strcmp(argv[i], "--xid")) {
+				if (i + 2 < argc)
+					i+=1;
+			} else
+				nargv[j++] = argv[i];
+		}
+		nargv[0] = PS_BIN;
+	}
+
 	pipe(p);
 	
 	switch ((pid = fork())) {
@@ -124,8 +164,13 @@ int main(int argc, char **argv)
 		if (vx_migrate(1, NULL) == -1)
 			pdie("vx_migrate");
 		
-		if (execvp(argv[0], argv) == -1)
-			pdie("execvp");
+		if (fxid >= 0) {
+			if (execvp(nargv[0], nargv) == -1)
+				pdie("execvp");
+		} else {
+			if (execvp(argv[0], argv) == -1)
+				pdie("execvp");
+		}
 	
 	default:
 		close(p[1]);
