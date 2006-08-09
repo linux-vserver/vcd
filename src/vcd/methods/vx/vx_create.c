@@ -23,10 +23,15 @@
 #include <confuse.h>
 #include <vserver.h>
 #include <sys/stat.h>
+#include <lucid/chroot.h>
+#include <lucid/flist.h>
+#include <lucid/misc.h>
+#include <lucid/open.h>
+#include <lucid/str.h>
+#include <lucid/stralloc.h>
 
 #include "archive.h"
 #include "archive_entry.h"
-#include "lucid.h"
 
 #include "auth.h"
 #include "cfg.h"

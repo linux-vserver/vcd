@@ -17,8 +17,6 @@
 
 if ENABLE_CLIENT
 
-INCLUDES = -I$(top_srcdir)/lib/lucid
-
 EXTRA_DIST = vce.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
@@ -43,7 +41,7 @@ vce_SOURCES = cmd.c \
               vx_sched.c \
               vx_uname.c
 
-vce_LDADD = $(top_builddir)/lib/lucid/libucid.a \
+vce_LDADD = $(LUCID_LIBS) \
             $(CONFUSE_LIBS) \
             $(UTIL_LIBS) \
             $(VSERVER_LIBS) \

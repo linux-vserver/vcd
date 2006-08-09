@@ -18,8 +18,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <arpa/inet.h>
-
-#include "lucid.h"
+#include <lucid/str.h>
 
 #include "cfg.h"
 #include "log.h"

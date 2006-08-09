@@ -22,8 +22,12 @@
 #include <vserver.h>
 #include <sys/mount.h>
 #include <sys/wait.h>
-
-#include "lucid.h"
+#include <lucid/addr.h>
+#include <lucid/bitmap.h>
+#include <lucid/chroot.h>
+#include <lucid/exec.h>
+#include <lucid/open.h>
+#include <lucid/str.h>
 
 #include "auth.h"
 #include "cfg.h"

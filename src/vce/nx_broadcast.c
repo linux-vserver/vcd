@@ -17,8 +17,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
-#include "lucid.h"
+#include <lucid/str.h>
 
 #include "cmd.h"
 

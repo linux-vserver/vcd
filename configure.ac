@@ -17,7 +17,7 @@
 
 # Generic configuration
 AC_PREREQ(2.59)
-AC_INIT(vserver-utils, 2.0.0, hollow@gentoo.org)
+AC_INIT(vcd, 1.0, hollow@gentoo.org)
 AC_CONFIG_HEADER([config.h])
 AC_GNU_SOURCE
 
@@ -61,62 +61,6 @@ AC_ARG_ENABLE([client],
               [enable_client=true])
 AM_CONDITIONAL(ENABLE_CLIENT, test x$enable_client = xtrue)
 
-AC_ARG_ENABLE([stats],
-              [AC_HELP_STRING([--disable-stats],
-                              [Disable the VServer Statistic Daemon])],
-              [case "${enableval}" in
-                yes) enable_stats=true;;
-                no)  enable_stats=false;;
-                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-stats);;
-              esac],
-              [enable_stats=true])
-AM_CONDITIONAL(ENABLE_STATS, test x$enable_stats = xtrue)
-
-AC_ARG_ENABLE([coreutils],
-              [AC_HELP_STRING([--disable-coreutils],
-                              [Disable the coreutil wrappers])],
-              [case "${enableval}" in
-                yes) enable_coreutils=true;;
-                no)  enable_coreutils=false;;
-                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-coreutils);;
-              esac],
-              [enable_coreutils=true])
-AM_CONDITIONAL(ENABLE_COREUTILS, test x$enable_coreutils = xtrue)
-
-AC_ARG_ENABLE([procps],
-              [AC_HELP_STRING([--disable-procps],
-                              [Disable the procps wrappers])],
-              [case "${enableval}" in
-                yes) enable_procps=true;;
-                no)  enable_procps=false;;
-                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-procps);;
-              esac],
-              [enable_procps=true])
-AM_CONDITIONAL(ENABLE_PROCPS, test x$enable_procps = xtrue)
-
-AC_ARG_ENABLE([sysvinit],
-              [AC_HELP_STRING([--disable-sysvinit],
-                              [Disable the sysvinit wrappers])],
-              [case "${enableval}" in
-                yes) enable_sysvinit=true;;
-                no)  enable_sysvinit=false;;
-                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-sysvinit);;
-              esac],
-              [enable_sysvinit=true])
-AM_CONDITIONAL(ENABLE_SYSVINIT, test x$enable_sysvinit = xtrue)
-
-AC_ARG_ENABLE([util-linux],
-              [AC_HELP_STRING([--disable-util-linux],
-                              [Disable the util-linux wrappers])],
-              [case "${enableval}" in
-                yes) enable_util_linux=true;;
-                no)  enable_util_linux=false;;
-                *)   AC_MSG_ERROR(bad value ${enableval} for --enable-util-linux);;
-              esac],
-              [enable_util_linux=true])
-AM_CONDITIONAL(ENABLE_UTIL_LINUX, test x$enable_util_linux = xtrue)
-
-
 # Checks for libraries.
 AC_CHECK_LIB(vserver, vx_clone_namespace, 
 	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
@@ -124,18 +68,12 @@ AC_CHECK_LIB(vserver, vx_clone_namespace,
 AC_SUBST(VSERVER_LIBS)
 
 
-if test x$enable_client = xtrue; then
-AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
-	AC_CHECK_LIB(util, openpty, UTIL_LIBS="-lutil", AC_MSG_ERROR([libutil not found]))
-])
+AC_CHECK_LIB(ucid, str_check,
+	LUCID_LIBS="-lucid", AC_MSG_ERROR([lucid not found]),)
 
-AC_SUBST(UTIL_LIBS)
-fi
+AC_SUBST(LUCID_LIBS)
 
 
-if test x$enable_client = xtrue || \
-   test x$enable_server = xtrue || \
-   test x$enable_stats  = xtrue; then
 AC_PATH_PROG(CONFUSE_CONFIG, confuse-config)
 if test -z "$CONFUSE_CONFIG"; then
 	AC_MSG_ERROR([confuse-config not found])
@@ -144,10 +82,8 @@ fi
 CONFUSE_LIBS="$($CONFUSE_CONFIG --libs)"
 
 AC_SUBST(CONFUSE_LIBS)
-fi
 
 
-if test x$enable_client = xtrue || test x$enable_server = xtrue; then
 AC_PATH_PROG(XMLRPC_C_CONFIG, xmlrpc-c-config)
 if test -z "$XMLRPC_C_CONFIG"; then
 	AC_MSG_ERROR([xmlrpc-c-config not found])
@@ -156,6 +92,7 @@ fi
 XMLRPC_C_VERSION="$($XMLRPC_C_CONFIG --version)"
 XMLRPC_C_MAJOR="${XMLRPC_C_VERSION/.*}"
 XMLRPC_C_MINOR="${XMLRPC_C_VERSION#*.}"
+XMLRPC_C_MINOR="${XMLRPC_C_MINOR/.*}"
 
 AC_MSG_CHECKING([for xmlrpc-c >= 1.05])
 
@@ -174,12 +111,18 @@ XMLRPC_C_SERVER_LIBS="$($XMLRPC_C_CONFIG abyss-server --libs)"
 
 AC_SUBST(XMLRPC_C_CLIENT_LIBS)
 AC_SUBST(XMLRPC_C_SERVER_LIBS)
-fi
 
+if test x$enable_client = xtrue; then
+AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
+	AC_CHECK_LIB(util, openpty, UTIL_LIBS="-lutil", AC_MSG_ERROR([libutil not found]))
+])
+
+AC_SUBST(UTIL_LIBS)
+fi
 
 if test x$enable_server = xtrue; then
 AC_CHECK_LIB(sqlite3, sqlite3_open,
-             SQLITE3_LIBS="-lsqlite3", AC_MSG_ERROR([sqlite3 not found]))
+	SQLITE3_LIBS="-lsqlite3", AC_MSG_ERROR([sqlite3 not found]))
 
 AC_SUBST(SQLITE3_LIBS)
 
@@ -193,14 +136,6 @@ AC_CHECK_LIB(z, inflate,
 	Z_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
 
 AC_SUBST(Z_LIBS)
-fi
-
-
-if test x$enable_stats = xtrue; then
-AC_CHECK_LIB(rrd, rrd_create,
-	RRDTOOL_LIBS="-lrrd", AC_MSG_ERROR([librrd not found]),)
-
-AC_SUBST(RRDTOOL_LIBS)
 fi
 
 # Checks for header files.
@@ -252,19 +187,12 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  doc/Makefile
-                 lib/lucid/Makefile
                  lib/Makefile
                  scripts/Makefile
-                 src/coreutils/Makefile
-                 src/procps/Makefile
-                 src/sysvinit/Makefile
-                 src/tools/Makefile
-                 src/util-linux/Makefile
                  src/vcc/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
                  src/vce/Makefile
-                 src/vstatd/Makefile
                  src/Makefile
                  test/Makefile])
 

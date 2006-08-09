@@ -15,14 +15,6 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = coreutils \
-          procps \
-          sysvinit \
-          tools \
-          util-linux \
-          vcc \
+SUBDIRS = vcc \
           vcd \
-          vce \
-          vstatd
-
-noinst_HEADERS = wrapper.h
+          vce

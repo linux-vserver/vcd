@@ -22,8 +22,7 @@
 #include <limits.h>
 #include <vserver.h>
 #include <sys/stat.h>
-
-#include "lucid.h"
+#include <lucid/misc.h>
 
 #include "auth.h"
 #include "cfg.h"

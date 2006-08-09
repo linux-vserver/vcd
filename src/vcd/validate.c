@@ -18,8 +18,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <arpa/inet.h>
-
-#include "lucid.h"
+#include <lucid/str.h>
 
 #include "lists.h"
 #include "log.h"

@@ -17,8 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-
-#include "lucid.h"
+#include <lucid/misc.h>
 
 #include "cfg.h"
 #include "log.h"

@@ -28,8 +28,7 @@
 #include <confuse.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
-
-#include "lucid.h"
+#include <lucid/io.h>
 
 #include "cmd.h"
 #include "msg.h"

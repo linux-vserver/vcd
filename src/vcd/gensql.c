@@ -19,8 +19,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <termios.h>
-
-#include "lucid.h"
+#include <lucid/io.h>
+#include <lucid/sha1.h>
 
 static char VXDBSQL[] =
 "CREATE TABLE IF NOT EXISTS dx_limit (\n"
@@ -30,6 +30,16 @@ static char VXDBSQL[] =
 "  inodes INT NOT NULL,\n"
 "  reserved TINYINT,\n"
 "  UNIQUE(xid, path)\n"
+");\n"
+"CREATE TABLE IF NOT EXISTS init_depend (\n"
+"  xid SMALLINT NOT NULL,\n"
+"  depend TEXT NOT NULL,\n"
+"  UNIQUE(xid, depend)\n"
+");\n"
+"CREATE TABLE IF NOT EXISTS init_marks (\n"
+"  xid SMALLINT NOT NULL,\n"
+"  mark TEXT NOT NULL,\n"
+"  UNIQUE(xid, mark)\n"
 ");\n"
 "CREATE TABLE IF NOT EXISTS init_method (\n"
 "  xid SMALLINT NOT NULL,\n"

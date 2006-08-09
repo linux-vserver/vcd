@@ -19,8 +19,9 @@
 #include <string.h>
 #include <limits.h>
 #include <sys/file.h>
-
-#include "lucid.h"
+#include <lucid/misc.h>
+#include <lucid/open.h>
+#include <lucid/str.h>
 
 #include "auth.h"
 #include "cfg.h"

@@ -19,8 +19,6 @@ if ENABLE_SERVER
 
 SUBDIRS = methods
 
-INCLUDES = -I$(top_srcdir)/lib/lucid
-
 EXTRA_DIST = vcd.conf \
              vshelper.conf
 
@@ -48,7 +46,7 @@ vcd_SOURCES = auth.c \
 
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(top_builddir)/lib/libarchive/src/libarchive.a \
-            $(top_builddir)/lib/lucid/libucid.a \
+            $(LUCID_LIBS) \
             $(BZ2_LIBS) $(Z_LIBS) \
             $(CONFUSE_LIBS) \
             $(SQLITE3_LIBS) \
@@ -63,7 +61,7 @@ vshelper_LDADD = $(CONFUSE_LIBS) \
 pkglib_PROGRAMS = gensql
 
 gensql_SOURCES = gensql.c
-gensql_LDADD = $(top_builddir)/lib/lucid/libucid.a
+gensql_LDADD = $(LUCID_LIBS)
 
 install-data-local:
 	$(install_sh)    -m 600 $(srcdir)/vcd.conf $(DESTDIR)$(sysconfdir)/vcd.conf

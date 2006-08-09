@@ -18,11 +18,6 @@
 #ifndef _VCD_LOG_H
 #define _VCD_LOG_H
 
-#define LOG_DEBG  4
-#define LOG_INFO  3
-#define LOG_WARN  2
-#define LOG_ERR   1
-
 int  log_init (int debug);
 
 void log_debug(const char *fmt, ...);
@@ -34,5 +29,8 @@ void log_debug_and_die(const char *fmt, ...);
 void log_info_and_die (const char *fmt, ...);
 void log_warn_and_die (const char *fmt, ...);
 void log_error_and_die(const char *fmt, ...);
+
+#define TRACEIT log_debug("[trace] %s (%s:%d)", \
+                          __FUNCTION__, __FILE__, __LINE__);
 
 #endif

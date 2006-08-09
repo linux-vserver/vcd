@@ -18,7 +18,7 @@
 #ifndef _VCD_LISTS_H
 #define _VCD_LISTS_H
 
-#include "lucid.h"
+#include <lucid/flist.h>
 
 extern const flist64_t bcaps_list[];
 extern const flist64_t ccaps_list[];

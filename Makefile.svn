@@ -4,7 +4,7 @@ libarchive:
 	make -C lib/libarchive -f Makefile.svn
 
 all: libarchive
-	aclocal -I m4
+	aclocal
 	autoheader
 	libtoolize --force --copy --automake
 	automake -afc

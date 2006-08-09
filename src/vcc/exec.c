@@ -18,8 +18,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <vserver.h>
-
-#include "lucid.h"
+#include <lucid/chroot.h>
 
 #include "cmd.h"
 #include "msg.h"

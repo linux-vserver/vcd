@@ -17,8 +17,6 @@
 
 if ENABLE_CLIENT
 
-INCLUDES = -I$(top_srcdir)/lib/lucid
-
 EXTRA_DIST = vcc.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
@@ -42,7 +40,7 @@ vcc_SOURCES = cmd.c \
               stop.c \
               vlogin.c
 
-vcc_LDADD = $(top_builddir)/lib/lucid/libucid.a \
+vcc_LDADD = $(LUCID_LIBS) \
             $(CONFUSE_LIBS) \
             $(UTIL_LIBS) \
             $(VSERVER_LIBS) \

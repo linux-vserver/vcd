@@ -20,7 +20,6 @@
 
 #include <sqlite3.h>
 #include <vserver.h>
-#include <xmlrpc-c/base.h>
 
 /* sqlite3 api returns unsigned char, we always want signed char though */
 #define sqlite3_column_text  (const char *) sqlite3_column_text

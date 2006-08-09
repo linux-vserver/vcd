@@ -25,8 +25,8 @@
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/server.h>
 #include <xmlrpc-c/server_abyss.h>
-
-#include "lucid.h"
+#include <lucid/open.h>
+#include <lucid/tcp.h>
 
 #include "cfg.h"
 #include "log.h"

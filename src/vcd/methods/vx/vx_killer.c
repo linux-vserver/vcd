@@ -21,8 +21,9 @@
 #include <string.h>
 #include <signal.h>
 #include <sys/wait.h>
-
-#include "lucid.h"
+#include <lucid/chroot.h>
+#include <lucid/exec.h>
+#include <lucid/str.h>
 
 #include "auth.h"
 #include "cfg.h"

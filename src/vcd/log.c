@@ -21,11 +21,16 @@
 #include <errno.h>
 #include <string.h>
 #include <time.h>
-
-#include "lucid.h"
+#include <lucid/open.h>
+#include <lucid/str.h>
 
 #include "cfg.h"
 #include "log.h"
+
+#define LOG_DEBG  4
+#define LOG_INFO  3
+#define LOG_WARN  2
+#define LOG_ERR   1
 
 static int log_fd     = -1;
 static int log_level  = LOG_INFO;
