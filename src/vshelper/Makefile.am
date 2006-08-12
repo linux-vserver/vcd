@@ -15,7 +15,20 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = vcc \
-          vcd \
-          vce \
-          vshelper
+if ENABLE_SERVER
+
+EXTRA_DIST = vshelper.conf
+
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
+
+sbin_PROGRAMS = vshelper
+
+vshelper_SOURCES = vshelper.c
+
+vshelper_LDADD = $(CONFUSE_LIBS) \
+                 $(XMLRPC_C_CLIENT_LIBS)
+
+install-data-local:
+	$(install_sh) -m 600 $(srcdir)/vshelper.conf $(DESTDIR)$(sysconfdir)/vshelper.conf
+
+endif

@@ -19,8 +19,7 @@ if ENABLE_SERVER
 
 SUBDIRS = methods
 
-EXTRA_DIST = vcd.conf \
-             vshelper.conf
+EXTRA_DIST = vcd.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
@@ -32,8 +31,7 @@ noinst_HEADERS = auth.h \
                  validate.h \
                  vxdb.h
 
-sbin_PROGRAMS = vcd \
-                vshelper
+sbin_PROGRAMS = vcd
 
 vcd_SOURCES = auth.c \
               cfg.c \
@@ -53,11 +51,6 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_SERVER_LIBS)
 
-vshelper_SOURCES = vshelper.c
-
-vshelper_LDADD = $(CONFUSE_LIBS) \
-                 $(XMLRPC_C_CLIENT_LIBS)
-
 pkglib_PROGRAMS = gensql
 
 gensql_SOURCES = gensql.c
@@ -65,7 +58,6 @@ gensql_LDADD = $(LUCID_LIBS)
 
 install-data-local:
 	$(install_sh)    -m 600 $(srcdir)/vcd.conf $(DESTDIR)$(sysconfdir)/vcd.conf
-	$(install_sh)    -m 600 $(srcdir)/vshelper.conf $(DESTDIR)$(sysconfdir)/vshelper.conf
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd
 	$(mkinstalldirs) -m 000 $(DESTDIR)$(vserverdir)
 

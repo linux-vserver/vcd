@@ -17,7 +17,7 @@
 
 # Generic configuration
 AC_PREREQ(2.59)
-AC_INIT(vcd, 1.0, hollow@gentoo.org)
+AC_INIT(vcd, 1.0_pre1, hollow@gentoo.org)
 AC_CONFIG_HEADER([config.h])
 AC_GNU_SOURCE
 
@@ -109,8 +109,13 @@ AC_MSG_RESULT([found])
 XMLRPC_C_CLIENT_LIBS="$($XMLRPC_C_CONFIG client --libs)"
 XMLRPC_C_SERVER_LIBS="$($XMLRPC_C_CONFIG abyss-server --libs)"
 
+if test -z "$XMLRPC_C_CLIENT_LIBS"; then
+	AC_MSG_ERROR([no xmlrpc-c client library found])
+fi
+
 AC_SUBST(XMLRPC_C_CLIENT_LIBS)
 AC_SUBST(XMLRPC_C_SERVER_LIBS)
+
 
 if test x$enable_client = xtrue; then
 AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
@@ -119,6 +124,7 @@ AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
 
 AC_SUBST(UTIL_LIBS)
 fi
+
 
 if test x$enable_server = xtrue; then
 AC_CHECK_LIB(sqlite3, sqlite3_open,
@@ -193,6 +199,7 @@ AC_CONFIG_FILES([Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
                  src/vce/Makefile
+                 src/vshelper/Makefile
                  src/Makefile
                  test/Makefile])
 
