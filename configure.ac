@@ -25,8 +25,6 @@ AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 AC_CANONICAL_TARGET
 
-AC_CONFIG_SUBDIRS(lib/libarchive)
-
 # Automake
 AM_INIT_AUTOMAKE([1.9 gnu dist-bzip2])
 AM_MAINTAINER_MODE
@@ -62,18 +60,7 @@ AC_ARG_ENABLE([client],
 AM_CONDITIONAL(ENABLE_CLIENT, test x$enable_client = xtrue)
 
 # Checks for libraries.
-AC_CHECK_LIB(vserver, vx_clone_namespace, 
-	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
-
-AC_SUBST(VSERVER_LIBS)
-
-
-AC_CHECK_LIB(ucid, str_check,
-	LUCID_LIBS="-lucid", AC_MSG_ERROR([lucid not found]),)
-
-AC_SUBST(LUCID_LIBS)
-
-
+# confuse
 AC_PATH_PROG(CONFUSE_CONFIG, confuse-config)
 if test -z "$CONFUSE_CONFIG"; then
 	AC_MSG_ERROR([confuse-config not found])
@@ -83,7 +70,19 @@ CONFUSE_LIBS="$($CONFUSE_CONFIG --libs)"
 
 AC_SUBST(CONFUSE_LIBS)
 
+# lucid
+AC_CHECK_LIB(ucid, str_check,
+	LUCID_LIBS="-lucid", AC_MSG_ERROR([lucid not found]),)
 
+AC_SUBST(LUCID_LIBS)
+
+# vserver
+AC_CHECK_LIB(vserver, vx_clone_namespace, 
+	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
+
+AC_SUBST(VSERVER_LIBS)
+
+# xmlrpc-c
 AC_PATH_PROG(XMLRPC_C_CONFIG, xmlrpc-c-config)
 if test -z "$XMLRPC_C_CONFIG"; then
 	AC_MSG_ERROR([xmlrpc-c-config not found])
@@ -116,7 +115,7 @@ fi
 AC_SUBST(XMLRPC_C_CLIENT_LIBS)
 AC_SUBST(XMLRPC_C_SERVER_LIBS)
 
-
+# util
 if test x$enable_client = xtrue; then
 AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
 	AC_CHECK_LIB(util, openpty, UTIL_LIBS="-lutil", AC_MSG_ERROR([libutil not found]))
@@ -125,23 +124,18 @@ AC_CHECK_FUNC(openpty, UTIL_LIBS="",[
 AC_SUBST(UTIL_LIBS)
 fi
 
-
+# sqlite3
 if test x$enable_server = xtrue; then
 AC_CHECK_LIB(sqlite3, sqlite3_open,
 	SQLITE3_LIBS="-lsqlite3", AC_MSG_ERROR([sqlite3 not found]))
 
 AC_SUBST(SQLITE3_LIBS)
 
+# tar
+AC_CHECK_LIB(tar, tar_extract_all,
+	TAR_LIBS="-ltar", AC_MSG_ERROR([libtar not found]),)
 
-AC_CHECK_LIB(bz2, BZ2_bzDecompressInit,
-	BZ2_LIBS="-lbz2", AC_MSG_ERROR([libbz2 not found]),)
-
-AC_SUBST(BZ2_LIBS)
-
-AC_CHECK_LIB(z, inflate,
-	Z_LIBS="-lz", AC_MSG_ERROR([libz not found]),)
-
-AC_SUBST(Z_LIBS)
+AC_SUBST(TAR_LIBS)
 fi
 
 # Checks for header files.
@@ -193,7 +187,6 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  doc/Makefile
-                 lib/Makefile
                  scripts/Makefile
                  src/vcc/Makefile
                  src/vcd/methods/Makefile

@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <string.h>
 #include <limits.h>
+#include <fcntl.h>
 #include <confuse.h>
 #include <vserver.h>
 #include <sys/stat.h>
@@ -29,9 +30,7 @@
 #include <lucid/open.h>
 #include <lucid/str.h>
 #include <lucid/stralloc.h>
-
-#include "archive.h"
-#include "archive_entry.h"
+#include <libtar.h>
 
 #include "auth.h"
 #include "cfg.h"
@@ -85,16 +84,17 @@ static char vdir[PATH_MAX];
 static int rebuild = 0;
 
 static
-xmlrpc_value *build_root_filesystem(xmlrpc_env *env, int fd)
+xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 {
-	const char *vserverdir;
+	const char *datadir, *vserverdir;
+	char *templatearchive;
 	struct stat sb;
-	struct archive *a;
-	struct archive_entry *entry;
-  int rc, flags = 0;
+	TAR *t;
+	
+	datadir = cfg_getstr(cfg, "datadir");
+	asprintf(&templatearchive, "%s/templates/%s.tar", datadir, template);
 	
 	vserverdir = cfg_getstr(cfg, "vserverdir");
-	
 	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
 	
 	if (rebuild && runlink(vdir) == -1)
@@ -111,35 +111,13 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, int fd)
 	if (mkdirp(vdir, 0755) == -1 || chroot_secure_chdir(vdir, "/") == -1)
 		method_return_faultf(env, MESYS, "secure_chdir: %s", strerror(errno));
 	
-	flags |= ARCHIVE_EXTRACT_OWNER;
-	flags |= ARCHIVE_EXTRACT_PERM;
-	flags |= ARCHIVE_EXTRACT_TIME;
-	flags |= ARCHIVE_EXTRACT_ACL;
-	flags |= ARCHIVE_EXTRACT_FFLAGS;
+	if (tar_open(&t, templatearchive, NULL, O_RDONLY, 0, 0) == -1)
+		method_return_faultf(env, MESYS, "tar_open: %s", strerror(errno));
 	
-	a = archive_read_new();
-	archive_read_support_compression_bzip2(a);
-	archive_read_support_compression_gzip(a);
-	archive_read_support_format_tar(a);
+	if (tar_extract_all(t, ".") != 0)
+		method_return_faultf(env, MESYS, "tar_extract_all: %s", strerror(errno));
 	
-	if (archive_read_open_fd(a, fd, 10240))
-		method_return_faultf(env, MESYS, "%s", "could not open template archive for reading");
-	
-	while (1) {
-		rc = archive_read_next_header(a, &entry);
-		
-		if (rc == ARCHIVE_EOF)
-			break;
-		
-		if (rc != ARCHIVE_OK)
-			method_return_faultf(env, MESYS, "%s", "could not read template archive");
-		
-		if (archive_read_extract(a, entry, flags))
-			method_return_faultf(env, MESYS, "%s", "could not extract template archive");
-	}
-	
-	archive_read_close(a);
-	archive_read_finish(a);
+	tar_close(t);
 	
 	if (runlink("dev") == -1 ||
 	    mkdir("dev", 0755) == -1 ||
@@ -173,17 +151,46 @@ xid_t find_free_xid()
 }
 
 static
-xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, cfg_t *tcfg)
+xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
 {
 	stralloc_t sa;
-	cfg_t *init_method_cfg, *mount_cfg;
+	cfg_t *tcfg, *init_method_cfg, *mount_cfg;
 	const char *method, *start, *stop;
 	const char *path, *spec, *vfstype, *mntops;
 	int rc, i, timeout, mount_size, max, cnt;
 	int vx_bcaps_size, vx_ccaps_size, vx_flags_size;
 	const char *bcap, *ccap, *flag;
-	char *sql;
+	char *sql, *datadir, *templateconf;
 	vxdb_result *dbr;
+	struct stat sb;
+	
+	datadir = cfg_getstr(cfg, "datadir");
+	asprintf(&templateconf, "%s/templates/%s.conf", datadir, template);
+	
+	if (lstat(templateconf, &sb) == -1) {
+		if (errno != ENOENT)
+			method_return_faultf(env, MESYS, "lstat: %s", strerror(errno));
+		else {
+			free(templateconf);
+			templateconf = strdup("/dev/null");
+		}
+	}
+	
+	tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
+	
+	switch (cfg_parse(tcfg, templateconf)) {
+	case CFG_FILE_ERROR:
+		free(templateconf);
+		method_return_faultf(env, MECONF, "no template configuration found for '%s'", template);
+	
+	case CFG_PARSE_ERROR:
+		free(templateconf);
+		method_return_faultf(env, MECONF, "%s", "syntax error in template configuration");
+	
+	default:
+		free(templateconf);
+		break;
+	}
 	
 	if (!xid) {
 		rc = vxdb_prepare(&dbr, "SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
@@ -338,10 +345,7 @@ commit:
 xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *user, *template, *templateconf, *templatearchive;
-	const char *datadir, *archivename;
-	cfg_t *tcfg;
-	int archivefd;
+	char *user, *template;
 	
 	method_init(env, p, c, VCD_CAP_CREATE, M_LOCK);
 	method_return_if_fault(env);
@@ -359,7 +363,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"rebuild", &rebuild);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || str_isempty(template))
+	if (!validate_name(name) || str_isempty(template) || !str_isgraph(template))
 		method_return_fault(env, MEINVAL);
 	
 	if ((xid = vxdb_getxid(name))) {
@@ -379,44 +383,10 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		rebuild = 0;
 	}
 	
-	datadir = cfg_getstr(cfg, "datadir");
-	
-	asprintf(&templateconf, "%s/templates/%s.conf", datadir, template);
-	
-	tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
-	
-	switch (cfg_parse(tcfg, templateconf)) {
-	case CFG_FILE_ERROR:
-		free(templateconf);
-		method_return_faultf(env, MECONF, "no template configuration found for '%s'", template);
-	
-	case CFG_PARSE_ERROR:
-		free(templateconf);
-		method_return_faultf(env, MECONF, "%s", "syntax error in template configuration");
-	
-	default:
-		free(templateconf);
-		break;
-	}
-	
-	archivename = cfg_getstr(tcfg, "archive");
-	
-	if (str_isempty(archivename))
-		method_return_faultf(env, MECONF, "invalid archive configuration for '%s'", template);
-	
-	asprintf(&templatearchive, "%s/templates/%s", datadir, archivename);
-	
-	if ((archivefd = open_read(templatearchive)) == -1) {
-		free(templatearchive);
-		method_return_faultf(env, MECONF, "could not open template archive: %s", strerror(errno));
-	}
-	
-	free(templatearchive);
-	
-	build_root_filesystem(env, archivefd);
+	build_root_filesystem(env, template);
 	method_return_if_fault(env);
 	
-	create_vxdb_entries(env, tcfg);
+	create_vxdb_entries(env, template);
 	method_return_if_fault(env);
 	
 	return xmlrpc_nil_new(env);

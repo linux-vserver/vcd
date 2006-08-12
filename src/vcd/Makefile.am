@@ -43,11 +43,10 @@ vcd_SOURCES = auth.c \
               vxdb.c
 
 vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
-            $(top_builddir)/lib/libarchive/src/libarchive.a \
-            $(LUCID_LIBS) \
-            $(BZ2_LIBS) $(Z_LIBS) \
             $(CONFUSE_LIBS) \
+            $(LUCID_LIBS) \
             $(SQLITE3_LIBS) \
+            $(TAR_LIBS) \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_SERVER_LIBS)
 
