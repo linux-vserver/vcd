@@ -15,8 +15,13 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = vcc \
-          vcd \
-          vce \
-          vshelper \
-          vxpasswd
+if ENABLE_SERVER
+
+sbin_PROGRAMS = vxpasswd
+
+vxpasswd_SOURCES = vxpasswd.c
+
+vxpasswd_LDADD = $(LUCID_LIBS) \
+                 $(SQLITE3_LIBS)
+
+endif

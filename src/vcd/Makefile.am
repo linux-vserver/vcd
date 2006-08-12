@@ -51,11 +51,6 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_SERVER_LIBS)
 
-pkglib_PROGRAMS = gensql
-
-gensql_SOURCES = gensql.c
-gensql_LDADD = $(LUCID_LIBS)
-
 install-data-local:
 	$(install_sh)    -m 600 $(srcdir)/vcd.conf $(DESTDIR)$(sysconfdir)/vcd.conf
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd

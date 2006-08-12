@@ -18,7 +18,10 @@
 
 sbin_SCRIPTS = vprocunhide
 
+pkgdata_DATA = vxdb.sql
+
 EXTRA_DIST = $(sbin_SCRIPTS) \
+             $(pkgdata_DATA) \
              vprocunhide.conf
 
 install-data-local:
