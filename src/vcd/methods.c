@@ -43,6 +43,7 @@ m_err_t method_error_codes[] = {
 };
 
 xmlrpc_registry *registry;
+void *METHOD_INTERNAL = (void *) 0xdeadbeef;
 
 #define MREGISTER(NAME,FUNC) do { \
 	xmlrpc_registry_add_method(env, registry, NULL, NAME, &FUNC, NULL); \
@@ -121,7 +122,7 @@ void method_registry_atexit(void)
 }
 
 static
-void method_check_flags(xmlrpc_env *env, xmlrpc_value *params,
+void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
                         char *user, uint64_t flags)
 {
 	log_debug("[trace] %s", __FUNCTION__);
@@ -129,7 +130,7 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params,
 	int lockfd;
 	char *name, *datadir, lockfile[PATH_MAX];
 	
-	if (flags & M_OWNER) {
+	if (user && flags & M_OWNER) {
 		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
 		
 		if (!env->fault_occurred) {
@@ -149,44 +150,55 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params,
 			
 			mkdirnamep(lockfile, 0755);
 			lockfd = open_trunc(lockfile);
-			flock(lockfd, LOCK_EX);
+			
+			if (c)
+				flock(lockfd, LOCK_EX|LOCK_NB);
+			else
+				flock(lockfd, LOCK_EX);
 			
 			free(name);
 		}
 	}
 }
 
-xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
+xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
                           uint64_t caps, uint64_t flags)
 {
 	log_debug("[trace] %s", __FUNCTION__);
 	
-	char *user, *pass;
-	xmlrpc_value *params;
+	char *user = NULL, *pass;
+	xmlrpc_value *params = NULL;
 	
-	xmlrpc_decompose_value(env, p,
-		"({s:s,s:s,*}V)",
-		"username", &user,
-		"password", &pass,
-		&params);
-	method_return_if_fault(env);
-	
-	if (!auth_isvalid(user, pass))
-		xmlrpc_env_set_fault(env, MEAUTH, method_strerror(MEAUTH));
-	
-	else if (!auth_capable(user, caps))
-		xmlrpc_env_set_fault(env, MEPERM, method_strerror(MEPERM));
+	if (!c) {
+		xmlrpc_decompose_value(env, p,
+			"({s:s,s:s,*}V)",
+			"username", &user,
+			"password", &pass,
+			&params);
+		method_return_if_fault(env);
+		
+		if (!auth_isvalid(user, pass))
+			xmlrpc_env_set_fault(env, MEAUTH, method_strerror(MEAUTH));
+		
+		else if (!auth_capable(user, caps))
+			xmlrpc_env_set_fault(env, MEPERM, method_strerror(MEPERM));
+		
+		else
+			method_check_flags(env, params, c, user, flags);
+		
+		free(user);
+		free(pass);
+	}
 	
 	else
-		method_check_flags(env, params, user, flags);
-	
-	free(user);
-	free(pass);
+		method_check_flags(env, p, c, NULL, flags);
 	
 	if (env->fault_occurred)
 		return NULL;
-	else
+	else if (params)
 		return params;
+	else
+		return p;
 }
 
 void method_empty_params(int num, ...)

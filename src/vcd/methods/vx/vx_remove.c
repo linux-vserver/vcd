@@ -40,7 +40,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	const char *vserverdir;
 	struct stat sb;
 	
-	params = method_init(env, p, VCD_CAP_CREATE, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_CREATE, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

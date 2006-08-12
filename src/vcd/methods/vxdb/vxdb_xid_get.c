@@ -25,7 +25,7 @@ xmlrpc_value *m_vxdb_xid_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name;
 	xid_t xid;
 	
-	params = method_init(env, p, VCD_CAP_HELPER, 0);
+	params = method_init(env, p, c, VCD_CAP_HELPER, 0);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

@@ -116,7 +116,7 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	int wait, reboot, timeout, rc;
 	vxdb_result *dbr;
 	
-	params = method_init(env, p, VCD_CAP_INIT, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
@@ -184,7 +184,7 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	else
 		method_return_faultf(env, MECONF, "unknown init style: %s", method);
 	
-	m_vx_killer(env, p, c);
+	m_vx_killer(env, params, METHOD_INTERNAL);
 	method_return_if_fault(env);
 	
 	return xmlrpc_nil_new(env);

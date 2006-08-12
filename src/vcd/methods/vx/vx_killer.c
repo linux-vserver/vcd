@@ -59,7 +59,7 @@ void handle_death(void)
 	log_debug("vx killer restarting '%s'", name);
 	
 	xmlrpc_env_init(&env);
-	m_vx_start(&env, _params_orig, NULL);
+	m_vx_start(&env, _params_orig, METHOD_INTERNAL);
 	
 	if (env.fault_occurred) {
 		log_warn("vx killer restart failed: %s (%d)", env.fault_string, env.fault_code);
@@ -186,10 +186,10 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_result *dbr;
 	pid_t pid;
 	
-	params = method_init(env, p, VCD_CAP_INIT, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
-	_params_orig = p;
+	_params_orig = params;
 	
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:i,s:i,*}",

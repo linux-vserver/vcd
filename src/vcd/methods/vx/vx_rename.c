@@ -37,7 +37,7 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	int rc;
 	const char *vserverdir;
 	
-	params = method_init(env, p, VCD_CAP_CREATE, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_CREATE, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

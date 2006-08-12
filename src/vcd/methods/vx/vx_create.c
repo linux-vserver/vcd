@@ -343,7 +343,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	cfg_t *tcfg;
 	int archivefd;
 	
-	method_init(env, p, VCD_CAP_CREATE, M_LOCK);
+	method_init(env, p, c, VCD_CAP_CREATE, M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, p,

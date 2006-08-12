@@ -44,11 +44,12 @@ typedef struct {
 
 extern m_err_t method_error_codes[];
 extern xmlrpc_registry *registry;
+extern void *METHOD_INTERNAL;
 
 int method_registry_init(xmlrpc_env *env);
 void method_registry_atexit(void);
 
-xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p,
+xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
                           uint64_t caps, uint64_t flags);
 
 void method_empty_params(int num, ...);

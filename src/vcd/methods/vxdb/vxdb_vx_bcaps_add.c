@@ -29,7 +29,7 @@ xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xid_t xid;
 	int rc;
 	
-	params = method_init(env, p, VCD_CAP_BCAP, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_BCAP, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

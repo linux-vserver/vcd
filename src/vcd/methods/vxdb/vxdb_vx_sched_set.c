@@ -28,7 +28,7 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	int tokensmin, tokensmax, priobias, rc;
 	xid_t xid;
 	
-	params = method_init(env, p, VCD_CAP_SCHED, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_SCHED, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

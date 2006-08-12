@@ -28,7 +28,7 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_result *dbr;
 	int rc;
 	
-	params = method_init(env, p, VCD_CAP_DLIM, M_OWNER);
+	params = method_init(env, p, c, VCD_CAP_DLIM, M_OWNER);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
