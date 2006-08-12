@@ -26,6 +26,7 @@
 #include <termios.h>
 #include <lucid/io.h>
 #include <lucid/sha1.h>
+#include <lucid/str.h>
 #include <sqlite3.h>
 
 static
@@ -82,6 +83,11 @@ int main(int argc, char **argv)
 	vxdbfile = argv[1];
 	username = argv[2];
 	
+	if (str_isempty(username) || !str_isalnum(username)) {
+		dprintf(STDERR_FILENO, "invalid username: %s\n", username);
+		exit(EXIT_FAILURE);
+	}
+	
 	if (argc >= 4)
 		password = strdup(argv[3]);
 	
@@ -100,6 +106,11 @@ int main(int argc, char **argv)
 		}
 		
 		free(buf);
+	}
+	
+	if (strlen(password) < 8) {
+		dprintf(STDERR_FILENO, "password too short: %s\n", username);
+		exit(EXIT_FAILURE);
 	}
 	
 	rc = sqlite3_open(vxdbfile, &vxdb);
