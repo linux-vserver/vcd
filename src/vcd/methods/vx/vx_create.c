@@ -65,7 +65,6 @@ static cfg_opt_t mount_OPTS[] = {
 };
 
 static cfg_opt_t BUILD_OPTS[] = {
-	CFG_STR("archive",     NULL, CFGF_NONE),
 	CFG_STR("description", NULL, CFGF_NONE),
 	
 	CFG_SEC("init_method", init_method_OPTS, CFGF_NONE),

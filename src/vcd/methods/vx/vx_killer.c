@@ -125,12 +125,6 @@ xmlrpc_value *shutdown_initng(xmlrpc_env *env)
 }
 
 static
-xmlrpc_value *shutdown_sysvrc(xmlrpc_env *env)
-{
-	return NULL;
-}
-
-static
 xmlrpc_value *shutdown_gentoo(xmlrpc_env *env, const char *runlevel)
 {
 	pid_t pid;
@@ -251,9 +245,6 @@ xmlrpc_value *m_vx_killer(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		
 		else if (strcmp(method, "initng") == 0)
 			shutdown_initng(env);
-		
-		else if (strcmp(method, "sysvrc") == 0)
-			shutdown_sysvrc(env);
 		
 		else if (strcmp(method, "gentoo") == 0)
 			shutdown_gentoo(env, stop);

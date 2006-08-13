@@ -93,12 +93,49 @@ xmlrpc_value *shutdown_init(xmlrpc_env *env)
 static
 xmlrpc_value *shutdown_initng(xmlrpc_env *env)
 {
-	return NULL;
-}
-
-static
-xmlrpc_value *shutdown_sysvrc(xmlrpc_env *env)
-{
+	pid_t pid;
+	int i, status;
+	
+	char *vserverdir = cfg_getstr(cfg, "vserverdir");
+	char *vdir = NULL;
+	
+	asprintf(&vdir, "%s/%s", vserverdir, name);
+	
+	switch ((pid = fork())) {
+	case -1:
+		method_return_faultf(env, MESYS, "%s: fork: %s", __FUNCTION__, strerror(errno));
+	
+	case 0:
+		usleep(200);
+		
+		for (i = 0; i < 100; i++)
+			close(i);
+		
+		if (vx_enter_namespace(xid) == -1)
+			exit(errno);
+		
+		if (chroot_secure_chdir(vdir, "/") == -1)
+			exit(errno);
+		
+		if (chroot(".") == -1)
+			exit(errno);
+		
+		if (nx_migrate(xid) == -1 || vx_migrate(xid, NULL) == -1)
+			exit(errno);
+		
+		if (exec_replace("/sbin/ngc -0") == -1)
+			exit(errno);
+		
+		exit(EXIT_SUCCESS);
+	
+	default:
+		if (waitpid(pid, &status, WNOHANG) == -1)
+			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
+		
+		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+			method_return_faultf(env, MESYS, "shutdown failed: %s", strerror(WEXITSTATUS(status)));
+	}
+	
 	return NULL;
 }
 
@@ -174,9 +211,6 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	else if (strcmp(method, "initng") == 0)
 		shutdown_initng(env);
-	
-	else if (strcmp(method, "sysvrc") == 0)
-		shutdown_sysvrc(env);
 	
 	else if (strcmp(method, "gentoo") == 0)
 		shutdown_gentoo(env, stop);

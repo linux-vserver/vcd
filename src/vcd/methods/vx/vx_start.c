@@ -704,11 +704,6 @@ xmlrpc_value *init_initng(xmlrpc_env *env, char *vdir)
 	return NULL;
 }
 
-xmlrpc_value *init_sysvrc(xmlrpc_env *env, char *vdir)
-{
-	return NULL;
-}
-
 xmlrpc_value *init_gentoo(xmlrpc_env *env, char *vdir, const char *runlevel)
 {
 	pid_t pid;
@@ -820,9 +815,6 @@ xmlrpc_value *call_init(xmlrpc_env *env)
 		
 		else if (strcmp(method, "initng") == 0)
 			init_initng(env, vdir);
-		
-		else if (strcmp(method, "sysvrc") == 0)
-			init_sysvrc(env, vdir);
 		
 		else if (strcmp(method, "gentoo") == 0)
 			init_gentoo(env, vdir, start);

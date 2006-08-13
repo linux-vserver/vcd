@@ -70,7 +70,6 @@ int validate_init_method(const char *method)
 	
 	if (strcmp(method, "init")   == 0 ||
 	    strcmp(method, "initng") == 0 ||
-	    strcmp(method, "sysvrc") == 0 ||
 	    strcmp(method, "gentoo") == 0)
 		return 1;
 	
