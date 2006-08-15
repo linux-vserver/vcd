@@ -16,7 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
-#include <lucid/sha1.h>
+#include <lucid/whirlpool.h>
 
 #include "auth.h"
 #include "methods.h"
@@ -26,7 +26,7 @@
 xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *user, *pass, *sha1_pass;
+	char *user, *pass, *whirlpool_pass;
 	int uid, admin, rc;
 	vxdb_result *dbr;
 	
@@ -69,14 +69,14 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			
 			sqlite3_finalize(dbr);
 		
-			sha1_pass = sha1_digest(pass);
+			whirlpool_pass = whirlpool_digest(pass);
 			
 			rc = vxdb_exec(
 				"INSERT INTO user (uid, name, password, admin) "
 				"VALUES (%d, '%s', '%s', %d)",
-				uid, user, sha1_pass, admin);
+				uid, user, whirlpool_pass, admin);
 			
-			free(sha1_pass);
+			free(whirlpool_pass);
 			
 			if (rc)
 				method_set_fault(env, MEVXDB);
@@ -92,13 +92,13 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_set_fault(env, MEVXDB);
 		
 		else if (pass) {
-			sha1_pass = sha1_digest(pass);
+			whirlpool_pass = whirlpool_digest(pass);
 			
 			rc = vxdb_exec(
 				"UPDATE user SET password = '%s' WHERE uid = %d",
-				sha1_pass, uid);
+				whirlpool_pass, uid);
 			
-			free(sha1_pass);
+			free(whirlpool_pass);
 			
 			if (rc)
 				method_set_fault(env, MEVXDB);

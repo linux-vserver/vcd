@@ -25,7 +25,7 @@
 #include <string.h>
 #include <termios.h>
 #include <lucid/io.h>
-#include <lucid/sha1.h>
+#include <lucid/whirlpool.h>
 #include <lucid/str.h>
 #include <sqlite3.h>
 
@@ -72,7 +72,7 @@ void read_password(char **password)
 
 int main(int argc, char **argv)
 {
-	char *vxdbfile, *username, *sha1_password, *password = NULL;
+	char *vxdbfile, *username, *whirlpool_password, *password = NULL;
 	char *buf, *sqlbuf;
 	sqlite3 *vxdb;
 	int rc;
@@ -119,12 +119,12 @@ int main(int argc, char **argv)
 		dprintf(STDERR_FILENO, "can't open database: %s\n", sqlite3_errmsg(vxdb));
 	
 	else {
-		sha1_password = sha1_digest(password);
+		whirlpool_password = whirlpool_digest(password);
 		
 		asprintf(&sqlbuf, "UPDATE user SET password = '%s' WHERE name = '%s'",
-		         sha1_password, username);
+		         whirlpool_password, username);
 		
-		free(sha1_password);
+		free(whirlpool_password);
 		
 		rc = sqlite3_exec(vxdb, sqlbuf, NULL, 0, &buf);
 		

@@ -16,7 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
-#include <lucid/sha1.h>
+#include <lucid/whirlpool.h>
 
 #include "auth.h"
 #include "lists.h"
@@ -29,13 +29,13 @@ int auth_isvalid(const char *user, const char *pass)
 	
 	int rc;
 	vxdb_result *dbr;
-	char *sha1_pass = sha1_digest(pass);
+	char *whirlpool_pass = whirlpool_digest(pass);
 	
 	rc = vxdb_prepare(&dbr,
 		"SELECT uid FROM user WHERE name = '%s' AND password = '%s'",
-		user, sha1_pass);
+		user, whirlpool_pass);
 	
-	free(sha1_pass);
+	free(whirlpool_pass);
 	
 	if (rc == SQLITE_OK && sqlite3_step(dbr) == SQLITE_ROW)
 		rc = 1;
