@@ -24,6 +24,7 @@ M_HELPER = helper/helper_netup.c \
 
 M_VX = vx/vx_create.c \
        vx/vx_exec.c \
+       vx/vx_kill.c \
        vx/vx_reboot.c \
        vx/vx_remove.c \
        vx/vx_rename.c \

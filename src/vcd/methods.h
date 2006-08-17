@@ -93,6 +93,7 @@ MPROTO(m_helper_startup);
 /* vx */
 MPROTO(m_vx_create);
 MPROTO(m_vx_exec);
+MPROTO(m_vx_kill);
 MPROTO(m_vx_reboot);
 MPROTO(m_vx_remove);
 MPROTO(m_vx_rename);

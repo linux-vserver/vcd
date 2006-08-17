@@ -17,21 +17,9 @@
 
 #include "cmd.h"
 
-char *uri  = NULL;
-char *user = "admin";
-char *pass = NULL;
-char *name = NULL;
-
-cmd_t CMDS[] = {
-	{ "create",  cmd_create },
-	{ "exec",    cmd_exec },
-	{ "kill",    cmd_kill },
-	{ "login",   cmd_login },
-	{ "reboot",  cmd_reboot },
-	{ "remove",  cmd_remove },
-	{ "rename",  cmd_rename },
-	{ "start",   cmd_start },
-	{ "status",  cmd_status },
-	{ "stop",    cmd_stop },
-	{ NULL,      NULL }
-};
+void cmd_kill(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_client_call(env, uri, "vx.kill",
+		SIGNATURE("{s:s}"),
+		"name", name);
+}

@@ -51,6 +51,7 @@ void usage(int rc)
 	       "Available commands:\n"
 	       "   create  <name> <template> [<rebuild>]\n"
 	       "   exec    <name> <program> <args>*\n"
+	       "   kill    <name>\n"
 	       "   login   <name>\n"
 	       "   reboot  <name>\n"
 	       "   remove  <name>\n"

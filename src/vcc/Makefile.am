@@ -29,6 +29,7 @@ sbin_PROGRAMS = vcc
 vcc_SOURCES = cmd.c \
               create.c \
               exec.c \
+              kill.c \
               login.c \
               main.c \
               msg.c \
