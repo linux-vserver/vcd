@@ -62,7 +62,7 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		break;
 	
 	case 0:
-		usleep(200);
+		vx_wait(xid, NULL);
 		m_vx_start(env, params, METHOD_INTERNAL);
 		exit(EXIT_SUCCESS);
 	

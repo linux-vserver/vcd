@@ -34,8 +34,6 @@ xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name;
 	xid_t xid;
-	int rc;
-	vxdb_result *dbr;
 	
 	struct vx_kill_opts kill_opts = {
 		.pid = 0,

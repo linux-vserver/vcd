@@ -88,6 +88,11 @@ static action_t ACTIONS[] = {
 static
 int vshelper_restart(xmlrpc_env *env, xid_t xid)
 {
+	struct vx_flags cflags = {
+		.flags = VXF_REBOOT_KILL,
+		.mask  = VXF_REBOOT_KILL,
+	};
+	
 	log_info("context %d has commited suicide with rebirth request", xid);
 	
 	xmlrpc_client_call(env, uri, "helper.restart",
@@ -96,15 +101,33 @@ int vshelper_restart(xmlrpc_env *env, xid_t xid)
 	log_and_return_if_fault(env);
 	
 	log_info("context %d has been scheduled for rebirth", xid);
-	return EXIT_SUCCESS;
+	
+	if (vx_set_flags(xid, &cflags) == -1)
+		log_error("vx_set_flags: %s", strerror(errno));
+	
+	else
+		return EXIT_SUCCESS;
+	
+	return EXIT_FAILURE;
 }
 
 static
 int vshelper_halt(xmlrpc_env *env, xid_t xid)
 {
+	struct vx_flags cflags = {
+		.flags = VXF_REBOOT_KILL,
+		.mask  = VXF_REBOOT_KILL,
+	};
+	
 	log_info("context %d has commited suicide", xid);
 	
-	return EXIT_SUCCESS;
+	if (vx_set_flags(xid, &cflags) == -1)
+		log_error("vx_set_flags: %s", strerror(errno));
+	
+	else
+		return EXIT_SUCCESS;
+	
+	return EXIT_FAILURE;
 }
 
 static

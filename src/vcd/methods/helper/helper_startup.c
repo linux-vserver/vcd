@@ -359,7 +359,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	const char *init = "/sbin/init", *vserverdir;
-	char vdir[PATH_MAX], *name;
+	char vdir[PATH_MAX];
 	vxdb_result *dbr;
 	int rc;
 	
