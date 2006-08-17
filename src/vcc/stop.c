@@ -20,8 +20,6 @@
 void cmd_stop(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_client_call(env, uri, "vx.stop",
-		SIGNATURE("{s:s,s:i,s:i}"),
-		"name", name,
-		"wait", 1,
-		"reboot", 0);
+		SIGNATURE("{s:s}"),
+		"name", name);
 }

@@ -32,9 +32,9 @@ vcc_SOURCES = cmd.c \
               login.c \
               main.c \
               msg.c \
+              reboot.c \
               remove.c \
               rename.c \
-              restart.c \
               start.c \
               status.c \
               stop.c \

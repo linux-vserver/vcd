@@ -30,7 +30,7 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 	xid_t xid;
 	char *vdir;
 	
-	char cmd[] = "/bin/login"; /* this form prevents storage in ro section */
+	char cmd[] = "/bin/sh"; /* this form prevents storage in ro section */
 	char *av[2];
 	int ac;
 	

@@ -17,8 +17,9 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <vserver.h>
-#include <lucid/chroot.h>
+#include <lucid/argv.h>
 
 #include "cmd.h"
 #include "msg.h"
@@ -26,46 +27,25 @@
 void cmd_exec(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	xid_t xid;
-	char *vdir;
+	char *command, *output;
 	
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 	
-	result = xmlrpc_client_call(env, uri, "vxdb.xid.get",
-		SIGNATURE("{s:s}"),
-		"name", name);
+	command = argv_to_str(argc, (const char ** const)argv);
+	
+	result = xmlrpc_client_call(env, uri, "vx.exec",
+		SIGNATURE("{s:s,s:s}"),
+		"name", name,
+		"command", command);
 	return_if_fault(env);
 	
-	xmlrpc_decompose_value(env, result, "i", &xid);
+	free(command);
+	
+	xmlrpc_decompose_value(env, result, "s", &output);
 	return_if_fault(env);
+	
+	printf("%s", output);
 	
 	xmlrpc_DECREF(result);
-	
-	result = xmlrpc_client_call(env, uri, "vxdb.vdir.get",
-		SIGNATURE("{s:s}"),
-		"name", name);
-	return_if_fault(env);
-	
-	xmlrpc_decompose_value(env, result, "s", &vdir);
-	return_if_fault(env);
-	
-	xmlrpc_DECREF(result);
-	
-	if (vx_enter_namespace(xid) == -1)
-		perr("vx_enter_namespace");
-	
-	if (chroot_secure_chdir(vdir, "/") == -1)
-		perr("chroot_secure_chdir");
-	
-	if (chroot(".") == -1)
-		perr("chroot");
-	
-	if (nx_migrate(xid) == -1)
-		perr("nx_migrate");
-	
-	if (vx_migrate(xid, NULL) == -1)
-		perr("vx_migrate");
-	
-	do_vlogin(argc, argv);
 }
