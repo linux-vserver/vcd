@@ -24,7 +24,7 @@
 #include "validate.h"
 #include "vxdb.h"
 
-static sqlite3 *dbc = NULL;
+sqlite3 *vxdb = NULL;
 
 static
 void vxdb_sanity_check(void)
@@ -59,24 +59,24 @@ void vxdb_init(void)
 	
 	int rc;
 	
-	if (dbc)
+	if (vxdb)
 		return;
 	
-	char *datadir = cfg_getstr(cfg, "datadir");
-	char *vxdb = path_concat(datadir, "vxdb");
+	char *datadir  = cfg_getstr(cfg, "datadir");
+	char *vxdbfile = path_concat(datadir, "vxdb");
 	
-	rc = sqlite3_open(vxdb, &dbc);
+	rc = sqlite3_open(vxdbfile, &vxdb);
 	
-	free(vxdb);
+	free(vxdbfile);
 	
 	if (rc != SQLITE_OK) {
-		log_error("sqlite3_open(%s): %s", vxdb, sqlite3_errmsg(dbc));
-		sqlite3_close(dbc);
+		log_error("sqlite3_open: %s", sqlite3_errmsg(vxdb));
+		sqlite3_close(vxdb);
 		exit(EXIT_FAILURE);
 	}
 	
-	sqlite3_busy_timeout(dbc, 500);
-	sqlite3_trace(dbc, vxdb_trace, NULL);
+	sqlite3_busy_timeout(vxdb, 500);
+	sqlite3_trace(vxdb, vxdb_trace, NULL);
 	
 	vxdb_sanity_check();
 }
@@ -85,7 +85,7 @@ void vxdb_atexit(void)
 {
 	log_debug("[trace] %s", __FUNCTION__);
 	
-	sqlite3_close(dbc);
+	sqlite3_close(vxdb);
 }
 
 int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
@@ -100,12 +100,12 @@ int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 	vasprintf(&sql, fmt, ap);
 	va_end(ap);
 	
-	rc = sqlite3_prepare(dbc, sql, -1, dbr, NULL);
+	rc = sqlite3_prepare(vxdb, sql, -1, dbr, NULL);
 	
 	free(sql);
 	
 	if (rc != SQLITE_OK)
-		log_warn("vxdb_prepare(%s): %s", sqlite3_errmsg(dbc));
+		log_warn("vxdb_prepare(%s): %s", sqlite3_errmsg(vxdb));
 	
 	return rc;
 }
@@ -123,7 +123,7 @@ int vxdb_step(vxdb_result *dbr)
 			return 0;
 		
 		case SQLITE_ERROR:
-			log_warn("vxdb_step: %s", sqlite3_errmsg(dbc));
+			log_warn("vxdb_step: %s", sqlite3_errmsg(vxdb));
 			return -1;
 		
 		case SQLITE_ROW:
@@ -145,12 +145,12 @@ int vxdb_exec(const char *fmt, ...)
 	vasprintf(&sql, fmt, ap);
 	va_end(ap);
 	
-	rc = sqlite3_exec(dbc, sql, NULL, NULL, NULL);
+	rc = sqlite3_exec(vxdb, sql, NULL, NULL, NULL);
 	
 	free(sql);
 	
 	if (rc != SQLITE_OK)
-		log_warn("vxdb_exec(%s): %s", sqlite3_errmsg(dbc));
+		log_warn("vxdb_exec(%s): %s", sqlite3_errmsg(vxdb));
 	
 	return rc;
 }
@@ -195,7 +195,7 @@ char *vxdb_getname(xid_t xid)
 		name = NULL;
 	
 	else
-		name = strdup((const char *) sqlite3_column_text(dbr, 0));
+		name = strdup(sqlite3_column_text(dbr, 0));
 	
 	sqlite3_finalize(dbr);
 	return name;

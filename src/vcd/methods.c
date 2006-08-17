@@ -53,9 +53,16 @@ int method_registry_init(xmlrpc_env *env)
 {
 	log_debug("[trace] %s", __FUNCTION__);
 	
+	/* helper */
+	MREGISTER("helper.netup",    m_helper_netup);
+	MREGISTER("helper.restart",  m_helper_restart);
+	MREGISTER("helper.shutdown", m_helper_shutdown);
+	MREGISTER("helper.startup",  m_helper_startup);
+	
 	/* vx */
 	MREGISTER("vx.create",  m_vx_create);
-	MREGISTER("vx.killer",  m_vx_killer);
+	MREGISTER("vx.exec",    m_vx_exec);
+	MREGISTER("vx.reboot",  m_vx_reboot);
 	MREGISTER("vx.remove",  m_vx_remove);
 	MREGISTER("vx.rename",  m_vx_rename);
 	MREGISTER("vx.start",   m_vx_start);

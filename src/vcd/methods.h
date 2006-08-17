@@ -84,9 +84,16 @@ char *method_strerror(int errnum);
 #define MPROTO(NAME) \
 	xmlrpc_value *NAME(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
+/* helper */
+MPROTO(m_helper_netup);
+MPROTO(m_helper_restart);
+MPROTO(m_helper_shutdown);
+MPROTO(m_helper_startup);
+
 /* vx */
 MPROTO(m_vx_create);
-MPROTO(m_vx_killer);
+MPROTO(m_vx_exec);
+MPROTO(m_vx_reboot);
 MPROTO(m_vx_remove);
 MPROTO(m_vx_rename);
 MPROTO(m_vx_start);

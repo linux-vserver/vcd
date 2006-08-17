@@ -26,6 +26,8 @@
 
 typedef sqlite3_stmt vxdb_result;
 
+extern sqlite3 *vxdb;
+
 void vxdb_init(void);
 void vxdb_atexit(void);
 
