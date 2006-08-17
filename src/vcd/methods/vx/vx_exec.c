@@ -43,7 +43,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	int outfds[2], status;
 	pid_t pid;
 	
-	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_EXEC, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,

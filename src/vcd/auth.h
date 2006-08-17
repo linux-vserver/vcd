@@ -32,7 +32,8 @@
 #define VCD_CAP_SCHED  (1 <<  9)
 #define VCD_CAP_UNAME  (1 << 10)
 #define VCD_CAP_CREATE (1 << 11)
-#define VCD_CAP_HELPER (1 << 12)
+#define VCD_CAP_EXEC   (1 << 12)
+#define VCD_CAP_HELPER (1 << 63)
 
 int auth_isvalid(const char *user, const char *pass);
 int auth_isadmin(const char *user);
