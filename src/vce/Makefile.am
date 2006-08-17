@@ -28,7 +28,7 @@ sbin_PROGRAMS = vce
 
 vce_SOURCES = cmd.c \
               dx_limit.c \
-              init_method.c \
+              init.c \
               main.c \
               mount.c \
               msg.c \

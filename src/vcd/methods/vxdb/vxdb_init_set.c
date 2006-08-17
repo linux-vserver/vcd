@@ -15,53 +15,55 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <lucid/str.h>
+
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-xmlrpc_value *m_vxdb_init_method_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *name, *method, *start, *stop;
-	int timeout, rc;
+	char *name, *init, *halt, *reboot;
+	int rc;
 	xid_t xid;
 	
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:s,s:s,s:i,*}",
+		"{s:s,s:s,s:s,s:s,*}",
 		"name", &name,
-		"method", &method,
-		"start", &start,
-		"stop", &stop,
-		"timeout", &timeout);
+		"init", &init,
+		"halt", &halt,
+		"reboot", &reboot);
 	method_return_if_fault(env);
 	
-	method_empty_params(2, &start, &stop);
+	method_empty_params(3, &init, &halt, &reboot);
 	
-	if (!validate_name(name) || !validate_init_method(method) ||
-	   (start && !validate_runlevel(start)) ||
-	   (stop  && !validate_runlevel(stop)))
+	if (!init)
+		init = "/sbin/init";
+	
+	if (!halt)
+		halt = "/sbin/halt";
+	
+	if (!reboot)
+		reboot = "/sbin/reboot";
+	
+	if (!validate_name(name) ||
+	    !str_path_isabs(init) ||
+	    !str_path_isabs(halt) ||
+	    !str_path_isabs(reboot))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (!start)
-		start = "";
-	
-	if (!stop)
-		stop = "";
-	
-	if (timeout < 1)
-		timeout = 30;
-	
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO init_method (xid, method, start, stop, timeout) "
-		"VALUES (%d, '%s', '%s', '%s', %d)",
-		xid, method, start, stop, timeout);
+		"INSERT OR REPLACE INTO init (xid, init, halt, reboot) "
+		"VALUES (%d, '%s', '%s', '%s')",
+		xid, init, halt, reboot);
 	
 	if (rc)
 		method_return_fault(env, MEVXDB);

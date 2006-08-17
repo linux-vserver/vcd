@@ -74,8 +74,8 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vxdb.dx.limit.get",        m_vxdb_dx_limit_get);
 	MREGISTER("vxdb.dx.limit.remove",     m_vxdb_dx_limit_remove);
 	MREGISTER("vxdb.dx.limit.set",        m_vxdb_dx_limit_set);
-	MREGISTER("vxdb.init.method.get",     m_vxdb_init_method_get);
-	MREGISTER("vxdb.init.method.set",     m_vxdb_init_method_set);
+	MREGISTER("vxdb.init.get",            m_vxdb_init_get);
+	MREGISTER("vxdb.init.set",            m_vxdb_init_set);
 	MREGISTER("vxdb.list",                m_vxdb_list);
 	MREGISTER("vxdb.mount.get",           m_vxdb_mount_get);
 	MREGISTER("vxdb.mount.remove",        m_vxdb_mount_remove);

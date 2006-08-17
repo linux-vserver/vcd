@@ -53,7 +53,6 @@ static cfg_opt_t init_OPTS[] = {
 	CFG_STR("init",    "/sbin/init",   CFGF_NONE),
 	CFG_STR("halt",    "/sbin/halt",   CFGF_NONE),
 	CFG_STR("reboot",  "/sbin/reboot", CFGF_NONE),
-	CFG_INT("timeout", 15,             CFGF_NONE),
 	CFG_END()
 };
 
@@ -151,7 +150,6 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
 	
 	cfg_t *init_cfg;
 	const char *init, *halt, *reboot;
-	int timeout;
 	
 	int vx_bcaps_size, vx_ccaps_size, vx_flags_size;
 	const char *bcap, *ccap, *flag;
@@ -225,7 +223,6 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
 		init    = cfg_getstr(init_cfg, "init");
 		halt    = cfg_getstr(init_cfg, "halt");
 		reboot  = cfg_getstr(init_cfg, "reboot");
-		timeout = cfg_getint(init_cfg, "timeout");
 		
 		if (str_isempty(init))
 			init = "/sbin/init";
@@ -236,13 +233,10 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
 		if (str_isempty(reboot))
 			reboot = "/sbin/reboot";
 		
-		if (timeout < 0)
-			timeout = 0;
-		
 		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO init (xid, init, halt, reboot, timeout) "
-			"VALUES (%d, '%s', '%s', '%s', %d);",
-			xid, init, halt, reboot, timeout);
+			"INSERT OR REPLACE INTO init (xid, init, halt, reboot) "
+			"VALUES (%d, '%s', '%s', '%s');",
+			xid, init, halt, reboot);
 	}
 	
 	if (rebuild)

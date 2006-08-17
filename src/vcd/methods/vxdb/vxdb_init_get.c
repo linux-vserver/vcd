@@ -20,7 +20,7 @@
 #include "validate.h"
 #include "vxdb.h"
 
-xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vxdb_init_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params, *response = NULL;
 	char *name;
@@ -43,7 +43,7 @@ xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 	
 	rc = vxdb_prepare(&dbr,
-		"SELECT method,start,stop,timeout FROM init_method WHERE xid = %d",
+		"SELECT init,halt,reboot FROM init WHERE xid = %d",
 		xid);
 	
 	if (rc)
@@ -57,19 +57,17 @@ xmlrpc_value *m_vxdb_init_method_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		
 		else if (rc == 0)
 			response = xmlrpc_build_value(env,
-				"{s:s,s:s,s:s,s:i}",
-				"method",  "init",
-				"start",   "",
-				"stop",    "",
-				"timeout", 30);
+				"{s:s,s:s,s:s}",
+				"init",   "/sbin/init",
+				"halt",   "/sbin/halt",
+				"reboot", "/sbin/reboot");
 		
 		else
 			response = xmlrpc_build_value(env,
-				"{s:s,s:s,s:s,s:i}",
-				"method",  sqlite3_column_text(dbr, 0),
-				"start",   sqlite3_column_text(dbr, 1),
-				"stop",    sqlite3_column_text(dbr, 2),
-				"timeout", sqlite3_column_int(dbr, 3));
+				"{s:s,s:s,s:s}",
+				"init",   sqlite3_column_text(dbr, 0),
+				"halt",   sqlite3_column_text(dbr, 1),
+				"reboot", sqlite3_column_text(dbr, 2));
 	}
 	
 	sqlite3_finalize(dbr);

@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS init (
   init TEXT NOT NULL,
   halt TEXT,
   reboot TEXT,
-  timeout TINYINT,
   UNIQUE(xid)
 );
 

@@ -35,8 +35,8 @@ M_VX = vx/vx_create.c \
 M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_dx_limit_remove.c \
          vxdb/vxdb_dx_limit_set.c \
-         vxdb/vxdb_init_method_get.c \
-         vxdb/vxdb_init_method_set.c \
+         vxdb/vxdb_init_get.c \
+         vxdb/vxdb_init_set.c \
          vxdb/vxdb_list.c \
          vxdb/vxdb_mount_get.c \
          vxdb/vxdb_mount_remove.c \
