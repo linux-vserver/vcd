@@ -10,13 +10,11 @@ usage() {
 	exit 0
 }
 
-[[ -z $1 || $1 == "--help" ]] && usage
+[[ $1 == "--help" ]] && usage
 
 
-local o=1
-local p=0
-
-local path flags
+o=1
+p=0
 
 while read path; do
 	case "$path" in
