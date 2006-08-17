@@ -21,11 +21,18 @@ EXTRA_DIST = vshelper.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
+noinst_HEADERS = cfg.h \
+                 log.h
+
 sbin_PROGRAMS = vshelper
 
-vshelper_SOURCES = vshelper.c
+vshelper_SOURCES = cfg.c \
+                   log.c \
+                   main.c
 
 vshelper_LDADD = $(CONFUSE_LIBS) \
+                 $(LUCID_LIBS) \
+                 $(VSERVER_LIBS) \
                  $(XMLRPC_C_CLIENT_LIBS)
 
 install-data-local:
