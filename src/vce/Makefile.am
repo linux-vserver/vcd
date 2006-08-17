@@ -30,7 +30,6 @@ vce_SOURCES = cmd.c \
               dx_limit.c \
               init.c \
               main.c \
-              mount.c \
               msg.c \
               nx_addr.c \
               nx_broadcast.c \

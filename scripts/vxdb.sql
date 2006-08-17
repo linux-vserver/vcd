@@ -17,15 +17,6 @@ CREATE TABLE IF NOT EXISTS init (
   UNIQUE(xid)
 );
 
-CREATE TABLE IF NOT EXISTS mount (
-  xid SMALLINT NOT NULL,
-  spec TEXT NOT NULL,
-  path TEXT NOT NULL,
-  vfstype TEXT,
-  mntops TEXT,
-  UNIQUE(xid, path)
-);
-
 CREATE TABLE IF NOT EXISTS nx_addr (
   xid SMALLINT NOT NULL,
   addr TEXT NOT NULL,

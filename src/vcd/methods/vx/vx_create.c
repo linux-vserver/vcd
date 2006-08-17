@@ -85,6 +85,7 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 	vserverdir = cfg_getstr(cfg, "vserverdir");
 	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
 	
+	/* TODO: detect mounts */
 	if (rebuild && runlink(vdir) == -1)
 		method_return_faultf(env, MESYS, "runlink: %s", strerror(errno));
 	

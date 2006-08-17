@@ -28,9 +28,6 @@ int validate_path(const char *path);
 
 int validate_dlimits(uint32_t inodes, uint32_t space, int reserved);
 
-int validate_init_method(const char *method);
-int validate_runlevel(const char *runlevel);
-
 int validate_addr(const char *addr);
 
 int validate_username(const char *username);

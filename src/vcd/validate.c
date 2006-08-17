@@ -61,31 +61,6 @@ int validate_dlimits(uint32_t inodes, uint32_t space, int reserved)
 	return (reserved > 0 && reserved < 100);
 }
 
-int validate_init_method(const char *method)
-{
-	log_debug("[trace] %s", __FUNCTION__);
-	
-	if (str_isempty(method))
-		return 0;
-	
-	if (strcmp(method, "init")   == 0 ||
-	    strcmp(method, "initng") == 0 ||
-	    strcmp(method, "gentoo") == 0)
-		return 1;
-	
-	return 0;
-}
-
-int validate_runlevel(const char *runlevel)
-{
-	log_debug("[trace] %s", __FUNCTION__);
-	
-	if (str_isempty(runlevel))
-		return 0;
-	
-	return str_isalnum(runlevel);
-}
-
 int validate_addr(const char *addr)
 {
 	log_debug("[trace] %s", __FUNCTION__);
