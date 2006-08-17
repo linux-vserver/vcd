@@ -15,11 +15,16 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-INCLUDES = -I$(top_srcdir)/lib/libarchive/src \
-           -I$(top_srcdir)/src/vcd
+INCLUDES = -I$(top_srcdir)/src/vcd
+
+M_HELPER = helper/helper_netup.c \
+           helper/helper_restart.c \
+           helper/helper_shutdown.c \
+           helper/helper_startup.c
 
 M_VX = vx/vx_create.c \
-       vx/vx_killer.c \
+       vx/vx_exec.c \
+       vx/vx_reboot.c \
        vx/vx_remove.c \
        vx/vx_rename.c \
        vx/vx_start.c \
@@ -74,5 +79,6 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
 
 noinst_LIBRARIES = libmethods.a
 
-libmethods_a_SOURCES = $(M_VX) \
+libmethods_a_SOURCES = $(M_HELPER) \
+                       $(M_VX) \
                        $(M_VXDB)

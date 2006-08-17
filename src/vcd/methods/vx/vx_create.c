@@ -46,30 +46,21 @@
 
 #define DEFAULT_CCAPS "{ SET_UTSNAME, RAW_ICMP }"
 
-#define DEFAULT_FLAGS "{ INFO_HIDE, VIRT_MEM, VIRT_UPTIME, VIRT_CPU, " \
+#define DEFAULT_FLAGS "{ VIRT_MEM, VIRT_UPTIME, VIRT_CPU, " \
                       "VIRT_LOAD, HIDE_NETIF }"
 
-static cfg_opt_t init_method_OPTS[] = {
-	CFG_STR("method",  "init", CFGF_NONE),
-	CFG_STR("start",   NULL,   CFGF_NONE),
-	CFG_STR("stop",    NULL,   CFGF_NONE),
-	CFG_INT("timeout", 15,     CFGF_NONE),
-	CFG_END()
-};
-
-static cfg_opt_t mount_OPTS[] = {
-	CFG_STR("spec",    NULL, CFGF_NONE),
-	CFG_STR("vfstype", NULL, CFGF_NONE),
-	CFG_STR("mntops",  NULL, CFGF_NONE),
+static cfg_opt_t init_OPTS[] = {
+	CFG_STR("init",    "/sbin/init",   CFGF_NONE),
+	CFG_STR("halt",    "/sbin/halt",   CFGF_NONE),
+	CFG_STR("reboot",  "/sbin/reboot", CFGF_NONE),
+	CFG_INT("timeout", 15,             CFGF_NONE),
 	CFG_END()
 };
 
 static cfg_opt_t BUILD_OPTS[] = {
 	CFG_STR("description", NULL, CFGF_NONE),
 	
-	CFG_SEC("init_method", init_method_OPTS, CFGF_NONE),
-	
-	CFG_SEC("mount", mount_OPTS, CFGF_MULTI|CFGF_TITLE),
+	CFG_SEC("init", init_OPTS, CFGF_NONE),
 	
 	CFG_STR_LIST("vx_bcaps",  DEFAULT_BCAPS, CFGF_NONE),
 	CFG_STR_LIST("vx_ccaps",  DEFAULT_CCAPS, CFGF_NONE),
@@ -79,19 +70,18 @@ static cfg_opt_t BUILD_OPTS[] = {
 
 static xid_t xid = 0;
 static char *name = NULL;
-static char vdir[PATH_MAX];
 static int rebuild = 0;
 
 static
 xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 {
 	const char *datadir, *vserverdir;
-	char *templatearchive;
+	char archive[PATH_MAX], vdir[PATH_MAX];
 	struct stat sb;
 	TAR *t;
 	
 	datadir = cfg_getstr(cfg, "datadir");
-	asprintf(&templatearchive, "%s/templates/%s.tar", datadir, template);
+	snprintf(archive, PATH_MAX, "%s/templates/%s.tar", datadir, template);
 	
 	vserverdir = cfg_getstr(cfg, "vserverdir");
 	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
@@ -110,7 +100,7 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 	if (mkdirp(vdir, 0755) == -1 || chroot_secure_chdir(vdir, "/") == -1)
 		method_return_faultf(env, MESYS, "secure_chdir: %s", strerror(errno));
 	
-	if (tar_open(&t, templatearchive, NULL, O_RDONLY, 0, 0) == -1)
+	if (tar_open(&t, archive, NULL, O_RDONLY, 0, 0) == -1)
 		method_return_faultf(env, MESYS, "tar_open: %s", strerror(errno));
 	
 	if (tar_extract_all(t, ".") != 0)
@@ -152,45 +142,51 @@ xid_t find_free_xid()
 static
 xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
 {
+	int rc, i;
+	vxdb_result *dbr;
 	stralloc_t sa;
-	cfg_t *tcfg, *init_method_cfg, *mount_cfg;
-	const char *method, *start, *stop;
-	const char *path, *spec, *vfstype, *mntops;
-	int rc, i, timeout, mount_size, max, cnt;
+	cfg_t *tcfg;
+	
+	int max, cnt;
+	
+	cfg_t *init_cfg;
+	const char *init, *halt, *reboot;
+	int timeout;
+	
 	int vx_bcaps_size, vx_ccaps_size, vx_flags_size;
 	const char *bcap, *ccap, *flag;
-	char *sql, *datadir, *templateconf;
-	vxdb_result *dbr;
+	
+	char *datadir, templateconf[PATH_MAX];
 	struct stat sb;
 	
+	char *sql;
+	
+	/* load configuration */
 	datadir = cfg_getstr(cfg, "datadir");
-	asprintf(&templateconf, "%s/templates/%s.conf", datadir, template);
+	snprintf(templateconf, PATH_MAX, "%s/templates/%s.conf", datadir, template);
 	
 	if (lstat(templateconf, &sb) == -1) {
 		if (errno != ENOENT)
 			method_return_faultf(env, MESYS, "lstat: %s", strerror(errno));
-		else {
-			free(templateconf);
-			templateconf = strdup("/dev/null");
-		}
+		
+		else
+			strncpy(templateconf, "/dev/null", PATH_MAX);
 	}
 	
 	tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
 	
 	switch (cfg_parse(tcfg, templateconf)) {
 	case CFG_FILE_ERROR:
-		free(templateconf);
 		method_return_faultf(env, MECONF, "no template configuration found for '%s'", template);
 	
 	case CFG_PARSE_ERROR:
-		free(templateconf);
 		method_return_faultf(env, MECONF, "%s", "syntax error in template configuration");
 	
 	default:
-		free(templateconf);
 		break;
 	}
 	
+	/* find a free xid */
 	if (!xid) {
 		rc = vxdb_prepare(&dbr, "SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
 		
@@ -219,61 +215,34 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
 	
 	method_return_if_fault(env);
 	
+	/* assemble SQL query */
 	stralloc_init(&sa);
 	stralloc_cats(&sa, "BEGIN EXCLUSIVE TRANSACTION;");
 	
-	init_method_cfg = cfg_getsec(tcfg, "init_method");
+	init_cfg = cfg_getsec(tcfg, "init");
 	
-	if (init_method_cfg) {
-		method  = cfg_getstr(init_method_cfg, "method");
-		start   = cfg_getstr(init_method_cfg, "start");
-		stop    = cfg_getstr(init_method_cfg, "stop");
-		timeout = cfg_getint(init_method_cfg, "timeout");
+	if (init_cfg) {
+		init    = cfg_getstr(init_cfg, "init");
+		halt    = cfg_getstr(init_cfg, "halt");
+		reboot  = cfg_getstr(init_cfg, "reboot");
+		timeout = cfg_getint(init_cfg, "timeout");
 		
-		if (str_isempty(method))
-			method = "init";
+		if (str_isempty(init))
+			init = "/sbin/init";
 		
-		if (str_isempty(start))
-			start = "";
+		if (str_isempty(halt))
+			halt = "/sbin/halt";
 		
-		if (str_isempty(stop))
-			stop = "";
+		if (str_isempty(reboot))
+			reboot = "/sbin/reboot";
 		
 		if (timeout < 0)
 			timeout = 0;
 		
 		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO init_method (xid, method, start, stop, timeout) "
+			"INSERT OR REPLACE INTO init (xid, init, halt, reboot, timeout) "
 			"VALUES (%d, '%s', '%s', '%s', %d);",
-			xid, method, start, stop, timeout);
-	}
-	
-	mount_size = cfg_size(tcfg, "mount");
-	
-	for (i = 0; i < mount_size; i++) {
-		mount_cfg = cfg_getnsec(tcfg, "mount", i);
-		
-		path    = cfg_title(mount_cfg);
-		spec    = cfg_getstr(mount_cfg, "spec");
-		vfstype = cfg_getstr(mount_cfg, "vfstype");
-		mntops  = cfg_getstr(mount_cfg, "mntops");
-		
-		if (!validate_path(path))
-			method_return_faultf(env, MECONF, "invalid mount path: %s", path);
-		
-		if (str_isempty(mntops))
-			mntops = "defaults";
-		
-		if (str_isempty(vfstype))
-			vfstype = "auto";
-		
-		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO mount (xid, path, spec, vfstype, mntops) "
-			"VALUES (%d, '%s', '%s', '%s', '%s');",
-			xid, path, spec, vfstype, mntops);
-		
-		if (chroot_mkdirp(vdir, path, 0755) == -1)
-			method_return_faultf(env, MESYS, "chroot_mkdirp: %s", strerror(errno));
+			xid, init, halt, reboot, timeout);
 	}
 	
 	if (rebuild)

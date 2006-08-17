@@ -21,146 +21,28 @@
 #include <string.h>
 #include <signal.h>
 #include <vserver.h>
-#include <sys/wait.h>
-#include <lucid/chroot.h>
-#include <lucid/exec.h>
 
 #include "auth.h"
-#include "cfg.h"
 #include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
-/* stop/restart process:
-   1) run init-style based stop command (background)
-   1) create new vps killer
-   3) wait for vps killer if approriate
-*/
-
-static xid_t xid = 0;
-static const char *name = NULL;
-
-static
-xmlrpc_value *shutdown_init(xmlrpc_env *env)
-{
-	pid_t pid;
-	int i, status;
-	
-	char *vserverdir = cfg_getstr(cfg, "vserverdir");
-	char *vdir = NULL;
-	
-	asprintf(&vdir, "%s/%s", vserverdir, name);
-	
-	switch ((pid = fork())) {
-	case -1:
-		method_return_faultf(env, MESYS, "%s: fork: %s", __FUNCTION__, strerror(errno));
-	
-	case 0:
-		usleep(200);
-		
-		for (i = 0; i < 100; i++)
-			close(i);
-		
-		if (vx_enter_namespace(xid) == -1)
-			exit(errno);
-		
-		if (chroot_secure_chdir(vdir, "/") == -1)
-			exit(errno);
-		
-		if (chroot(".") == -1)
-			exit(errno);
-		
-		if (nx_migrate(xid) == -1 || vx_migrate(xid, NULL) == -1)
-			exit(errno);
-		
-		if (exec_replace("/sbin/telinit 0") == -1)
-			exit(errno);
-		
-		exit(EXIT_SUCCESS);
-	
-	default:
-		if (waitpid(pid, &status, WNOHANG) == -1)
-			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "shutdown failed: %s", strerror(WEXITSTATUS(status)));
-	}
-	
-	return NULL;
-}
-
-static
-xmlrpc_value *shutdown_initng(xmlrpc_env *env)
-{
-	pid_t pid;
-	int i, status;
-	
-	char *vserverdir = cfg_getstr(cfg, "vserverdir");
-	char *vdir = NULL;
-	
-	asprintf(&vdir, "%s/%s", vserverdir, name);
-	
-	switch ((pid = fork())) {
-	case -1:
-		method_return_faultf(env, MESYS, "%s: fork: %s", __FUNCTION__, strerror(errno));
-	
-	case 0:
-		usleep(200);
-		
-		for (i = 0; i < 100; i++)
-			close(i);
-		
-		if (vx_enter_namespace(xid) == -1)
-			exit(errno);
-		
-		if (chroot_secure_chdir(vdir, "/") == -1)
-			exit(errno);
-		
-		if (chroot(".") == -1)
-			exit(errno);
-		
-		if (nx_migrate(xid) == -1 || vx_migrate(xid, NULL) == -1)
-			exit(errno);
-		
-		if (exec_replace("/sbin/ngc -0") == -1)
-			exit(errno);
-		
-		exit(EXIT_SUCCESS);
-	
-	default:
-		if (waitpid(pid, &status, WNOHANG) == -1)
-			method_return_faultf(env, MESYS, "%s: waitpid: %s", __FUNCTION__, strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "shutdown failed: %s", strerror(WEXITSTATUS(status)));
-	}
-	
-	return NULL;
-}
-
-static
-xmlrpc_value *shutdown_gentoo(xmlrpc_env *env, const char *runlevel)
-{
-	return NULL;
-}
-
-/* vx.stop(string name[, int wait[, int reboot]) */
+/* vx.stop(string name) */
 xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	const char *method = NULL, *stop;
-	int wait, reboot, timeout, rc;
+	char *name, *halt = "/sbin/halt";
+	xid_t xid;
+	int rc;
 	vxdb_result *dbr;
 	
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:i,s:i,*}",
-		"name", &name,
-		"reboot", &reboot,
-		"wait", &wait);
+		"{s:s,*}",
+		"name", &name);
 	method_return_if_fault(env);
 	
 	if (!validate_name(name))
@@ -176,9 +58,7 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_faultf(env, MESYS, "vx_get_info: %s", strerror(errno));
 	}
 	
-	rc = vxdb_prepare(&dbr,
-		"SELECT method,stop,timeout FROM init_method WHERE xid = %d",
-		xid);
+	rc = vxdb_prepare(&dbr, "SELECT halt FROM init WHERE xid = %d", xid);
 	
 	if (rc)
 		method_set_fault(env, MEVXDB);
@@ -189,37 +69,17 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
 		
-		else if (rc == 0) {
-			method  = "init";
-			stop    = "";
-			timeout = 30;
-		}
-		
-		else {
-			method  = sqlite3_column_text(dbr, 0);
-			stop    = sqlite3_column_text(dbr, 1);
-			timeout = sqlite3_column_int(dbr, 2);
-		}
-		
-		sqlite3_finalize(dbr);
+		else if (rc > 0)
+			halt = strdup(sqlite3_column_text(dbr, 0));
 	}
 	
+	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
 	
-	if (strcmp(method, "init") == 0)
-		shutdown_init(env);
+	params = xmlrpc_build_value(env,
+	                            "{s:s,s:s}",
+	                            "name", name,
+	                            "command", halt);
 	
-	else if (strcmp(method, "initng") == 0)
-		shutdown_initng(env);
-	
-	else if (strcmp(method, "gentoo") == 0)
-		shutdown_gentoo(env, stop);
-	
-	else
-		method_return_faultf(env, MECONF, "unknown init style: %s", method);
-	
-	m_vx_killer(env, params, METHOD_INTERNAL);
-	method_return_if_fault(env);
-	
-	return xmlrpc_nil_new(env);
+	return m_vx_exec(env, params, METHOD_INTERNAL);
 }

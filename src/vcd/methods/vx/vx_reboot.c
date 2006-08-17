@@ -17,10 +17,10 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
 #include <errno.h>
+#include <string.h>
+#include <signal.h>
 #include <vserver.h>
-#include <sys/wait.h>
 
 #include "auth.h"
 #include "log.h"
@@ -28,27 +28,14 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* start process:
-   1) create network context (helper will do the rest)
-   2) create context (helper will do the rest)
-*/
-
-/* vx.start(string name) */
-xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
+/* vx.reboot(string name) */
+xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
-	char *name;
+	char *name, *reboot = "/sbin/reboot";
 	xid_t xid;
-	pid_t pid;
-	int status;
-	
-	struct nx_create_flags ncf = {
-		.flags = NXF_STATE_ADMIN|NXF_SC_HELPER,
-	};
-	
-	struct vx_create_flags vcf = {
-		.flags = VXF_STATE_ADMIN|VXF_SC_HELPER|VXF_INFO_INIT|VXF_REBOOT_KILL,
-	};
+	int rc;
+	vxdb_result *dbr;
 	
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
@@ -64,29 +51,35 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (vx_get_info(xid, NULL) != -1)
-		method_return_fault(env, MERUNNING);
-	
-	switch ((pid = fork())) {
-	case -1:
-		method_return_faultf(env, MESYS, "fork: %s", strerror(errno));
-	
-	case 0:
-		if (nx_create(xid, &ncf) == -1)
-			log_error_and_die("nx_create: %s", strerror(errno));
-		
-		if (vx_create(xid, &vcf) == -1)
-			log_error_and_die("vx_create: %s", strerror(errno));
-		
-		exit(EXIT_SUCCESS);
-	
-	default:
-		if (waitpid(pid, &status, 0) == -1)
-			method_return_faultf(env, MESYS, "waitpid: %s", strerror(errno));
-		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "%s", "startup failed");
+	if (vx_get_info(xid, NULL) == -1) {
+		if (errno == ESRCH)
+			method_return_fault(env, MESTOPPED);
+		else
+			method_return_faultf(env, MESYS, "vx_get_info: %s", strerror(errno));
 	}
 	
-	return xmlrpc_nil_new(env);
+	rc = vxdb_prepare(&dbr, "SELECT reboot FROM init WHERE xid = %d", xid);
+	
+	if (rc)
+		method_set_fault(env, MEVXDB);
+	
+	else {
+		rc = vxdb_step(dbr);
+		
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+		
+		else if (rc > 0)
+			reboot = strdup(sqlite3_column_text(dbr, 0));
+	}
+	
+	sqlite3_finalize(dbr);
+	method_return_if_fault(env);
+	
+	params = xmlrpc_build_value(env,
+	                            "{s:s,s:s}",
+	                            "name", name,
+	                            "command", reboot);
+	
+	return m_vx_exec(env, params, METHOD_INTERNAL);
 }
