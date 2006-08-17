@@ -9,11 +9,11 @@ CREATE TABLE IF NOT EXISTS dx_limit (
   UNIQUE(xid, path)
 );
 
-CREATE TABLE IF NOT EXISTS init_method (
+CREATE TABLE IF NOT EXISTS init (
   xid SMALLINT NOT NULL,
-  method TEXT NOT NULL,
-  start TEXT,
-  stop TEXT,
+  init TEXT NOT NULL,
+  halt TEXT,
+  reboot TEXT,
   timeout TINYINT,
   UNIQUE(xid)
 );
@@ -37,6 +37,11 @@ CREATE TABLE IF NOT EXISTS nx_addr (
 CREATE TABLE IF NOT EXISTS nx_broadcast (
   xid SMALLINT NOT NULL,
   broadcast TEXT NOT NULL,
+  UNIQUE(xid)
+);
+
+CREATE TABLE IF NOT EXISTS restart (
+  xid SMALLINT NOT NULL,
   UNIQUE(xid)
 );
 
@@ -70,8 +75,6 @@ INSERT INTO user_caps VALUES(1, 'RLIM');
 INSERT INTO user_caps VALUES(1, 'SCHED');
 INSERT INTO user_caps VALUES(1, 'UNAME');
 INSERT INTO user_caps VALUES(1, 'CREATE');
-INSERT INTO user_caps VALUES(1, 'HELPER');
-INSERT INTO user_caps VALUES(2, 'INIT');
 INSERT INTO user_caps VALUES(2, 'HELPER');
 
 CREATE TABLE IF NOT EXISTS vx_bcaps (
