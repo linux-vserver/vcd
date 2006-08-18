@@ -39,7 +39,8 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"max", &max);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_rlimit(limit))
+	if (!validate_name(name) || !validate_rlimit(limit) ||
+	    !validate_rlimits(soft, max))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))

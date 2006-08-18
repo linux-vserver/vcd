@@ -183,6 +183,15 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 			rlimit.softlimit = sqlite3_column_int64(dbr, 1);
 			rlimit.maximum   = sqlite3_column_int64(dbr, 2);
 			
+			if (rlimit.softlimit == 0)
+				rlimit.softlimit = CRLIM_INFINITY;
+			
+			if (rlimit.maximum == 0)
+				rlimit.maximum = CRLIM_INFINITY;
+			
+			if (rlimit.maximum < rlimit.softlimit)
+				rlimit.maximum = rlimit.softlimit;
+			
 			if (vx_set_rlimit(xid, &rlimit) == -1) {
 				method_set_faultf(env, MESYS, "vx_set_rlimit: %s", strerror(errno));
 				break;

@@ -146,7 +146,7 @@ int validate_rlimits(int soft, int max)
 {
 	log_debug("[trace] %s", __FUNCTION__);
 	
-	return (max >= soft);
+	return (soft >= 0 && max >= 0 && max >= soft);
 }
 
 int validate_cpuid(int cpuid)
