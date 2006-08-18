@@ -272,6 +272,8 @@ int do_vshelper(xid_t xid, action_t *action)
 	xmlrpc_env_clean(&env);
 	xmlrpc_client_cleanup();
 	
+	log_info("vshelper returns with %d", ret);
+	
 	return ret;
 }
 
@@ -315,7 +317,7 @@ int main(int argc, char *argv[])
 	
 	for (i = 0; ACTIONS[i].name; i++)
 		if (strcmp(ACTIONS[i].name, action) == 0)
-			return do_vshelper(xid, &ACTIONS[i]);
+			exit(do_vshelper(xid, &ACTIONS[i]));
 	
 	log_error("invalid action: %s", action);
 	exit(EXIT_FAILURE);

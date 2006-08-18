@@ -10,7 +10,7 @@ usage() {
 	exit 0
 }
 
-[[ $1 == "--help" ]] && usage
+[[ "$1" == "--help" ]] && usage
 
 
 o=1

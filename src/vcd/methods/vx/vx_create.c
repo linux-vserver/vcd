@@ -100,13 +100,15 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 	if (mkdirp(vdir, 0755) == -1 || chroot_secure_chdir(vdir, "/") == -1)
 		method_return_faultf(env, MESYS, "secure_chdir: %s", strerror(errno));
 	
-	if (tar_open(&t, archive, NULL, O_RDONLY, 0, 0) == -1)
-		method_return_faultf(env, MESYS, "tar_open: %s", strerror(errno));
-	
-	if (tar_extract_all(t, ".") != 0)
-		method_return_faultf(env, MESYS, "tar_extract_all: %s", strerror(errno));
-	
-	tar_close(t);
+	if (strcmp(template, "skeleton") != 0) {
+		if (tar_open(&t, archive, NULL, O_RDONLY, 0, 0) == -1)
+			method_return_faultf(env, MESYS, "tar_open: %s", strerror(errno));
+		
+		if (tar_extract_all(t, ".") != 0)
+			method_return_faultf(env, MESYS, "tar_extract_all: %s", strerror(errno));
+		
+		tar_close(t);
+	}
 	
 	if (runlink("dev") == -1 ||
 	    mkdir("dev", 0755) == -1 ||
