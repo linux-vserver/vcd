@@ -33,6 +33,7 @@
 #define VCD_CAP_UNAME  (1ULL << 10)
 #define VCD_CAP_CREATE (1ULL << 11)
 #define VCD_CAP_EXEC   (1ULL << 12)
+#define VCD_CAP_INFO   (1ULL << 13)
 #define VCD_CAP_HELPER (1ULL << 63)
 
 int auth_isvalid(const char *user, const char *pass);

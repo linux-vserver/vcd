@@ -26,7 +26,7 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *user;
 	int uid, rc;
 	
-	method_init(env, p, c, 0, 0);
+	method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, p,
