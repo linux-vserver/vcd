@@ -31,6 +31,8 @@
 /* vx.stop(string name) */
 xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *name, *halt = "/sbin/halt";
 	xid_t xid;

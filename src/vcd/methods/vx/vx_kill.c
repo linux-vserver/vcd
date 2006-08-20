@@ -31,6 +31,8 @@
 /* vx.kill(string name) */
 xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *name;
 	xid_t xid;

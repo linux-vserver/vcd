@@ -25,7 +25,7 @@
 
 int auth_isvalid(const char *user, const char *pass)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int rc;
 	vxdb_result *dbr;
@@ -49,7 +49,7 @@ int auth_isvalid(const char *user, const char *pass)
 
 int auth_isadmin(const char *user)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int rc;
 	vxdb_result *dbr;
@@ -71,7 +71,7 @@ int auth_isadmin(const char *user)
 static
 int auth_hascapability(const char *user, uint64_t cap)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	vxdb_result *dbr;
 	const char *buf;
@@ -99,7 +99,7 @@ int auth_hascapability(const char *user, uint64_t cap)
 
 int auth_capable(const char *user, uint64_t caps)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int i;
 	
@@ -113,7 +113,7 @@ int auth_capable(const char *user, uint64_t caps)
 
 int auth_isowner(const char *user, const char *name)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int uid, rc;
 	xid_t xid;
@@ -144,7 +144,7 @@ int auth_isowner(const char *user, const char *name)
 
 int auth_getuid(const char *user)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int uid, rc;
 	vxdb_result *dbr;

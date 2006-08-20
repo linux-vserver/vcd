@@ -18,6 +18,8 @@
 #ifndef _VCD_LOG_H
 #define _VCD_LOG_H
 
+#include <libgen.h>
+
 int  log_init (int debug);
 
 void log_debug(const char *fmt, ...);

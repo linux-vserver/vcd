@@ -37,6 +37,8 @@
 /* vx.exec(string name, string command) */
 xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *name, *command, *output, *vserverdir, vdir[PATH_MAX];
 	xid_t xid;

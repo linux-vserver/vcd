@@ -19,11 +19,14 @@
 
 #include "auth.h"
 #include "cfg.h"
+#include "log.h"
 #include "methods.h"
 #include "vxdb.h"
 
 xmlrpc_value *m_vxdb_vdir_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params, *response;
 	char *name, *vserverdir, *vdir;
 	xid_t xid;

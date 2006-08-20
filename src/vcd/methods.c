@@ -51,7 +51,7 @@ void *METHOD_INTERNAL = (void *) 0xdeadbeef;
 
 int method_registry_init(xmlrpc_env *env)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	/* helper */
 	MREGISTER("helper.netup",    m_helper_netup);
@@ -121,7 +121,7 @@ int method_registry_init(xmlrpc_env *env)
 
 void method_registry_atexit(void)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	xmlrpc_registry_free(registry);
 }
@@ -130,7 +130,7 @@ static
 void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
                         char *user, uint64_t flags)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int lockfd;
 	char *name, *datadir, lockfile[PATH_MAX];
@@ -169,7 +169,7 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
 xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
                           uint64_t caps, uint64_t flags)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	char *user = NULL, *pass;
 	xmlrpc_value *params = NULL;
@@ -208,7 +208,7 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 
 void method_empty_params(int num, ...)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int i;
 	va_list ap;
@@ -233,7 +233,7 @@ void method_empty_params(int num, ...)
 
 char *method_strerror(int id)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int i;
 	

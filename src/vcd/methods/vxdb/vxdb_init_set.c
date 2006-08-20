@@ -18,12 +18,15 @@
 #include <lucid/str.h>
 
 #include "auth.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *name, *init, *halt, *reboot;
 	int rc;

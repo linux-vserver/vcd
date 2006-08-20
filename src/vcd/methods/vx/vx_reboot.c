@@ -31,6 +31,8 @@
 /* vx.reboot(string name) */
 xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *name, *reboot = "/sbin/reboot";
 	xid_t xid;

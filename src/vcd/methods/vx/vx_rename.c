@@ -24,6 +24,7 @@
 
 #include "auth.h"
 #include "cfg.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -31,6 +32,8 @@
 /* vx.rename(string name, string newname) */
 xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *name, *newname, vdir[PATH_MAX], newvdir[PATH_MAX];
 	xid_t xid;

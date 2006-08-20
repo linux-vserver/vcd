@@ -366,6 +366,8 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env, const char *vdir)
 /* helper.startup(int xid) */
 xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	const char *init = "/sbin/init", *vserverdir;
 	char vdir[PATH_MAX];

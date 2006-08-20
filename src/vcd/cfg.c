@@ -25,7 +25,7 @@
 
 void cfg_atexit(void)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	cfg_free(cfg);
 }
@@ -33,7 +33,7 @@ void cfg_atexit(void)
 int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	struct in_addr inaddr;
 	
@@ -49,7 +49,7 @@ int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
 int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	long int port = strtol(value, NULL, 0);
 	
@@ -65,7 +65,7 @@ int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
 int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
                          const char *value, void *result)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	long int timeout = strtol(value, NULL, 0);
 	
@@ -81,7 +81,7 @@ int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	struct stat sb;
 	

@@ -18,12 +18,15 @@
 #include <lucid/str.h>
 
 #include "auth.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *user, *cap;
 	int uid;

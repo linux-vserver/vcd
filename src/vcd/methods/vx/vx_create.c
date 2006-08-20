@@ -35,6 +35,7 @@
 #include "auth.h"
 #include "cfg.h"
 #include "lists.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -74,6 +75,8 @@ static int rebuild = 0;
 static
 xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 {
+	TRACEIT
+	
 	const char *datadir, *vserverdir;
 	char archive[PATH_MAX], vdir[PATH_MAX];
 	struct stat sb;
@@ -128,6 +131,8 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 static
 xid_t find_free_xid()
 {
+	TRACEIT
+	
 	int i;
 	char *name;
 	
@@ -144,6 +149,8 @@ xid_t find_free_xid()
 static
 xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
 {
+	TRACEIT
+	
 	int rc, i;
 	vxdb_result *dbr;
 	stralloc_t sa;
@@ -309,6 +316,8 @@ commit:
 /* vx.create(string name, string template, int rebuild) */
 xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *user, *template;
 	

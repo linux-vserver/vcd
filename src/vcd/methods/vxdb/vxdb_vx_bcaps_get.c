@@ -17,6 +17,7 @@
 
 #include "auth.h"
 #include "lists.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -24,6 +25,8 @@
 /* vxdb.vx.bcaps.get([string name]) */
 xmlrpc_value *m_vxdb_vx_bcaps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params, *response;
 	char *name;
 	xid_t xid;

@@ -16,12 +16,15 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 xmlrpc_value *m_vxdb_nx_broadcast_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	char *name, *broadcast;
 	xid_t xid;

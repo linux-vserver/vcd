@@ -21,6 +21,7 @@
 #include <errno.h>
 
 #include "auth.h"
+#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -28,6 +29,8 @@
 /* helper.restart(string name) */
 xmlrpc_value *m_helper_restart(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	TRACEIT
+	
 	xmlrpc_value *params;
 	xid_t xid;
 	int rc;

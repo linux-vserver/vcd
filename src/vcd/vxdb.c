@@ -29,6 +29,8 @@ sqlite3 *vxdb = NULL;
 static
 void vxdb_sanity_check(void)
 {
+	TRACEIT
+	
 	int rc;
 	vxdb_result *dbr;
 	
@@ -55,7 +57,7 @@ void vxdb_trace(void *data, const char *sql)
 
 void vxdb_init(void)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int rc;
 	
@@ -83,14 +85,14 @@ void vxdb_init(void)
 
 void vxdb_atexit(void)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	sqlite3_close(vxdb);
 }
 
 int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	va_list ap;
 	char *sql;
@@ -112,7 +114,7 @@ int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 
 int vxdb_step(vxdb_result *dbr)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	switch (sqlite3_step(dbr)) {
 		case SQLITE_BUSY:
@@ -135,7 +137,7 @@ int vxdb_step(vxdb_result *dbr)
 
 int vxdb_exec(const char *fmt, ...)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	va_list ap;
 	char *sql;
@@ -157,7 +159,7 @@ int vxdb_exec(const char *fmt, ...)
 
 xid_t vxdb_getxid(const char *name)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int rc;
 	xid_t xid;
@@ -180,7 +182,7 @@ xid_t vxdb_getxid(const char *name)
 
 char *vxdb_getname(xid_t xid)
 {
-	log_debug("[trace] %s", __FUNCTION__);
+	TRACEIT
 	
 	int rc;
 	char *name;
