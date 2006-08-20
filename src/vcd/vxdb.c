@@ -107,7 +107,7 @@ int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 	free(sql);
 	
 	if (rc != SQLITE_OK)
-		log_warn("vxdb_prepare(%s): %s", sqlite3_errmsg(vxdb));
+		log_warn("vxdb_prepare(%s): %s", sql, sqlite3_errmsg(vxdb));
 	
 	return rc;
 }
@@ -152,7 +152,7 @@ int vxdb_exec(const char *fmt, ...)
 	free(sql);
 	
 	if (rc != SQLITE_OK)
-		log_warn("vxdb_exec(%s): %s", sqlite3_errmsg(vxdb));
+		log_warn("vxdb_exec(%s): %s", sql, sqlite3_errmsg(vxdb));
 	
 	return rc;
 }
