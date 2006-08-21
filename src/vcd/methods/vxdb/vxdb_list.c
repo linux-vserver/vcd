@@ -15,9 +15,12 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <string.h>
+
 #include "auth.h"
 #include "log.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -26,25 +29,37 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	xmlrpc_value *params, *response = NULL;
 	vxdb_result *dbr;
-	char *user;
-	int uid, rc;
+	char *curuser, *user;
+	int uid = 0, rc;
 	
 	method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, p,
-		"({s:s,*}V)",
+		"({s:s,*}{s:s,*})",
+		"username", &curuser,
 		"username", &user,
 		&params);
 	method_return_if_fault(env);
 	
-	if (auth_isadmin(user))
-		rc = vxdb_prepare(&dbr,
-			"SELECT name FROM xid_name_map ORDER BY name ASC");
+	method_empty_params(1, &user);
+	
+	if (user && !validate_username(user))
+		method_return_fault(env, MEINVAL);
+	
+	if (auth_isadmin(user)) {
+		if (user)
+			uid = auth_getuid(user);
+	}
 	
 	else {
-		uid = auth_getuid(user);
+		if (user && strcmp(curuser, user) != 0)
+			method_return_fault(env, MEINVAL);
 		
+		uid = auth_getuid(curuser);
+	}
+	
+	if (uid)
 		rc = vxdb_prepare(&dbr,
 			"SELECT xid_name_map.name FROM xid_name_map "
 			"INNER JOIN xid_uid_map "
@@ -52,7 +67,10 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"WHERE xid_uid_map.uid = %d "
 			"ORDER BY name ASC",
 			uid);
-	}
+	
+	else
+		rc = vxdb_prepare(&dbr,
+			"SELECT name FROM xid_name_map ORDER BY name ASC");
 	
 	if (rc)
 		method_set_fault(env, MEVXDB);
