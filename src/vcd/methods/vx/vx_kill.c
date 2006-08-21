@@ -28,7 +28,7 @@
 #include "validate.h"
 #include "vxdb.h"
 
-/* vx.kill(string name) */
+/* vx.kill(string name, int pid, int sig) */
 xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	TRACEIT
@@ -36,18 +36,16 @@ xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name;
 	xid_t xid;
-	
-	struct vx_kill_opts kill_opts = {
-		.pid = 0,
-		.sig = SIGKILL,
-	};
+	struct vx_kill_opts kill_opts;
 	
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,*}",
-		"name", &name);
+		"{s:s,s:i,s:i,*}",
+		"name", &name,
+		"pid", &kill_opts.pid,
+		"sig", &kill_opts.sig);
 	method_return_if_fault(env);
 	
 	if (!validate_name(name))
