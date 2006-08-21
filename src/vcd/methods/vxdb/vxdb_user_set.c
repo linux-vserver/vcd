@@ -37,7 +37,7 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:i,*}",
+		"{s:s,s:s,s:b,*}",
 		"username", &user,
 		"password", &pass,
 		"admin", &admin);

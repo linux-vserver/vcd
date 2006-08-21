@@ -313,7 +313,7 @@ commit:
 	return NULL;
 }
 
-/* vx.create(string name, string template, int rebuild) */
+/* vx.create(string name, string template, bool rebuild) */
 xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	TRACEIT
@@ -331,7 +331,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 	
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:i,*}",
+		"{s:s,s:s,s:b,*}",
 		"name", &name,
 		"template", &template,
 		"rebuild", &rebuild);
