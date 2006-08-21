@@ -41,7 +41,7 @@ xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"bcap", &bcap);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_bcap(str_toupper(bcap)))
+	if (!validate_name(name) || !validate_bcap(bcap))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))

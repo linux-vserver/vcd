@@ -45,10 +45,8 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (cpuid == -1)
-		rc = vxdb_exec(
-			"DELETE FROM vx_sched WHERE xid = %d",
-			xid);
+	if (cpuid == -2)
+		rc = vxdb_exec("DELETE FROM vx_sched WHERE xid = %d", xid);
 	
 	else
 		rc = vxdb_exec(

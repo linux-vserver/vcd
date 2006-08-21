@@ -102,7 +102,6 @@ CREATE TABLE IF NOT EXISTS vx_sched (
   fillrate2 INT NOT NULL,
   interval INT NOT NULL,
   interval2 INT NOT NULL,
-  priobias INT NOT NULL,
   tokensmin INT NOT NULL,
   tokensmax INT NOT NULL,
   UNIQUE(xid, cpuid)

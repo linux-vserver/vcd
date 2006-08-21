@@ -53,7 +53,7 @@ xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (cap)
 		rc = vxdb_exec(
 			"DELETE FROM user_caps WHERE uid = %d AND cap = '%s'",
-			uid, str_toupper(cap));
+			uid, cap);
 	
 	else
 		rc = vxdb_exec(

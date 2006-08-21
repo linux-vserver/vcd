@@ -80,7 +80,7 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 					"{s:s,s:s}",
 					"uname", sqlite3_column_text(dbr, 0),
-					"value", sqlite3_column_text(dbr, 0)));
+					"value", sqlite3_column_text(dbr, 1)));
 			
 			if (rc == -1)
 				method_set_fault(env, MEVXDB);

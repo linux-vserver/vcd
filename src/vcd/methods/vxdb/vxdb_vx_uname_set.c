@@ -42,7 +42,7 @@ xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"value", &value);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_uname(str_toupper(uname)) ||
+	if (!validate_name(name) || !validate_uname(uname) ||
 	    !validate_uname_value(value))
 		method_return_fault(env, MEINVAL);
 	

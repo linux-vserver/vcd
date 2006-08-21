@@ -41,7 +41,7 @@ xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"cap", &cap);
 	method_return_if_fault(env);
 	
-	if (!validate_username(user) || !validate_vcd_cap(str_toupper(cap)))
+	if (!validate_username(user) || !validate_vcd_cap(cap))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(uid = auth_getuid(user)))

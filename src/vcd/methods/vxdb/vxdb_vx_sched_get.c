@@ -47,15 +47,15 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (cpuid == -1)
+	if (cpuid == -2)
 		rc = vxdb_prepare(&dbr,
-			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax,priobias "
+			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
 			"FROM vx_sched WHERE xid = %d",
 			xid);
 	
 	else
 		rc = vxdb_prepare(&dbr,
-			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax,priobias "
+			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
 			"FROM vx_sched WHERE xid = %d AND cpuid = %d",
 			xid, cpuid);
 	
@@ -67,15 +67,14 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	else {
 		for (rc = vxdb_step(dbr); rc == 1; rc = vxdb_step(dbr))
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
+				"{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
 				"cpuid",     sqlite3_column_int(dbr, 0),
 				"fillrate",  sqlite3_column_int(dbr, 1),
 				"interval",  sqlite3_column_int(dbr, 2),
 				"fillrate2", sqlite3_column_int(dbr, 3),
 				"interval2", sqlite3_column_int(dbr, 4),
 				"tokensmin", sqlite3_column_int(dbr, 5),
-				"tokensmax", sqlite3_column_int(dbr, 6),
-				"priobias",  sqlite3_column_int(dbr, 7)));
+				"tokensmax", sqlite3_column_int(dbr, 6)));
 	}
 	
 	sqlite3_finalize(dbr);

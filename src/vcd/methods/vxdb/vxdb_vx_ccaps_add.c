@@ -41,7 +41,7 @@ xmlrpc_value *m_vxdb_vx_ccaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"ccap", &ccap);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_ccap(str_toupper(ccap)))
+	if (!validate_name(name) || !validate_ccap(ccap))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))

@@ -23,12 +23,12 @@
 void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 {
 	int cpuid, interval, fillrate, interval2, fillrate2;
-	int tokensmin, tokensmax, priobias;
+	int tokensmin, tokensmax;
 	xmlrpc_value *response, *result;
 	int i, len;
 	
 	if (argc < 1)
-		cpuid = -1;
+		cpuid = -2;
 	else
 		cpuid = atoi(argv[0]);
 	
@@ -46,21 +46,20 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 		return_if_fault(env);
 		
 		xmlrpc_decompose_value(env, result,
-			"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,*}",
+			"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,*}",
 			"cpuid", &cpuid,
 			"interval", &interval,
 			"fillrate", &fillrate,
 			"interval2", &interval2,
 			"fillrate2", &fillrate2,
 			"tokensmin", &tokensmin,
-			"tokensmax", &tokensmax,
-			"priobias", &priobias);
+			"tokensmax", &tokensmax);
 		return_if_fault(env);
 		
 		xmlrpc_DECREF(result);
 		
-		printf("%d: %d %d %d %d %d %d %d\n", cpuid, interval, fillrate, interval2,
-			fillrate2, tokensmin, tokensmax, priobias);
+		printf("%d: %d %d %d %d %d %d\n", cpuid, interval, fillrate, interval2,
+			fillrate2, tokensmin, tokensmax);
 	}
 		
 	xmlrpc_DECREF(response);
@@ -71,7 +70,7 @@ void cmd_vx_sched_remove(xmlrpc_env *env, int argc, char **argv)
 	int cpuid;
 	
 	if (argc < 1)
-		cpuid = -1;
+		cpuid = -2;
 	else
 		cpuid = atoi(argv[0]);
 	
@@ -83,27 +82,24 @@ void cmd_vx_sched_remove(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_vx_sched_set(xmlrpc_env *env, int argc, char **argv)
 {
-	int cpuid, interval, fillrate, interval2, fillrate2;
-	int tokensmin, tokensmax, priobias;
+	int cpuid = -1, interval, fillrate, interval2, fillrate2;
+	int tokensmin, tokensmax, i = 0;
 	
-	if (argc < 7)
+	if (argc < 6)
 		usage(EXIT_FAILURE);
 	
-	interval = atoi(argv[0]);
-	fillrate = atoi(argv[1]);
-	interval2 = atoi(argv[2]);
-	fillrate2 = atoi(argv[3]);
-	tokensmin = atoi(argv[4]);
-	tokensmax = atoi(argv[5]);
-	priobias = atoi(argv[6]);
+	if (argc > 6)
+		cpuid = atoi(argv[i++]);
 	
-	if (argc > 7)
-		cpuid = atoi(argv[7]);
-	else
-		cpuid = 0;
+	interval  = atoi(argv[i++]);
+	fillrate  = atoi(argv[i++]);
+	interval2 = atoi(argv[i++]);
+	fillrate2 = atoi(argv[i++]);
+	tokensmin = atoi(argv[i++]);
+	tokensmax = atoi(argv[i++]);
 	
 	xmlrpc_client_call(env, uri, "vxdb.vx.sched.set",
-		SIGNATURE("{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i}"),
+		SIGNATURE("{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i}"),
 		"name", name,
 		"cpuid", cpuid,
 		"interval", interval,
@@ -111,6 +107,5 @@ void cmd_vx_sched_set(xmlrpc_env *env, int argc, char **argv)
 		"interval2", interval2,
 		"fillrate2", fillrate2,
 		"tokensmin", tokensmin,
-		"tokensmax", tokensmax,
-		"priobias", priobias);
+		"tokensmax", tokensmax);
 }

@@ -41,7 +41,7 @@ xmlrpc_value *m_vxdb_vx_flags_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"flag", &flag);
 	method_return_if_fault(env);
 	
-	if (!validate_name(name) || !validate_cflag(str_toupper(flag)))
+	if (!validate_name(name) || !validate_cflag(flag))
 		method_return_fault(env, MEINVAL);
 	
 	if (!(xid = vxdb_getxid(name)))

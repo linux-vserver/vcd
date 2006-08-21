@@ -160,8 +160,7 @@ int validate_cpuid(int cpuid)
 
 int validate_token_bucket(int32_t fillrate, int32_t interval,
                           int32_t fillrate2, int32_t interval2,
-                          int32_t tokensmin, int32_t tokensmax,
-                          int32_t priobias)
+                          int32_t tokensmin, int32_t tokensmax)
 {
 	TRACEIT
 	

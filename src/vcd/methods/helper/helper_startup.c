@@ -210,7 +210,7 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 static
 xmlrpc_value *context_scheduler(xmlrpc_env *env)
 {
-	int rc;
+	int rc, cpuid, numcpus;
 	vxdb_result *dbr;
 	
 	struct vx_sched sched = {
@@ -225,9 +225,11 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 		.bucket_id = 0,
 	};
 	
+	numcpus = sysconf(_SC_NPROCESSORS_ONLN);
+	
 	rc = vxdb_prepare(&dbr,
-		"SELECT cpuid,fillrate,interval,priobias,tokensmin,tokensmax,fillrate2,interval2 "
-		"FROM vx_sched WHERE xid = %d",
+		"SELECT cpuid,fillrate,interval,tokensmin,tokensmax,fillrate2,interval2 "
+		"FROM vx_sched WHERE xid = %d ORDER BY cpuid ASC",
 		xid);
 	
 	if (rc)
@@ -235,27 +237,35 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 	
 	else {
 		vxdb_foreach_step(rc, dbr) {
-			sched.cpu_id     = sqlite3_column_int(dbr, 0);
+			sched.set_mask |= VXSM_FILL_RATE|VXSM_INTERVAL;
+			sched.set_mask |= VXSM_TOKENS|VXSM_TOKENS_MIN|VXSM_TOKENS_MAX;
+			
+			cpuid = sqlite3_column_int(dbr, 0);
+			
+			if (cpuid > numcpus)
+				continue;
+			
+			if (cpuid >= 0) {
+				sched.cpu_id    = cpuid;
+				sched.set_mask |= VXSM_CPU_ID;
+			}
+			
 			sched.fill_rate  = sqlite3_column_int(dbr, 1);
 			sched.interval   = sqlite3_column_int(dbr, 2);
-			sched.prio_bias  = sqlite3_column_int(dbr, 3);
-			sched.tokens_min = sqlite3_column_int(dbr, 4);
-			sched.tokens_max = sqlite3_column_int(dbr, 5);
+			sched.tokens_min = sqlite3_column_int(dbr, 3);
+			sched.tokens_max = sqlite3_column_int(dbr, 4);
 			
 			sched.tokens = sched.tokens_max;
-			
-			sched.set_mask |= VXSM_CPU_ID|VXSM_FILL_RATE|VXSM_INTERVAL|VXSM_TOKENS;
-			sched.set_mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX|VXSM_PRIO_BIAS;
 			
 			if (vx_set_sched(xid, &sched) == -1) {
 				method_set_faultf(env, MESYS, "vx_set_sched: %s", strerror(errno));
 				break;
 			}
 			
-			sched.fill_rate  = sqlite3_column_int(dbr, 6);
-			sched.interval   = sqlite3_column_int(dbr, 7);
+			sched.fill_rate  = sqlite3_column_int(dbr, 5);
+			sched.interval   = sqlite3_column_int(dbr, 6);
 			
-			sched.set_mask = 0|VXSM_FILL_RATE2|VXSM_INTERVAL2;
+			sched.set_mask = VXSM_IDLE_TIME|VXSM_FILL_RATE2|VXSM_INTERVAL2;
 			
 			if (sched.fill_rate > 0 && sched.interval > 0 &&
 			    vx_set_sched(xid, &sched) == -1) {
