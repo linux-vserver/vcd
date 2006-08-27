@@ -27,6 +27,7 @@
 #include <lucid/bitmap.h>
 #include <lucid/chroot.h>
 #include <lucid/exec.h>
+#include <lucid/open.h>
 #include <lucid/str.h>
 
 #include "auth.h"
@@ -255,7 +256,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 			sched.tokens_min = sqlite3_column_int(dbr, 3);
 			sched.tokens_max = sqlite3_column_int(dbr, 4);
 			
-			sched.tokens = sched.tokens_max;
+			sched.tokens = sched.tokens_max >> 1;
 			
 			if (vx_set_sched(xid, &sched) == -1) {
 				method_set_faultf(env, MESYS, "vx_set_sched: %s", strerror(errno));
@@ -373,6 +374,69 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env, const char *vdir)
 	return NULL;
 }
 
+static
+xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
+{
+	vxdb_result *dbr;
+	int rc, mtabfd, status;
+	const char *src, *dst, *type, *opts;
+	
+	if (vx_enter_namespace(xid) == -1)
+		method_return_faultf(env, MESYS, "vx_enter_namespace: %s", strerror(errno));
+	
+	if (chroot_secure_chdir(vdir, "/etc") == -1)
+		method_return_faultf(env, MESYS, "chroot_secure_chdir: %s", strerror(errno));
+	
+	if ((mtabfd = open_trunc("mtab")) == -1)
+		method_return_faultf(env, MESYS, "open_trunc: %s", strerror(errno));
+	
+	if (write(mtabfd, "/dev/hdv1 / ufs rw 0 0\n", 23) == -1)
+		method_return_faultf(env, MESYS, "write: %s", strerror(errno));
+	
+	rc = vxdb_prepare(&dbr,
+		"SELECT src,dst,type,opts FROM mount WHERE xid = %d",
+		xid);
+	
+	if (rc)
+		method_return_fault(env, MEVXDB);
+	
+	else {
+		vxdb_foreach_step(rc, dbr) {
+			src  = sqlite3_column_text(dbr, 0);
+			dst  = sqlite3_column_text(dbr, 1);
+			type = sqlite3_column_text(dbr, 2);
+			opts = sqlite3_column_text(dbr, 3);
+			
+			if (str_isempty(type))
+				type = "auto";
+			
+			if (str_isempty(opts))
+				opts = "defaults";
+			
+			if (chroot_secure_chdir(vdir, dst) == -1)
+				method_return_faultf(env, MESYS, "chroot_secure_chdir: %s", strerror(errno));
+			
+			status = exec_fork("mount -n -t %s -o %s %s .", type, opts, src);
+			
+			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+				method_return_faultf(env, MESYS, "mount failed (%d)", WEXITSTATUS(status));
+			
+			if (WIFSIGNALED(status))
+				method_return_faultf(env, MESYS, "mount caught signal (%d)", WTERMSIG(status));
+			
+			dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+		}
+	
+		if (rc == -1)
+			method_set_fault(env, MEVXDB);
+	}
+	
+	sqlite3_finalize(dbr);
+	close(mtabfd);
+	
+	return NULL;
+}
+
 /* helper.startup(int xid) */
 xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -432,6 +496,9 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 	
 	namespace_setup(env, vdir);
+	method_return_if_fault(env);
+	
+	namespace_mount(env, vdir);
 	method_return_if_fault(env);
 	
 	return xmlrpc_build_value(env, "{s:s,s:s}", "vdir", vdir, "init", init);

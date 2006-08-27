@@ -38,6 +38,9 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_init_get.c \
          vxdb/vxdb_init_set.c \
          vxdb/vxdb_list.c \
+         vxdb/vxdb_mount_get.c \
+         vxdb/vxdb_mount_remove.c \
+         vxdb/vxdb_mount_set.c \
          vxdb/vxdb_name_get.c \
          vxdb/vxdb_nx_addr_get.c \
          vxdb/vxdb_nx_addr_remove.c \

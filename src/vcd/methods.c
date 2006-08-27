@@ -77,6 +77,9 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vxdb.init.get",            m_vxdb_init_get);
 	MREGISTER("vxdb.init.set",            m_vxdb_init_set);
 	MREGISTER("vxdb.list",                m_vxdb_list);
+	MREGISTER("vxdb.mount.get",           m_vxdb_mount_get);
+	MREGISTER("vxdb.mount.remove",        m_vxdb_mount_remove);
+	MREGISTER("vxdb.mount.set",           m_vxdb_mount_set);
 	MREGISTER("vxdb.name.get",            m_vxdb_name_get);
 	MREGISTER("vxdb.nx.addr.get",         m_vxdb_nx_addr_get);
 	MREGISTER("vxdb.nx.addr.remove",      m_vxdb_nx_addr_remove);

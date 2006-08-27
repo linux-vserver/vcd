@@ -33,7 +33,7 @@ void cmd_create(xmlrpc_env *env, int argc, char **argv)
 		rebuild = atoi(argv[1]);
 	
 	xmlrpc_client_call(env, uri, "vx.create",
-		SIGNATURE("{s:s,s:s,s:i}"),
+		SIGNATURE("{s:s,s:s,s:b}"),
 		"name", name,
 		"template", template,
 		"rebuild", rebuild);

@@ -17,6 +17,15 @@ CREATE TABLE IF NOT EXISTS init (
   UNIQUE(xid)
 );
 
+CREATE TABLE IF NOT EXISTS mount (
+  xid SMALLINT NOT NULL,
+  src TEXT NOT NULL,
+  dst TEXT NOT NULL,
+  type TEXT,
+  opts TEXT,
+  UNIQUE(xid, dst)
+);
+
 CREATE TABLE IF NOT EXISTS nx_addr (
   xid SMALLINT NOT NULL,
   addr TEXT NOT NULL,
