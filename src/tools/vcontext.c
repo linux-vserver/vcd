@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -57,7 +57,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	_lucid_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -C            Create a new security context\n"
@@ -187,41 +187,48 @@ int main(int argc, char *argv[])
 	switch (opts.cmd) {
 		case VCTX_CREATE: {
 			struct vx_create_flags create_flags = {
-				.flags = VXF_STATE_SETUP | opts.flags,
+				.flags = VXF_STATE_SETUP | VXF_STATE_ADMIN | opts.flags,
 			};
-			
+
 			/* syscall */
 			if (vx_create(opts.xid, &create_flags) == -1)
 				PEXIT("Failed to create context", EXIT_COMMAND);
-			
+
 			/* Set as default values those used by util-vserver */
 			uint64_t defcaps;
 			uint64_t defmcaps;
-			struct vx_caps caps = {
-				.bcaps = 0,
+
+			/* Set context capabilities ... */
+			struct vx_ccaps ccaps = {
 				.ccaps = 0,
 				.cmask = 0,
 			};
-
 			if (calc_caps("SET_UTSNAME,RAW_ICMP", cp, &defcaps, &defmcaps) == -1)
 				PEXIT("List validation failed for default CCAPS", EXIT_USAGE);
-			caps.ccaps = (opts.ccaps & opts.cmask) | (defcaps & defmcaps & ~opts.cmask);
-			caps.cmask = opts.cmask | defmcaps;
-			
+			ccaps.ccaps = (opts.ccaps & opts.cmask) | (defcaps & defmcaps & ~opts.cmask);
+			ccaps.cmask = opts.cmask | defmcaps;
+			if (vx_set_ccaps(opts.xid, &ccaps) == -1)
+				PEXIT("Failed to set context capabilities", EXIT_COMMAND);
+
+			/* Set context system capabilities */
+			struct vx_bcaps bcaps = {
+				.bcaps = 0,
+				.bmask = 0,
+			};
 			if (calc_caps("CHOWN,DAC_OVERRIDE,DAC_READ_SEARCH,"
 					"FOWNER,FSETID,FS_MASK,KILL,SETGID,SETUID,NET_BIND_SERVICE,SYS_CHROOT,"
 					"SYS_PTRACE,SYS_BOOT,SYS_TTY_CONFIG,LEASE", bp, &defcaps, &defmcaps) == -1)
 				PEXIT("List validation failed for default BCAPS", EXIT_USAGE);
-			caps.bcaps = (opts.bcaps & opts.bmask) | (defcaps & defmcaps & ~opts.bmask);
-			
-			/* Finally set the caps */
-			if (vx_set_caps(opts.xid, &caps) == -1)
-				PEXIT("Failed to set context capabilities", EXIT_COMMAND);
-			
+			bcaps.bcaps = (opts.bcaps & opts.bmask) | (defcaps & defmcaps & ~opts.bmask);
+			bcaps.bmask = ~0l;
+			if (vx_set_bcaps(opts.xid, &bcaps) == -1)
+				PEXIT("Failed to set system capabilities", EXIT_COMMAND);
+
+
 			if (argc > optind) {
 				struct vx_flags flags = {
 					.flags = 0,
-					.mask  = VXF_STATE_SETUP,
+					.mask  = VXF_STATE_SETUP | VXF_STATE_ADMIN,
 				};
 				if (vx_set_flags(opts.xid, &flags) == -1)
 					PEXIT("Failed to set context flags", EXIT_COMMAND);
@@ -242,10 +249,10 @@ int main(int argc, char *argv[])
 			/* syscall */
 			if (vx_get_info(opts.xid, &info) == -1)
 				PEXIT("Failed to get context information", EXIT_COMMAND);
-		
-			vu_printf("Context ID: %d\n", info.xid);
-			vu_printf("Init PID: %d\n", info.initpid);
-		
+
+			_lucid_printf("Context ID: %d\n", info.xid);
+			_lucid_printf("Init PID: %d\n", info.initpid);
+
 			goto out;
 		}
 		default:

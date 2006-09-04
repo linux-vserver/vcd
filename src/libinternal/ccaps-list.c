@@ -37,11 +37,11 @@ LIST_DATA_ALLOC_TYPE(ccaps, uint64_t)
 list_set(p->node+(i++), \
          list_key_alloc(#VALUE), \
          ccaps_list_data_alloc(TYPE ## _ ## VALUE));
-	
+
 list_t *ccaps_list_init(void)
 {
-	list_t *p = list_alloc(8);
-	
+	list_t *p = list_alloc(10);
+
 	int i = 0;
 	LIST_ADD_CCAP(VXC, SET_UTSNAME)
 	LIST_ADD_CCAP(VXC, SET_RLIMIT)
@@ -51,6 +51,8 @@ list_t *ccaps_list_init(void)
 	LIST_ADD_CCAP(VXC, SECURE_REMOUNT)
 	LIST_ADD_CCAP(VXC, BINARY_MOUNT)
 	LIST_ADD_CCAP(VXC, QUOTA_CTL)
-	
+	LIST_ADD_CCAP(VXC, ADMIN_MAPPER)
+	LIST_ADD_CCAP(VXC, ADMIN_CLOOP)
+
 	return p;
 }

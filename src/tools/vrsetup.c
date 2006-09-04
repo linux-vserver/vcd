@@ -31,7 +31,7 @@
 #include <sys/ioctl.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 
 #define NAME  "vrsetup"
@@ -56,7 +56,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <rootdev> [<realrootdev>]\n"
+	_lucid_printf("Usage: %s <command> <rootdev> [<realrootdev>]\n"
 	       "\n"
 	       "Available commands:\n"
 	       GLOBAL_HELP

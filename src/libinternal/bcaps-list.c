@@ -37,11 +37,11 @@ LIST_DATA_ALLOC_TYPE(bcaps, uint64_t)
 list_set(p->node+(i++), \
          list_key_alloc(#VALUE), \
          bcaps_list_data_alloc(TYPE ## _ ## VALUE));
-	
+
 list_t *bcaps_list_init(void)
 {
 	list_t *p = list_alloc(33);
-	
+
 	int i = 0;
 	LIST_ADD_BCAP(1 << CAP, CHOWN)
 	LIST_ADD_BCAP(1 << CAP, DAC_OVERRIDE)

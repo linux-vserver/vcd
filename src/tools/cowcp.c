@@ -36,7 +36,7 @@
 #include <errno.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -61,7 +61,7 @@ struct options opts = {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>* <src> <dst>\n"
+	_lucid_printf("Usage: %s <opts>* <src> <dst>\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
@@ -77,19 +77,19 @@ bool confirm_del(mode_t st_mode, const char *dst) {
 	char c;
 	bool r = false;
 	if (S_ISDIR(st_mode)) {
-		vu_printf("Remove directory %s? [N/y]: ", dst);
+		_lucid_printf("Remove directory %s? [N/y]: ", dst);
 	} else if (S_ISREG(st_mode)) {
-		vu_printf("Remove regular file %s? [N/y]: ", dst);
+		_lucid_printf("Remove regular file %s? [N/y]: ", dst);
 	} else if (S_ISBLK(st_mode)) {
-		vu_printf("Remove block dev %s? [N/y]: ", dst);
+		_lucid_printf("Remove block dev %s? [N/y]: ", dst);
 	} else if (S_ISCHR(st_mode)) {
-		vu_printf("Remove char dev %s? [N/y]: ", dst);
+		_lucid_printf("Remove char dev %s? [N/y]: ", dst);
 	} else if (S_ISLNK(st_mode)) {
-		vu_printf("Remove symlink %s? [N/y]: ", dst);
+		_lucid_printf("Remove symlink %s? [N/y]: ", dst);
 	} else if (S_ISFIFO(st_mode)) {
-		vu_printf("Remove fifo %s? [N/y]: ", dst);
+		_lucid_printf("Remove fifo %s? [N/y]: ", dst);
 	} else if (S_ISSOCK(st_mode)) {
-		vu_printf("Remove socket %s? [N/y]: ", dst);
+		_lucid_printf("Remove socket %s? [N/y]: ", dst);
 	} else
 		return false;
 	while (true) {
@@ -116,15 +116,15 @@ int cp_dir(const struct stat *s_st, const char *dst)
 {
 	int r = errno = 0;
 	if (mkdir(dst, 0) == -1) {
-		vu_printf("mkdir(%s): %s\n", dst, strerror(r = errno));
+		_lucid_printf("mkdir(%s): %s\n", dst, strerror(r = errno));
 		goto out;
 	}
 	if (chown(dst, s_st->st_uid, s_st->st_gid) == -1) {
-		vu_printf("chown(%s): %s\n", dst, strerror(r = errno));
+		_lucid_printf("chown(%s): %s\n", dst, strerror(r = errno));
 		goto out;
 	}
 	if (chmod(dst, s_st->st_mode) == -1) {
-		vu_printf("chmod(%s): %s\n", dst, strerror(r = errno));
+		_lucid_printf("chmod(%s): %s\n", dst, strerror(r = errno));
 		goto out;
 	}
 out:
@@ -147,13 +147,13 @@ int cp_cow(const char *src, const char *dst)
 			if (vx_set_iattr(&iattr) == 0 && link(src, dst) == 0)
 				goto ok;
 		}
-		vu_printf("link(%s, %s): %s\n", src, dst, strerror(errno));
+		_lucid_printf("link(%s, %s): %s\n", src, dst, strerror(errno));
 		return -1;
 	}
 ok:
 	iattr.filename = dst;
 	if (vx_set_iattr(&iattr) == -1) {
-		vu_printf("iattr(%s): %s\n", dst, strerror(errno));
+		_lucid_printf("iattr(%s): %s\n", dst, strerror(errno));
 		return -1;
 	}
 	return 0;
@@ -165,14 +165,14 @@ int process_file(const char *src, const char *dst)
 	struct stat s_st;
 	struct stat d_st;
 	if (lstat(src, &s_st) == -1) {
-		vu_printf("lstat(%s): %s\n", src, strerror(errno));
+		_lucid_printf("lstat(%s): %s\n", src, strerror(errno));
 		return -1;
 	}
 
 	/* Check it target exists */
 	if (lstat(dst, &d_st) == -1) {
 		if (errno != ENOENT) {
-			vu_printf("lstat(%s): %s\n", dst, strerror(errno));
+			_lucid_printf("lstat(%s): %s\n", dst, strerror(errno));
 			return -1;
 		}
 	} else {
@@ -182,11 +182,11 @@ int process_file(const char *src, const char *dst)
 			/* Try removing existing object */
 			if (opts.force || confirm_del(d_st.st_mode, dst)) {
 				if (unlink(dst) == -1) {
-					vu_printf("unlink(%s): %s\n", dst, strerror(errno));
+					_lucid_printf("unlink(%s): %s\n", dst, strerror(errno));
 					return -1;
 				}
 			} else {
-				vu_printf("cp(%s): target untouched\n", dst);
+				_lucid_printf("cp(%s): target untouched\n", dst);
 				return -1;
 			}
 		}
@@ -201,15 +201,15 @@ int process_file(const char *src, const char *dst)
 	} else if (S_ISREG(s_st.st_mode)) {
 		return cp_cow(src, dst);
 	} else if (S_ISBLK(s_st.st_mode)) {
-		vu_printf("cp(%s): block devices not supported\n", src);
+		_lucid_printf("cp(%s): block devices not supported\n", src);
 	} else if (S_ISCHR(s_st.st_mode)) {
-		vu_printf("cp(%s): char devices not supported\n", src);
+		_lucid_printf("cp(%s): char devices not supported\n", src);
 	} else if (S_ISLNK(s_st.st_mode)) {
-		vu_printf("cp(%s): symbolic links not supported\n", src);
+		_lucid_printf("cp(%s): symbolic links not supported\n", src);
 	} else if (S_ISFIFO(s_st.st_mode)) {
-		vu_printf("cp(%s): fifos not supported\n", src);
+		_lucid_printf("cp(%s): fifos not supported\n", src);
 	} else if (S_ISSOCK(s_st.st_mode)) {
-		vu_printf("cp(%s): sockets not supported\n", src);
+		_lucid_printf("cp(%s): sockets not supported\n", src);
 	}
 	return -1;
 dir:
@@ -288,7 +288,7 @@ int main(int argc, char *argv[])
 	
 	/* check file argument */
 	if (argc != optind + 2) {
-		vu_printf("Expecting exactly 1 source and 2 target\n");
+		_lucid_printf("Expecting exactly 1 source and 2 target\n");
 		errcnt = 1;
 	} else
 		errcnt = process_file(argv[optind], argv[optind+1]);

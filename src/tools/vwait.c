@@ -22,13 +22,14 @@
 #include <config.h>
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <stdlib.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 
 #define NAME  "vwait"
@@ -44,7 +45,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>*\n"
+	_lucid_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
@@ -101,7 +102,7 @@ int main(int argc, char *argv[])
 	if (vx_wait(opts.xid, &wait_opts) == -1)
 		PEXIT("Failed to wait for context", EXIT_COMMAND);
 	
-	vu_printf("REBOOT_CMD: %d\n", wait_opts.reboot_cmd);
-	vu_printf("EXIT_CODE:  %d\n", wait_opts.exit_code);
+	_lucid_printf("REBOOT_CMD: %d\n", wait_opts.reboot_cmd);
+	_lucid_printf("EXIT_CODE:  %d\n", wait_opts.exit_code);
 	exit(EXIT_SUCCESS);
 }

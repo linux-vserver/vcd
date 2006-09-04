@@ -40,7 +40,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 
 #define NAME  "vmount"
@@ -89,7 +89,7 @@ int root_fd;
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>*\n"
+	_lucid_printf("Usage: %s <command> <opts>*\n"
 	            "\n"
 	            "Available commands:\n"
 	            "    -L            List mountpoints\n"
@@ -167,7 +167,7 @@ int update_mtab(struct mntspec *fsent, struct options *opts)
 	if (flock(mtab_fd, LOCK_EX) == -1)
 		goto error;
 	
-	vu_asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target,
+	_lucid_asprintf(&line, "%s %s %s %s 0 0\n", fsent->source, fsent->target,
 		fsent->vfstype ? fsent->vfstype : "none",
 		fsent->options ? fsent->options : "defaults");
 	
@@ -291,7 +291,7 @@ int mount_fs(struct mntspec *fsent, struct options *opts)
 	return 0;
 	
 error:
-	vu_printf("Mount failed for '%s' type '%s': %s\n", fsent->target, fsent->vfstype, strerror(errno));
+	_lucid_printf("Mount failed for '%s' type '%s': %s\n", fsent->target, fsent->vfstype, strerror(errno));
 	return -1;
 	
 skip:
@@ -451,7 +451,7 @@ int main(int argc, char *argv[])
 			/* List mounted filesystems */
 			struct mntspec *mtab = load_fstab(opts.mtab);
 			while (mtab) {
-				vu_printf("%s\t%s\t%s\t%s\n", mtab->source, mtab->target, mtab->vfstype, mtab->options);
+				_lucid_printf("%s\t%s\t%s\t%s\n", mtab->source, mtab->target, mtab->vfstype, mtab->options);
 				struct mntspec *tmp = mtab;
 				mtab = mtab->next;
 				free(tmp->source);

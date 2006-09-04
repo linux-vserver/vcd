@@ -24,7 +24,8 @@ INCLUDES = -I$(top_srcdir) \
 LDADD = $(top_builddir)/src/libinternal/libinternal.a \
         $(top_builddir)/src/libvconfig/libvconfig.a \
         -lowfat \
-        -lvserver
+        -lvserver \
+	-lucid
 
 noinst_HEADERS = tools.h
 

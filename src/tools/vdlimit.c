@@ -39,7 +39,7 @@
 #undef __user
 #endif
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -60,7 +60,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>* <mountpoint>\n"
+	_lucid_printf("Usage: %s <command> <opts>* <mountpoint>\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -A            Add a disk limit entry\n"
@@ -213,9 +213,9 @@ int main(int argc, char *argv[])
 			
 #define PRINTLIMIT(LIMIT, SUFFIX) { \
 	if (LIMIT == CDLIM_INFINITY) \
-		vu_printf("inf" SUFFIX); \
+		_lucid_printf("inf" SUFFIX); \
 	else \
-		vu_printf("%u" SUFFIX, LIMIT); \
+		_lucid_printf("%u" SUFFIX, LIMIT); \
 }
 			/* print list parser compliant limit string */
 			PRINTLIMIT(dlimit.space_used, ",")

@@ -34,9 +34,10 @@
 #include <limits.h>
 #include <errno.h>
 #include <pty.h>
+#include <stdbool.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 
 #define NAME  "vlogin"
@@ -68,7 +69,7 @@ static struct terminal t;
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
+	_lucid_printf("Usage: %s <opts>* [-- <shell> <args>*]\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
@@ -148,7 +149,7 @@ static
 void terminal_atexit(void)
 {
 	terminal_reset();
-	vu_printf("\n"); /* for cosmetic reasons */
+	_lucid_printf("\n"); /* for cosmetic reasons */
 }
 
 /* send signal to terminal */

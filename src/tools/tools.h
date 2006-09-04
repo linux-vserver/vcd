@@ -43,17 +43,17 @@ case 'v': \
 
 #define DEFAULT_GETOPT \
 default: \
-	vu_printf("Try '%s -h' for more information\n", argv[0]); \
+	_lucid_printf("Try '%s -h' for more information\n", argv[0]); \
 	exit(EXIT_USAGE); \
 	break; \
 
 
 #define CMD_VERSION(name, desc) do { \
-	vu_printf("%s -- %s\n", name, desc); \
-	vu_printf("This program is part of %s\n\n", PACKAGE_STRING); \
-	vu_printf("Copyright (c) 2005 The vserver-utils Team\n"); \
-	vu_printf("This program is free software; you can redistribute it and/or\n"); \
-	vu_printf("modify it under the terms of the GNU General Public License\n"); \
+	_lucid_printf("%s -- %s\n", name, desc); \
+	_lucid_printf("This program is part of %s\n\n", PACKAGE_STRING); \
+	_lucid_printf("Copyright (c) 2005 The vserver-utils Team\n"); \
+	_lucid_printf("This program is free software; you can redistribute it and/or\n"); \
+	_lucid_printf("modify it under the terms of the GNU General Public License\n"); \
 	exit(0); \
 }	while(0)
 
@@ -70,20 +70,20 @@ default: \
 #define EXIT_COMMAND 2
 #define EXIT_OPTS    3
 
-#define VPRINTF(opts, fmt, ...) if ((opts)->verbose) vu_printf(fmt , __VA_ARGS__ )
+#define VPRINTF(opts, fmt, ...) if ((opts)->verbose) _lucid_printf(fmt , __VA_ARGS__ )
 #ifdef DEBUG
-#define DEBUGF(fmt, ...) vu_printf("DEBUG: " fmt , __VA_ARGS__ )
+#define DEBUGF(fmt, ...) _lucid_printf("DEBUG: " fmt , __VA_ARGS__ )
 #else
 #define DEBUGF(fmt, ...)
 #endif
 
 #define EXIT(MSG,RC) { \
-	vu_printf(MSG"; try '%s -h' for more information\n", argv[0]); \
+	_lucid_printf(MSG"; try '%s -h' for more information\n", argv[0]); \
 	exit(RC); \
 }
 
 #define SEXIT(MSG,RC) { \
-	vu_printf(MSG"\n"); \
+	_lucid_printf(MSG"\n"); \
 	exit(RC); \
 }
 

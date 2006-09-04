@@ -27,9 +27,10 @@
 #include <getopt.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 
 #define NAME  "vkill"
@@ -47,7 +48,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>*\n"
+	_lucid_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP

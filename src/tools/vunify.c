@@ -36,7 +36,7 @@
 #include <errno.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -72,7 +72,7 @@ struct options opts = {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>* <sfile> <dfile>*\n"
+	_lucid_printf("Usage: %s <opts>* <sfile> <dfile>*\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
@@ -93,9 +93,9 @@ int unify(const char *base, const char *dest, bool cow)
 	int l = strlen(dest);
 	char *buf = malloc(l + 15);
 	int my_err = 0;
-	vu_snprintf(buf, l + 15, "%s.%d", dest, getpid());
+	_lucid_snprintf(buf, l + 15, "%s.%d", dest, getpid());
 	if (rename(dest, buf) != 0) {
-		vu_dprintf(2, "Failed to unlink '%s': %s\n", dest, strerror(my_err = errno));
+		_lucid_dprintf(2, "Failed to unlink '%s': %s\n", dest, strerror(my_err = errno));
 		goto out;
 	}
 	if (link(base, dest) != 0) {
@@ -109,13 +109,13 @@ int unify(const char *base, const char *dest, bool cow)
 			if (vx_set_iattr(&iattr) == 0 && link(base, dest) == 0)
 				goto ok;
 		}
-		vu_dprintf(2, "Failed to hardlink '%s' to '%s': %s\n", base, dest, strerror(my_err = errno));
+		_lucid_dprintf(2, "Failed to hardlink '%s' to '%s': %s\n", base, dest, strerror(my_err = errno));
 		rename(buf, dest); // Restore our file
 		goto out;
 	}
 ok:
 	if (unlink(buf) != 0) {
-		vu_dprintf(2, "Failed to unlink '%s': %s\n", dest, strerror(my_err = errno));
+		_lucid_dprintf(2, "Failed to unlink '%s': %s\n", dest, strerror(my_err = errno));
 		goto out;
 	}
 
@@ -126,7 +126,7 @@ ok:
 		.mask  = IATTR_IMMUTABLE | IATTR_IUNLINK,
 	};
 	if (vx_set_iattr(&iattr) != 0) {
-		vu_dprintf(2, "Failed to set IMMUTABLE on '%s': %s\n", base, strerror(my_err = errno));
+		_lucid_dprintf(2, "Failed to set IMMUTABLE on '%s': %s\n", base, strerror(my_err = errno));
 		goto out;
 	}
 out:
@@ -142,7 +142,7 @@ int can_unify(const char *base, const char *dest)
 	struct stat std;
 
 	if (lstat(base, &stb)) {
-		vu_dprintf(2, "Cannot stat '%s': %s\n", base, strerror(errno));
+		_lucid_dprintf(2, "Cannot stat '%s': %s\n", base, strerror(errno));
 		return 0;
 	}
 	if (lstat(dest, &std)) {
@@ -163,23 +163,23 @@ int can_unify(const char *base, const char *dest)
 	}
 	if (stb.st_size != std.st_size) {
 		if (opts.diffs)
-			vu_printf("Not unifying '%s', size different\n", dest);
+			_lucid_printf("Not unifying '%s', size different\n", dest);
 		return 0;
 	}
 	if (stb.st_uid != std.st_uid || stb.st_gid != std.st_gid || stb.st_mode != std.st_mode) {
 		if (opts.diffs)
-			vu_printf("Not unifying '%s', ownership/mode different\n", dest);
+			_lucid_printf("Not unifying '%s', ownership/mode different\n", dest);
 		return 0;
 	}
 
 	int fd_b = -1;
 	int fd_d = -1;
 	if ((fd_b = open(base, O_RDONLY)) == -1) {
-		vu_dprintf(2, "Failed to open '%s': %s\n", base, strerror(errno));
+		_lucid_dprintf(2, "Failed to open '%s': %s\n", base, strerror(errno));
 		return 0;
 	}
 	if ((fd_d = open(dest, O_RDONLY)) == -1) {
-		vu_dprintf(2, "Failed to open '%s': %s\n", dest, strerror(errno));
+		_lucid_dprintf(2, "Failed to open '%s': %s\n", dest, strerror(errno));
 		close(fd_b);
 		return 0;
 	}
@@ -189,9 +189,9 @@ int can_unify(const char *base, const char *dest)
 	int nd = 0;
 	while (true) {
 		if ((nb = read(fd_b, buf_b, sizeof(buf_b))) == -1)
-			vu_dprintf(2, "Read on base failed: %s\n", strerror(errno));
+			_lucid_dprintf(2, "Read on base failed: %s\n", strerror(errno));
 		if ((nd = read(fd_d, buf_d, sizeof(buf_d))) == -1)
-			vu_dprintf(2, "Read on dest failed: %s\n", strerror(errno));
+			_lucid_dprintf(2, "Read on dest failed: %s\n", strerror(errno));
 		if (nb != nd || nb == 0 || nd == 0 || nb == -1 || nd == -1)
 			break;
 		if (memcmp(buf_b, buf_d, nb) != 0) {
@@ -203,14 +203,14 @@ int can_unify(const char *base, const char *dest)
 	close(fd_b);
 	close(fd_d);
 	if (nb != nd && opts.diffs)
-		vu_printf("Not unifying '%s', content different\n", dest);
+		_lucid_printf("Not unifying '%s', content different\n", dest);
 	return nb == nd && nb == 0;
 }
 
 static
 int ask_unify(char *base, char *dest)
 {
-	vu_printf("Unify '%s' and '%s'? [y/N]: ", base, dest);
+	_lucid_printf("Unify '%s' and '%s'? [y/N]: ", base, dest);
 	int c = getchar();
 	int tmp;
 	while (c != '\n' && (tmp = getchar()) != EOF && tmp != '\n');
@@ -225,7 +225,7 @@ int can_unify_dir(const char *base, const char *dest)
 	struct stat std;
 
 	if (lstat(base, &stb)) {
-		vu_dprintf(2, "Cannot stat '%s': %s\n", base, strerror(errno));
+		_lucid_dprintf(2, "Cannot stat '%s': %s\n", base, strerror(errno));
 		return 0;
 	}
 	if (lstat(dest, &std)) {
@@ -257,7 +257,7 @@ int walk_tree(char *base, char *dest)
 	int nufiles = 0;
 
 	if (dir == 0) {
-		vu_dprintf(2, "Failed to open dir '%s': %s\n", base, strerror(errno));
+		_lucid_dprintf(2, "Failed to open dir '%s': %s\n", base, strerror(errno));
 		return 0;
 	}
 
@@ -285,7 +285,7 @@ int walk_tree(char *base, char *dest)
 		strcpy(nbase + blen + 1, ent->d_name);
 
 		if (lstat(nbase, &sb) == -1) {
-			vu_dprintf(2, "Failed to stat '%s': %s\n", ent->d_name, strerror(errno));
+			_lucid_dprintf(2, "Failed to stat '%s': %s\n", ent->d_name, strerror(errno));
 			continue;
 		}
 		// Build new destination filename (fully qualified path)
@@ -301,7 +301,7 @@ int walk_tree(char *base, char *dest)
 		} else if (S_ISREG(sb.st_mode)) {
 			if (can_unify(nbase, ndest)) {
 				if (opts.pretend) {
-					vu_printf("Would unify '%s'.\n", ndest);
+					_lucid_printf("Would unify '%s'.\n", ndest);
 					nufiles++;
 				} else {
 					if (opts.ask && !ask_unify(nbase, ndest))
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
 	}
 	/* check file argument */
 	if (argc <= optind) {
-		vu_dprintf(2, "Missing reference dir ...\nTry %s -h for help\n", argv[0]);
+		_lucid_dprintf(2, "Missing reference dir ...\nTry %s -h for help\n", argv[0]);
 		exit(EXIT_FAILURE);
 	} else {
 		opts.sfile = argv[optind++];

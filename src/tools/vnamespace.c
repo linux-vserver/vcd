@@ -35,21 +35,20 @@
 #include <sys/wait.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
-#include "sys.h"
 
 #define NAME  "vnamespace"
 #define DESCR "Filesystem Namespace Manager"
 
-#define SHORT_OPTS "CENSfx:"
+#define SHORT_OPTS "ENSfx:"
 
 /* dietlibc does not define CLONE_NEWNS */
 #ifndef CLONE_NEWNS
 #define CLONE_NEWNS 0x00020000
 #endif
 
-typedef enum { VNS_NONE, VNS_CLEAR, VNS_ENTER, VNS_NEW, VNS_SET } command_t;
+typedef enum { VNS_NONE, /* VNS_CLEAR, */ VNS_ENTER, VNS_NEW, VNS_SET } command_t;
 
 struct options {
 	GLOBAL_OPTS;
@@ -61,10 +60,10 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	_lucid_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
-	       "    -C            Remove all mounts from current context\n"
+/*	       "    -C            Remove all mounts from current context\n" */
 	       "    -E            Enter the namespace of context <xid>\n"
 	       "    -N            Create a new namespace\n"
 	       "    -S            Make current namespace the namespace of current context\n"
@@ -101,14 +100,14 @@ int main(int argc, char *argv[])
 		
 		switch (c) {
 			GLOBAL_CMDS_GETOPT
-			
+/*
 			case 'C':
 				if (opts.cmd != VNS_NONE)
 					cmd_help();
 				else
 					opts.cmd = VNS_CLEAR;
 				break;
-			
+ */			
 			case 'E':
 				if (opts.cmd != VNS_NONE)
 					cmd_help();
@@ -143,14 +142,14 @@ int main(int argc, char *argv[])
 	}
 
 	switch (opts.cmd) {
-		case VNS_CLEAR:
+/*		case VNS_CLEAR:
 			if (!opts.force_clean)
 				SEXIT("You don't want this. Really. (Use -f if you are sure)", EXIT_USAGE);
 		
 			if (vx_cleanup_namespace() == -1)
 				PEXIT("Failed to cleanup namespace", EXIT_COMMAND);
 			break;
-		
+ */		
 		case VNS_ENTER:
 			if (getcwd(cwd, PATH_MAX) == NULL)
 				PEXIT("Failed to get cwd", EXIT_COMMAND);
@@ -187,7 +186,7 @@ int main(int argc, char *argv[])
 						exit(WEXITSTATUS(status));
 				
 					if (WIFSIGNALED(status)) {
-						vu_printf("Child interrupted by signal; following...\n");
+						_lucid_printf("Child interrupted by signal; following...\n");
 						kill(getpid(), WTERMSIG(status));
 						exit(1);
 					}

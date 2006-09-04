@@ -34,9 +34,8 @@
 #include <errno.h>
 #include <sys/ioctl.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
-#include "sys.h"
 
 #define NAME  "vexec"
 #define DESCR "Execute in vserver context"
@@ -55,7 +54,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>* -- <command> <args>*\n"
+	_lucid_printf("Usage: %s <opts>* -- <command> <args>*\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
@@ -193,7 +192,7 @@ migrate:
 				} else if (S_ISCHR(st.st_mode)) {
 					int fd = open("/dev/console", O_RDWR | O_NOCTTY);
 					if (fd < 0) {
-						vu_dprintf(STDERR_FILENO, "Failed to open /dev/console:  %s\n", strerror(errno));
+						_lucid_dprintf(STDERR_FILENO, "Failed to open /dev/console:  %s\n", strerror(errno));
 					} else {
 						ioctl(0, TIOCNOTTY, 0);
 						if (fd != STDIN_FILENO)  dup2(fd, STDIN_FILENO);
@@ -203,7 +202,7 @@ migrate:
 							close(fd);
 					}
 				} else
-					vu_dprintf(STDERR_FILENO, "Cannot use /dev/console as it's not a character device.\n");
+					_lucid_dprintf(STDERR_FILENO, "Cannot use /dev/console as it's not a character device.\n");
 			}
 
 			if(execvp(argv[optind], argv+optind) == -1)

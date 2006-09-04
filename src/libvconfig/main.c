@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "node.h"
 #include "map.h"
 #include "vconfig.h"
@@ -100,7 +100,7 @@ void vconfig_print_nodes(void)
 	unsigned int i;
 	
 	for (i = 0; i < NR_MAP_ENTRIES; i++) {
-		vu_printf("%s\n", vconfig_map[i].key);
+		_lucid_printf("%s\n", vconfig_map[i].key);
 	}
 }
 

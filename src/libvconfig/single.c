@@ -35,7 +35,7 @@
 #include <libowfat/mmap.h>
 #include <libowfat/str.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "pathconfig.h"
 #include "vconfig.h"
 
@@ -103,7 +103,7 @@ unsigned long _single_readkey(char *name, char *key, char **buf)
 		return 0;
 	
 	char path[PATH_MAX];
-	vu_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
+	_lucid_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
 	
 	unsigned long len;
 	*buf = mmap_private(path, &len);
@@ -126,7 +126,7 @@ int _single_writekey(char *name, char *key, char *value)
 		return -1;
 	
 	char path[PATH_MAX];
-	vu_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
+	_lucid_snprintf(path, PATH_MAX, "%s/%s/%s", __PKGCONFDIR, name, res->path);
 	
 	char *buf;
 	unsigned long len;
@@ -180,9 +180,9 @@ int vconfig_set_bool(char *name, char *key, int value)
 	char *buf;
 	
 	if (value == 1)
-		vu_asprintf(&buf, "true\n");
+		_lucid_asprintf(&buf, "true\n");
 	else if (value == 0)
-		vu_asprintf(&buf, "false\n");
+		_lucid_asprintf(&buf, "false\n");
 	else
 		return -1;
 	
@@ -217,7 +217,7 @@ int vconfig_set_int(char *name, char *key, int value)
 	int rc;
 	char *buf;
 	
-	vu_asprintf(&buf, "%d\n", value);
+	_lucid_asprintf(&buf, "%d\n", value);
 	
 	rc = _single_writekey(name, key, buf);
 	
@@ -250,7 +250,7 @@ int vconfig_set_str(char *name, char *key, char *value)
 	int rc;
 	char *buf;
 	
-	vu_asprintf(&buf, "%s\n", value);
+	_lucid_asprintf(&buf, "%s\n", value);
 	
 	rc = _single_writekey(name, key, buf);
 	
@@ -296,7 +296,7 @@ int vconfig_set_list(char *name, char *key, char *value)
 	
 	char *buf;
 	
-	vu_asprintf(&buf, "%s\n", value);
+	_lucid_asprintf(&buf, "%s\n", value);
 	
 	rc = _single_writekey(name, key, buf);
 	

@@ -104,11 +104,11 @@ vps.context() {
 			[ ! -z "${VX_BCAPS}" ] && VCTX_ARGS="${VCTX_ARGS} -b $(util.array_to_list ${VX_BCAPS[@]})"
 			[ ! -z "${VX_CCAPS}" ] && VCTX_ARGS="${VCTX_ARGS} -c $(util.array_to_list ${VX_CCAPS[@]})"
 			if [ ! -z "${VX_FLAGS}" ]; then
-				VCTX_ARGS="${VCTX_ARGS} -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTENT,STATE_SETUP"
+				VCTX_ARGS="${VCTX_ARGS} -f $(util.array_to_list ${VX_FLAGS[@]}),PERSISTENT,STATE_SETUP,STATE_ADMIN"
 			else
-				VCTX_ARGS="${VCTX_ARGS} -f PERSISTENT,STATE_SETUP"
+				VCTX_ARGS="${VCTX_ARGS} -f PERSISTENT,STATE_SETUP,STATE_ADMIN"
 			fi
-			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTENT,STATE_SETUP
+			${_VNCONTEXT} -C -n ${VX_XID} -f PERSISTENT,STATE_SETUP,STATE_ADMIN
 			${_VCONTEXT} -C ${VCTX_ARGS}
 			;;
 		
@@ -253,8 +253,8 @@ vps.flags() {
 			;;
 		
 		run)
-			${_VFLAGS} -S -f "~PERSISTENT,~STATE_SETUP" -x ${VX_XID}
-			${_VNFLAGS} -S -f "~PERSISTENT,~STATE_SETUP" -n ${VX_XID}
+			${_VFLAGS} -S -f "~PERSISTENT,~STATE_SETUP,~STATE_ADMIN" -x ${VX_XID}
+			${_VNFLAGS} -S -f "~PERSISTENT,~STATE_SETUP,~STATE_ADMIN" -n ${VX_XID}
 			;;
 		*)
 			util.error "vps.flags: unknown subcommand '${subcmd}'"

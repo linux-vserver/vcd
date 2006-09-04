@@ -29,7 +29,7 @@
 #include <stdlib.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 
 #define NAME  "vinfo"
@@ -43,7 +43,7 @@ struct options {
 
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>\n"
+	_lucid_printf("Usage: %s <opts>\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
@@ -80,7 +80,7 @@ int main(int argc, char *argv[])
 	if((version = vs_get_version()) == -1)
 		PEXIT("Failed to get VServer interface version", EXIT_COMMAND);
 	
-	vu_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
+	_lucid_printf("%04x:%04x\n", (version>>16)&0xFFFF, version&0xFFFF);
 	
 	exit(EXIT_SUCCESS);
 }

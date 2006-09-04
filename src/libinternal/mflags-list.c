@@ -37,14 +37,14 @@ LIST_DATA_ALLOC_TYPE(cflags, uint64_t)
 list_set(p->node+(i++), \
          list_key_alloc(#VALUE), \
          cflags_list_data_alloc(TYPE ## _ ## VALUE));
-	
+
 list_t *mflags_list_init(void)
 {
 	list_t *p = list_alloc(2);
-	
+
 	int i = 0;
 	LIST_ADD_CFLAG(VXM, SET_INIT)
 	LIST_ADD_CFLAG(VXM, SET_REAPER)
-	
+
 	return p;
 }

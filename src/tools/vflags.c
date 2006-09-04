@@ -28,7 +28,7 @@
 #include <getopt.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -53,7 +53,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>*\n"
+	_lucid_printf("Usage: %s <command> <opts>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set context capabilities/flags\n"
@@ -95,16 +95,15 @@ int main(int argc, char *argv[])
 		.flags = 0,
 		.mask  = 0,
 	};
-	
-	// TODO: Define & Set default list of caps...
-	uint64_t obcaps = 0;
-	uint64_t bmask  = 0;
-	struct vx_caps caps = {
-		.bcaps = 0,
+	struct vx_ccaps ccaps = {
 		.ccaps = 0,
 		.cmask = 0,
 	};
-	
+	struct vx_bcaps bcaps = {
+		.bcaps = 0,
+		.bmask = 0,
+	};
+
 	/* init capability lists */
 	list_t *bp = bcaps_list_init();
 	list_t *cp = ccaps_list_init();
@@ -175,112 +174,106 @@ int main(int argc, char *argv[])
 
 	switch (opts.cmd) {
 		case VFLAG_SET:
-			if (vx_get_caps(opts.xid, &caps) == -1)
-				PEXIT("Failed to get context capabilities", EXIT_COMMAND);
-			obcaps = caps.bcaps; /* Remember current BCAPS */
 			if (opts.bcaps) {
 				list_link_t blink = {
 					.p = bp,
 					.d = opts.bcaps,
 				};
-		
+
 				/* validate descending list */
 				if (list_validate_flag(&blink, clmod) == -1)
-					PEXIT("List validation failed", EXIT_USAGE);
-		
-				caps.bcaps = 0;
-				bmask = 0;
+					PEXIT("BCaps list validation failed", EXIT_USAGE);
+
 				/* convert given descending list to flags using the pristine copy */
-				list_list2flags(&blink, clmod, &caps.bcaps, &bmask);
-				if (!opts.reset)
-					caps.bcaps |= obcaps & ~bmask; /* Add old unmasked bcaps */
-			} else if (!opts.reset)
-				caps.bcaps = obcaps;
+				list_list2flags(&blink, clmod, &bcaps.bcaps, &bcaps.bmask);
+
+				DEBUGF("BCaps = %.16llx, mask  = %.16llx\n", bcaps.bcaps, bcaps.bmask);
+				if (bcaps.bmask != 0 && vx_set_bcaps(opts.xid, &bcaps) == -1)
+					PEXIT("Failed to set system capabilities", EXIT_COMMAND);
+			}
+
 			if (opts.ccaps) {
 				list_link_t clink = {
 					.p = cp,
 					.d = opts.ccaps,
 				};
-		
+
 				/* validate descending lists */
 				if (list_validate_flag(&clink, clmod) == -1)
-					PEXIT("List validation failed", EXIT_USAGE);
-		
+					PEXIT("CCaps list validation failed", EXIT_USAGE);
+
 				/* convert given descending list to flags using the pristine copy */
-				list_list2flags(&clink, clmod, &caps.ccaps, &caps.cmask);
-			}
-			/* syscall */
-			if (bmask || caps.cmask) {
-				DEBUGF("BCaps = %.16llx, old  = %.16llx\n", caps.bcaps, obcaps);
-				DEBUGF("CCaps = %.16llx, mask = %.16llx\n", caps.ccaps, caps.cmask);
-				if (vx_set_caps(opts.xid, &caps) == -1)
+				list_list2flags(&clink, clmod, &ccaps.ccaps, &ccaps.cmask);
+
+				DEBUGF("CCaps = %.16llx, mask = %.16llx\n", ccaps.ccaps, ccaps.cmask);
+				if (ccaps.cmask != 0 && vx_set_ccaps(opts.xid, &ccaps) == -1)
 					PEXIT("Failed to set context capabilities", EXIT_COMMAND);
 			}
-			
+
 			if (opts.flags) {
 				list_link_t flink = {
 					.p = fp,
 					.d = opts.flags,
 				};
-		
+
 				/* validate descending list */
 				if (list_validate_flag(&flink, clmod) == -1)
 					PEXIT("List validation failed", EXIT_USAGE);
-		
+
 				/* convert given descending list to flags using the pristine copy */
 				list_list2flags(&flink, clmod, &flags.flags, &flags.mask);
-		
+
 				/* syscall */
-				if (flags.mask)
-					if (vx_set_flags(opts.xid, &flags) == -1)
-						PEXIT("Failed to set context flags", EXIT_COMMAND);
+				if (flags.mask != 0 && vx_set_flags(opts.xid, &flags) == -1)
+					PEXIT("Failed to set context flags", EXIT_COMMAND);
 			}
 			break;
-		
+
 		case VFLAG_GET: {
 			/* syscall */
-			if (vx_get_caps(opts.xid, &caps) == -1)
+			if (vx_get_bcaps(opts.xid, &bcaps) == -1)
+				PEXIT("Failed to get system capabilities", EXIT_COMMAND);
+			if (vx_get_ccaps(opts.xid, &ccaps) == -1)
 				PEXIT("Failed to get context capabilities", EXIT_COMMAND);
-		
 			if (vx_get_flags(opts.xid, &flags) == -1)
 				PEXIT("Failed to get context flags", EXIT_COMMAND);
-			
+
 			VPRINTF(&opts, "Flags = %.16llx\n", flags.flags);
-			VPRINTF(&opts, "BCaps = %.16llx\n", caps.bcaps);
-			VPRINTF(&opts, "CCaps = %.16llx\n", caps.ccaps);
-			
+			VPRINTF(&opts, "BCaps = %.16llx\n", bcaps.bcaps);
+			VPRINTF(&opts, "CCaps = %.16llx\n", ccaps.ccaps);
+
 			if (opts.compact) {
-				bool b = 0;
-				vu_printf("BCAPS =");
+				int b = 0;
+				_lucid_printf("BCAPS =");
 				list_foreach(bp, i)
-					if ((caps.bcaps & *(uint64_t*)(bp->node+i)->data) == *(uint64_t*)(bp->node+i)->data)
-						vu_printf("%s%s", b++ ? "," : " ", (char *)(bp->node+i)->key);
-				vu_printf("\nCCAPS =");
+					if ((bcaps.bcaps & *(uint64_t*)(bp->node+i)->data) == *(uint64_t*)(bp->node+i)->data)
+						_lucid_printf("%s%s", b++ ? "," : " ", (char *)(bp->node+i)->key);
+				_lucid_printf("\nCCAPS =");
 				b = 0;
 				list_foreach(cp, i)
-					if (caps.ccaps & *(uint64_t*)(cp->node+i)->data)
-						vu_printf("%s%s", b++ ? "," : " ", (char *)(cp->node+i)->key);
-				vu_printf("\nFLAGS =");
+					if (ccaps.ccaps & *(uint64_t*)(cp->node+i)->data)
+						_lucid_printf("%s%s", b++ ? "," : " ", (char *)(cp->node+i)->key);
+				_lucid_printf("\nFLAGS =");
 				b = 0;
 				list_foreach(fp, i)
 					if (flags.flags & *(uint64_t*)(fp->node+i)->data)
-						vu_printf("%s%s", b++ ? "," : " ", (char *)(fp->node+i)->key);
-				vu_printf("\n");
+						_lucid_printf("%s%s", b++ ? "," : " ", (char *)(fp->node+i)->key);
+				_lucid_printf("\n");
 			} else {
 				/* iterate through each list and print matching keys */
 				list_foreach(bp, i) {
-					if ((caps.bcaps & *(uint64_t*)(bp->node+i)->data) == *(uint64_t*)(bp->node+i)->data)
-						vu_printf("B: %s\n", (char *)(bp->node+i)->key);
+					if ((bcaps.bcaps & *(uint64_t*)(bp->node+i)->data) == *(uint64_t*)(bp->node+i)->data)
+						_lucid_printf("B: %s\n", (char *)(bp->node+i)->key);
 				}
-		
+
 				list_foreach(cp, i) {
-					if (caps.ccaps & *(uint64_t*)(cp->node+i)->data)
-						vu_printf("C: %s\n", (char *)(cp->node+i)->key);
+					if (ccaps.ccaps & *(uint64_t*)(cp->node+i)->data)
+						_lucid_printf("C: %s\n", (char *)(cp->node+i)->key);
 				}
-		
+
 				list_foreach(fp, i) {
 					if (flags.flags & *(uint64_t*)(fp->node+i)->data)
-						vu_printf("F: %s\n", (char *)(fp->node+i)->key);
+						_lucid_printf("F: %s\n", (char *)(fp->node+i)->key);
 				}
 			}
 			break;
@@ -288,19 +281,19 @@ int main(int argc, char *argv[])
 		case VFLAG_LIST: {
 			/* iterate through each list and print all keys */
 			list_foreach(bp, i)
-				vu_printf("B: %s\n", (char *)(bp->node+i)->key);
-		
+				_lucid_printf("B: %s\n", (char *)(bp->node+i)->key);
+
 			list_foreach(cp, i)
-				vu_printf("C: %s\n", (char *)(cp->node+i)->key);
-		
+				_lucid_printf("C: %s\n", (char *)(cp->node+i)->key);
+
 			list_foreach(fp, i)
-				vu_printf("F: %s\n", (char *)(fp->node+i)->key);
-		
+				_lucid_printf("F: %s\n", (char *)(fp->node+i)->key);
+
 			break;
 		}
 		default:
 			cmd_help();
 	}
-	
+
 	exit(EXIT_SUCCESS);
 }

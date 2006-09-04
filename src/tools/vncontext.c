@@ -31,7 +31,7 @@
 #include <arpa/inet.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -54,7 +54,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
+	_lucid_printf("Usage: %s <command> <opts>* -- <program> <args>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -A            Add adress to network context\n"
@@ -360,7 +360,7 @@ create:
 			if (nx_get_info(opts.nid, &info) == -1)
 				PEXIT("Failed to get network context information", EXIT_COMMAND);
 			
-			vu_printf("Network context ID: %d\n", info.nid);
+			_lucid_printf("Network context ID: %d\n", info.nid);
 			break;
 		
 		default:

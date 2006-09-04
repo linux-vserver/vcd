@@ -38,11 +38,11 @@ LIST_DATA_ALLOC_TYPE(rlimit, uint64_t)
 list_set(p->node+(i++), \
          list_key_alloc(#VALUE), \
          rlimit_list_data_alloc(TYPE ## _ ## VALUE));
-	
+
 list_t *rlimit_list_init(void)
 {
-	list_t *p = list_alloc(9);
-	
+	list_t *p = list_alloc(12);
+
 	int i = 0;
 	/* TODO: check if we miss sth */
 	LIST_ADD_RLIMIT(RLIMIT, RSS)
@@ -50,11 +50,14 @@ list_t *rlimit_list_init(void)
 	LIST_ADD_RLIMIT(RLIMIT, NOFILE)
 	LIST_ADD_RLIMIT(RLIMIT, MEMLOCK)
 	LIST_ADD_RLIMIT(RLIMIT, AS)
-	
+
 	LIST_ADD_RLIMIT(VLIMIT, NSOCK)
 	LIST_ADD_RLIMIT(VLIMIT, OPENFD)
 	LIST_ADD_RLIMIT(VLIMIT, ANON)
 	LIST_ADD_RLIMIT(VLIMIT, SHMEM)
-	
+	LIST_ADD_RLIMIT(VLIMIT, SEMARY)
+	LIST_ADD_RLIMIT(VLIMIT, NSEMS)
+	LIST_ADD_RLIMIT(VLIMIT, DENTRY)
+
 	return p;
 }

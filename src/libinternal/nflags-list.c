@@ -37,17 +37,17 @@ LIST_DATA_ALLOC_TYPE(nflags, uint64_t)
 list_set(p->node+(i++), \
          list_key_alloc(#VALUE), \
          nflags_list_data_alloc(TYPE ## _ ## VALUE));
-	
+
 list_t *nflags_list_init(void)
 {
-	list_t *p = list_alloc(3);
-	
+	list_t *p = list_alloc(5);
+
 	int i = 0;
+	LIST_ADD_NFLAG(NXF, INFO_LOCK)
 	LIST_ADD_NFLAG(NXF, STATE_SETUP)
+	LIST_ADD_NFLAG(NXF, STATE_ADMIN)
 	LIST_ADD_NFLAG(NXF, SC_HELPER)
 	LIST_ADD_NFLAG(NXF, PERSISTENT)
-/*	LIST_ADD_NFLAG(NXF, ONE_TIME)
-	LIST_ADD_NFLAG(NXF, INIT_SET) */
-	
+
 	return p;
 }

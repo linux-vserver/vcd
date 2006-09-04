@@ -29,7 +29,7 @@
 #include <string.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -50,7 +50,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>*\n"
+	_lucid_printf("Usage: %s <command> <opts>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set virtual host information\n"
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
 				if (vx_get_vhi_name(opts.xid, &vhi_name) == -1)
 					PEXIT("Failed to get VHI field", EXIT_COMMAND);
 				
-				vu_printf("%s: %s\n", fieldname, vhi_name.name);
+				_lucid_printf("%s: %s\n", fieldname, vhi_name.name);
 			}
 			break;
 		

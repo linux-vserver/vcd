@@ -37,11 +37,11 @@ LIST_DATA_ALLOC_TYPE(iattr, uint64_t)
 list_set(p->node+(i++), \
          list_key_alloc(#VALUE), \
          iattr_list_data_alloc(TYPE ## _ ## VALUE));
-	
+
 list_t *iattr_list_init(void)
 {
 	list_t *p = list_alloc(8);
-	
+
 	int i = 0;
 	LIST_ADD_IATTR(IATTR, TAG)
 	LIST_ADD_IATTR(IATTR, ADMIN)
@@ -51,6 +51,6 @@ list_t *iattr_list_init(void)
 	LIST_ADD_IATTR(IATTR, BARRIER)
 	LIST_ADD_IATTR(IATTR, IUNLINK)
 	LIST_ADD_IATTR(IATTR, IMMUTABLE)
-	
+
 	return p;
 }

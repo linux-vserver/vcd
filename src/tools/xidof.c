@@ -26,7 +26,7 @@
 #include <stdlib.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 
 int main(int argc, char *argv[])
@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	if ((pid = vx_get_task_xid(atoi(argv[1]))) == -1)
 		exit(EXIT_COMMAND);
 	
-	vu_printf("%d\n", pid);
+	_lucid_printf("%d\n", pid);
 	
 	exit(EXIT_SUCCESS);
 }

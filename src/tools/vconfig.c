@@ -29,7 +29,7 @@
 #include <unistd.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vconfig.h"
 
@@ -50,7 +50,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>*\n"
+	_lucid_printf("Usage: %s <command> <opts>*\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -G            Get configuration value\n"
@@ -133,23 +133,23 @@ int main(int argc, char *argv[])
 			
 				if (buf != -1) {
 					if (buf == 1)
-						vu_printf("true\n");
+						_lucid_printf("true\n");
 					else
-						vu_printf("false\n");
+						_lucid_printf("false\n");
 				}
 			}
 		
 			if (vconfig_isint(opts.key) == 0) {
 				int buf = vconfig_get_int(opts.name, opts.key);
 				if (buf != -1)
-					vu_printf("%d\n", buf);
+					_lucid_printf("%d\n", buf);
 			}
 		
 			if (vconfig_isstr(opts.key) == 0) {
 				char *buf = vconfig_get_str(opts.name, opts.key);
 			
 				if (buf != NULL) {
-					vu_printf("%s\n", buf);
+					_lucid_printf("%s\n", buf);
 					free(buf);
 				}
 			}
@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 				char *buf = vconfig_get_list(opts.name, opts.key);
 			
 				if (buf != NULL) {
-					vu_printf("%s\n", buf);
+					_lucid_printf("%s\n", buf);
 					free(buf);
 				}
 			}
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		case VCFG_SET: {
-			vu_printf("SET command not implemented\n");
+			_lucid_printf("SET command not implemented\n");
 			return -1;
 			break;
 		}

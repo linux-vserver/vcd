@@ -30,7 +30,7 @@
 #include <strings.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -52,7 +52,7 @@ struct options {
 static inline
 void cmd_help()
 {
-	vu_printf("Usage: %s <command> <opts>**\n"
+	_lucid_printf("Usage: %s <command> <opts>**\n"
 	       "\n"
 	       "Available commands:\n"
 	       "    -S            Set resource limits\n"
@@ -152,9 +152,9 @@ int main(int argc, char *argv[])
 			
 #define PRINTLIMIT(LIMIT, SUFFIX) { \
 	if (LIMIT == CRLIM_INFINITY) \
-		vu_printf("inf" SUFFIX); \
+		_lucid_printf("inf" SUFFIX); \
 	else \
-		vu_printf("%llu" SUFFIX, LIMIT); \
+		_lucid_printf("%llu" SUFFIX, LIMIT); \
 }
 			/* print list parser compliant MSH value */
 			PRINTLIMIT(rlimit.minimum, ",")

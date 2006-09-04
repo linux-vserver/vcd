@@ -22,6 +22,7 @@
 #include <config.h>
 #endif
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
@@ -29,7 +30,7 @@
 #include <strings.h>
 #include <vserver.h>
 
-#include "printf.h"
+#include <lucid/printf.h>
 #include "tools.h"
 #include "vlist.h"
 
@@ -46,7 +47,7 @@ struct options {
 
 void cmd_help()
 {
-	vu_printf("Usage: %s <opts>*\n"
+	_lucid_printf("Usage: %s <opts>*\n"
 	       "\n"
 	       "Available options:\n"
 	       GLOBAL_HELP
