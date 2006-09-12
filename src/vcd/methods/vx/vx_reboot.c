@@ -23,7 +23,7 @@
 #include <vserver.h>
 
 #include "auth.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -31,7 +31,7 @@
 /* vx.reboot(string name) */
 xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_value *params;
 	char *name, *reboot = "/sbin/reboot";

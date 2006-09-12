@@ -15,6 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,8 +32,7 @@
 #include <errno.h>
 #include <pty.h>
 #include <vserver.h>
-
-#include "msg.h"
+#include <lucid/log.h>
 
 struct terminal {
 	int fd;                          /* terminal file descriptor */
@@ -50,7 +53,7 @@ void terminal_raw(void)
 	
 	/* save original terminal settings */
 	if (tcgetattr(STDIN_FILENO, &t.termo) == -1)
-		perr("tcgetattr");
+		log_perror_and_die("tcgetattr");
 	
 	buf = t.termo;
 	
@@ -59,7 +62,7 @@ void terminal_raw(void)
 	
 	/* apply raw terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &buf) == -1)
-		perr("tcsetattr");
+		log_perror_and_die("tcsetattr");
 	
 	t.state = TS_RAW;
 }
@@ -72,7 +75,7 @@ void terminal_reset(void)
 		return;
 	
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &t.termo) == -1)
-		perr("tcsetattr");
+		log_perror_and_die("tcsetattr");
 	
 	t.state = TS_RESET;
 }
@@ -117,11 +120,11 @@ void terminal_copy(int src, int dst)
 	
 	/* read terminal activity */
 	if ((len = read(src, buf, sizeof(buf))) == -1)
-		perr("read");
+		log_perror_and_die("read");
 	
 	/* write terminal activity */
 	if (write(dst, buf, len) == -1)
-		perr("write");
+		log_perror_and_die("write");
 }
 
 /* shuffle all output, and reset the terminal */
@@ -133,10 +136,10 @@ void terminal_end(void)
 	long options;
 	
 	if ((options = fcntl(t.fd, F_GETFL, 0)) == -1)
-		perr("fcntl");
+		log_perror_and_die("fcntl");
 	
 	if (fcntl(t.fd, F_SETFL, options | O_NONBLOCK) == -1)
-		perr("fcntl");
+		log_perror_and_die("fcntl");
 	
 	while (1) {
 		len = read(t.fd, buf, sizeof(buf));
@@ -145,7 +148,7 @@ void terminal_end(void)
 			break;
 		
 		if (write(STDOUT_FILENO, buf, len) == -1)
-			perr("write");
+			log_perror_and_die("write");
 	}
 	
 	/* in case atexit hasn't been setup yet */
@@ -188,7 +191,7 @@ void do_vlogin(int argc, char **argv)
 	fd_set rfds;
 	
 	if (argc < 1)
-		err("vlogin: invalid command");
+		log_error_and_die("vlogin: invalid command");
 	
 	/* set terminal to raw mode */
 	terminal_raw();
@@ -198,13 +201,13 @@ void do_vlogin(int argc, char **argv)
 	
 	/* fork new pseudo terminal */
 	if (openpty(&t.fd, &slave, NULL, NULL, NULL) == -1)
-		perr("openpty");
+		log_perror_and_die("openpty");
 	
 	/* setup SIGCHLD here, so we're sure to get the signal */
 	signal(SIGCHLD, signal_handler);
 	
 	if ((pid = fork()) == -1)
-		perr("fork");
+		log_perror_and_die("fork");
 	
 	if (pid == 0) {
 		/* we don't need the master side of the terminal */
@@ -212,10 +215,10 @@ void do_vlogin(int argc, char **argv)
 		
 		/* login_tty() stupid dietlibc doesn't have it */
 		if (setsid() == -1)
-			perr("setsid");
+			log_perror_and_die("setsid");
 		
 		if (ioctl(slave, TIOCSCTTY, NULL) == -1)
-			perr("ioctl");
+			log_perror_and_die("ioctl");
 		
 		dup2(slave, 0);
 		dup2(slave, 1);
@@ -226,7 +229,7 @@ void do_vlogin(int argc, char **argv)
 		
 		/* run command */
 		if (execvp(argv[0], argv) == -1)
-			perr("execvp");
+			log_perror_and_die("execvp");
 	}
 	
 	/* setup SIGINT and SIGWINCH here, as they can cause loops in the child */
@@ -250,7 +253,7 @@ void do_vlogin(int argc, char **argv)
 		/* wait for something to happen */
 		while (select(n + 1, &rfds, NULL, NULL, NULL) == -1) {
 			if (errno == EINTR || errno == EAGAIN) continue;
-			perr("select");
+			log_perror_and_die("select");
 		}
 		
 		if (FD_ISSET(STDIN_FILENO, &rfds))

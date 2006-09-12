@@ -26,7 +26,6 @@ AM_CPPFLAGS = $(PATH_CPPFLAGS)
 noinst_HEADERS = auth.h \
                  cfg.h \
                  lists.h \
-                 log.h \
                  methods.h \
                  validate.h \
                  vxdb.h
@@ -36,7 +35,6 @@ sbin_PROGRAMS = vcd
 vcd_SOURCES = auth.c \
               cfg.c \
               lists.c \
-              log.c \
               main.c \
               methods.c \
               validate.c \

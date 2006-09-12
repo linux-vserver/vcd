@@ -29,9 +29,9 @@
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
 #include <lucid/io.h>
+#include <lucid/log.h>
 
 #include "cmd.h"
-#include "msg.h"
 
 static char *host = "localhost";
 static int   port = 13386;
@@ -115,7 +115,7 @@ void read_config(char *file, int ignore_noent)
 		if (ignore_noent)
 			break;
 		else
-			perr("cfg_parse");
+			log_perror_and_die("cfg_parse");
 	
 	case CFG_PARSE_ERROR:
 		dprintf(STDERR_FILENO, "cfg_parse: Parse error\n");
@@ -143,7 +143,7 @@ void read_password(void)
 	
 	/* save original terminal settings */
 	if (tcgetattr(STDIN_FILENO, &oldtty) == -1)
-		perr("tcgetattr");
+		log_perror_and_die("tcgetattr");
 	
 	tty = oldtty;
 	
@@ -153,24 +153,31 @@ void read_password(void)
 	
 	/* apply new terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty) == -1)
-		perr("tcsetattr");
+		log_perror_and_die("tcsetattr");
 	
 	io_read_eol(STDIN_FILENO, &pass);
 	
 	/* apply old terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldtty) == -1)
-		perr("tcsetattr");
+		log_perror_and_die("tcsetattr");
 	
 	write(STDOUT_FILENO, "\n", 1);
 }
 
 int main(int argc, char **argv)
 {
-	INIT_ARGV0
-	
 	char c, *cmd;
 	int i;
 	xmlrpc_env env;
+	
+	log_options_t log_options = {
+		.ident  = argv[0],
+		.file   = false,
+		.stderr = true,
+		.syslog = false,
+	};
+	
+	log_init(&log_options);
 	
 	read_config(SYSCONFDIR "/vce.conf", 1);
 	
@@ -209,7 +216,7 @@ int main(int argc, char **argv)
 		if (strcmp(cmd, CMDS[i].name) == 0)
 			goto init;
 	
-	err("invalid command: %s", cmd);
+	log_error_and_die("invalid command: %s", cmd);
 	
 init:
 	xmlrpc_env_init(&env);
@@ -217,7 +224,7 @@ init:
 	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, argv[0], PACKAGE_VERSION, NULL, 0);
 	
 	if (env.fault_occurred)
-		err("failed to start xmlrpc client: %s", env.fault_string);
+		log_error_and_die("failed to start xmlrpc client: %s", env.fault_string);
 	
 	asprintf(&uri, "http://%s:%d/RPC2", host, port);
 	
@@ -231,7 +238,7 @@ init:
 	free(uri);
 	
 	if (env.fault_occurred)
-		err("%s: %s (%d)", cmd, env.fault_string, env.fault_code);
+		log_error_and_die("%s: %s (%d)", cmd, env.fault_string, env.fault_code);
 	
 	xmlrpc_env_clean(&env);
 	xmlrpc_client_cleanup();

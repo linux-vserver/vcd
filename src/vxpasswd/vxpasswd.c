@@ -25,8 +25,9 @@
 #include <string.h>
 #include <termios.h>
 #include <lucid/io.h>
-#include <lucid/whirlpool.h>
+#include <lucid/log.h>
 #include <lucid/str.h>
+#include <lucid/whirlpool.h>
 #include <sqlite3.h>
 
 static
@@ -42,10 +43,8 @@ void read_password(char **password)
 	struct termios tty, oldtty;
 	
 	/* save original terminal settings */
-	if (tcgetattr(STDIN_FILENO, &oldtty) == -1) {
-		perror("tcgetattr");
-		exit(EXIT_FAILURE);
-	}
+	if (tcgetattr(STDIN_FILENO, &oldtty) == -1)
+		log_perror_and_die("tcgetattr");
 	
 	tty = oldtty;
 	
@@ -54,18 +53,14 @@ void read_password(char **password)
 	tty.c_cc[VTIME] = 0;
 	
 	/* apply new terminal settings */
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty) == -1) {
-		perror("tcsetattr");
-		exit(EXIT_FAILURE);
-	}
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty) == -1)
+		log_perror_and_die("tcsetattr");
 	
 	io_read_eol(STDIN_FILENO, password);
 	
 	/* apply old terminal settings */
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldtty) == -1) {
-		perror("tcsetattr");
-		exit(EXIT_FAILURE);
-	}
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldtty) == -1)
+		log_perror_and_die("tcsetattr");
 	
 	write(STDERR_FILENO, "\n", 1);
 }
@@ -83,10 +78,8 @@ int main(int argc, char **argv)
 	vxdbfile = argv[1];
 	username = argv[2];
 	
-	if (str_isempty(username) || !str_isalnum(username)) {
-		dprintf(STDERR_FILENO, "invalid username: %s\n", username);
-		exit(EXIT_FAILURE);
-	}
+	if (str_isempty(username) || !str_isalnum(username))
+		log_error_and_die("invalid username: %s", username);
 	
 	if (argc >= 4)
 		password = strdup(argv[3]);
@@ -99,7 +92,7 @@ int main(int argc, char **argv)
 		read_password(&buf);
 		
 		if (strcmp(password, buf) != 0) {
-			write(STDERR_FILENO, "passwords don't match!\n", 23);
+			log_error("passwords don't match!");
 			free(password);
 			free(buf);
 			exit(EXIT_FAILURE);
@@ -108,15 +101,13 @@ int main(int argc, char **argv)
 		free(buf);
 	}
 	
-	if (strlen(password) < 8) {
-		dprintf(STDERR_FILENO, "password too short: %s\n", username);
-		exit(EXIT_FAILURE);
-	}
+	if (strlen(password) < 8)
+		log_error_and_die("password too short: %s", username);
 	
 	rc = sqlite3_open(vxdbfile, &vxdb);
 	
 	if (rc)
-		dprintf(STDERR_FILENO, "can't open database: %s\n", sqlite3_errmsg(vxdb));
+		log_error("can't open database: %s", sqlite3_errmsg(vxdb));
 	
 	else {
 		whirlpool_password = whirlpool_digest(password);
@@ -131,14 +122,14 @@ int main(int argc, char **argv)
 		free(sqlbuf);
 		
 		if (rc != SQLITE_OK) {
-			dprintf(STDERR_FILENO, "SQL error: %s\n", buf);
+			log_error("SQL error: %s", buf);
 			sqlite3_free(buf);
 		}
 		
 		rc = sqlite3_changes(vxdb);
 		
 		if (rc < 1) {
-			dprintf(STDERR_FILENO, "no such user: %s\n", username);
+			log_error("no such user: %s", username);
 			rc = 1;
 		}
 		

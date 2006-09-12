@@ -20,12 +20,12 @@
 
 #include "auth.h"
 #include "lists.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "vxdb.h"
 
 int auth_isvalid(const char *user, const char *pass)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int rc;
 	vxdb_result *dbr;
@@ -49,7 +49,7 @@ int auth_isvalid(const char *user, const char *pass)
 
 int auth_isadmin(const char *user)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int rc;
 	vxdb_result *dbr;
@@ -71,7 +71,7 @@ int auth_isadmin(const char *user)
 static
 int auth_hascapability(const char *user, uint64_t cap)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	vxdb_result *dbr;
 	const char *buf;
@@ -99,7 +99,7 @@ int auth_hascapability(const char *user, uint64_t cap)
 
 int auth_capable(const char *user, uint64_t caps)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int i;
 	
@@ -113,7 +113,7 @@ int auth_capable(const char *user, uint64_t caps)
 
 int auth_isowner(const char *user, const char *name)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int uid, rc;
 	xid_t xid;
@@ -144,7 +144,7 @@ int auth_isowner(const char *user, const char *name)
 
 int auth_getuid(const char *user)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int uid, rc;
 	vxdb_result *dbr;

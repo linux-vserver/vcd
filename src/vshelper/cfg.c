@@ -15,12 +15,13 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "cfg.h"
-#include "log.h"
 
 void cfg_atexit(void)
 {
-	log_debug("[trace] %s", __FUNCTION__);
-	
 	cfg_free(cfg);
 }

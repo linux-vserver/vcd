@@ -23,7 +23,7 @@
 #include <sys/wait.h>
 
 #include "auth.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -36,7 +36,7 @@
 /* vx.start(string name) */
 xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_value *params;
 	char *name;
@@ -75,10 +75,10 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	case 0:
 		if (nx_create(xid, &ncf) == -1)
-			log_error_and_die("nx_create: %s", strerror(errno));
+			log_perror_and_die("nx_create");
 		
 		if (vx_create(xid, &vcf) == -1)
-			log_error_and_die("vx_create: %s", strerror(errno));
+			log_perror_and_die("vx_create");
 		
 		exit(EXIT_SUCCESS);
 	

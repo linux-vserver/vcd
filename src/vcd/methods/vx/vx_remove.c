@@ -26,7 +26,7 @@
 
 #include "auth.h"
 #include "cfg.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -34,7 +34,7 @@
 /* vx.remove(string name) */
 xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_value *params;
 	char *name, vdir[PATH_MAX];

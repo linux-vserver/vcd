@@ -26,13 +26,15 @@
 #include <string.h>
 #include <confuse.h>
 #include <vserver.h>
+#include <syslog.h>
 #include <lucid/chroot.h>
 #include <lucid/exec.h>
+#include <lucid/log.h>
+#include <lucid/open.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
 
 #include "cfg.h"
-#include "log.h"
 
 static char *uri;
 static const char *user;
@@ -81,7 +83,7 @@ static action_t ACTIONS[] = {
 #define log_and_return_if_fault(ENV) do { \
 	if (ENV->fault_occurred) { \
 		log_error("xmlrpc error: %s", ENV->fault_string); \
-		return 1; \
+		return EXIT_FAILURE; \
 	} \
 } while (0)
 
@@ -163,21 +165,21 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	log_and_return_if_fault(env);
 	
 	if (vx_enter_namespace(xid) == -1)
-		log_error("vx_enter_namespace: %s", strerror(errno));
+		log_perror("vx_enter_namespace");
 	
 	else if (chroot_secure_chdir(vdir, "/") == -1)
-		log_error("chroot_secure_chdir: %s", strerror(errno));
+		log_perror("chroot_secure_chdir");
 	
 	else if (chroot(".") == -1)
-		log_error("chroot: %s", strerror(errno));
+		log_perror("chroot");
 	
 	else if (nx_migrate(xid) == -1)
-		log_error("nx_migrate: %s", strerror(errno));
+		log_perror("nx_migrate");
 	
 	else {
 		switch (fork()) {
 		case -1:
-			log_error("fork: %s", strerror(errno));
+			log_perror("fork");
 			break;
 		
 		case 0:
@@ -189,10 +191,10 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 				close(i);
 			
 			if (vx_migrate(xid, &migrate_flags) == -1)
-				log_error("vx_migrate: %s", strerror(errno));
+				log_perror("vx_migrate");
 			
 			else if (exec_replace(init) == -1)
-				log_error("exec_replace: %s", strerror(errno));
+				log_perror("exec_replace");
 			
 			exit(EXIT_FAILURE);
 		
@@ -280,7 +282,7 @@ int do_vshelper(xid_t xid, action_t *action)
 int main(int argc, char *argv[])
 {
 	int i, xid;
-	char *action;
+	const char *action, *logfile;
 	
 	/* load configuration */
 	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
@@ -299,8 +301,22 @@ int main(int argc, char *argv[])
 	atexit(cfg_atexit);
 	
 	/* start logging & debugging */
-	if (log_init(0) == -1)
-		exit(EXIT_FAILURE);
+	log_options_t log_options = {
+		.ident  = argv[0],
+		.file   = false,
+		.stderr = false,
+		.syslog = true,
+		.flags  = LOG_PID,
+	};
+	
+	logfile = cfg_getstr(cfg, "logfile");
+	
+	if (logfile && strlen(logfile) > 0) {
+		log_options.fd = open_append(logfile);
+		log_options.file = true;
+	}
+	
+	log_init(&log_options);
 	
 	/* parse command line */
 	if (argc < 2)

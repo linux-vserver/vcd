@@ -21,13 +21,11 @@ EXTRA_DIST = vshelper.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
-noinst_HEADERS = cfg.h \
-                 log.h
+noinst_HEADERS = cfg.h
 
 sbin_PROGRAMS = vshelper
 
 vshelper_SOURCES = cfg.c \
-                   log.c \
                    main.c
 
 vshelper_LDADD = $(CONFUSE_LIBS) \

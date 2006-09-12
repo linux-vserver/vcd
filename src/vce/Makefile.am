@@ -21,8 +21,7 @@ EXTRA_DIST = vce.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
-noinst_HEADERS = cmd.h \
-                 msg.h
+noinst_HEADERS = cmd.h
 
 sbin_PROGRAMS = vce
 
@@ -31,7 +30,6 @@ vce_SOURCES = cmd.c \
               init.c \
               main.c \
               mount.c \
-              msg.c \
               nx_addr.c \
               nx_broadcast.c \
               vx_bcaps.c \

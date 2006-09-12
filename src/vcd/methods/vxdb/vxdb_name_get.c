@@ -16,13 +16,13 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "vxdb.h"
 
 xmlrpc_value *m_vxdb_name_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_value *params;
 	char *name;

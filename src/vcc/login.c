@@ -15,14 +15,18 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <vserver.h>
 #include <lucid/argv.h>
 #include <lucid/chroot.h>
+#include <lucid/log.h>
 
 #include "cmd.h"
-#include "msg.h"
 
 void cmd_login(xmlrpc_env *env, int argc, char **argv)
 {
@@ -57,19 +61,19 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_DECREF(result);
 	
 	if (vx_enter_namespace(xid) == -1)
-		perr("vx_enter_namespace");
+		log_perror_and_die("vx_enter_namespace");
 	
 	if (chroot_secure_chdir(vdir, "/") == -1)
-		perr("chroot_secure_chdir");
+		log_perror_and_die("chroot_secure_chdir");
 	
 	if (chroot(".") == -1)
-		perr("chroot");
+		log_perror_and_die("chroot");
 	
 	if (nx_migrate(xid) == -1)
-		perr("nx_migrate");
+		log_perror_and_die("nx_migrate");
 	
 	if (vx_migrate(xid, NULL) == -1)
-		perr("vx_migrate");
+		log_perror_and_die("vx_migrate");
 	
 	do_vlogin(ac, av);
 }

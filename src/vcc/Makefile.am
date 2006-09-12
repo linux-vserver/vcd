@@ -21,8 +21,7 @@ EXTRA_DIST = vcc.conf
 
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
-noinst_HEADERS = cmd.h \
-                 msg.h
+noinst_HEADERS = cmd.h
 
 sbin_PROGRAMS = vcc
 
@@ -32,7 +31,6 @@ vcc_SOURCES = cmd.c \
               kill.c \
               login.c \
               main.c \
-              msg.c \
               reboot.c \
               remove.c \
               rename.c \

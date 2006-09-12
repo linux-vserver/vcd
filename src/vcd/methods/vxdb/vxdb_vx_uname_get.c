@@ -17,14 +17,14 @@
 
 #include "auth.h"
 #include "lists.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_value *params, *response = NULL;
 	char *name, *uname;

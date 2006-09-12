@@ -29,7 +29,7 @@
 
 #include "auth.h"
 #include "cfg.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -37,7 +37,7 @@
 /* vx.exec(string name, string command) */
 xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_value *params;
 	char *name, *command, *output, *vserverdir, vdir[PATH_MAX];
@@ -88,7 +88,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		
 		switch ((pid = fork())) {
 		case -1:
-			log_error("fork: %s", strerror(errno));
+			method_return_faultf(env, MESYS, "fork: %s", strerror(errno));
 			break;
 		
 		case 0:
@@ -102,10 +102,10 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			clearenv();
 			
 			if (vx_migrate(xid, NULL) == -1)
-				log_error("vx_migrate: %s", strerror(errno));
+				log_perror("vx_migrate");
 			
 			else if (exec_replace(command) == -1)
-				log_error("exec_replace: %s", strerror(errno));
+				log_perror("exec_replace");
 			
 			exit(EXIT_FAILURE);
 		

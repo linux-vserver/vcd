@@ -24,7 +24,7 @@
 #include <lucid/addr.h>
 
 #include "auth.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -37,7 +37,7 @@
 static
 xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int rc;
 	vxdb_result *dbr;

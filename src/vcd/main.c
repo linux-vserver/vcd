@@ -22,14 +22,16 @@
 #include <string.h>
 #include <getopt.h>
 #include <sys/stat.h>
+#include <syslog.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/server.h>
 #include <xmlrpc-c/server_abyss.h>
+#include <lucid/log.h>
 #include <lucid/open.h>
 #include <lucid/tcp.h>
 
 #include "cfg.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 #include "vxdb.h"
 
@@ -65,6 +67,7 @@ int main(int argc, char **argv)
 	char *cfg_file = SYSCONFDIR "/vcd.conf";
 	
 	char c, *pidfile, *host;
+	const char *logfile;
 	int debug = 0, fd, port, timeout;
 	pid_t pid;
 	
@@ -110,10 +113,27 @@ int main(int argc, char **argv)
 	atexit(cfg_atexit);
 	
 	/* start logging & debugging */
-	if (log_init(debug) == -1) {
-		perror("log_init");
-		exit(EXIT_FAILURE);
+	log_options_t log_options = {
+		.ident  = argv[0],
+		.file   = false,
+		.stderr = false,
+		.syslog = true,
+		.flags  = LOG_PID,
+	};
+	
+	logfile = cfg_getstr(cfg, "logfile");
+	
+	if (logfile && strlen(logfile) > 0) {
+		log_options.fd = open_append(logfile);
+		log_options.file = true;
 	}
+	
+	if (debug) {
+		log_options.stderr = true;
+		log_options.mask   = LOG_UPTO(LOG_DEBUG);
+	}
+	
+	log_init(&log_options);
 	
 	/* fork to background */
 	if (!debug) {
@@ -121,7 +141,7 @@ int main(int argc, char **argv)
 		
 		switch (pid) {
 		case -1:
-			log_error_and_die("fork: %s", strerror(errno));
+			log_perror_and_die("fork");
 		
 		case 0:
 			break;
@@ -157,7 +177,7 @@ int main(int argc, char **argv)
 	host = cfg_getstr(cfg, "host");
 	
 	if ((fd = tcp_listen(host, port, 20)) == -1)
-		log_error_and_die("cannot listen: %s", strerror(errno));
+		log_perror_and_die("tcp_listen");
 	
 	/* setup xmlrpc server */
 	xmlrpc_env_init(&env);

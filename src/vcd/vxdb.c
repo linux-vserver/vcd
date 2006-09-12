@@ -20,7 +20,7 @@
 #include <lucid/misc.h>
 
 #include "cfg.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "validate.h"
 #include "vxdb.h"
 
@@ -29,7 +29,7 @@ sqlite3 *vxdb = NULL;
 static
 void vxdb_sanity_check(void)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int rc;
 	vxdb_result *dbr;
@@ -57,7 +57,7 @@ void vxdb_trace(void *data, const char *sql)
 
 void vxdb_init(void)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int rc;
 	
@@ -85,14 +85,14 @@ void vxdb_init(void)
 
 void vxdb_atexit(void)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	sqlite3_close(vxdb);
 }
 
 int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	va_list ap;
 	char *sql;
@@ -114,7 +114,7 @@ int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 
 int vxdb_step(vxdb_result *dbr)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	switch (sqlite3_step(dbr)) {
 		case SQLITE_BUSY:
@@ -137,7 +137,7 @@ int vxdb_step(vxdb_result *dbr)
 
 int vxdb_exec(const char *fmt, ...)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	va_list ap;
 	char *sql;
@@ -159,7 +159,7 @@ int vxdb_exec(const char *fmt, ...)
 
 xid_t vxdb_getxid(const char *name)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int rc;
 	xid_t xid;
@@ -182,7 +182,7 @@ xid_t vxdb_getxid(const char *name)
 
 char *vxdb_getname(xid_t xid)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int rc;
 	char *name;

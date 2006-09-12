@@ -25,7 +25,7 @@
 
 #include "auth.h"
 #include "cfg.h"
-#include "log.h"
+#include <lucid/log.h>
 #include "methods.h"
 
 m_err_t method_error_codes[] = {
@@ -51,7 +51,7 @@ void *METHOD_INTERNAL = (void *) 0xdeadbeef;
 
 int method_registry_init(xmlrpc_env *env)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	/* helper */
 	MREGISTER("helper.netup",    m_helper_netup);
@@ -124,7 +124,7 @@ int method_registry_init(xmlrpc_env *env)
 
 void method_registry_atexit(void)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_registry_free(registry);
 }
@@ -133,7 +133,7 @@ static
 void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
                         char *user, uint64_t flags)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int lockfd;
 	char *name, *datadir, lockfile[PATH_MAX];
@@ -172,7 +172,7 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
 xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
                           uint64_t caps, uint64_t flags)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	char *user = NULL, *pass;
 	xmlrpc_value *params = NULL;
@@ -211,7 +211,7 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 
 void method_empty_params(int num, ...)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int i;
 	va_list ap;
@@ -236,7 +236,7 @@ void method_empty_params(int num, ...)
 
 char *method_strerror(int id)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	int i;
 	

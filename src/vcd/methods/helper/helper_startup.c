@@ -27,13 +27,13 @@
 #include <lucid/bitmap.h>
 #include <lucid/chroot.h>
 #include <lucid/exec.h>
+#include <lucid/log.h>
 #include <lucid/open.h>
 #include <lucid/str.h>
 
 #include "auth.h"
 #include "cfg.h"
 #include "lists.h"
-#include "log.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
@@ -353,13 +353,13 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env, const char *vdir)
 	
 	case 0:
 		if (chroot_secure_chdir(vdir, "/") == -1)
-			log_error_and_die("chroot_secure_chdir(%s): %s", vdir, strerror(errno));
+			log_perror_and_die("chroot_secure_chdir(%s)", vdir);
 		
 		if (mount(".", "/", NULL, MS_BIND|MS_REC, NULL) == -1)
-			log_error_and_die("mount: %s", strerror(errno));
+			log_perror_and_die("mount");
 		
 		if (vx_set_namespace(xid) == -1)
-			log_error_and_die("vx_set_namespace: %s", strerror(errno));
+			log_perror_and_die("vx_set_namespace");
 		
 		exit(EXIT_SUCCESS);
 	
@@ -416,7 +416,7 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 			if (chroot_secure_chdir(vdir, dst) == -1)
 				method_return_faultf(env, MESYS, "chroot_secure_chdir: %s", strerror(errno));
 			
-			status = exec_fork("mount -n -t %s -o %s %s .", type, opts, src);
+			status = exec_fork("/bin/mount -n -t %s -o %s %s .", type, opts, src);
 			
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 				method_return_faultf(env, MESYS, "mount failed (%d)", WEXITSTATUS(status));
@@ -440,7 +440,7 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 /* helper.startup(int xid) */
 xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
-	TRACEIT
+	LOG_TRACEME
 	
 	xmlrpc_value *params;
 	const char *init = "/sbin/init", *vserverdir;
