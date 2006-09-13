@@ -31,7 +31,7 @@ int validate_name(const char *name)
 	if (str_isempty(name))
 		return 0;
 	
-	if (strlen(name) < 3 || strlen(name) > 64)
+	if (strlen(name) < 3 || strlen(name) > 32)
 		return 0;
 	
 	return str_isalnum(name);

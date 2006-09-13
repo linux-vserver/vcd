@@ -98,3 +98,16 @@ int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
 	*(const char **) result = (const char *) value;
 	return 0;
 }
+
+int cfg_validate_vdir(cfg_t *cfg, cfg_opt_t *opt,
+                      const char *value, void *result)
+{
+	LOG_TRACEME
+	
+	if (strlen(value) > 32) {
+		cfg_error(cfg, "Maximum length of vserverdir (%s) exceeded", value);
+		return -1;
+	}
+	
+	return cfg_validate_path(cfg, opt, value, result);
+}

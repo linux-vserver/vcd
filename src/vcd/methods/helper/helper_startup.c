@@ -284,7 +284,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 }
 
 static
-xmlrpc_value *context_uname(xmlrpc_env *env)
+xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 {
 	int rc;
 	vxdb_result *dbr;
@@ -332,7 +332,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env)
 		vhiname.field = VHIN_CONTEXT;
 		
 		bzero(vhiname.name, VHILEN);
-		strncpy(vhiname.name, name, VHILEN-1);
+		snprintf(vhiname.name, VHILEN, "%s:%s", name, vserverdir);
 		
 		if (vx_set_vhi_name(xid, &vhiname) == -1)
 			method_set_faultf(env, MESYS, "vx_set_vhi_name: %s", strerror(errno));
@@ -492,7 +492,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	context_scheduler(env);
 	method_return_if_fault(env);
 	
-	context_uname(env);
+	context_uname(env, vserverdir);
 	method_return_if_fault(env);
 	
 	namespace_setup(env, vdir);
