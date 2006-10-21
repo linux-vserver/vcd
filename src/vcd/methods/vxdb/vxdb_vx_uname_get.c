@@ -46,10 +46,10 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!name) {
 		response = xmlrpc_array_new(env);
 		
-		for (i = 0; vhiname_list[i].key; i++)
+		for (i = 0; uname_list[i].key; i++)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s}",
-				"uname", vhiname_list[i].key,
+				"uname", uname_list[i].key,
 				"value", ""));
 	}
 	

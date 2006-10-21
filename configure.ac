@@ -77,7 +77,7 @@ AC_CHECK_LIB(ucid, str_check,
 AC_SUBST(LUCID_LIBS)
 
 # vserver
-AC_CHECK_LIB(vserver, vx_clone_namespace, 
+AC_CHECK_LIB(vserver, vx_get_stat,
 	VSERVER_LIBS="-lvserver", AC_MSG_ERROR([libvserver >= 2.0 not found]),)
 
 AC_SUBST(VSERVER_LIBS)

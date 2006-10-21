@@ -147,7 +147,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	char *vdir, *init;
 	int i;
 	
-	struct vx_migrate_flags migrate_flags = {
+	struct vx_flags migrate_flags = {
 		.flags = VXM_SET_INIT|VXM_SET_REAPER,
 	};
 	
@@ -164,7 +164,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 		"init", &init);
 	log_and_return_if_fault(env);
 	
-	if (vx_enter_namespace(xid) == -1)
+	if (ns_enter(xid) == -1)
 		log_perror("vx_enter_namespace");
 	
 	else if (chroot_secure_chdir(vdir, "/") == -1)
@@ -303,8 +303,6 @@ int main(int argc, char *argv[])
 	/* start logging & debugging */
 	log_options_t log_options = {
 		.ident  = argv[0],
-		.file   = false,
-		.stderr = false,
 		.syslog = true,
 		.flags  = LOG_PID,
 	};

@@ -70,7 +70,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vserverdir = cfg_getstr(cfg, "vserverdir");
 	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
 	
-	if (vx_enter_namespace(xid) == -1)
+	if (ns_enter(xid) == -1)
 		method_return_faultf(env, MESYS, "vx_enter_namespace: %s", strerror(errno));
 	
 	else if (chroot_secure_chdir(vdir, "/") == -1)

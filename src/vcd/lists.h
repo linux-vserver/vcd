@@ -23,11 +23,8 @@
 extern const flist64_t bcaps_list[];
 extern const flist64_t ccaps_list[];
 extern const flist64_t cflags_list[];
-extern const flist32_t vhiname_list[];
-extern const flist32_t iattr_list[];
+extern const flist32_t uname_list[];
 extern const flist32_t rlimit_list[];
-extern const flist64_t nflags_list[];
-extern const flist32_t sched_list[];
 extern const flist64_t vcd_caps_list[];
 
 #endif

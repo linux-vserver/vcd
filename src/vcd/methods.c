@@ -138,17 +138,18 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
 	int lockfd;
 	char *name, *datadir, lockfile[PATH_MAX];
 	
-	if (user && flags & M_OWNER) {
+	if (user && (flags & M_OWNER)) {
 		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
 		
 		if (!env->fault_occurred) {
 			if (str_isempty(name) || !auth_isowner(user, name))
-				xmlrpc_env_set_fault(env, MENOVPS, method_strerror(MENOVPS));
+				method_set_fault(env, MENOVPS);
 			
 			free(name);
 		}
 	}
 	
+	/* TODO: this is so b0rked */
 	if (flags & M_LOCK) {
 		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
 		
@@ -186,10 +187,10 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 		method_return_if_fault(env);
 		
 		if (!auth_isvalid(user, pass))
-			xmlrpc_env_set_fault(env, MEAUTH, method_strerror(MEAUTH));
+			method_set_fault(env, MEAUTH);
 		
 		else if (!auth_capable(user, caps))
-			xmlrpc_env_set_fault(env, MEPERM, method_strerror(MEPERM));
+			method_set_fault(env, MEPERM);
 		
 		else
 			method_check_flags(env, params, c, user, flags);

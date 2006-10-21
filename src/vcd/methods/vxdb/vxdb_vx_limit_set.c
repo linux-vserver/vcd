@@ -37,7 +37,7 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,s:i,s:i,*}",
 		"name", &name,
-		"limit", &limit,
+		"limit", &limit, /* TODO: s/limit/type/ */
 		"soft", &soft,
 		"max", &max);
 	method_return_if_fault(env);

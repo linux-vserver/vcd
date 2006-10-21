@@ -69,7 +69,7 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 			}
 			
 			else if (nx_add_addr(xid, &addr) == -1) {
-				method_set_faultf(env, MESYS, "nx_add_addr : %s", strerror(errno));
+				method_set_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
 				break;
 			}
 		}

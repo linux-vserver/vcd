@@ -194,7 +194,7 @@ int validate_uname(const char *uname)
 	if (str_isempty(uname))
 		return 0;
 	
-	return flist32_getval(vhiname_list, uname) == 0 ? 0 : 1;
+	return flist32_getval(uname_list, uname) == 0 ? 0 : 1;
 }
 
 int validate_uname_value(const char *value)

@@ -124,8 +124,8 @@ int main(int argc, char **argv)
 	logfile = cfg_getstr(cfg, "logfile");
 	
 	if (logfile && strlen(logfile) > 0) {
-		log_options.fd = open_append(logfile);
 		log_options.file = true;
+		log_options.fd   = open_append(logfile);
 	}
 	
 	if (debug) {
@@ -134,6 +134,8 @@ int main(int argc, char **argv)
 	}
 	
 	log_init(&log_options);
+	
+	atexit(log_close);
 	
 	/* fork to background */
 	if (!debug) {
@@ -194,7 +196,7 @@ int main(int argc, char **argv)
 	serverparm.keepalive_timeout  = 0;
 	serverparm.keepalive_max_conn = 0;
 	serverparm.timeout            = timeout;
-	serverparm.dont_advertise     = 0;
+	serverparm.dont_advertise     = 0; /* TODO: what's this? */
 	serverparm.socket_bound       = 1;
 	serverparm.socket_handle      = fd;
 	

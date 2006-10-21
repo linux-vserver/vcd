@@ -16,11 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
+#include <lucid/log.h>
 #include <lucid/whirlpool.h>
 
 #include "auth.h"
 #include "lists.h"
-#include <lucid/log.h>
 #include "vxdb.h"
 
 int auth_isvalid(const char *user, const char *pass)

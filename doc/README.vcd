@@ -7,8 +7,11 @@ Setup the VServer Control Daemon
               --with-vserverdir=/vservers
 # make && sudo make install
 
-# /usr/lib/vserver-utils/gensql | sqlite3 /var/lib/vcd/vxdb
+# sqlite3 /var/lib/vcd/vxdb < /usr/share/vcd/vxdb.sql
 # chmod 600 /var/lib/vcd/vxdb
+
+# vxpasswd /var/lib/vcd/vxdb admin
+# vxpasswd /var/lib/vcd/vxdb vshelper
 
 # ix -set-attr /vservers BARRIER
 

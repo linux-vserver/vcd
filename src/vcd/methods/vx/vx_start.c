@@ -44,11 +44,11 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	pid_t pid;
 	int status;
 	
-	struct nx_create_flags ncf = {
+	struct nx_flags ncf = {
 		.flags = NXF_STATE_ADMIN|NXF_SC_HELPER,
 	};
 	
-	struct vx_create_flags vcf = {
+	struct vx_flags vcf = {
 		.flags = VXF_STATE_ADMIN|VXF_SC_HELPER|VXF_INFO_INIT|VXF_REBOOT_KILL,
 	};
 	

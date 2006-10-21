@@ -53,7 +53,7 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
                           uint64_t caps, uint64_t flags);
 
 void method_empty_params(int num, ...);
-char *method_strerror(int errnum);
+char *method_strerror(int id);
 
 #define method_cleanup_if_fault(ENV) do { \
 	if (ENV->fault_occurred) goto cleanup; \

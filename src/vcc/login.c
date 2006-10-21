@@ -60,7 +60,7 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 	
 	xmlrpc_DECREF(result);
 	
-	if (vx_enter_namespace(xid) == -1)
+	if (ns_enter(xid) == -1)
 		log_perror_and_die("vx_enter_namespace");
 	
 	if (chroot_secure_chdir(vdir, "/") == -1)
