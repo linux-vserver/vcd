@@ -344,7 +344,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (auth_isadmin(user) || auth_isowner(user, name)) {
 			if (!rebuild)
 				method_return_fault(env, MEEXIST);
-			else if (vx_get_info(xid, NULL) == 0)
+			else if (vx_info(xid, NULL) == 0)
 				method_return_fault(env, MERUNNING);
 		}
 		

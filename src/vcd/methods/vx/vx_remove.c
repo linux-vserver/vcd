@@ -57,7 +57,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (vx_get_info(xid, NULL) != -1)
+	if (vx_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
 	
 	rc = vxdb_exec("BEGIN TRANSACTION;"

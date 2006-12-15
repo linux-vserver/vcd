@@ -43,7 +43,7 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 	vxdb_result *dbr;
 	const char *ip, *netm;
 	char buf[32];
-	struct nx_addr addr;
+	nx_addr_t addr;
 	
 	rc = vxdb_prepare(&dbr,
 		"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
@@ -68,7 +68,7 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 				break;
 			}
 			
-			else if (nx_add_addr(xid, &addr) == -1) {
+			else if (nx_addr_add(xid, &addr) == -1) {
 				method_set_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
 				break;
 			}
@@ -90,7 +90,7 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 	vxdb_result *dbr;
 	const char *ip;
 	char buf[32];
-	struct nx_addr addr;
+	nx_addr_t addr;
 	
 	rc = vxdb_prepare(&dbr,
 		"SELECT broadcast FROM nx_broadcast WHERE xid = %d",
@@ -117,7 +117,7 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 			else {
 				addr.mask[0] = 0;
 				
-				if (nx_add_addr(xid, &addr) == -1)
+				if (nx_addr_add(xid, &addr) == -1)
 					method_set_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
 			}
 		}
@@ -145,7 +145,7 @@ xmlrpc_value *m_helper_netup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!vxdb_getname(xid))
 		method_return_fault(env, MENOVPS);
 	
-	if (nx_get_info(xid, NULL) == -1)
+	if (nx_info(xid, NULL) == -1)
 		method_return_fault(env, MESTOPPED);
 	
 	network_interfaces(env, xid);

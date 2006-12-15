@@ -17,10 +17,12 @@
 
 #include <stdlib.h>
 #include <string.h>
+
 #include <lucid/misc.h>
+#include <lucid/log.h>
+#include <lucid/str.h>
 
 #include "cfg.h"
-#include <lucid/log.h>
 #include "validate.h"
 #include "vxdb.h"
 
@@ -65,7 +67,7 @@ void vxdb_init(void)
 		return;
 	
 	char *datadir  = cfg_getstr(cfg, "datadir");
-	char *vxdbfile = path_concat(datadir, "vxdb");
+	char *vxdbfile = str_path_concat(datadir, "vxdb");
 	
 	rc = sqlite3_open(vxdbfile, &vxdb);
 	

@@ -90,7 +90,7 @@ static action_t ACTIONS[] = {
 static
 int vshelper_restart(xmlrpc_env *env, xid_t xid)
 {
-	struct vx_flags cflags = {
+	vx_flags_t cflags = {
 		.flags = VXF_REBOOT_KILL,
 		.mask  = VXF_REBOOT_KILL,
 	};
@@ -104,8 +104,8 @@ int vshelper_restart(xmlrpc_env *env, xid_t xid)
 	
 	log_info("context %d has been scheduled for rebirth", xid);
 	
-	if (vx_set_flags(xid, &cflags) == -1)
-		log_error("vx_set_flags: %s", strerror(errno));
+	if (vx_flags_set(xid, &cflags) == -1)
+		log_error("vx_flags_set: %s", strerror(errno));
 	
 	else
 		return EXIT_SUCCESS;
@@ -116,15 +116,15 @@ int vshelper_restart(xmlrpc_env *env, xid_t xid)
 static
 int vshelper_halt(xmlrpc_env *env, xid_t xid)
 {
-	struct vx_flags cflags = {
+	vx_flags_t cflags = {
 		.flags = VXF_REBOOT_KILL,
 		.mask  = VXF_REBOOT_KILL,
 	};
 	
 	log_info("context %d has commited suicide", xid);
 	
-	if (vx_set_flags(xid, &cflags) == -1)
-		log_error("vx_set_flags: %s", strerror(errno));
+	if (vx_flags_set(xid, &cflags) == -1)
+		log_error("vx_flags_set: %s", strerror(errno));
 	
 	else
 		return EXIT_SUCCESS;
@@ -147,7 +147,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	char *vdir, *init;
 	int i;
 	
-	struct vx_flags migrate_flags = {
+	vx_flags_t migrate_flags = {
 		.flags = VXM_SET_INIT|VXM_SET_REAPER,
 	};
 	

@@ -53,11 +53,11 @@ xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (vx_get_info(xid, NULL) == -1) {
+	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH)
 			method_return_fault(env, MESTOPPED);
 		else
-			method_return_faultf(env, MESYS, "vx_get_info: %s", strerror(errno));
+			method_return_faultf(env, MESYS, "vx_info: %s", strerror(errno));
 	}
 	
 	rc = vxdb_prepare(&dbr, "SELECT reboot FROM init WHERE xid = %d", xid);

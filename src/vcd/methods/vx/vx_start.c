@@ -44,11 +44,11 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	pid_t pid;
 	int status;
 	
-	struct nx_flags ncf = {
+	nx_flags_t ncf = {
 		.flags = NXF_STATE_ADMIN|NXF_SC_HELPER,
 	};
 	
-	struct vx_flags vcf = {
+	vx_flags_t vcf = {
 		.flags = VXF_STATE_ADMIN|VXF_SC_HELPER|VXF_INFO_INIT|VXF_REBOOT_KILL,
 	};
 	
@@ -66,7 +66,7 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 	
-	if (vx_get_info(xid, NULL) != -1)
+	if (vx_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
 	
 	switch ((pid = fork())) {

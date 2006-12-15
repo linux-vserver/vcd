@@ -17,7 +17,8 @@
 
 #include <stdlib.h>
 #include <vserver.h>
-#include <sys/personality.h>
+#include <sys/capability.h>
+#include <sys/resource.h>
 
 #include "auth.h"
 #include "lists.h"

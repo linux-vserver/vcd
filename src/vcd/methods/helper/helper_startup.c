@@ -58,8 +58,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 {
 	int rc;
 	vxdb_result *dbr;
-	struct vx_caps bcaps, ccaps;
-	struct vx_flags cflags;
+	vx_flags_t bcaps, ccaps, cflags;
 	
 	/* 1.1) setup system capabilities */
 	rc = vxdb_prepare(&dbr, "SELECT bcap FROM vx_bcaps WHERE xid = %d", xid);
@@ -77,7 +76,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
 	
-	if (vx_set_bcaps(xid, &bcaps) == -1)
+	if (vx_bcaps_set(xid, &bcaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_bcaps: %s", strerror(errno));
 	
 	/* 1.2) setup context capabilities */
@@ -88,9 +87,9 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	
 	else
 		vxdb_foreach_step(rc, dbr)
-			ccaps.caps |= flist64_getval(ccaps_list, sqlite3_column_text(dbr, 0));
+			ccaps.flags |= flist64_getval(ccaps_list, sqlite3_column_text(dbr, 0));
 	
-	ccaps.mask = ccaps.caps;
+	ccaps.mask = ccaps.flags;
 	
 	if (rc == -1)
 		method_set_fault(env, MEVXDB);
@@ -98,7 +97,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
 	
-	if (vx_set_ccaps(xid, &ccaps) == -1)
+	if (vx_ccaps_set(xid, &ccaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_ccaps: %s", strerror(errno));
 	
 	/* 1.3) setup context flags */
@@ -119,7 +118,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
 	
-	if (vx_set_flags(xid, &cflags) == -1)
+	if (vx_flags_set(xid, &cflags) == -1)
 		method_return_faultf(env, MESYS, "vx_set_flags: %s", strerror(errno));
 	
 	return NULL;
@@ -132,11 +131,9 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 	int rc;
 	const char *type;
 	uint32_t buf32;
+	vx_limit_t limit, limit_mask;
 	
-	struct vx_limit_mask limit_mask;
-	struct vx_limit limit;
-	
-	if (vx_get_limit_mask(&limit_mask) == -1)
+	if (vx_limit_mask_get(&limit_mask) == -1)
 		method_return_faultf(env, MESYS, "vx_get_limit_mask: %s", strerror(errno));
 	
 	rc = vxdb_prepare(&dbr,
@@ -171,7 +168,7 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 			if (limit.maximum < limit.softlimit)
 				limit.maximum = limit.softlimit;
 			
-			if (vx_set_limit(xid, &limit) == -1) {
+			if (vx_limit_set(xid, &limit) == -1) {
 				method_set_faultf(env, MESYS, "vx_set_limit: %s", strerror(errno));
 				break;
 			}
@@ -192,7 +189,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 {
 	int rc, cpuid, numcpus;
 	vxdb_result *dbr;
-	struct vx_sched sched;
+	vx_sched_t sched;
 	
 	numcpus = sysconf(_SC_NPROCESSORS_ONLN);
 	
@@ -226,7 +223,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 			
 			sched.tokens = sched.tokens_max >> 1;
 			
-			if (vx_set_sched(xid, &sched) == -1) {
+			if (vx_sched_set(xid, &sched) == -1) {
 				method_set_faultf(env, MESYS, "vx_set_sched: %s", strerror(errno));
 				break;
 			}
@@ -237,7 +234,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 			sched.set_mask = VXSM_IDLE_TIME|VXSM_FILL_RATE2|VXSM_INTERVAL2;
 			
 			if (sched.fill_rate > 0 && sched.interval > 0 &&
-			    vx_set_sched(xid, &sched) == -1) {
+			    vx_sched_set(xid, &sched) == -1) {
 				method_set_faultf(env, MESYS, "vx_set_sched2: %s", strerror(errno));
 				break;
 			}
@@ -257,7 +254,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 	int rc;
 	vxdb_result *dbr;
 	uint32_t id;
-	struct vx_uname uname;
+	vx_uname_t uname;
 	
 	rc = vxdb_prepare(&dbr,
 		"SELECT uname,value FROM vx_uname WHERE xid = %d",
@@ -276,7 +273,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 			bzero(uname.value, 65);
 			memcpy(uname.value, sqlite3_column_text(dbr, 1), 64);
 			
-			if (vx_set_uname(xid, &uname) == -1) {
+			if (vx_uname_set(xid, &uname) == -1) {
 				method_set_faultf(env, MESYS, "vx_set_uname: %s", strerror(errno));
 				break;
 			}
@@ -295,7 +292,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 		bzero(uname.value, 65);
 		snprintf(uname.value, 64, "%s:%s", name, vserverdir);
 		
-		if (vx_set_uname(xid, &uname) == -1)
+		if (vx_uname_set(xid, &uname) == -1)
 			method_set_faultf(env, MESYS, "vx_set_uname: %s", strerror(errno));
 	}
 	
@@ -425,7 +422,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(name = vxdb_getname(xid)))
 		method_return_fault(env, MENOVPS);
 	
-	if (vx_get_info(xid, NULL) == -1)
+	if (vx_info(xid, NULL) == -1)
 		method_return_fault(env, MESTOPPED);
 	
 	vserverdir = cfg_getstr(cfg, "vserverdir");
