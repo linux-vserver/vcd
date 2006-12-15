@@ -118,6 +118,7 @@ int main(int argc, char **argv)
 		.file   = false,
 		.stderr = false,
 		.syslog = true,
+		.time   = true,
 		.flags  = LOG_PID,
 	};
 	
@@ -179,7 +180,7 @@ int main(int argc, char **argv)
 	host = cfg_getstr(cfg, "host");
 	
 	if ((fd = tcp_listen(host, port, 20)) == -1)
-		log_perror_and_die("tcp_listen");
+		log_perror_and_die("tcp_listen(%s,%s)", host, port);
 	
 	/* setup xmlrpc server */
 	xmlrpc_env_init(&env);
