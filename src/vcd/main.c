@@ -140,6 +140,8 @@ int main(int argc, char **argv)
 	
 	/* fork to background */
 	if (!debug) {
+		log_info("Running in background mode ...");
+		
 		pid = fork();
 		
 		switch (pid) {
@@ -156,6 +158,9 @@ int main(int argc, char **argv)
 		close(STDOUT_FILENO);
 		close(STDERR_FILENO);
 	}
+	
+	else
+		log_info("Running in debugging mode ...");
 	
 	/* daemonize */
 	close(STDIN_FILENO);
@@ -180,7 +185,7 @@ int main(int argc, char **argv)
 	host = cfg_getstr(cfg, "host");
 	
 	if ((fd = tcp_listen(host, port, 20)) == -1)
-		log_perror_and_die("tcp_listen(%s,%s)", host, port);
+		log_perror_and_die("tcp_listen(%s,%hu)", host, port);
 	
 	/* setup xmlrpc server */
 	xmlrpc_env_init(&env);

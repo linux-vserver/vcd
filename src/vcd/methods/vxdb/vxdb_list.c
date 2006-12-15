@@ -47,7 +47,7 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (user && !validate_username(user))
 		method_return_fault(env, MEINVAL);
 	
-	if (auth_isadmin(user)) {
+	if (auth_isadmin(curuser)) {
 		if (user)
 			uid = auth_getuid(user);
 	}
