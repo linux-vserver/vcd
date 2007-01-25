@@ -22,7 +22,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <lucid/argv.h>
+#include <lucid/log.h>
+#include <lucid/mem.h>
+#include <lucid/strtok.h>
 
 #include "cmd.h"
 
@@ -30,24 +32,30 @@ void cmd_exec(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
 	char *command, *output;
-	
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
-	
-	command = argv_to_str(argc, (const char ** const)argv);
-	
+
+	strtok_t st;
+
+	if (!strtok_init_argv(&st, argv, argc, 0))
+		log_perror_and_die("strtok_init_argv");
+
+	if (strtok_tostr(&st, &command, " ") == -1)
+		log_perror_and_die("strtok_tostr");
+
 	result = xmlrpc_client_call(env, uri, "vx.exec",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,
 		"command", command);
 	return_if_fault(env);
-	
-	free(command);
-	
+
+	mem_free(command);
+
 	xmlrpc_decompose_value(env, result, "s", &output);
 	return_if_fault(env);
-	
+
 	printf("%s", output);
-	
+
 	xmlrpc_DECREF(result);
 }

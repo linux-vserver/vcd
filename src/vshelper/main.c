@@ -164,7 +164,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 		"init", &init);
 	log_and_return_if_fault(env);
 	
-	if (ns_enter(xid) == -1)
+	if (ns_enter(xid, 0) == -1)
 		log_perror("vx_enter_namespace");
 	
 	else if (chroot_secure_chdir(vdir, "/") == -1)

@@ -22,7 +22,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <vserver.h>
-#include <lucid/argv.h>
 #include <lucid/chroot.h>
 #include <lucid/log.h>
 
@@ -33,47 +32,42 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_value *result;
 	xid_t xid;
 	char *vdir;
-	
-	char cmd[] = "/bin/sh"; /* this form prevents storage in ro section */
-	char *av[2];
-	int ac;
-	
-	ac = argv_from_str(cmd, av, 2);
-	
+	char *av[] = { "/bin/sh", NULL };
+
 	result = xmlrpc_client_call(env, uri, "vxdb.xid.get",
 		SIGNATURE("{s:s}"),
 		"name", name);
 	return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, result, "i", &xid);
 	return_if_fault(env);
-	
+
 	xmlrpc_DECREF(result);
-	
+
 	result = xmlrpc_client_call(env, uri, "vxdb.vdir.get",
 		SIGNATURE("{s:s}"),
 		"name", name);
 	return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, result, "s", &vdir);
 	return_if_fault(env);
-	
+
 	xmlrpc_DECREF(result);
-	
-	if (ns_enter(xid) == -1)
+
+	if (ns_enter(xid, 0) == -1)
 		log_perror_and_die("vx_enter_namespace");
-	
+
 	if (chroot_secure_chdir(vdir, "/") == -1)
 		log_perror_and_die("chroot_secure_chdir");
-	
+
 	if (chroot(".") == -1)
 		log_perror_and_die("chroot");
-	
+
 	if (nx_migrate(xid) == -1)
 		log_perror_and_die("nx_migrate");
-	
+
 	if (vx_migrate(xid, NULL) == -1)
 		log_perror_and_die("vx_migrate");
-	
-	do_vlogin(ac, av);
+
+	do_vlogin(2, av);
 }

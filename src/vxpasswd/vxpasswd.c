@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
-#include <lucid/io.h>
 #include <lucid/log.h>
 #include <lucid/str.h>
 #include <lucid/whirlpool.h>
@@ -56,7 +55,7 @@ void read_password(char **password)
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty) == -1)
 		log_perror_and_die("tcsetattr");
 	
-	io_read_eol(STDIN_FILENO, password);
+	str_readline(STDIN_FILENO, password);
 	
 	/* apply old terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldtty) == -1)

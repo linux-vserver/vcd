@@ -28,9 +28,8 @@
 #include <confuse.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
-#include <lucid/io.h>
 #include <lucid/log.h>
-
+#include <lucid/str.h>
 #include "cmd.h"
 
 static char *host = "localhost";
@@ -120,7 +119,7 @@ void read_password(void)
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty) == -1)
 		log_perror_and_die("tcsetattr");
 	
-	io_read_eol(STDIN_FILENO, &pass);
+	str_readline(STDIN_FILENO, &pass);
 	
 	/* apply old terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldtty) == -1)
