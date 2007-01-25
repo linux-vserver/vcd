@@ -33,7 +33,7 @@ int auth_isvalid(const char *user, const char *pass)
 	vxdb_result *dbr;
 	char *whirlpool_pass;
 
-	if (strncmp(pass, "WHIRLPOOLENC//", 14))
+	if (strncmp(pass, "WHIRLPOOLENC//", 14) == 0)
 		whirlpool_pass = strdup(pass+14);
 	else
 		whirlpool_pass = whirlpool_digest(pass);
