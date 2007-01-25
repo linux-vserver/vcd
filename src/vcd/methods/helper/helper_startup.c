@@ -70,13 +70,16 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 
 	else
 		vxdb_foreach_step(rc, dbr)
-			bcaps.mask |= flist64_getval(bcaps_list, sqlite3_column_text(dbr, 0));
+			bcaps.flags |= flist64_getval(bcaps_list, sqlite3_column_text(dbr, 0));
 
 	if (rc == -1)
 		method_set_fault(env, MEVXDB);
 
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
+
+	bcaps.flags = ~(bcaps.flags);
+	bcaps.mask  = bcaps.flags;
 
 	if (vx_bcaps_set(xid, &bcaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_bcaps: %s", strerror(errno));
