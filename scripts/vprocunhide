@@ -29,7 +29,7 @@ while read path; do
 	
 	test -e "$path" || continue
 	
-	ix -attr-set "$path" "$flags" && p=1 || o=0
+	ix -attr-set "${path}=${flags}" && p=1 || o=0
 done
 
 test $o -ne 0 && exit 0 || \
