@@ -194,7 +194,8 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 	numcpus = sysconf(_SC_NPROCESSORS_ONLN);
 
 	rc = vxdb_prepare(&dbr,
-		"SELECT cpuid,fillrate,fillrate2,interval,interval2,tokensmin,tokensmax"
+		"SELECT cpuid,fillrate,fillrate2,interval,interval2,"
+		"tokensmin,tokensmax "
 		"FROM vx_sched WHERE xid = %d ORDER BY cpuid ASC",
 		xid);
 
