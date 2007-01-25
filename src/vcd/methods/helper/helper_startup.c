@@ -56,6 +56,8 @@ static xid_t xid = 0;
 static
 xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 {
+	LOG_TRACEME
+
 	int rc;
 	vxdb_result *dbr;
 	vx_flags_t bcaps, ccaps, cflags;
@@ -127,6 +129,8 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 static
 xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 {
+	LOG_TRACEME
+
 	vxdb_result *dbr;
 	int rc;
 	const char *type;
@@ -187,6 +191,8 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 static
 xmlrpc_value *context_scheduler(xmlrpc_env *env)
 {
+	LOG_TRACEME
+
 	int rc, cpuid, numcpus;
 	vxdb_result *dbr;
 	vx_sched_t sched;
@@ -245,6 +251,8 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 static
 xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 {
+	LOG_TRACEME
+
 	int rc;
 	vxdb_result *dbr;
 	uint32_t id;
@@ -296,6 +304,8 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 static
 xmlrpc_value *namespace_setup(xmlrpc_env *env, const char *vdir)
 {
+	LOG_TRACEME
+
 	pid_t pid;
 	int status;
 
@@ -333,6 +343,8 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env, const char *vdir)
 static
 xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 {
+	LOG_TRACEME
+
 	vxdb_result *dbr;
 	int rc, mtabfd, status;
 	const char *src, *dst, *type, *opts;

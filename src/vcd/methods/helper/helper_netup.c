@@ -86,6 +86,8 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 static
 xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 {
+	LOG_TRACEME
+
 	int rc;
 	vxdb_result *dbr;
 	const char *ip;
@@ -131,6 +133,8 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 /* helper.netup(int xid) */
 xmlrpc_value *m_helper_netup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
+	LOG_TRACEME
+
 	xmlrpc_value *params;
 	xid_t xid;
 	
