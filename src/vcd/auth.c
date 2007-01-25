@@ -35,8 +35,6 @@ int auth_isvalid(const char *user, const char *pass)
 		"SELECT uid FROM user WHERE name = '%s' AND password = '%s'",
 		user, whirlpool_pass);
 	
-	free(whirlpool_pass);
-	
 	if (rc == SQLITE_OK && sqlite3_step(dbr) == SQLITE_ROW)
 		rc = 1;
 	else

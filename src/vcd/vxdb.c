@@ -71,8 +71,6 @@ void vxdb_init(void)
 	
 	rc = sqlite3_open(vxdbfile, &vxdb);
 	
-	free(vxdbfile);
-	
 	if (rc != SQLITE_OK) {
 		log_error("sqlite3_open: %s", sqlite3_errmsg(vxdb));
 		sqlite3_close(vxdb);
@@ -105,8 +103,6 @@ int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 	va_end(ap);
 	
 	rc = sqlite3_prepare(vxdb, sql, -1, dbr, NULL);
-	
-	free(sql);
 	
 	if (rc != SQLITE_OK)
 		log_warn("vxdb_prepare(%s): %s", sql, sqlite3_errmsg(vxdb));
@@ -150,8 +146,6 @@ int vxdb_exec(const char *fmt, ...)
 	va_end(ap);
 	
 	rc = sqlite3_exec(vxdb, sql, NULL, NULL, NULL);
-	
-	free(sql);
 	
 	if (rc != SQLITE_OK)
 		log_warn("vxdb_exec(%s): %s", sql, sqlite3_errmsg(vxdb));

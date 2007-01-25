@@ -92,12 +92,8 @@ int main(int argc, char **argv)
 		
 		if (strcmp(password, buf) != 0) {
 			log_error("passwords don't match!");
-			free(password);
-			free(buf);
 			exit(EXIT_FAILURE);
 		}
-		
-		free(buf);
 	}
 	
 	if (strlen(password) < 8)
@@ -114,11 +110,7 @@ int main(int argc, char **argv)
 		asprintf(&sqlbuf, "UPDATE user SET password = '%s' WHERE name = '%s'",
 		         whirlpool_password, username);
 		
-		free(whirlpool_password);
-		
 		rc = sqlite3_exec(vxdb, sqlbuf, NULL, 0, &buf);
-		
-		free(sqlbuf);
 		
 		if (rc != SQLITE_OK) {
 			log_error("SQL error: %s", buf);
@@ -136,7 +128,6 @@ int main(int argc, char **argv)
 			rc = 0;
 	}
 	
-	free(password);
 	sqlite3_close(vxdb);
 	
 	return rc == 0 ? EXIT_SUCCESS : EXIT_FAILURE;

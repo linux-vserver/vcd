@@ -79,8 +79,6 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"VALUES (%d, '%s', '%s', %d)",
 				uid, user, whirlpool_pass, admin);
 			
-			free(whirlpool_pass);
-			
 			if (rc)
 				method_set_fault(env, MEVXDB);
 		}
@@ -100,8 +98,6 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			rc = vxdb_exec(
 				"UPDATE user SET password = '%s' WHERE uid = %d",
 				whirlpool_pass, uid);
-			
-			free(whirlpool_pass);
 			
 			if (rc)
 				method_set_fault(env, MEVXDB);

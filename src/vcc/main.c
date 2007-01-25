@@ -185,7 +185,8 @@ int main(int argc, char **argv)
 init:
 	xmlrpc_env_init(&env);
 	
-	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, argv[0], PACKAGE_VERSION, NULL, 0);
+	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, 
+			argv[0], PACKAGE_VERSION, NULL, 0);
 	
 	if (env.fault_occurred)
 		log_error_and_die("failed to start xmlrpc client: %s", env.fault_string);
@@ -197,9 +198,6 @@ init:
 	for (i = 0; CMDS[i].name; i++)
 		if (strcmp(cmd, CMDS[i].name) == 0)
 			CMDS[i].func(&env, argc - optind, argv + optind);
-	
-	free(pass);
-	free(uri);
 	
 	if (env.fault_occurred)
 		log_error_and_die("%s: %s (%d)", cmd, env.fault_string, env.fault_code);

@@ -234,9 +234,6 @@ init:
 		if (strcmp(cmd, CMDS[i].name) == 0)
 			CMDS[i].func(&env, argc - optind, argv + optind);
 	
-	free(pass);
-	free(uri);
-	
 	if (env.fault_occurred)
 		log_error_and_die("%s: %s (%d)", cmd, env.fault_string, env.fault_code);
 	

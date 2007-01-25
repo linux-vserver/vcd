@@ -132,17 +132,14 @@ static
 xid_t find_free_xid()
 {
 	LOG_TRACEME
-	
+
 	int i;
 	char *name;
-	
-	for (i = 2; i < 65535; i++) {
+
+	for (i = 2; i < 65535; i++)
 		if (!(name = vxdb_getname(i)))
 			return i;
-		
-		free(name);
-	}
-	
+
 	return 0;
 }
 
@@ -304,8 +301,6 @@ commit:
 	stralloc_free(&sa);
 	
 	rc = vxdb_exec(sql);
-	
-	free(sql);
 	
 	if (rc)
 		method_set_fault(env, MEVXDB);

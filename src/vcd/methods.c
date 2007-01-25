@@ -144,8 +144,6 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
 		if (!env->fault_occurred) {
 			if (str_isempty(name) || !auth_isowner(user, name))
 				method_set_fault(env, MENOVPS);
-			
-			free(name);
 		}
 	}
 	
@@ -164,8 +162,6 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
 				flock(lockfd, LOCK_EX|LOCK_NB);
 			else
 				flock(lockfd, LOCK_EX);
-			
-			free(name);
 		}
 	}
 }
@@ -194,9 +190,6 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 		
 		else
 			method_check_flags(env, params, c, user, flags);
-		
-		free(user);
-		free(pass);
 	}
 	
 	else
@@ -227,7 +220,6 @@ void method_empty_params(int num, ...)
 			continue;
 		
 		if (str_isempty(*ptr)) {
-			free(*ptr);
 			*ptr = NULL;
 		}
 	}
