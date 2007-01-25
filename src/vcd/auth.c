@@ -15,6 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <string.h>
+
 #include <stdlib.h>
 #include <lucid/log.h>
 #include <lucid/whirlpool.h>
@@ -29,8 +31,13 @@ int auth_isvalid(const char *user, const char *pass)
 	
 	int rc;
 	vxdb_result *dbr;
-	char *whirlpool_pass = whirlpool_digest(pass);
-	
+	char *whirlpool_pass;
+
+	if (strncmp(pass, "WHIRLPOOLENC//", 14))
+		whirlpool_pass = strdup(pass+14);
+	else
+		whirlpool_pass = whirlpool_digest(pass);
+
 	rc = vxdb_prepare(&dbr,
 		"SELECT uid FROM user WHERE name = '%s' AND password = '%s'",
 		user, whirlpool_pass);

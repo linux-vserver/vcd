@@ -15,6 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <string.h>
+
 #include <stdlib.h>
 #include <lucid/whirlpool.h>
 
@@ -71,9 +73,14 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			uid++;
 			
 			sqlite3_finalize(dbr);
-		
-			whirlpool_pass = whirlpool_digest(pass);
-			
+
+			if (!strncmp(pass, "WHIRLPOOLENC//", 14)) {
+				whirlpool_pass = strdup(pass+14);
+			}
+			else {
+				whirlpool_pass = whirlpool_digest(pass);
+			}
+
 			rc = vxdb_exec(
 				"INSERT INTO user (uid, name, password, admin) "
 				"VALUES (%d, '%s', '%s', %d)",
@@ -93,8 +100,13 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_set_fault(env, MEVXDB);
 		
 		else if (pass) {
-			whirlpool_pass = whirlpool_digest(pass);
-			
+			if (!strncmp(pass, "WHIRLPOOLENC//", 14)) {
+				whirlpool_pass = strdup(pass+14);
+			}
+			else {
+				whirlpool_pass = whirlpool_digest(pass);
+			}
+
 			rc = vxdb_exec(
 				"UPDATE user SET password = '%s' WHERE uid = %d",
 				whirlpool_pass, uid);
