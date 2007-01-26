@@ -37,6 +37,7 @@ typedef struct {
 #define MERUNNING 301
 #define MEEXIST   400
 #define MENOVPS   401
+#define MEBUSY    402
 #define MESYS     500
 
 #define M_OWNER 0x0001

@@ -15,6 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
 #include <limits.h>
@@ -44,6 +45,8 @@ m_err_t method_error_codes[] = {
 
 xmlrpc_registry *registry;
 void *METHOD_INTERNAL = (void *) 0xdeadbeef;
+
+static int lockfd = -1;
 
 #define MREGISTER(NAME,FUNC) do { \
 	xmlrpc_registry_add_method(env, registry, NULL, NAME, &FUNC, NULL); \
@@ -129,40 +132,54 @@ void method_registry_atexit(void)
 	xmlrpc_registry_free(registry);
 }
 
+void method_lock(xmlrpc_env *env, const char *name)
+{
+	LOG_TRACEME
+	
+	if(lockfd != -1) {
+		method_set_fault(env, MEBUSY);
+		return;
+	}
+	
+	char lockfile[PATH_MAX], *datadir = cfg_getstr(cfg, "datadir");
+	
+	snprintf(lockfile, PATH_MAX, "%s/lock/%s", datadir, name);
+	mkdirnamep(lockfile, 0755);
+	
+	lockfd = open_trunc(lockfile);
+	
+	if (lockf(lockfd, F_TEST, 0) == -1)
+		method_set_fault(env, MEBUSY);
+	else
+		lockf(lockfd, F_LOCK, 0);
+}
+
+void method_unlock(void)
+{
+	LOG_TRACEME
+	
+	close(lockfd);
+}
+
 static
 void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
                         char *user, uint64_t flags)
 {
 	LOG_TRACEME
 	
-	int lockfd;
-	char *name, *datadir, lockfile[PATH_MAX];
+	char *name;
 	
-	if (user && (flags & M_OWNER)) {
-		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
-		
-		if (!env->fault_occurred) {
-			if (str_isempty(name) || !auth_isowner(user, name))
-				method_set_fault(env, MENOVPS);
-		}
-	}
+	xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
 	
-	/* TODO: this is so b0rked */
-	if (flags & M_LOCK) {
-		xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
+	if (!env->fault_occurred) {
+		if (str_isempty(name))
+			method_set_fault(env, MEINVAL);
 		
-		if (!env->fault_occurred && !str_isempty(name)) {
-			datadir = cfg_getstr(cfg, "datadir");
-			snprintf(lockfile, PATH_MAX, "%s/lock/%s", datadir, name);
-			
-			mkdirnamep(lockfile, 0755);
-			lockfd = open_trunc(lockfile);
-			
-			if (c)
-				flock(lockfd, LOCK_EX|LOCK_NB);
-			else
-				flock(lockfd, LOCK_EX);
-		}
+		else if (user && (flags & M_OWNER) && !auth_isowner(user, name))
+			method_set_fault(env, MENOVPS);
+		
+		else if (c && (flags & M_LOCK))
+			method_lock(env, name);
 	}
 }
 

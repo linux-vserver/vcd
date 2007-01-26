@@ -164,44 +164,38 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 		"init", &init);
 	log_and_return_if_fault(env);
 	
-	if (ns_enter(xid, 0) == -1)
-		log_perror("vx_enter_namespace");
+	switch (fork()) {
+	case -1:
+		log_perror("fork");
+		break;
 	
-	else if (chroot_secure_chdir(vdir, "/") == -1)
-		log_perror("chroot_secure_chdir");
-	
-	else if (chroot(".") == -1)
-		log_perror("chroot");
-	
-	else if (nx_migrate(xid) == -1)
-		log_perror("nx_migrate");
-	
-	else {
-		switch (fork()) {
-		case -1:
-			log_perror("fork");
-			break;
+	case 0:
+		if (ns_enter(xid, 0) == -1)
+			log_perror("vx_enter_namespace");
 		
-		case 0:
-			usleep(100);
-			
-			clearenv();
-			
-			for (i = 0; i < 256; i++)
-				close(i);
-			
-			if (vx_migrate(xid, &migrate_flags) == -1)
-				log_perror("vx_migrate");
-			
-			else if (exec_replace(init) == -1)
-				log_perror("exec_replace");
-			
-			exit(EXIT_FAILURE);
+		else if (chroot_secure_chdir(vdir, "/") == -1)
+			log_perror("chroot_secure_chdir");
 		
-		default:
-			log_info("context %d is up - now starting init", xid);
-			return EXIT_SUCCESS;
-		}
+		else if (chroot(".") == -1)
+			log_perror("chroot");
+		
+		else if (nx_migrate(xid) == -1)
+			log_perror("nx_migrate");
+		
+		else if (vx_migrate(xid, &migrate_flags) != -1)
+			log_perror("vx_migrate");
+		
+		for (i = 0; i < 256; i++)
+			close(i);
+		
+		clearenv();
+		
+		exec_replace(init);
+		exit(EXIT_FAILURE);
+	
+	default:
+		log_info("context %d is up - now starting init", xid);
+		return EXIT_SUCCESS;
 	}
 	
 	return EXIT_FAILURE;
