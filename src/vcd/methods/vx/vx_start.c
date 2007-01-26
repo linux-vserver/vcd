@@ -45,11 +45,11 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	int status;
 	
 	nx_flags_t ncf = {
-		.flags = NXF_PERSISTANT|NXF_STATE_ADMIN|NXF_SC_HELPER,
+		.flags = NXF_PERSISTENT|NXF_STATE_ADMIN|NXF_SC_HELPER,
 	};
 	
 	vx_flags_t vcf = {
-		.flags = VXF_PERSISTANT|VXF_STATE_ADMIN|VXF_SC_HELPER|
+		.flags = VXF_PERSISTENT|VXF_STATE_ADMIN|VXF_SC_HELPER|
 		         VXF_INFO_INIT|VXF_REBOOT_KILL,
 	};
 	
