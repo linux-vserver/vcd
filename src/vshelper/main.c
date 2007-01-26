@@ -171,19 +171,19 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	
 	case 0:
 		if (ns_enter(xid, 0) == -1)
-			log_perror("vx_enter_namespace");
+			log_perror("vx_enter_namespace(%d)", xid);
 		
 		else if (chroot_secure_chdir(vdir, "/") == -1)
-			log_perror("chroot_secure_chdir");
+			log_perror("chroot_secure_chdir(%s)", vdir);
 		
 		else if (chroot(".") == -1)
 			log_perror("chroot");
 		
 		else if (nx_migrate(xid) == -1)
-			log_perror("nx_migrate");
+			log_perror("nx_migrate(%d)", xid);
 		
 		else if (vx_migrate(xid, &migrate_flags) != -1)
-			log_perror("vx_migrate");
+			log_perror("vx_migrate(%d)", xid);
 		
 		for (i = 0; i < 256; i++)
 			close(i);
@@ -195,8 +195,42 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	
 	default:
 		log_info("context %d is up - now starting init", xid);
-		return EXIT_SUCCESS;
+		break;
 	}
+	
+	int n = 0;
+	vx_stat_t stat;
+	nx_flags_t nflags = { .flags = 0, .mask = VXF_PERSISTENT };
+	vx_flags_t vflags = { .flags = 0, .mask = NXF_PERSISTENT };
+	
+	while (n < 5) {
+		if (vx_stat(xid, &stat) == -1)
+			log_perror("vx_info(%d)", xid);
+		
+		else if (stat.tasks > 0) {
+			if (nx_flags_set(xid, &nflags) == -1)
+				log_perror("nx_flags_set(%d)", xid);
+			
+			if (vx_flags_set(xid, &vflags) == -1)
+				log_perror("vx_flags_set(%d)", xid);
+			
+			return EXIT_SUCCESS;
+		}
+		
+		sleep(1);
+		n++;
+		
+		log_error("task count for context %d still zero after %d %s",
+		          xid, n, n > 1 ? "seconds" : "second");
+	}
+	
+	log_error("context %d failed to start init - shutting down", xid);
+	
+	if (nx_flags_set(xid, &nflags) == -1)
+		log_perror("nx_flags_set(%d)", xid);
+	
+	if (vx_flags_set(xid, &vflags) == -1)
+		log_perror("vx_flags_set(%d)", xid);
 	
 	return EXIT_FAILURE;
 }
