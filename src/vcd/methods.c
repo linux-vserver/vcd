@@ -205,7 +205,7 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 		else if (!auth_capable(user, caps))
 			method_set_fault(env, MEPERM);
 		
-		else
+		else if (flags)
 			method_check_flags(env, params, c, user, flags);
 	}
 	
