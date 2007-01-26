@@ -209,7 +209,7 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 			method_check_flags(env, params, c, user, flags);
 	}
 	
-	else
+	else if (flags)
 		method_check_flags(env, p, c, NULL, flags);
 	
 	if (env->fault_occurred)
