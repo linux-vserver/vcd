@@ -34,7 +34,7 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	
 	xmlrpc_value *params;
 	xid_t xid;
-	int rc, status;
+	int n, rc, status;
 	pid_t pid;
 	char *name;
 	
@@ -65,8 +65,44 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		break;
 	
 	case 0:
-		/* TODO: does vx_wait block here? */
-		vx_wait(xid, NULL);
+		n = 0;
+		
+		while (n++ < 5) {
+			sleep(1);
+			
+			if (nx_info(xid, NULL) == -1) {
+				if (errno == ESRCH)
+					goto waitvx;
+				else
+					method_return_faultf(env, MESYS, "%s: nx_info: %s", __FUNCTION__, strerror(errno));
+			}
+			
+			else
+				log_warn("network context %d still exists after %d %s",
+				         xid, n, n > 1 ? "seconds" : "second");
+		}
+		
+		method_return_faultf(env, MEBUSY, "network context %d did not disappear", xid);
+		
+		waitvx:
+		n = 0;
+		
+		while (n++ < 5) {
+			if (vx_info(xid, NULL) == -1) {
+				if (errno == ESRCH)
+					goto startvx;
+				else
+					method_return_faultf(env, MESYS, "%s: vx_info: %s", __FUNCTION__, strerror(errno));
+			}
+			
+			else
+				log_warn("context %d still exists after %d %s",
+				         xid, n, n > 1 ? "seconds" : "second");
+		}
+		
+		method_return_faultf(env, MEBUSY, "context %d did not disappear", xid);
+		
+		startvx:
 		m_vx_start(env, params, METHOD_INTERNAL);
 		exit(EXIT_SUCCESS);
 	

@@ -90,9 +90,14 @@ static action_t ACTIONS[] = {
 static
 int vshelper_restart(xmlrpc_env *env, xid_t xid)
 {
-	vx_flags_t cflags = {
+	nx_flags_t nflags = {
+		.flags = 0,
+		.mask = NXF_PERSISTENT,
+	};
+	
+	vx_flags_t vflags = {
 		.flags = VXF_REBOOT_KILL,
-		.mask  = VXF_REBOOT_KILL,
+		.mask  = VXF_REBOOT_KILL|VXF_PERSISTENT,
 	};
 	
 	log_info("context %d has commited suicide with rebirth request", xid);
@@ -104,8 +109,11 @@ int vshelper_restart(xmlrpc_env *env, xid_t xid)
 	
 	log_info("context %d has been scheduled for rebirth", xid);
 	
-	if (vx_flags_set(xid, &cflags) == -1)
-		log_error("vx_flags_set: %s", strerror(errno));
+	if (nx_flags_set(xid, &nflags) == -1)
+		log_perror("nx_flags_set(%d)", xid);
+	
+	else if (vx_flags_set(xid, &vflags) == -1)
+		log_perror("vx_flags_set(%d)", xid);
 	
 	else
 		return EXIT_SUCCESS;
@@ -182,7 +190,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 		else if (nx_migrate(xid) == -1)
 			log_perror("nx_migrate(%d)", xid);
 		
-		else if (vx_migrate(xid, &migrate_flags) != -1)
+		else if (vx_migrate(xid, &migrate_flags) == -1)
 			log_perror("vx_migrate(%d)", xid);
 		
 		for (i = 0; i < 256; i++)
@@ -332,6 +340,7 @@ int main(int argc, char *argv[])
 	log_options_t log_options = {
 		.ident  = argv[0],
 		.syslog = true,
+		.time   = true,
 		.flags  = LOG_PID,
 	};
 	
