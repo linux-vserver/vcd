@@ -124,15 +124,23 @@ int vshelper_restart(xmlrpc_env *env, xid_t xid)
 static
 int vshelper_halt(xmlrpc_env *env, xid_t xid)
 {
-	vx_flags_t cflags = {
+	nx_flags_t nflags = {
+		.flags = 0,
+		.mask = NXF_PERSISTENT,
+	};
+	
+	vx_flags_t vflags = {
 		.flags = VXF_REBOOT_KILL,
-		.mask  = VXF_REBOOT_KILL,
+		.mask  = VXF_REBOOT_KILL|VXF_PERSISTENT,
 	};
 	
 	log_info("context %d has commited suicide", xid);
 	
-	if (vx_flags_set(xid, &cflags) == -1)
-		log_error("vx_flags_set: %s", strerror(errno));
+	if (nx_flags_set(xid, &nflags) == -1)
+		log_perror("nx_flags_set(%d)", xid);
+	
+	else if (vx_flags_set(xid, &vflags) == -1)
+		log_perror("vx_flags_set(%d)", xid);
 	
 	else
 		return EXIT_SUCCESS;
@@ -211,7 +219,9 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	nx_flags_t nflags = { .flags = 0, .mask = VXF_PERSISTENT };
 	vx_flags_t vflags = { .flags = 0, .mask = NXF_PERSISTENT };
 	
-	while (n < 5) {
+	while (n++ < 5) {
+		sleep(1);
+		
 		if (vx_stat(xid, &stat) == -1)
 			log_perror("vx_info(%d)", xid);
 		
@@ -224,9 +234,6 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 			
 			return EXIT_SUCCESS;
 		}
-		
-		sleep(1);
-		n++;
 		
 		log_error("task count for context %d still zero after %d %s",
 		          xid, n, n > 1 ? "seconds" : "second");
