@@ -16,18 +16,16 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
-#include <stdlib.h>
-#include <string.h>
 #include <limits.h>
-#include <sys/file.h>
-#include <lucid/misc.h>
-#include <lucid/open.h>
-#include <lucid/str.h>
 
 #include "auth.h"
 #include "cfg.h"
-#include <lucid/log.h>
 #include "methods.h"
+
+#include <lucid/log.h>
+#include <lucid/misc.h>
+#include <lucid/open.h>
+#include <lucid/str.h>
 
 m_err_t method_error_codes[] = {
 	{ MEAUTH,    "Unauthorized" },
@@ -55,13 +53,13 @@ static int lockfd = -1;
 int method_registry_init(xmlrpc_env *env)
 {
 	LOG_TRACEME
-	
+
 	/* helper */
 	MREGISTER("helper.netup",    m_helper_netup);
 	MREGISTER("helper.restart",  m_helper_restart);
 	MREGISTER("helper.shutdown", m_helper_shutdown);
 	MREGISTER("helper.startup",  m_helper_startup);
-	
+
 	/* vx */
 	MREGISTER("vx.create",  m_vx_create);
 	MREGISTER("vx.exec",    m_vx_exec);
@@ -72,7 +70,7 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vx.start",   m_vx_start);
 	MREGISTER("vx.status",  m_vx_status);
 	MREGISTER("vx.stop",    m_vx_stop);
-	
+
 	/* vxdb */
 	MREGISTER("vxdb.dx.limit.get",        m_vxdb_dx_limit_get);
 	MREGISTER("vxdb.dx.limit.remove",     m_vxdb_dx_limit_remove);
@@ -119,7 +117,7 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vxdb.vx.uname.remove",     m_vxdb_vx_uname_remove);
 	MREGISTER("vxdb.vx.uname.set",        m_vxdb_vx_uname_set);
 	MREGISTER("vxdb.xid.get",             m_vxdb_xid_get);
-	
+
 	return 0;
 }
 
@@ -128,37 +126,30 @@ int method_registry_init(xmlrpc_env *env)
 void method_registry_atexit(void)
 {
 	LOG_TRACEME
-	
 	xmlrpc_registry_free(registry);
 }
 
+static
 void method_lock(xmlrpc_env *env, const char *name)
 {
 	LOG_TRACEME
-	
+
 	if(lockfd != -1) {
 		method_set_fault(env, MEBUSY);
 		return;
 	}
-	
+
 	char lockfile[PATH_MAX], *datadir = cfg_getstr(cfg, "datadir");
-	
+
 	snprintf(lockfile, PATH_MAX, "%s/lock/%s", datadir, name);
 	mkdirnamep(lockfile, 0755);
-	
+
 	lockfd = open_trunc(lockfile);
-	
+
 	if (lockf(lockfd, F_TEST, 0) == -1)
 		method_set_fault(env, MEBUSY);
 	else
 		lockf(lockfd, F_LOCK, 0);
-}
-
-void method_unlock(void)
-{
-	LOG_TRACEME
-	
-	close(lockfd);
 }
 
 static
@@ -166,18 +157,18 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
                         char *user, uint64_t flags)
 {
 	LOG_TRACEME
-	
+
 	char *name;
-	
+
 	xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
-	
+
 	if (!env->fault_occurred) {
 		if (str_isempty(name))
 			method_set_fault(env, MEINVAL);
-		
+
 		else if (user && (flags & M_OWNER) && !auth_isowner(user, name))
 			method_set_fault(env, MENOVPS);
-		
+
 		else if (c && (flags & M_LOCK))
 			method_lock(env, name);
 	}
@@ -187,10 +178,10 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
                           uint64_t caps, uint64_t flags)
 {
 	LOG_TRACEME
-	
+
 	char *user = NULL, *pass;
 	xmlrpc_value *params = NULL;
-	
+
 	if (!c) {
 		xmlrpc_decompose_value(env, p,
 			"({s:s,s:s,*}V)",
@@ -198,20 +189,20 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 			"password", &pass,
 			&params);
 		method_return_if_fault(env);
-		
+
 		if (!auth_isvalid(user, pass))
 			method_set_fault(env, MEAUTH);
-		
+
 		else if (!auth_capable(user, caps))
 			method_set_fault(env, MEPERM);
-		
+
 		else if (flags)
 			method_check_flags(env, params, c, user, flags);
 	}
-	
+
 	else if (flags)
 		method_check_flags(env, p, c, NULL, flags);
-	
+
 	if (env->fault_occurred)
 		return NULL;
 	else if (params)
@@ -223,36 +214,36 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 void method_empty_params(int num, ...)
 {
 	LOG_TRACEME
-	
+
 	int i;
 	va_list ap;
 	char **ptr;
-	
+
 	va_start(ap, num);
-	
+
 	for (i = 0; i < num; i++) {
 		ptr = va_arg(ap, char **);
-		
+
 		if (!*ptr)
 			continue;
-		
+
 		if (str_isempty(*ptr)) {
 			*ptr = NULL;
 		}
 	}
-	
+
 	va_end(ap);
 }
 
 char *method_strerror(int id)
 {
 	LOG_TRACEME
-	
+
 	int i;
-	
+
 	for (i = 0; method_error_codes[i].msg; i++)
 		if (method_error_codes[i].id == id)
 			return method_error_codes[i].msg;
-	
+
 	return NULL;
 }

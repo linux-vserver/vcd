@@ -15,34 +15,32 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <stdlib.h>
-#include <string.h>
 #include <sys/stat.h>
-#include <arpa/inet.h>
-#include <lucid/str.h>
 
 #include "cfg.h"
+
+#define _LUCID_SCANF_MACROS
+#include <lucid/addr.h>
 #include <lucid/log.h>
+#include <lucid/scanf.h>
+#include <lucid/str.h>
 
 void cfg_atexit(void)
 {
 	LOG_TRACEME
-	
 	cfg_free(cfg);
 }
 
 int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result)
+		const char *value, void *result)
 {
 	LOG_TRACEME
-	
-	struct in_addr inaddr;
-	
-	if (inet_pton(AF_INET, value, &inaddr) == 0) {
+
+	if (addr_from_str(value, NULL, NULL) < 1) {
 		cfg_error(cfg, "Invalid address for %s = '%s'", opt->name, value);
 		return -1;
 	}
-	
+
 	*(const char **) result = (const char *) value;
 	return 0;
 }
@@ -51,14 +49,19 @@ int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
 	LOG_TRACEME
-	
-	long int port = strtol(value, NULL, 0);
-	
+
+	int port;
+
+	if (sscanf(value, "%d", &port) < 1) {
+		cfg_error(cfg, "Not a number for %s = '%s'", opt->name, value);
+		return -1;
+	}
+
 	if (port < 1 || port > 65536) {
 		cfg_error(cfg, "Port out of range for %s = '%s'", opt->name, value);
 		return -1;
 	}
-	
+
 	*(long int *) result = port;
 	return 0;
 }
@@ -67,14 +70,19 @@ int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
                          const char *value, void *result)
 {
 	LOG_TRACEME
-	
-	long int timeout = strtol(value, NULL, 0);
-	
+
+	int timeout;
+
+	if (sscanf(value, "%d", &timeout) < 1) {
+		cfg_error(cfg, "Not a number for %s = '%s'", opt->name, value);
+		return -1;
+	}
+
 	if (timeout < 1 || timeout > 3600) {
 		cfg_error(cfg, "Timeout out of range for %s = '%s'", opt->name, value);
 		return -1;
 	}
-	
+
 	*(long int *) result = timeout;
 	return 0;
 }
@@ -83,19 +91,19 @@ int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
 	LOG_TRACEME
-	
+
 	struct stat sb;
-	
+
 	if (!str_path_isabs(value)) {
 		cfg_error(cfg, "Invalid absolute path for %s = '%s'", opt->name, value);
 		return -1;
 	}
-	
+
 	if (lstat(value, &sb) == -1) {
 		cfg_error(cfg, "File does not exist for %s = '%s'", opt->name, value);
 		return -1;
 	}
-	
+
 	*(const char **) result = (const char *) value;
 	return 0;
 }
@@ -104,11 +112,11 @@ int cfg_validate_vdir(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
 	LOG_TRACEME
-	
-	if (strlen(value) > 32) {
+
+	if (str_len(value) > 32) {
 		cfg_error(cfg, "Maximum length of vserverdir (%s) exceeded", value);
 		return -1;
 	}
-	
+
 	return cfg_validate_path(cfg, opt, value, result);
 }
