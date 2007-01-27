@@ -32,7 +32,5 @@ int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
                          const char *value, void *result);
 int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result);
-int cfg_validate_vdir(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result);
 
 #endif

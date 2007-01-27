@@ -51,6 +51,6 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
 install-data-local:
 	$(install_sh)    -m 600 $(srcdir)/vcd.conf $(DESTDIR)$(sysconfdir)/vcd.conf
 	$(mkinstalldirs) -m 755 $(DESTDIR)$(localstatedir)/vcd
-	$(mkinstalldirs) -m 000 $(DESTDIR)$(vserverdir)
+	$(mkinstalldirs) -m 000 $(DESTDIR)$(vbasedir)
 
 endif

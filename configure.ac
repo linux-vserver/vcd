@@ -152,18 +152,18 @@ CFLAGS="${CFLAGS} -Wredundant-decls -Wcast-align -Wno-unused-parameter"
 
 # Site settings
 AC_MSG_CHECKING([for vserver base directory])
-AC_ARG_WITH([vserverdir],
-            [AC_HELP_STRING([--with-vserverdir=DIR],
+AC_ARG_WITH([vbasedir],
+            [AC_HELP_STRING([--with-vbasedir=DIR],
                             [vserver base directory (default: /vservers)])],
-            [vserverdir=$withval],
-            [vserverdir=/vservers])
-AC_MSG_RESULT([$vserverdir])
+            [vbasedir=$withval],
+            [vbasedir=/vservers])
+AC_MSG_RESULT([$vbasedir])
 
-AC_SUBST(vserverdir)
+AC_SUBST(vbasedir)
 
 PATH_CPPFLAGS="$PATH_CPPFLAGS -DSYSCONFDIR='\"\$(sysconfdir)\"'"
 PATH_CPPFLAGS="$PATH_CPPFLAGS -DPKGDATADIR='\"\$(pkgdatadir)\"'"
-PATH_CPPFLAGS="$PATH_CPPFLAGS -DVSERVERDIR='\"\$(vserverdir)\"'"
+PATH_CPPFLAGS="$PATH_CPPFLAGS -DVBASEDIR='\"\$(vbasedir)\"'"
 PATH_CPPFLAGS="$PATH_CPPFLAGS -DLOCALSTATEDIR='\"\$(localstatedir)\"'"
 
 AC_SUBST(PATH_CPPFLAGS)
@@ -180,7 +180,7 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 
                    prefix: $prefix
                sysconfdir: $sysconfdir
-               vserverdir: $vserverdir
+                 vbasedir: $vbasedir
             localstatedir: $localstatedir
 "])
 

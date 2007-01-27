@@ -47,8 +47,8 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("logfile", NULL, CFGF_NONE),
 	CFG_STR("pidfile", NULL, CFGF_NONE),
 
-	CFG_STR_CB("datadir",    LOCALSTATEDIR "/vcd", CFGF_NONE, &cfg_validate_path),
-	CFG_STR_CB("vserverdir", VSERVERDIR,           CFGF_NONE, &cfg_validate_vdir),
+	CFG_STR_CB("datadir",  LOCALSTATEDIR "/vcd", CFGF_NONE, &cfg_validate_path),
+	CFG_STR_CB("vbasedir", VBASEDIR,             CFGF_NONE, &cfg_validate_path),
 	CFG_END()
 };
 

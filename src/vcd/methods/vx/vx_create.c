@@ -77,16 +77,15 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 {
 	LOG_TRACEME
 
-	const char *datadir, *vserverdir;
-	char archive[PATH_MAX], vdir[PATH_MAX];
+	const char *datadir, *vdir;
+	char archive[PATH_MAX];
 	struct stat sb;
 	TAR *t;
 
 	datadir = cfg_getstr(cfg, "datadir");
 	snprintf(archive, PATH_MAX, "%s/templates/%s.tar", datadir, template);
 
-	vserverdir = cfg_getstr(cfg, "vserverdir");
-	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
+	vdir = vxdb_getvdir(name);
 
 	/* TODO: detect mounts */
 	if (rebuild && runlink(vdir) == -1)

@@ -4,7 +4,7 @@ Setup the VServer Control Daemon
 # ./configure --prefix=/usr \
               --localstatedir=/var/lib \
               --sysconfdir=/etc \
-              --with-vserverdir=/vservers
+              --with-vbasedir=/vservers
 # make && sudo make install
 
 # sqlite3 /var/lib/vcd/vxdb < /usr/share/vcd/vxdb.sql

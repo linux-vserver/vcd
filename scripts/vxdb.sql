@@ -14,6 +14,7 @@ CREATE TABLE IF NOT EXISTS init (
   init TEXT NOT NULL,
   halt TEXT,
   reboot TEXT,
+  timeout INT,
   UNIQUE(xid)
 );
 
@@ -77,6 +78,13 @@ INSERT INTO user_caps VALUES(1, 'CREATE');
 INSERT INTO user_caps VALUES(1, 'EXEC');
 INSERT INTO user_caps VALUES(1, 'INFO');
 INSERT INTO user_caps VALUES(2, 'HELPER');
+
+CREATE TABLE IF NOT EXISTS vx {
+  xid SMALLINT NOT NULL,
+  vdir TEXT,
+  onboot TINYINT,
+  UNIQUE(xid)
+);
 
 CREATE TABLE IF NOT EXISTS vx_bcaps (
   xid SMALLINT NOT NULL,
