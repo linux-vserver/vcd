@@ -17,19 +17,14 @@
 
 #include <unistd.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <vserver.h>
 #include <sys/wait.h>
 
 #include "auth.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
 #define _LUCID_PRINTF_MACROS
 #include <lucid/log.h>
-#include <lucid/mem.h>
 #include <lucid/printf.h>
 #include <lucid/str.h>
 
@@ -55,7 +50,7 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	vx_flags_t vcf = {
 		.flags = VXF_PERSISTENT|VXF_STATE_ADMIN|VXF_SC_HELPER|
-		         VXF_INFO_INIT|VXF_REBOOT_KILL,
+				VXF_INFO_INIT|VXF_REBOOT_KILL,
 	};
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
@@ -65,9 +60,6 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"{s:s,*}",
 			"name", &name);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
@@ -119,8 +111,6 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		else if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 			method_set_faultf(env, MESYS,
 					"startup failed: %s", buf);
-
-		mem_free(buf);
 	}
 
 	return xmlrpc_nil_new(env);

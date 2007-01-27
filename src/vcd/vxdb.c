@@ -203,3 +203,28 @@ char *vxdb_getname(xid_t xid)
 	sqlite3_finalize(dbr);
 	return name;
 }
+
+char *vxdb_getvdir(const char *name)
+{
+	LOG_TRACEME
+
+	int rc;
+	char *vbasedir, *vdir;
+	vxdb_result *dbr;
+
+	if (!validate_name(name))
+		return 0;
+
+	rc = vxdb_prepare(&dbr, "SELECT vdir FROM vx WHERE name = '%s'", name);
+
+	if (rc != SQLITE_OK || vxdb_step(dbr) < 1) {
+		vbasedir = cfg_getstr(cfg, "vbasedir");
+		vdir = str_path_concat(vbasedir, name);
+	}
+
+	else
+		vdir = str_dup(sqlite3_column_text(dbr, 0));
+
+	sqlite3_finalize(dbr);
+	return vdir;
+}

@@ -41,5 +41,6 @@ int vxdb_exec(const char *fmt, ...);
 
 xid_t vxdb_getxid(const char *name);
 char *vxdb_getname(xid_t xid);
+char *vxdb_getvdir(const char *name);
 
 #endif

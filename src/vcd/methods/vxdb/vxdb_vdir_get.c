@@ -15,21 +15,18 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <stdlib.h>
-
 #include "auth.h"
-#include "cfg.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vdir_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params, *response;
-	char *name, *vserverdir, *vdir;
-	xid_t xid;
+	xmlrpc_value *params;
+	char *name;
 
 	params = method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
@@ -39,14 +36,8 @@ xmlrpc_value *m_vxdb_vdir_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"name", &name);
 	method_return_if_fault(env);
 
-	if (!(xid = vxdb_getxid(name)))
+	if (!vxdb_getxid(name))
 		method_return_fault(env, MENOVPS);
 
-	vserverdir = cfg_getstr(cfg, "vserverdir");
-
-	asprintf(&vdir, "%s/%s", vserverdir, name);
-
-	response = xmlrpc_build_value(env, "s", vdir);
-
-	return response;
+	return xmlrpc_build_value(env, "s", vxdb_getvdir(name));
 }

@@ -15,18 +15,11 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
-#include <vserver.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 /* vx.kill(string name, int pid, int sig) */
 xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -43,14 +36,11 @@ xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:i,s:i,*}",
-		"name", &name,
-		"pid", &pid,
-		"sig", &sig);
+			"{s:s,s:i,s:i,*}",
+			"name", &name,
+			"pid", &pid,
+			"sig", &sig);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
@@ -59,11 +49,11 @@ xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (errno == ESRCH)
 			method_return_fault(env, MESTOPPED);
 		else
-			method_return_faultf(env, MESYS, "vx_info: %s", strerror(errno));
+			method_return_sys_fault(env, "vx_info");
 	}
 
 	if (vx_kill(xid, pid, sig) == -1)
-		method_return_faultf(env, MESYS, "vx_kill: %s", strerror(errno));
+		method_return_sys_fault(env, "vx_kill");
 
 	return xmlrpc_nil_new(env);
 }

@@ -21,10 +21,13 @@
 #include "auth.h"
 #include "cfg.h"
 #include "methods.h"
+#include "validate.h"
 
+#define _LUCID_PRINTF_MACROS
 #include <lucid/log.h>
 #include <lucid/misc.h>
 #include <lucid/open.h>
+#include <lucid/printf.h>
 #include <lucid/str.h>
 
 m_err_t method_error_codes[] = {
@@ -163,7 +166,7 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
 	xmlrpc_decompose_value(env, params, "{s:s,*}", "name", &name);
 
 	if (!env->fault_occurred) {
-		if (str_isempty(name))
+		if (!validate_name(name))
 			method_set_fault(env, MEINVAL);
 
 		else if (user && (flags & M_OWNER) && !auth_isowner(user, name))

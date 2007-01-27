@@ -15,18 +15,11 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
-#include <vserver.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 /* vx.reboot(string name) */
 xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -43,12 +36,9 @@ xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,*}",
-		"name", &name);
+			"{s:s,*}",
+			"name", &name);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
@@ -57,7 +47,7 @@ xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (errno == ESRCH)
 			method_return_fault(env, MESTOPPED);
 		else
-			method_return_faultf(env, MESYS, "vx_info: %s", strerror(errno));
+			method_return_sys_fault(env, "vx_info");
 	}
 
 	rc = vxdb_prepare(&dbr, "SELECT reboot FROM init WHERE xid = %d", xid);
@@ -79,9 +69,9 @@ xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	params = xmlrpc_build_value(env,
-	                            "{s:s,s:s}",
-	                            "name", name,
-	                            "command", reboot);
+			"{s:s,s:s}",
+			"name", name,
+			"command", reboot);
 
 	return m_vx_exec(env, params, METHOD_INTERNAL);
 }

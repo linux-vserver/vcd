@@ -16,17 +16,13 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
-#include <vserver.h>
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
+#include <lucid/str.h>
 
 /* vx.stop(string name) */
 xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -36,19 +32,16 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *halt = "/sbin/halt";
 	xid_t xid;
-	int rc;
+	int rc, timeout = 5;
 	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,*}",
-		"name", &name);
+			"{s:s,*}",
+			"name", &name);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
@@ -57,10 +50,11 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (errno == ESRCH)
 			method_return_fault(env, MESTOPPED);
 		else
-			method_return_faultf(env, MESYS, "vx_info: %s", strerror(errno));
+			method_return_sys_fault(env, "vx_info");
 	}
 
-	rc = vxdb_prepare(&dbr, "SELECT halt FROM init WHERE xid = %d", xid);
+	rc = vxdb_prepare(&dbr,
+			"SELECT halt,timeout FROM init WHERE xid = %d", xid);
 
 	if (rc)
 		method_set_fault(env, MEVXDB);
@@ -71,17 +65,35 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
 
-		else if (rc > 0)
-			halt = strdup(sqlite3_column_text(dbr, 0));
+		else if (rc > 0) {
+			halt = str_dup(sqlite3_column_text(dbr, 0));
+			timeout = sqlite3_column_int(dbr, 1);
+			timeout = timeout < 1 ? 5 : timeout;
+		}
 	}
 
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
 
 	params = xmlrpc_build_value(env,
-	                            "{s:s,s:s}",
-	                            "name", name,
-	                            "command", halt);
+			"{s:s,s:s}",
+			"name", name,
+			"command", halt);
 
-	return m_vx_exec(env, params, METHOD_INTERNAL);
+	m_vx_exec(env, params, METHOD_INTERNAL);
+	method_return_if_fault(env);
+
+	while (timeout-- > 0) {
+		if (vx_info(xid, NULL) == -1) {
+			if (errno == ESRCH)
+				return xmlrpc_nil_new(env);
+			else
+				method_return_sys_fault(env, "vx_info");
+		}
+
+		sleep(1);
+	}
+
+	method_return_faultf(env, MEBUSY,
+			"vx still alive after timeout (%d)", timeout);
 }

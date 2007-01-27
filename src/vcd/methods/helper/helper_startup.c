@@ -18,8 +18,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <inttypes.h>
-#include <string.h>
-#include <errno.h>
 #include <limits.h>
 #include <sys/wait.h>
 
@@ -276,7 +274,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 }
 
 static
-xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
+xmlrpc_value *context_uname(xmlrpc_env *env)
 {
 	LOG_TRACEME
 
@@ -320,9 +318,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 
 	if (!str_isempty(name)) {
 		uname.id = VHIN_CONTEXT;
-
-		mem_set(uname.value, 0, 65);
-		snprintf(uname.value, 65, "%s:%s", name, vserverdir);
+		snprintf(uname.value, 65, "%s", name);
 
 		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
 
@@ -476,8 +472,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	const char *init = "/sbin/init", *vserverdir;
-	char vdir[PATH_MAX];
+	const char *vdir, *init = "/sbin/init";
 	vxdb_result *dbr;
 	int rc;
 
@@ -495,10 +490,9 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_info(xid, NULL) == -1)
 		method_return_fault(env, MESTOPPED);
 
-	/* TODO: make this a per-vserver variable */
-	vserverdir = cfg_getstr(cfg, "vserverdir");
-	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
-
+	if (!(vdir = vxdb_getvdir(name)))
+		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
+	
 	rc = vxdb_prepare(&dbr, "SELECT init FROM init WHERE xid = %d", xid);
 
 	if (rc || (rc = vxdb_step(dbr)) == -1)
@@ -519,7 +513,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	context_scheduler(env);
 	method_return_if_fault(env);
 
-	context_uname(env, vserverdir);
+	context_uname(env);
 	method_return_if_fault(env);
 
 	namespace_setup(env);

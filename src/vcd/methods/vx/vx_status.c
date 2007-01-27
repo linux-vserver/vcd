@@ -15,15 +15,11 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <vserver.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 /* vx.status(string name) */
 xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -39,18 +35,19 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,*}",
-		"name", &name);
+			"{s:s,*}",
+			"name", &name);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (vx_info(xid, NULL) != -1)
-		running = 1;
+	if (vx_info(xid, NULL) != -1) {
+		if (errno != ESRCH)
+			method_return_sys_fault(env, "vx_info");
+		else
+			running = 1;
+	}
 
 	return xmlrpc_build_value(env, "{s:i}", "running", running);
 }

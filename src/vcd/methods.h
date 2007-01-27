@@ -19,6 +19,8 @@
 #define _VCD_METHODS_H
 
 #include <stdint.h>
+#include <string.h>
+#include <errno.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/server.h>
 
