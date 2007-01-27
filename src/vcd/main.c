@@ -17,6 +17,8 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
+#include <errno.h>
 #include <getopt.h>
 #include <sys/stat.h>
 #include <syslog.h>
@@ -94,7 +96,7 @@ int main(int argc, char **argv)
 
 	switch (cfg_parse(cfg, cfg_file)) {
 	case CFG_FILE_ERROR:
-		perror("cfg_parse");
+		dprintf(STDERR_FILENO, "cfg_parse: %s\n", strerror(errno));
 		exit(EXIT_FAILURE);
 
 	case CFG_PARSE_ERROR:
