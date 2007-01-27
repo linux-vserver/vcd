@@ -68,12 +68,22 @@ char *method_strerror(int id);
 	xmlrpc_env_set_fault(ENV, ID, method_strerror(ID)); \
 } while(0)
 
+#define method_set_sys_fault(ENV, MSG) do { \
+	xmlrpc_env_set_fault_formatted(ENV, MESYS, "%s: %s: %s", \
+			__FUNCTION__, MSG, strerror(errno)); \
+} while (0)
+
 #define method_set_faultf(ENV, ID, FMT, ...) do { \
 	xmlrpc_env_set_fault_formatted(ENV, ID, FMT, __VA_ARGS__); \
 } while(0)
 
 #define method_return_fault(ENV, ID) do { \
 	method_set_fault(ENV, ID); \
+	return NULL; \
+} while (0)
+
+#define method_return_sys_fault(ENV, MSG) do { \
+	method_set_sys_fault(ENV, MSG); \
 	return NULL; \
 } while (0)
 

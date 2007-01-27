@@ -21,13 +21,17 @@
 #include <string.h>
 #include <errno.h>
 #include <vserver.h>
-#include <lucid/addr.h>
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#define _LUCID_PRINTF_MACROS
+#include <lucid/addr.h>
+#include <lucid/log.h>
+#include <lucid/mem.h>
+#include <lucid/printf.h>
 
 /* netup process:
    1) add ip addresses
@@ -38,48 +42,50 @@ static
 xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 {
 	LOG_TRACEME
-	
+
 	int rc;
 	vxdb_result *dbr;
 	const char *ip, *netm;
 	char buf[32];
 	nx_addr_t addr;
-	
+
 	rc = vxdb_prepare(&dbr,
-		"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
-		xid);
-	
+			"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
+			xid);
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		vxdb_foreach_step(rc, dbr) {
 			ip   = sqlite3_column_text(dbr, 0);
 			netm = sqlite3_column_text(dbr, 1);
-			
-			bzero(buf, 32);
+
+			mem_set(buf, 0, 32);
 			snprintf(buf, 31, "%s/%s", ip, netm);
-			
+
 			addr.type  = NXA_TYPE_IPV4;
 			addr.count = 1;
-			
+
 			if (addr_from_str(buf, &addr.ip[0], &addr.mask[0]) == -1) {
 				method_set_faultf(env, MECONF, "invalid interface: %s", buf);
 				break;
 			}
-			
-			else if (nx_addr_add(xid, &addr) == -1) {
-				method_set_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
+
+			log_debug("addr(%d): %#.8lx/%#.8lx", xid, addr.ip, addr.mask);
+
+			if (nx_addr_add(xid, &addr) == -1) {
+				method_set_sys_fault(env, "nx_add_addr");
 				break;
 			}
 		}
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return NULL;
 }
 
@@ -93,40 +99,42 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 	const char *ip;
 	char buf[32];
 	nx_addr_t addr;
-	
+
 	rc = vxdb_prepare(&dbr,
-		"SELECT broadcast FROM nx_broadcast WHERE xid = %d",
-		xid);
-	
+			"SELECT broadcast FROM nx_broadcast WHERE xid = %d",
+			xid);
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		rc = vxdb_step(dbr);
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
-		
+
 		else if (rc == 1) {
 			addr.type  = NXA_TYPE_IPV4 | NXA_MOD_BCAST;
 			addr.count = 1;
-			
+
 			ip = sqlite3_column_text(dbr, 0);
-			
+
 			if (addr_from_str(ip, &addr.ip[0], &addr.mask[0]) == -1)
 				method_set_faultf(env, MECONF, "invalid interface: %s", buf);
-			
+
 			else {
 				addr.mask[0] = 0;
-				
+
+				log_debug("broadcast(%d): %#.8lx", xid, addr.ip);
+
 				if (nx_addr_add(xid, &addr) == -1)
-					method_set_faultf(env, MESYS, "nx_add_addr: %s", strerror(errno));
+					method_set_sys_fault(env, "nx_add_addr");
 			}
 		}
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return NULL;
 }
 
@@ -137,26 +145,26 @@ xmlrpc_value *m_helper_netup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	xid_t xid;
-	
+
 	params = method_init(env, p, c, VCD_CAP_HELPER, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
-		"{s:i,*}",
-		"xid", &xid);
+			"{s:i,*}",
+			"xid", &xid);
 	method_return_if_fault(env);
-	
+
 	if (!vxdb_getname(xid))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (nx_info(xid, NULL) == -1)
 		method_return_fault(env, MESTOPPED);
-	
+
 	network_interfaces(env, xid);
 	method_return_if_fault(env);
-	
+
 	network_broadcast(env, xid);
 	method_return_if_fault(env);
-	
+
 	return xmlrpc_nil_new(env);
 }

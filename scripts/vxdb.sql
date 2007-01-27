@@ -99,8 +99,8 @@ CREATE TABLE IF NOT EXISTS vx_flags (
 CREATE TABLE IF NOT EXISTS vx_limit (
   xid SMALLINT NOT NULL,
   type TEXT NOT NULL,
-  soft BIGINT,
-  max BIGINT,
+  soft TEXT NOT NULL,
+  max TEXT NOT NULL,
   UNIQUE(xid, type)
 );
 

@@ -17,30 +17,29 @@
 
 #include <unistd.h>
 #include <stdlib.h>
+#include <inttypes.h>
 #include <string.h>
 #include <errno.h>
 #include <limits.h>
-#include <signal.h>
-#include <vserver.h>
-#include <sys/mount.h>
 #include <sys/wait.h>
-#include <lucid/bitmap.h>
-#include <lucid/chroot.h>
-#include <lucid/exec.h>
-#include <lucid/log.h>
-#include <lucid/open.h>
-#include <lucid/str.h>
 
 #include "auth.h"
 #include "cfg.h"
 #include "lists.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
-#ifndef MS_REC
-#define MS_REC 16384
-#endif
+#define _LUCID_PRINTF_MACROS
+#define _LUCID_SCANF_MACROS
+#include <lucid/bitmap.h>
+#include <lucid/chroot.h>
+#include <lucid/exec.h>
+#include <lucid/log.h>
+#include <lucid/mem.h>
+#include <lucid/open.h>
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
+#include <lucid/str.h>
 
 /* startup process:
    1) setup capabilities
@@ -61,7 +60,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	int rc;
 	vxdb_result *dbr;
 	vx_flags_t bcaps, ccaps, cflags;
-	
+
 	bcaps.flags = ccaps.flags = cflags.flags = 0;
 	bcaps.mask  = ccaps.mask  = ~(0ULL);
 
@@ -73,7 +72,8 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 
 	else
 		vxdb_foreach_step(rc, dbr)
-			bcaps.flags |= flist64_getval(bcaps_list, sqlite3_column_text(dbr, 0));
+			bcaps.flags |= flist64_getval(bcaps_list,
+					sqlite3_column_text(dbr, 0));
 
 	if (rc == -1)
 		method_set_fault(env, MEVXDB);
@@ -86,7 +86,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	log_debug("bcaps(%d): %#.16llx, %#.16llx", xid, bcaps.flags, bcaps.mask);
 
 	if (vx_bcaps_set(xid, &bcaps) == -1)
-		method_return_faultf(env, MESYS, "vx_set_bcaps: %s", strerror(errno));
+		method_return_sys_fault(env, "vx_set_bcaps");
 
 	/* 1.2) setup context capabilities */
 	rc = vxdb_prepare(&dbr, "SELECT ccap FROM vx_ccaps WHERE xid = %d", xid);
@@ -96,7 +96,8 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 
 	else
 		vxdb_foreach_step(rc, dbr)
-			ccaps.flags |= flist64_getval(ccaps_list, sqlite3_column_text(dbr, 0));
+			ccaps.flags |= flist64_getval(ccaps_list,
+					sqlite3_column_text(dbr, 0));
 
 	if (rc == -1)
 		method_set_fault(env, MEVXDB);
@@ -107,7 +108,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	log_debug("ccaps(%d): %#.16llx, %#.16llx", xid, ccaps.flags, ccaps.mask);
 
 	if (vx_ccaps_set(xid, &ccaps) == -1)
-		method_return_faultf(env, MESYS, "vx_set_ccaps: %s", strerror(errno));
+		method_return_sys_fault(env, "vx_set_ccaps");
 
 	/* 1.3) setup context flags */
 	rc = vxdb_prepare(&dbr, "SELECT flag FROM vx_flags WHERE xid = %d", xid);
@@ -117,7 +118,8 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 
 	else
 		vxdb_foreach_step(rc, dbr)
-			cflags.flags |= flist64_getval(cflags_list, sqlite3_column_text(dbr, 0));
+			cflags.flags |= flist64_getval(cflags_list,
+					sqlite3_column_text(dbr, 0));
 
 	if (rc == -1)
 		method_set_fault(env, MEVXDB);
@@ -127,12 +129,28 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 
 	cflags.mask = cflags.flags;
 
-	log_debug("cflags(%d): %#.16llx, %#.16llx", xid, cflags.flags, cflags.mask);
+	log_debug("cflags(%d): %#.16" PRIu64 ", %#.16" PRIu64,
+			xid, cflags.flags, cflags.mask);
 
 	if (vx_flags_set(xid, &cflags) == -1)
-		method_return_faultf(env, MESYS, "vx_set_flags: %s", strerror(errno));
+		method_return_sys_fault(env, "vx_set_flags");
 
 	return NULL;
+}
+
+static
+uint64_t str_to_rlim(const char *str)
+{
+	if (str_cmp(str, "inf") == 0)
+		return CRLIM_INFINITY;
+
+	uint64_t lim;
+
+	/* if the argument is invalid we keep defaults */
+	if (sscanf(str, "%" SCNu64, &lim) < 1)
+		return CRLIM_KEEP;
+
+	return lim;
 }
 
 static
@@ -147,7 +165,7 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 	vx_limit_t limit, limit_mask;
 
 	if (vx_limit_mask_get(&limit_mask) == -1)
-		method_return_faultf(env, MESYS, "vx_get_limit_mask: %s", strerror(errno));
+		method_return_sys_fault(env, "vx_get_limit_mask");
 
 	rc = vxdb_prepare(&dbr,
 		"SELECT type,soft,max FROM vx_limit WHERE xid = %d",
@@ -164,25 +182,21 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 				continue;
 
 			if (!(limit_mask.softlimit & buf32) &&
-					!(limit_mask.maximum   & buf32))
+					!(limit_mask.maximum & buf32))
 				continue;
 
 			limit.id        = v2i32(buf32);
-			limit.softlimit = sqlite3_column_int64(dbr, 1);
-			limit.maximum   = sqlite3_column_int64(dbr, 2);
-
-			/* TODO: 0 != infinity */
-			if (limit.softlimit == 0)
-				limit.softlimit = CRLIM_INFINITY;
-
-			if (limit.maximum == 0)
-				limit.maximum = CRLIM_INFINITY;
+			limit.softlimit = str_to_rlim(sqlite3_column_text(dbr, 1));
+			limit.maximum   = str_to_rlim(sqlite3_column_text(dbr, 2));
 
 			if (limit.maximum < limit.softlimit)
 				limit.maximum = limit.softlimit;
 
+			log_debug("rlimit(%d): %" PRIu64 ",%" PRIu64,
+					xid, limit.softlimit, limit.maximum);
+
 			if (vx_limit_set(xid, &limit) == -1) {
-				method_set_faultf(env, MESYS, "vx_set_limit: %s", strerror(errno));
+				method_set_sys_fault(env, "vx_set_limit");
 				break;
 			}
 		}
@@ -192,11 +206,9 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 	}
 
 	sqlite3_finalize(dbr);
-
 	return NULL;
 }
 
-/* TODO: force VXF_SCHED_HARD/VXF_SCHED_PRIO? */
 static
 xmlrpc_value *context_scheduler(xmlrpc_env *env)
 {
@@ -209,10 +221,10 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 	numcpus = sysconf(_SC_NPROCESSORS_ONLN);
 
 	rc = vxdb_prepare(&dbr,
-		"SELECT cpuid,fillrate,fillrate2,interval,interval2,"
-		"tokensmin,tokensmax "
-		"FROM vx_sched WHERE xid = %d ORDER BY cpuid ASC",
-		xid);
+			"SELECT cpuid,fillrate,fillrate2,interval,interval2,"
+			"tokensmin,tokensmax "
+			"FROM vx_sched WHERE xid = %d ORDER BY cpuid ASC",
+			xid);
 
 	if (rc)
 		method_set_fault(env, MEVXDB);
@@ -220,7 +232,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 	else {
 		vxdb_foreach_step(rc, dbr) {
 			sched.mask |= VXSM_FILL_RATE|VXSM_INTERVAL;
-			sched.mask |= VXSM_TOKENS|VXSM_TOKENS_MIN|VXSM_TOKENS_MAX;
+			sched.mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX;
 
 			cpuid = sqlite3_column_int(dbr, 0);
 
@@ -242,9 +254,15 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 			if (sched.fill_rate[1] > 0 && sched.interval[1] > 0)
 				sched.mask |= VXSM_IDLE_TIME|VXSM_FILL_RATE2|VXSM_INTERVAL2;
 
+			log_debug("sched(%d, %d, %#.16llx): "
+					"%llu, %llu, %llu, %llu, %llu, %llu",
+					xid, cpuid, sched.mask,
+					sched.fill_rate[0], sched.interval[0],
+					sched.fill_rate[1], sched.interval[1],
+					sched.tokens_min, sched.tokens_max);
+
 			if (vx_sched_set(xid, &sched) == -1) {
-				method_set_faultf(env, MESYS,
-						"vx_set_sched: %s", strerror(errno));
+				method_set_sys_fault(env, "vx_set_sched");
 				break;
 			}
 		}
@@ -268,24 +286,27 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 	vx_uname_t uname;
 
 	rc = vxdb_prepare(&dbr,
-		"SELECT uname,value FROM vx_uname WHERE xid = %d",
-		xid);
+			"SELECT uname,value FROM vx_uname WHERE xid = %d",
+			xid);
 
 	if (rc)
 		method_set_fault(env, MEVXDB);
 
 	else {
 		vxdb_foreach_step(rc, dbr) {
-			if (!(id = flist32_getval(uname_list, sqlite3_column_text(dbr, 0))))
+			if (!(id = flist32_getval(uname_list,
+							sqlite3_column_text(dbr, 0))))
 				continue;
 
 			uname.id = v2i32(id);
 
-			bzero(uname.value, 65);
-			memcpy(uname.value, sqlite3_column_text(dbr, 1), 64);
+			mem_set(uname.value, 0, 65);
+			mem_cpy(uname.value, sqlite3_column_text(dbr, 1), 64);
+
+			log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
 
 			if (vx_uname_set(xid, &uname) == -1) {
-				method_set_faultf(env, MESYS, "vx_set_uname: %s", strerror(errno));
+				method_set_sys_fault(env, "vx_set_uname");
 				break;
 			}
 		}
@@ -300,11 +321,13 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 	if (!str_isempty(name)) {
 		uname.id = VHIN_CONTEXT;
 
-		bzero(uname.value, 65);
+		mem_set(uname.value, 0, 65);
 		snprintf(uname.value, 64, "%s:%s", name, vserverdir);
 
+		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
+
 		if (vx_uname_set(xid, &uname) == -1)
-			method_set_faultf(env, MESYS, "vx_set_uname: %s", strerror(errno));
+			method_set_sys_fault(env, "vx_set_uname");
 	}
 
 	return NULL;
@@ -320,34 +343,64 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env, const char *vdir)
 
 	switch ((pid = ns_clone(SIGCHLD, NULL))) {
 	case -1:
-		method_return_faultf(env, MESYS, "ns_clone: %s", strerror(errno));
+		method_return_sys_fault(env, "ns_clone");
 
 	case 0:
-		if (chroot_secure_chdir(vdir, "/") == -1)
-			log_perror_and_die("chroot_secure_chdir(%s)", vdir);
-
-		/* TODO: do we need RBIND? latest investigation seems to make it
-		 * unecessary... if yes, combine vx_clone_namespace and
-		 * vx_set_namespace? */
-		if (mount(".", "/", NULL, MS_BIND|MS_REC, NULL) == -1)
-			log_perror_and_die("mount");
-
-		if (ns_set(xid, 0) == -1)
-			log_perror_and_die("ns_set");
+		if (ns_set(xid, 0) == -1) {
+			log_perror("ns_set");
+			exit(errno);
+		}
 
 		exit(EXIT_SUCCESS);
 
 	default:
 		if (waitpid(pid, &status, 0) == -1)
-			method_return_faultf(env, MESYS,
-					"%s: waitpid: %s", __FUNCTION__, strerror(errno));
+			method_return_sys_fault(env, "waitpid");
 
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "%s", "namespace_setup failed");
+		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS) {
+			errno = WEXITSTATUS(status);
+			method_return_sys_fault(env, "ns_set");
+		}
 	}
 
 	return NULL;
 }
+
+static
+xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int mtabfd)
+{
+	int status;
+	const char *src  = sqlite3_column_text(dbr, 0);
+	const char *dst  = sqlite3_column_text(dbr, 1);
+	const char *type = sqlite3_column_text(dbr, 2);
+	const char *opts = sqlite3_column_text(dbr, 3);
+
+	if (str_isempty(type))
+		type = "auto";
+
+	if (str_isempty(opts))
+		opts = "defaults";
+
+	if (chroot_secure_chdir(vdir, dst) == -1)
+		method_return_sys_fault(env, "chroot_secure_chdir");
+
+	log_debug("mount(%d): %s %s %s %s", xid, src, dst, type, opts);
+
+	status = exec_fork("/bin/mount -n -t %s -o %s %s .",
+			type, opts, src);
+
+	if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+		method_return_faultf(env, MESYS,
+				"mount failed (%d)", WEXITSTATUS(status));
+
+	if (WIFSIGNALED(status))
+		method_return_faultf(env, MESYS,
+				"mount caught signal (%d)", WTERMSIG(status));
+
+	dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+	return NULL;
+}
+
 
 static
 xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
@@ -355,62 +408,54 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 	LOG_TRACEME
 
 	vxdb_result *dbr;
-	int rc, mtabfd, status;
-	const char *src, *dst, *type, *opts;
+	int rc, mtabfd;
 
 	if (ns_enter(xid, 0) == -1)
-		method_return_faultf(env, MESYS,
-				"vx_enter_namespace: %s", strerror(errno));
+		method_return_sys_fault(env, "vx_enter_namespace");
 
 	if (chroot_secure_chdir(vdir, "/etc") == -1)
-		method_return_faultf(env, MESYS,
-				"chroot_secure_chdir: %s", strerror(errno));
+		method_return_sys_fault(env, "chroot_secure_chdir");
 
-	/* TODO: mtab may be a symlink that points outside */
+	/* make sure mtab does not exist to prevent symlink attacks */
+	unlink("mtab");
+
 	if ((mtabfd = open_trunc("mtab")) == -1)
-		method_return_faultf(env, MESYS, "open_trunc: %s", strerror(errno));
+		method_return_sys_fault(env, "open_trunc");
 
-	/* TODO: we only need a root entry if no root is mounted below */
-	if (write(mtabfd, "/dev/hdv1 / ufs rw 0 0\n", 23) == -1)
-		method_return_faultf(env, MESYS, "write: %s", strerror(errno));
-
-	/* TODO: extra logic for root mount */
+	/* mount root entry */
 	rc = vxdb_prepare(&dbr,
-		"SELECT src,dst,type,opts FROM mount WHERE xid = %d",
-		xid);
+			"SELECT src,dst,type,opts FROM mount WHERE xid = %d AND dst = '/'",
+			xid);
 
-	if (rc)
+	if (rc || (rc = vxdb_step(dbr)) == -1) {
+		close(mtabfd);
 		method_return_fault(env, MEVXDB);
+	}
+
+	if (rc == 1)
+		do_mount(env, vdir, dbr, mtabfd);
+
+	if (env->fault_occurred) {
+		close(mtabfd);
+		return NULL;
+	}
+
+	/* mount non-root entries */
+	rc = vxdb_prepare(&dbr,
+			"SELECT src,dst,type,opts FROM mount WHERE xid = %d",
+			xid);
+
+	if (rc) {
+		close(mtabfd);
+		method_return_fault(env, MEVXDB);
+	}
 
 	else {
 		vxdb_foreach_step(rc, dbr) {
-			src  = sqlite3_column_text(dbr, 0);
-			dst  = sqlite3_column_text(dbr, 1);
-			type = sqlite3_column_text(dbr, 2);
-			opts = sqlite3_column_text(dbr, 3);
+			do_mount(env, vdir, dbr, mtabfd);
 
-			if (str_isempty(type))
-				type = "auto";
-
-			if (str_isempty(opts))
-				opts = "defaults";
-
-			if (chroot_secure_chdir(vdir, dst) == -1)
-				method_return_faultf(env, MESYS,
-						"chroot_secure_chdir: %s", strerror(errno));
-
-			status = exec_fork("/bin/mount -n -t %s -o %s %s .",
-					type, opts, src);
-
-			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				method_return_faultf(env, MESYS,
-						"mount failed (%d)", WEXITSTATUS(status));
-
-			if (WIFSIGNALED(status))
-				method_return_faultf(env, MESYS,
-						"mount caught signal (%d)", WTERMSIG(status));
-
-			dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+			if (env->fault_occurred)
+				break;
 		}
 
 		if (rc == -1)
@@ -438,8 +483,8 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:i,*}",
-		"xid", &xid);
+			"{s:i,*}",
+			"xid", &xid);
 	method_return_if_fault(env);
 
 	if (!(name = vxdb_getname(xid)))
@@ -448,23 +493,17 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_info(xid, NULL) == -1)
 		method_return_fault(env, MESTOPPED);
 
+	/* TODO: make this a per-vserver variable */
 	vserverdir = cfg_getstr(cfg, "vserverdir");
 	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
 
 	rc = vxdb_prepare(&dbr, "SELECT init FROM init WHERE xid = %d", xid);
 
-	if (rc)
+	if (rc || (rc = vxdb_step(dbr)) == -1)
 		method_set_fault(env, MEVXDB);
 
-	else {
-		rc = vxdb_step(dbr);
-
-		if (rc == -1)
-			method_set_fault(env, MEVXDB);
-
-		else if (rc > 0)
-			init = strdup(sqlite3_column_text(dbr, 0));
-	}
+	else if (rc > 0)
+		init = str_dup(sqlite3_column_text(dbr, 0));
 
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
