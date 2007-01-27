@@ -15,16 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <vserver.h>
-
 #include "auth.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
 #define _LUCID_PRINTF_MACROS
@@ -45,9 +37,6 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 
 	int rc;
 	vxdb_result *dbr;
-	const char *ip, *netm;
-	char buf[32];
-	nx_addr_t addr;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
@@ -58,14 +47,17 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 
 	else {
 		vxdb_foreach_step(rc, dbr) {
-			ip   = sqlite3_column_text(dbr, 0);
-			netm = sqlite3_column_text(dbr, 1);
+			const char *ip   = sqlite3_column_text(dbr, 0);
+			const char *netm = sqlite3_column_text(dbr, 1);
 
+			char buf[32];
 			mem_set(buf, 0, 32);
 			snprintf(buf, 31, "%s/%s", ip, netm);
 
-			addr.type  = NXA_TYPE_IPV4;
-			addr.count = 1;
+			nx_addr_t addr = {
+				.type  = NXA_TYPE_IPV4,
+				.count = 1,
+			};
 
 			if (addr_from_str(buf, &addr.ip[0], &addr.mask[0]) == -1) {
 				method_set_faultf(env, MECONF, "invalid interface: %s", buf);
@@ -96,9 +88,6 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 
 	int rc;
 	vxdb_result *dbr;
-	const char *ip;
-	char buf[32];
-	nx_addr_t addr;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT broadcast FROM nx_broadcast WHERE xid = %d",
@@ -114,17 +103,18 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 			method_set_fault(env, MEVXDB);
 
 		else if (rc == 1) {
-			addr.type  = NXA_TYPE_IPV4 | NXA_MOD_BCAST;
-			addr.count = 1;
+			nx_addr_t addr = {
+				.type  = NXA_TYPE_IPV4 | NXA_MOD_BCAST,
+				.count = 1,
+				.mask  = { 0, 0, 0, 0 },
+			};
 
-			ip = sqlite3_column_text(dbr, 0);
+			const char *ip = sqlite3_column_text(dbr, 0);
 
-			if (addr_from_str(ip, &addr.ip[0], &addr.mask[0]) == -1)
-				method_set_faultf(env, MECONF, "invalid interface: %s", buf);
+			if (addr_from_str(ip, &addr.ip[0], NULL) != 1)
+				method_set_faultf(env, MECONF, "invalid broadcast: %s", ip);
 
 			else {
-				addr.mask[0] = 0;
-
 				log_debug("broadcast(%d): %#.8lx", xid, addr.ip);
 
 				if (nx_addr_add(xid, &addr) == -1)
