@@ -61,6 +61,9 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	int rc;
 	vxdb_result *dbr;
 	vx_flags_t bcaps, ccaps, cflags;
+	
+	bcaps.flags = ccaps.flags = cflags.flags = 0;
+	bcaps.mask  = ccaps.mask  = ~(0ULL);
 
 	/* 1.1) setup system capabilities */
 	rc = vxdb_prepare(&dbr, "SELECT bcap FROM vx_bcaps WHERE xid = %d", xid);
@@ -79,7 +82,8 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	method_return_if_fault(env);
 
 	bcaps.flags = ~(bcaps.flags);
-	bcaps.mask  = bcaps.flags;
+
+	log_debug("bcaps(%d): %#.16llx, %#.16llx", xid, bcaps.flags, bcaps.mask);
 
 	if (vx_bcaps_set(xid, &bcaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_bcaps: %s", strerror(errno));
@@ -94,13 +98,13 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 		vxdb_foreach_step(rc, dbr)
 			ccaps.flags |= flist64_getval(ccaps_list, sqlite3_column_text(dbr, 0));
 
-	ccaps.mask = ccaps.flags;
-
 	if (rc == -1)
 		method_set_fault(env, MEVXDB);
 
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
+
+	log_debug("ccaps(%d): %#.16llx, %#.16llx", xid, ccaps.flags, ccaps.mask);
 
 	if (vx_ccaps_set(xid, &ccaps) == -1)
 		method_return_faultf(env, MESYS, "vx_set_ccaps: %s", strerror(errno));
@@ -115,13 +119,15 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 		vxdb_foreach_step(rc, dbr)
 			cflags.flags |= flist64_getval(cflags_list, sqlite3_column_text(dbr, 0));
 
-	cflags.mask = cflags.flags;
-
 	if (rc == -1)
 		method_set_fault(env, MEVXDB);
 
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
+
+	cflags.mask = cflags.flags;
+
+	log_debug("cflags(%d): %#.16llx, %#.16llx", xid, cflags.flags, cflags.mask);
 
 	if (vx_flags_set(xid, &cflags) == -1)
 		method_return_faultf(env, MESYS, "vx_set_flags: %s", strerror(errno));
