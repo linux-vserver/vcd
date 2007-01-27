@@ -322,7 +322,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 		uname.id = VHIN_CONTEXT;
 
 		mem_set(uname.value, 0, 65);
-		snprintf(uname.value, 64, "%s:%s", name, vserverdir);
+		snprintf(uname.value, 65, "%s:%s", name, vserverdir);
 
 		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
 
@@ -334,7 +334,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vserverdir)
 }
 
 static
-xmlrpc_value *namespace_setup(xmlrpc_env *env, const char *vdir)
+xmlrpc_value *namespace_setup(xmlrpc_env *env)
 {
 	LOG_TRACEME
 
@@ -409,6 +409,8 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 
 	vxdb_result *dbr;
 	int rc, mtabfd;
+
+	log_debug("vdir(%d): %s", xid, vdir);
 
 	if (ns_enter(xid, 0) == -1)
 		method_return_sys_fault(env, "vx_enter_namespace");
@@ -520,7 +522,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	context_uname(env, vserverdir);
 	method_return_if_fault(env);
 
-	namespace_setup(env, vdir);
+	namespace_setup(env);
 	method_return_if_fault(env);
 
 	namespace_mount(env, vdir);
