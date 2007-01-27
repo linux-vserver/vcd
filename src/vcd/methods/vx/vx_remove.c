@@ -65,7 +65,8 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (rc)
 		method_return_fault(env, MEVXDB);
 
-	vdir = vxdb_getvdir(name);
+	if (!(vdir = vxdb_getvdir(name)))
+		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
 
 	if (runlink(vdir) == -1)
 		method_return_sys_fault(env, "runlink");

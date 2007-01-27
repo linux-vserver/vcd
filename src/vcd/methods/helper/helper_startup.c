@@ -492,7 +492,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (!(vdir = vxdb_getvdir(name)))
 		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
-	
+
 	rc = vxdb_prepare(&dbr, "SELECT init FROM init WHERE xid = %d", xid);
 
 	if (rc || (rc = vxdb_step(dbr)) == -1)

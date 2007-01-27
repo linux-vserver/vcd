@@ -85,7 +85,8 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
 	datadir = cfg_getstr(cfg, "datadir");
 	snprintf(archive, PATH_MAX, "%s/templates/%s.tar", datadir, template);
 
-	vdir = vxdb_getvdir(name);
+	if (!(vdir = vxdb_getvdir(name)))
+		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
 
 	/* TODO: detect mounts */
 	if (rebuild && runlink(vdir) == -1)

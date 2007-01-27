@@ -34,7 +34,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *command, *output;
+	char *name, *command, *output, *vdir;
 	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_EXEC, M_OWNER);
@@ -56,7 +56,8 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_sys_fault(env, "vx_info");
 	}
 
-	const char *vdir = vxdb_getvdir(name);
+	if (!(vdir = vxdb_getvdir(name)))
+		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
 
 	if (ns_enter(xid, 0) == -1)
 		method_return_sys_fault(env, "vx_enter_namespace");
