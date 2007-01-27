@@ -27,42 +27,42 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xid_t xid;
 	vxdb_result *dbr;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_MOUNT, M_OWNER);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"name", &name,
 		"dst", &dst);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &dst);
-	
+
 	if (!validate_name(name) || (dst && !validate_path(dst)))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (dst)
 		rc = vxdb_prepare(&dbr,
 			"SELECT src,dst,type,opts FROM mount "
 			"WHERE xid = %d AND dst = '%s'",
 			xid, dst);
-	
+
 	else
 		rc = vxdb_prepare(&dbr,
 			"SELECT src,dst,type,opts FROM mount "
 			"WHERE xid = %d ORDER BY dst ASC",
 			xid);
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		response = xmlrpc_array_new(env);
-		
+
 		vxdb_foreach_step(rc, dbr)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s,s:s,s:s}",
@@ -70,12 +70,12 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"dst",  sqlite3_column_text(dbr, 1),
 				"type", sqlite3_column_text(dbr, 2),
 				"opts", sqlite3_column_text(dbr, 3)));
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return response;
 }

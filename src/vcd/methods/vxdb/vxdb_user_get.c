@@ -24,53 +24,53 @@
 xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response = NULL;
 	char *user;
 	vxdb_result *dbr;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"username", &user);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &user);
-	
+
 	if (user) {
 		if (!validate_username(user))
 			method_return_fault(env, MEINVAL);
-		
+
 		rc = vxdb_prepare(&dbr,
 			"SELECT name,uid,admin FROM user WHERE name = '%s'",
 			user);
 	}
-	
+
 	else
 		rc = vxdb_prepare(&dbr,
 			"SELECT name,uid,admin FROM user ORDER BY name ASC");
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		response = xmlrpc_array_new(env);
-		
+
 		vxdb_foreach_step(rc, dbr)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:i,s:i}",
 				"username", sqlite3_column_text(dbr, 0),
 				"uid",      sqlite3_column_int(dbr, 1),
 				"admin",    sqlite3_column_int(dbr, 2)));
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return response;
 }

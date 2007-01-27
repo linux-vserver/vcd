@@ -24,47 +24,47 @@
 xmlrpc_value *m_vxdb_init_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response = NULL;
 	char *name;
 	xid_t xid;
 	vxdb_result *dbr;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	rc = vxdb_prepare(&dbr,
 		"SELECT init,halt,reboot FROM init WHERE xid = %d",
 		xid);
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		rc = vxdb_step(dbr);
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
-		
+
 		else if (rc == 0)
 			response = xmlrpc_build_value(env,
 				"{s:s,s:s,s:s}",
 				"init",   "/sbin/init",
 				"halt",   "/sbin/halt",
 				"reboot", "/sbin/reboot");
-		
+
 		else
 			response = xmlrpc_build_value(env,
 				"{s:s,s:s,s:s}",
@@ -72,8 +72,8 @@ xmlrpc_value *m_vxdb_init_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"halt",   sqlite3_column_text(dbr, 1),
 				"reboot", sqlite3_column_text(dbr, 2));
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return response;
 }

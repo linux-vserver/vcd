@@ -26,27 +26,27 @@
 xmlrpc_value *m_vxdb_vdir_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response;
 	char *name, *vserverdir, *vdir;
 	xid_t xid;
-	
+
 	params = method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	vserverdir = cfg_getstr(cfg, "vserverdir");
-	
+
 	asprintf(&vdir, "%s/%s", vserverdir, name);
-	
+
 	response = xmlrpc_build_value(env, "s", vdir);
-	
+
 	return response;
 }

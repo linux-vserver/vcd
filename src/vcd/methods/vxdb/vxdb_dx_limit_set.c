@@ -24,15 +24,15 @@
 xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, *path;
 	int space, inodes, reserved, rc;
 	xid_t xid;
-	
+
 	params = method_init(env, p, c, VCD_CAP_DLIM, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,s:i,s:i,s:i,*}",
 		"name", &name,
@@ -41,21 +41,21 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"inodes", &inodes,
 		"reserved", &reserved);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name) || !validate_path(path) ||
 	    !validate_dlimits(space, inodes, reserved))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO dx_limit (xid, path, space, inodes, reserved) "
 		"VALUES (%d, '%s', %d, %d, %d)",
 		xid, path, space, inodes, reserved);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

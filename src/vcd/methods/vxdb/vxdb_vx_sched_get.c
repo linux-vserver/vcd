@@ -24,46 +24,46 @@
 xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response;
 	char *name;
 	int cpuid;
 	xid_t xid;
 	vxdb_result *dbr;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_SCHED, M_OWNER);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:i,*}",
 		"name", &name,
 		"cpuid", &cpuid);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (cpuid == -2)
 		rc = vxdb_prepare(&dbr,
 			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
 			"FROM vx_sched WHERE xid = %d",
 			xid);
-	
+
 	else
 		rc = vxdb_prepare(&dbr,
 			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
 			"FROM vx_sched WHERE xid = %d AND cpuid = %d",
 			xid, cpuid);
-	
+
 	response = xmlrpc_array_new(env);
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		for (rc = vxdb_step(dbr); rc == 1; rc = vxdb_step(dbr))
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
@@ -76,8 +76,8 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"tokensmin", sqlite3_column_int(dbr, 5),
 				"tokensmax", sqlite3_column_int(dbr, 6)));
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return response;
 }

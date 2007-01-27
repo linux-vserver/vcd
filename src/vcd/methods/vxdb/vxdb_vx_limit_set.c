@@ -24,16 +24,16 @@
 xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, *limit;
 	int soft, max;
 	xid_t xid;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_RLIM, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,s:i,s:i,*}",
 		"name", &name,
@@ -41,21 +41,21 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"soft", &soft,
 		"max", &max);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name) || !validate_rlimit(limit) ||
 	    !validate_rlimits(soft, max))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO vx_limit (xid, type, soft, max) "
 		"VALUES (%d, '%s', %d, %d)",
 		xid, limit, soft, max);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

@@ -29,28 +29,28 @@
 xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name;
 	xid_t xid;
 	int running = 0;
-	
+
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (vx_info(xid, NULL) != -1)
 		running = 1;
-	
+
 	return xmlrpc_build_value(env, "{s:i}", "running", running);
 }

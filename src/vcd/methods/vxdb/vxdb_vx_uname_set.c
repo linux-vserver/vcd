@@ -26,36 +26,36 @@
 xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, *uname, *value;
 	xid_t xid;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_UNAME, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,s:s,*}",
 		"name", &name,
 		"uname", &uname,
 		"value", &value);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name) || !validate_uname(uname) ||
 	    !validate_uname_value(value))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO vx_uname (xid, uname, value) "
 		"VALUES (%d, '%s', '%s')",
 		xid, uname, value);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

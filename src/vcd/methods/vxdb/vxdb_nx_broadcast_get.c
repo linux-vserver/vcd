@@ -24,49 +24,49 @@
 xmlrpc_value *m_vxdb_nx_broadcast_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response = NULL;
 	char *name;
 	xid_t xid;
 	vxdb_result *dbr;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_NET, M_OWNER);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	rc = vxdb_prepare(&dbr,
 		"SELECT broadcast FROM nx_broadcast "
 		"WHERE xid = %d",
 		xid);
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		rc = vxdb_step(dbr);
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
-		
+
 		else if (rc == 0)
 			response = xmlrpc_build_value(env, "s", "");
-		
+
 		else
 			response = xmlrpc_build_value(env, "s", sqlite3_column_text(dbr, 0));
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return response;
 }

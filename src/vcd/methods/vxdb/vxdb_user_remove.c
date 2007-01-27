@@ -24,25 +24,25 @@
 xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *user;
 	int uid, rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"username", &user);
 	method_return_if_fault(env);
-	
+
 	if (!validate_username(user))
 		method_return_fault(env, MEINVAL);
-	
+
 	if ((uid = auth_getuid(user)) == 0)
 		method_return_fault(env, MENOUSER);
-	
+
 	rc = vxdb_exec(
 		"BEGIN TRANSACTION;"
 		"DELETE FROM xid_uid_map WHERE uid = %1$d;"
@@ -50,9 +50,9 @@ xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"DELETE FROM user WHERE uid = %1$d;"
 		"COMMIT TRANSACTION;",
 		uid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

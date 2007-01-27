@@ -26,10 +26,10 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name, *src, *dst, *type, *opts;
 	xid_t xid;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_MOUNT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,s:s,s:s,s:s,*}",
 		"name", &name,
@@ -38,34 +38,34 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"type", &type,
 		"opts", &opts);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(3, &src, &type, &opts);
-	
+
 	if (!validate_name(name) || !validate_path(dst))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!src && !type)
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (!src)
 		src = "none";
-	
+
 	if (!type)
 		type = "auto";
-	
+
 	if (!opts)
 		opts = "defaults";
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO mount (xid, src, dst, type, opts) "
 		"VALUES (%d, '%s', '%s', '%s', '%s')",
 		xid, src, dst, type, opts);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

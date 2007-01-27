@@ -26,33 +26,33 @@
 xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *user, *cap;
 	int uid;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"username", &user,
 		"cap", &cap);
 	method_return_if_fault(env);
-	
+
 	if (!validate_username(user) || !validate_vcd_cap(cap))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(uid = auth_getuid(user)))
 		method_return_fault(env, MENOUSER);
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
 		uid, cap);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

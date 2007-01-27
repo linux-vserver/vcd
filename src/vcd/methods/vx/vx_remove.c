@@ -35,31 +35,31 @@
 xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, vdir[PATH_MAX];
 	xid_t xid;
 	int rc;
 	const char *vserverdir;
 	struct stat sb;
-	
+
 	params = method_init(env, p, c, VCD_CAP_CREATE, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (vx_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
-	
+
 	rc = vxdb_exec("BEGIN TRANSACTION;"
 		"DELETE FROM dx_limit     WHERE xid = %1$d;"
 		"DELETE FROM init         WHERE xid = %1$d;"
@@ -75,24 +75,24 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"DELETE FROM xid_uid_map  WHERE xid = %1$d;"
 		"COMMIT TRANSACTION;",
 		xid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	vserverdir = cfg_getstr(cfg, "vserverdir");
-	
+
 	snprintf(vdir, PATH_MAX, "%s/%s", vserverdir, name);
-	
+
 	if (runlink(vdir) == -1)
 		method_return_faultf(env, MESYS, "runlink: %s", strerror(errno));
-	
+
 	if (lstat(vdir, &sb) == -1) {
 		if (errno != ENOENT)
 			method_return_faultf(env, MESYS, "lstat: %s", strerror(errno));
 	}
-	
+
 	else
 		method_return_faultf(env, MEEXIST, "vdir still exists after runlink: %s", vdir);
-	
+
 	return xmlrpc_nil_new(env);
 }

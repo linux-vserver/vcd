@@ -24,35 +24,35 @@
 xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *user, *name;
 	xid_t xid;
 	int uid, rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"name", &name,
 		"username", &user);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name) || !validate_username(user))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	uid = auth_getuid(user);
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO xid_uid_map (xid, uid) VALUES (%d, %d)",
 		xid, uid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

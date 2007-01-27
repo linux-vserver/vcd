@@ -27,41 +27,41 @@
 xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *user, *cap;
 	int uid;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"username", &user,
 		"cap", &cap);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &cap);
-	
+
 	if (!validate_username(user) || (cap && !validate_vcd_cap(cap)))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(uid = auth_getuid(user)))
 		method_return_fault(env, MENOUSER);
-	
+
 	if (cap)
 		rc = vxdb_exec(
 			"DELETE FROM user_caps WHERE uid = %d AND cap = '%s'",
 			uid, cap);
-	
+
 	else
 		rc = vxdb_exec(
 			"DELETE FROM user_caps WHERE uid = %d",
 			uid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

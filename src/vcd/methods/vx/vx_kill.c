@@ -32,38 +32,38 @@
 xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name;
 	xid_t xid;
 	pid_t pid;
 	int sig;
-	
+
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:i,s:i,*}",
 		"name", &name,
 		"pid", &pid,
 		"sig", &sig);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH)
 			method_return_fault(env, MESTOPPED);
 		else
 			method_return_faultf(env, MESYS, "vx_info: %s", strerror(errno));
 	}
-	
+
 	if (vx_kill(xid, pid, sig) == -1)
 		method_return_faultf(env, MESYS, "vx_kill: %s", strerror(errno));
-	
+
 	return xmlrpc_nil_new(env);
 }

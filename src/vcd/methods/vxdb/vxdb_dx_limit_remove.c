@@ -24,41 +24,41 @@
 xmlrpc_value *m_vxdb_dx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, *path;
 	xid_t xid;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_DLIM, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"name", &name,
 		"path", &path);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &path);
-	
+
 	if (!validate_name(name) || (path && !validate_path(path)))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (path)
 		rc = vxdb_exec(
 			"DELETE FROM dx_limit WHERE xid = %d AND path = '%s'",
 			xid, path);
-	
+
 	else
 		rc = vxdb_exec(
 			"DELETE FROM dx_limit WHERE xid = %d",
 			xid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

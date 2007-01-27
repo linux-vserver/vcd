@@ -24,48 +24,48 @@
 xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response = NULL;
 	char *name, *path;
 	xid_t xid;
 	vxdb_result *dbr;
 	int rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_DLIM, M_OWNER);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"name", &name,
 		"path", &path);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &path);
-	
+
 	if (!validate_name(name) || (path && !validate_path(path)))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (path)
 		rc = vxdb_prepare(&dbr,
 			"SELECT path,space,inodes,reserved FROM dx_limit "
 			"WHERE xid = %d AND path = '%s'",
 			xid, path);
-	
+
 	else
 		rc = vxdb_prepare(&dbr,
 			"SELECT path,space,inodes,reserved FROM dx_limit "
 			"WHERE xid = %d",
 			xid);
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		response = xmlrpc_array_new(env);
-		
+
 		vxdb_foreach_step(rc, dbr)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:i,s:i,s:i}",
@@ -73,12 +73,12 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"space",    sqlite3_column_int(dbr, 1),
 				"inodes",   sqlite3_column_int(dbr, 2),
 				"reserved", sqlite3_column_int(dbr, 3)));
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return response;
 }

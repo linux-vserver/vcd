@@ -33,48 +33,48 @@
 xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, *newname, vdir[PATH_MAX], newvdir[PATH_MAX];
 	xid_t xid;
 	int rc;
 	const char *vserverdir;
-	
+
 	params = method_init(env, p, c, VCD_CAP_CREATE, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"name", &name,
 		"newname", &newname);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name) || !validate_name(newname))
 		method_return_fault(env, MEINVAL);
-	
+
 	if ((xid = vxdb_getxid(newname)))
 		method_return_fault(env, MEEXIST);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (vx_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
-	
+
 	vserverdir = cfg_getstr(cfg, "vserverdir");
-	
+
 	snprintf(vdir,    PATH_MAX, "%s/%s", vserverdir, name);
 	snprintf(newvdir, PATH_MAX, "%s/%s", vserverdir, newname);
-	
+
 	if (rename(vdir, newvdir) == -1)
 		method_return_faultf(env, MESYS, "rename: %s", strerror(errno));
-	
+
 	rc = vxdb_exec(
 		"UPDATE xid_name_map SET name = '%s' WHERE xid = %d",
 		newname, xid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

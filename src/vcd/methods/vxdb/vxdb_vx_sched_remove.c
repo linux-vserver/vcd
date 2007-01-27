@@ -24,37 +24,37 @@
 xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name;
 	int cpuid, rc;
 	xid_t xid;
-	
+
 	params = method_init(env, p, c, VCD_CAP_SCHED, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:i,*}",
 		"name", &name,
 		"cpuid", &cpuid);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (cpuid == -2)
 		rc = vxdb_exec("DELETE FROM vx_sched WHERE xid = %d", xid);
-	
+
 	else
 		rc = vxdb_exec(
 			"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
 			xid, cpuid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

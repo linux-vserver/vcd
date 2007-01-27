@@ -24,16 +24,16 @@
 xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name;
 	int cpuid, fillrate, interval, fillrate2, interval2;
 	int tokensmin, tokensmax, rc;
 	xid_t xid;
-	
+
 	params = method_init(env, p, c, VCD_CAP_SCHED, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i,*}",
 		"name", &name,
@@ -45,27 +45,27 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"tokensmin", &tokensmin,
 		"tokensmax", &tokensmax);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!validate_token_bucket(fillrate, interval,
 	                           fillrate2, interval2,
 	                           tokensmin, tokensmax))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO vx_sched (xid, fillrate, interval, fillrate2, "
 		"interval2, tokensmin, tokensmax, cpuid) "
 		"VALUES (%d, %d, %d, %d, %d, %d, %d, %d)",
 		xid, fillrate, interval, fillrate2, interval2,
 		tokensmin, tokensmax, cpuid);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }

@@ -23,21 +23,21 @@
 xmlrpc_value *m_vxdb_name_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name;
 	xid_t xid;
-	
+
 	params = method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:i,*}",
 		"xid", &xid);
 	method_return_if_fault(env);
-	
+
 	if (!(name = vxdb_getname(xid)))
 		method_return_fault(env, MENOVPS);
-	
+
 	return xmlrpc_build_value(env, "s", name);
 }

@@ -25,55 +25,55 @@
 xmlrpc_value *m_vxdb_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response = NULL;
 	char *user;
 	int uid, i, rc;
 	vxdb_result *dbr;
-	
+
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"username", &user);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &user);
-	
+
 	response = xmlrpc_array_new(env);
-	
+
 	if (user) {
 		if (!validate_username(user))
 			method_return_fault(env, MEINVAL);
-	
+
 		if (!(uid = auth_getuid(user)))
 			method_return_fault(env, MENOUSER);
-		
+
 		rc = vxdb_prepare(&dbr,
 			"SELECT cap FROM user_caps WHERE uid = %d",
 			uid);
-		
+
 		if (rc)
 			method_set_fault(env, MEVXDB);
-		
+
 		else {
 			vxdb_foreach_step(rc, dbr)
 				xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 					"s", sqlite3_column_text(dbr, 0)));
-			
+
 			if (rc == -1)
 				method_set_fault(env, MEVXDB);
 		}
-		
+
 		sqlite3_finalize(dbr);
 	}
-	
+
 	else {
 		for (i = 0; vcd_caps_list[i].key; i++)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"s", vcd_caps_list[i].key));
 	}
-	
+
 	return response;
 }

@@ -32,56 +32,56 @@
 xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, *halt = "/sbin/halt";
 	xid_t xid;
 	int rc;
 	vxdb_result *dbr;
-	
+
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
-	
+
 	if (!validate_name(name))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH)
 			method_return_fault(env, MESTOPPED);
 		else
 			method_return_faultf(env, MESYS, "vx_info: %s", strerror(errno));
 	}
-	
+
 	rc = vxdb_prepare(&dbr, "SELECT halt FROM init WHERE xid = %d", xid);
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		rc = vxdb_step(dbr);
-		
+
 		if (rc == -1)
 			method_set_fault(env, MEVXDB);
-		
+
 		else if (rc > 0)
 			halt = strdup(sqlite3_column_text(dbr, 0));
 	}
-	
+
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);
-	
+
 	params = xmlrpc_build_value(env,
 	                            "{s:s,s:s}",
 	                            "name", name,
 	                            "command", halt);
-	
+
 	return m_vx_exec(env, params, METHOD_INTERNAL);
 }

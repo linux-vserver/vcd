@@ -25,56 +25,56 @@
 xmlrpc_value *m_vxdb_vx_ccaps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response;
 	char *name;
 	xid_t xid;
 	vxdb_result *dbr;
 	int i, rc;
-	
+
 	params = method_init(env, p, c, VCD_CAP_CCAP, M_OWNER);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,*}",
 		"name", &name);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &name);
-	
+
 	response = xmlrpc_array_new(env);
-	
+
 	if (name) {
 		if (!validate_name(name))
 			method_return_fault(env, MEINVAL);
-	
+
 		if (!(xid = vxdb_getxid(name)))
 			method_return_fault(env, MENOVPS);
-		
+
 		rc = vxdb_prepare(&dbr,
 			"SELECT ccap FROM vx_ccaps WHERE xid = %d",
 			xid);
-		
+
 		if (rc)
 			method_set_fault(env, MEVXDB);
-		
+
 		else {
 			vxdb_foreach_step(rc, dbr)
 				xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 					"s", sqlite3_column_text(dbr, 0)));
-			
+
 			if (rc == -1)
 				method_set_fault(env, MEVXDB);
 		}
-		
+
 		sqlite3_finalize(dbr);
 	}
-	
+
 	else {
 		for (i = 0; ccaps_list[i].key; i++)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"s", ccaps_list[i].key));
 	}
-	
+
 	return response;
 }

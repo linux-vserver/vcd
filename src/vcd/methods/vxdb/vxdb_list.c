@@ -26,39 +26,39 @@
 xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params, *response = NULL;
 	vxdb_result *dbr;
 	char *curuser, *user;
 	int uid = 0, rc;
-	
+
 	method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, p,
 		"({s:s,*}{s:s,*})",
 		"username", &curuser,
 		"username", &user,
 		&params);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(1, &user);
-	
+
 	if (user && !validate_username(user))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (auth_isadmin(curuser)) {
 		if (user)
 			uid = auth_getuid(user);
 	}
-	
+
 	else {
 		if (user && strcmp(curuser, user) != 0)
 			method_return_fault(env, MEINVAL);
-		
+
 		uid = auth_getuid(curuser);
 	}
-	
+
 	if (uid)
 		rc = vxdb_prepare(&dbr,
 			"SELECT xid_name_map.name FROM xid_name_map "
@@ -67,23 +67,23 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"WHERE xid_uid_map.uid = %d "
 			"ORDER BY name ASC",
 			uid);
-	
+
 	else
 		rc = vxdb_prepare(&dbr,
 			"SELECT name FROM xid_name_map ORDER BY name ASC");
-	
+
 	if (rc)
 		method_set_fault(env, MEVXDB);
-	
+
 	else {
 		response = xmlrpc_array_new(env);
-		
+
 		vxdb_foreach_step(rc, dbr)
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"s", sqlite3_column_text(dbr, 0)));
 	}
-	
+
 	sqlite3_finalize(dbr);
-	
+
 	return response;
 }

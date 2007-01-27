@@ -26,15 +26,15 @@
 xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
-	
+
 	xmlrpc_value *params;
 	char *name, *init, *halt, *reboot;
 	int rc;
 	xid_t xid;
-	
+
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,s:s,s:s,*}",
 		"name", &name,
@@ -42,34 +42,34 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		"halt", &halt,
 		"reboot", &reboot);
 	method_return_if_fault(env);
-	
+
 	method_empty_params(3, &init, &halt, &reboot);
-	
+
 	if (!init)
 		init = "/sbin/init";
-	
+
 	if (!halt)
 		halt = "/sbin/halt";
-	
+
 	if (!reboot)
 		reboot = "/sbin/reboot";
-	
+
 	if (!validate_name(name) ||
 	    !str_path_isabs(init) ||
 	    !str_path_isabs(halt) ||
 	    !str_path_isabs(reboot))
 		method_return_fault(env, MEINVAL);
-	
+
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-	
+
 	rc = vxdb_exec(
 		"INSERT OR REPLACE INTO init (xid, init, halt, reboot) "
 		"VALUES (%d, '%s', '%s', '%s')",
 		xid, init, halt, reboot);
-	
+
 	if (rc)
 		method_return_fault(env, MEVXDB);
-	
+
 	return xmlrpc_nil_new(env);
 }
