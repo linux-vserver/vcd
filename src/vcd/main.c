@@ -27,6 +27,7 @@
 
 #define _LUCID_PRINTF_MACROS
 #include <lucid/log.h>
+#include <lucid/mem.h>
 #include <lucid/open.h>
 #include <lucid/printf.h>
 #include <lucid/str.h>
@@ -104,7 +105,11 @@ int main(int argc, char **argv)
 		break;
 	}
 
+	/* free configuration on exit */
 	atexit(cfg_atexit);
+
+	/* free all memory on exit */
+	atexit(mem_freeall);
 
 	/* start logging & debugging */
 	log_options_t log_options = {
@@ -130,6 +135,7 @@ int main(int argc, char **argv)
 
 	log_init(&log_options);
 
+	/* close log multiplexer on exit */
 	atexit(log_close);
 
 	/* fork to background */
