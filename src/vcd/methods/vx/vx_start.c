@@ -23,10 +23,15 @@
 #include <sys/wait.h>
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#define _LUCID_PRINTF_MACROS
+#include <lucid/log.h>
+#include <lucid/mem.h>
+#include <lucid/printf.h>
+#include <lucid/str.h>
 
 /* start process:
    1) create network context (helper will do the rest)
@@ -70,25 +75,52 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
 	
+	int pfds[2];
+	char *buf = "(null)";
+	
+	if (pipe(pfds) == -1)
+		method_return_sys_fault(env, "pipe");
+	
 	switch ((pid = fork())) {
 	case -1:
+		close(pfds[0]);
+		close(pfds[1]);
 		method_return_faultf(env, MESYS, "fork: %s", strerror(errno));
 	
 	case 0:
-		if (nx_create(xid, &ncf) == -1)
-			log_perror_and_die("nx_create");
+		close(pfds[0]);
 		
-		if (vx_create(xid, &vcf) == -1)
+		dup2(pfds[1], STDOUT_FILENO);
+		dup2(pfds[1], STDERR_FILENO);
+		
+		if (nx_create(xid, &ncf) == -1) {
+			printf("nx_create: %s", strerror(errno));
+			log_perror_and_die("nx_create");
+		}
+		
+		if (vx_create(xid, &vcf) == -1) {
+			printf("vx_create: %s", strerror(errno));
 			log_perror_and_die("vx_create");
+		}
 		
 		exit(EXIT_SUCCESS);
 	
 	default:
-		if (waitpid(pid, &status, 0) == -1)
-			method_return_faultf(env, MESYS, "waitpid: %s", strerror(errno));
+		close(pfds[1]);
 		
-		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-			method_return_faultf(env, MESYS, "%s", "startup failed");
+		if (str_readfile(pfds[0], &buf) == -1)
+			method_set_sys_fault(env, "str_readfile");
+		
+		close(pfds[0]);
+		
+		if (waitpid(pid, &status, 0) == -1)
+			method_set_sys_fault(env, "waitpid");
+		
+		else if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+			method_set_faultf(env, MESYS,
+					"startup failed: %s", buf);
+		
+		mem_free(buf);
 	}
 	
 	return xmlrpc_nil_new(env);
