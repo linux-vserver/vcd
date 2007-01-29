@@ -16,29 +16,23 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <string.h>
-#include <limits.h>
-#include <fcntl.h>
+#include <ftw.h>
 #include <confuse.h>
-#include <vserver.h>
-#include <sys/stat.h>
-#include <lucid/chroot.h>
-#include <lucid/flist.h>
-#include <lucid/misc.h>
-#include <lucid/open.h>
-#include <lucid/str.h>
-#include <lucid/stralloc.h>
-#include <libtar.h>
 
 #include "auth.h"
 #include "cfg.h"
 #include "lists.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/chroot.h>
+#include <lucid/flist.h>
+#include <lucid/mem.h>
+#include <lucid/misc.h>
+#include <lucid/log.h>
+#include <lucid/open.h>
+#include <lucid/str.h>
+#include <lucid/stralloc.h>
 
 #define DEFAULT_BCAPS "{ LINUX_IMMUTABLE, NET_BROADCAST, NET_ADMIN, NET_RAW, " \
                       "IPC_LOCK, IPC_OWNER, SYS_MODULE, SYS_RAWIO, " \
@@ -50,312 +44,445 @@
 #define DEFAULT_FLAGS "{ VIRT_MEM, VIRT_UPTIME, VIRT_CPU, " \
                       "VIRT_LOAD, HIDE_NETIF }"
 
-static cfg_opt_t init_OPTS[] = {
-	CFG_STR("init",    "/sbin/init",   CFGF_NONE),
-	CFG_STR("halt",    "/sbin/halt",   CFGF_NONE),
-	CFG_STR("reboot",  "/sbin/reboot", CFGF_NONE),
-	CFG_END()
-};
-
 static cfg_opt_t BUILD_OPTS[] = {
 	CFG_STR("description", NULL, CFGF_NONE),
 
-	CFG_SEC("init", init_OPTS, CFGF_NONE),
+	CFG_STR("init",    "/sbin/init",   CFGF_NONE),
+	CFG_STR("halt",    "/sbin/halt",   CFGF_NONE),
+	CFG_STR("reboot",  "/sbin/reboot", CFGF_NONE),
+	CFG_INT("timeout", 15,             CFGF_NONE),
 
-	CFG_STR_LIST("vx_bcaps",  DEFAULT_BCAPS, CFGF_NONE),
-	CFG_STR_LIST("vx_ccaps",  DEFAULT_CCAPS, CFGF_NONE),
-	CFG_STR_LIST("vx_flags",  DEFAULT_FLAGS, CFGF_NONE),
+	CFG_STR_LIST("vx_bcaps", DEFAULT_BCAPS, CFGF_NONE),
+	CFG_STR_LIST("vx_ccaps", DEFAULT_CCAPS, CFGF_NONE),
+	CFG_STR_LIST("vx_flags", DEFAULT_FLAGS, CFGF_NONE),
 	CFG_END()
 };
 
 static xid_t xid = 0;
 static char *name = NULL;
-static int rebuild = 0;
+
+static char *vdir = NULL;
+static int vdirfd = -1;
+
+static char *template = NULL;
+static char *tdir = NULL;
+
+static int force = 0;
+
+static xmlrpc_env *global_env = NULL;
 
 static
-xmlrpc_value *build_root_filesystem(xmlrpc_env *env, const char *template)
+int handle_file(const char *fpath, const struct stat *sb,
+		int typeflag, struct FTW *ftwbuf)
+{
+	char *buf;
+
+	ix_attr_t attr = {
+		.filename = NULL,
+		.xid   = xid,
+		.flags = IATTR_IUNLINK|IATTR_IMMUTABLE,
+		.mask  = IATTR_IUNLINK|IATTR_IMMUTABLE,
+	};
+
+	/* skip character/block devices, fifos and sockets */
+	if (S_ISCHR(sb->st_mode) ||
+			S_ISBLK(sb->st_mode) ||
+			S_ISFIFO(sb->st_mode) ||
+			S_ISSOCK(sb->st_mode))
+		return FTW_CONTINUE;
+
+	const char *src = str_path_concat(tdir, fpath);
+
+	if (str_isempty(src)) {
+		method_set_faultf(global_env, MEINVAL,
+				"%s: invalid src path: %s/%s", __FUNCTION__, tdir, fpath);
+		return FTW_STOP;
+	}
+
+	attr.filename = src;
+
+	/* just to be sure */
+	if (fchdir(vdirfd) == -1) {
+		method_set_sys_fault(global_env, "fchdir");
+		return FTW_STOP;
+	}
+
+	switch (typeflag) {
+	case FTW_D:
+		/* create new directory */
+		if (mkdir(fpath, sb->st_mode) == -1) {
+			method_set_sys_fault(global_env, "mkdir");
+			return FTW_STOP;
+		}
+
+		if (lchown(fpath, sb->st_uid, sb->st_gid) == -1) {
+			method_set_sys_fault(global_env, "lchown");
+			return FTW_STOP;
+		}
+
+		return FTW_CONTINUE;
+
+	case FTW_F:
+		/* link file */
+		if (ix_attr_set(&attr) == -1) {
+			method_set_sys_fault(global_env, "ix_attr_set");
+			return FTW_STOP;
+		}
+
+		if (link(src, fpath) == -1) {
+			method_set_sys_fault(global_env, "link");
+			return FTW_STOP;
+		}
+
+		return FTW_CONTINUE;
+
+	case FTW_SL:
+		/* copy symlink */
+		if (!(buf = readsymlink(src))) {
+			method_set_sys_fault(global_env, "readsymlink");
+			return FTW_STOP;
+		}
+
+		if (symlink(buf, fpath) == -1) {
+			method_set_sys_fault(global_env, "symlink");
+			return FTW_STOP;
+		}
+
+		return FTW_CONTINUE;
+
+	default:
+		method_set_faultf(global_env, MESYS,
+				"%s: nftw returned %d on %s/%s",
+				__FUNCTION__, typeflag, tdir, fpath);
+	}
+
+	return FTW_STOP;
+}
+
+static
+xmlrpc_value *link_unified_root(xmlrpc_env *env)
+{
+	if (chroot_secure_chdir(vdir, "/") == -1)
+		method_return_sys_fault(env, "chroot_secure_chdir");
+
+	/* handle_file uses this to make sure we are in vdir */
+	vdirfd = open_read(".");
+
+	global_env = env;
+	nftw(tdir, handle_file, 50, FTW_ACTIONRETVAL|FTW_PHYS);
+	global_env = NULL;
+
+	close(vdirfd);
+	return NULL;
+}
+
+static
+xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 {
 	LOG_TRACEME
 
-	const char *datadir, *vdir;
-	char archive[PATH_MAX];
-	struct stat sb;
-	TAR *t;
+	/* try to get rid of old vdir if this is a rebuild */
+	if (xid > 0) {
+		const char *oldvdir = vxdb_getvdir(name);
 
-	datadir = cfg_getstr(cfg, "datadir");
-	snprintf(archive, PATH_MAX, "%s/templates/%s.tar", datadir, template);
+		if (str_isempty(oldvdir) || !str_path_isabs(oldvdir))
+			method_return_faultf(env, MECONF,
+					"invalid old vdir: %s", oldvdir);
 
-	if (!(vdir = vxdb_getvdir(name)))
-		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
-
-	/* TODO: detect mounts */
-	if (rebuild && runlink(vdir) == -1)
-		method_return_faultf(env, MESYS, "runlink: %s", strerror(errno));
-
-	if (lstat(vdir, &sb) == -1) {
-		if (errno != ENOENT)
-			method_return_faultf(env, MESYS, "lstat: %s", strerror(errno));
+		runlink(oldvdir);
 	}
 
-	else
-		method_return_fault(env, MEEXIST);
+	/* try to runlink vdir first */
+	runlink(vdir);
 
-	if (mkdirp(vdir, 0755) == -1 || chroot_secure_chdir(vdir, "/") == -1)
-		method_return_faultf(env, MESYS, "secure_chdir: %s", strerror(errno));
+	/* create new vdir */
+	if (mkdirp(vdir, 0755) == -1)
+		method_return_sys_fault(env, "mkdirp");
 
-	if (strcmp(template, "skeleton") != 0) {
-		if (tar_open(&t, archive, NULL, O_RDONLY, 0, 0) == -1)
-			method_return_faultf(env, MESYS, "tar_open: %s", strerror(errno));
+	/* now link the template to new vdir */
+	link_unified_root(env);
 
-		if (tar_extract_all(t, ".") != 0)
-			method_return_faultf(env, MESYS, "tar_extract_all: %s", strerror(errno));
-
-		tar_close(t);
+	/* runlink on failure */
+	if (env->fault_occurred) {
+		runlink(vdir);
+		return NULL;
 	}
+
+	/* sanitize device nodes */
+	if (chroot_secure_chdir(vdir, "/") == -1)
+		method_return_sys_fault(env, "chroot_secure_chdir");
 
 	if (runlink("dev") == -1 ||
-	    mkdir("dev", 0755) == -1 ||
-	    mkdir("dev/pts", 0755) == -1 ||
-	    mknod("dev/null",    0666 | S_IFCHR, makedev(1,3)) == -1 ||
-	    mknod("dev/zero",    0666 | S_IFCHR, makedev(1,5)) == -1 ||
-	    mknod("dev/full",    0666 | S_IFCHR, makedev(1,7)) == -1 ||
-	    mknod("dev/random",  0644 | S_IFCHR, makedev(1,8)) == -1 ||
-	    mknod("dev/urandom", 0644 | S_IFCHR, makedev(1,9)) == -1 ||
-	    mknod("dev/tty",     0666 | S_IFCHR, makedev(5,0)) == -1 ||
-	    mknod("dev/ptmx",    0666 | S_IFCHR, makedev(5,2)) == -1)
-		method_return_faultf(env, MESYS, "could not sanitize /dev: %s", strerror(errno));
+			mkdir("dev", 0755) == -1 ||
+			mkdir("dev/pts", 0755) == -1 ||
+			mknod("dev/null",    0666 | S_IFCHR, makedev(1,3)) == -1 ||
+			mknod("dev/zero",    0666 | S_IFCHR, makedev(1,5)) == -1 ||
+			mknod("dev/full",    0666 | S_IFCHR, makedev(1,7)) == -1 ||
+			mknod("dev/random",  0644 | S_IFCHR, makedev(1,8)) == -1 ||
+			mknod("dev/urandom", 0644 | S_IFCHR, makedev(1,9)) == -1 ||
+			mknod("dev/tty",     0666 | S_IFCHR, makedev(5,0)) == -1 ||
+			mknod("dev/ptmx",    0666 | S_IFCHR, makedev(5,2)) == -1)
+		method_return_faultf(env, MESYS,
+				"could not sanitize /dev: %s", strerror(errno));
 
 	return NULL;
 }
 
 static
-xid_t find_free_xid()
+xmlrpc_value *find_free_xid(xmlrpc_env *env)
 {
 	LOG_TRACEME
 
-	int i;
-	char *name;
-
-	for (i = 2; i < 65535; i++)
-		if (!(name = vxdb_getname(i)))
-			return i;
-
-	return 0;
-}
-
-static
-xmlrpc_value *create_vxdb_entries(xmlrpc_env *env, const char *template)
-{
-	LOG_TRACEME
-
-	int rc, i;
 	vxdb_result *dbr;
-	stralloc_t sa;
-	cfg_t *tcfg;
 
-	int max, cnt;
+	if (xid != 0)
+		return NULL;
 
-	cfg_t *init_cfg;
-	const char *init, *halt, *reboot;
+	int rc = vxdb_prepare(&dbr,
+			"SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
 
-	int vx_bcaps_size, vx_ccaps_size, vx_flags_size;
-	const char *bcap, *ccap, *flag;
-
-	char *datadir, templateconf[PATH_MAX];
-	struct stat sb;
-
-	char *sql;
-
-	/* load configuration */
-	datadir = cfg_getstr(cfg, "datadir");
-	snprintf(templateconf, PATH_MAX, "%s/templates/%s.conf", datadir, template);
-
-	if (lstat(templateconf, &sb) == -1) {
-		if (errno != ENOENT)
-			method_return_faultf(env, MESYS, "lstat: %s", strerror(errno));
-
-		else
-			strncpy(templateconf, "/dev/null", PATH_MAX);
-	}
-
-	tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
-
-	switch (cfg_parse(tcfg, templateconf)) {
-	case CFG_FILE_ERROR:
-		method_return_faultf(env, MECONF, "no template configuration found for '%s'", template);
-
-	case CFG_PARSE_ERROR:
-		method_return_faultf(env, MECONF, "%s", "syntax error in template configuration");
-
-	default:
-		break;
-	}
-
-	/* find a free xid */
-	if (!xid) {
-		rc = vxdb_prepare(&dbr, "SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
-
-		if (rc || vxdb_step(dbr) < 1)
-			method_set_fault(env, MEVXDB);
-
-		else {
-			cnt = sqlite3_column_int(dbr, 0);
-			max = sqlite3_column_int(dbr, 1);
+	if (rc == SQLITE_OK) {
+		vxdb_foreach_step(rc, dbr) {
+			int cnt = sqlite3_column_int(dbr, 0);
+			int max = sqlite3_column_int(dbr, 1);
 
 			if (max < 2)
 				xid = 2;
 
 			else if (max < 65535)
 				xid = max + 1;
-
-			else if (cnt < 65535)
-				xid = find_free_xid();
-
-			else
-				method_set_faultf(env, MEVXDB, "%s", "no free context id available");
+	
+			else if (cnt < 65535) {
+				int i;
+	
+				for (i = 2; i < 65535; i++) {
+					if (!vxdb_getname(i)) {
+						xid = i;
+						break;
+					}
+				}
+			}
 		}
-
-		sqlite3_finalize(dbr);
 	}
 
+	if (!env->fault_occurred && rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
+
+	if (xid == 0)
+			method_set_faultf(env, MEVXDB,
+					"no free context id available: %s", name);
+
+	sqlite3_finalize(dbr);
+	return NULL;
+}
+
+static
+xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
+{
+	LOG_TRACEME
+
+	char *tconf;
+	if (vasprintf(&tconf, "%s.conf", tdir) < 1)
+		method_return_sys_fault(env, "vasprintf");
+
+	if (!isfile(tconf))
+		tconf = "/dev/null";
+
+	cfg_t *tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
+
+	switch (cfg_parse(tcfg, tconf)) {
+	case CFG_FILE_ERROR:
+		method_return_faultf(env, MECONF,
+				"could not read template configuration: %s", template);
+
+	case CFG_PARSE_ERROR:
+		method_return_faultf(env, MECONF,
+				"syntax error in template configuration: %s", template);
+
+	default:
+		break;
+	}
+
+	/* find a free xid */
+	find_free_xid(env);
 	method_return_if_fault(env);
 
 	/* assemble SQL query */
-	stralloc_init(&sa);
-	stralloc_cats(&sa, "BEGIN EXCLUSIVE TRANSACTION;");
+	stralloc_t _sa, *sa = &_sa;
+	stralloc_init(sa);
+	stralloc_cats(sa, "BEGIN EXCLUSIVE TRANSACTION;");
 
-	init_cfg = cfg_getsec(tcfg, "init");
+	/* remove any existing stuff */
+	stralloc_catf(sa,
+			"DELETE FROM dx_limit     WHERE xid = %d;"
+			"DELETE FROM init         WHERE xid = %d;"
+			"DELETE FROM nx_addr      WHERE xid = %d;"
+			"DELETE FROM nx_broadcast WHERE xid = %d;"
+			"DELETE FROM vdir         WHERE xid = %d;"
+			"DELETE FROM vx_bcaps     WHERE xid = %d;"
+			"DELETE FROM vx_ccaps     WHERE xid = %d;"
+			"DELETE FROM vx_flags     WHERE xid = %d;"
+			"DELETE FROM vx_limit     WHERE xid = %d;"
+			"DELETE FROM vx_sched     WHERE xid = %d;"
+			"DELETE FROM vx_uname     WHERE xid = %d;"
+			"DELETE FROM xid_name_map WHERE xid = %d;", /* 12 */
+			xid, xid, xid, xid, xid, xid,
+			xid, xid, xid, xid, xid, xid);
 
-	if (init_cfg) {
-		init    = cfg_getstr(init_cfg, "init");
-		halt    = cfg_getstr(init_cfg, "halt");
-		reboot  = cfg_getstr(init_cfg, "reboot");
+	/* get init configuration */
+	const char *init   = cfg_getstr(tcfg, "init");
+	const char *halt   = cfg_getstr(tcfg, "halt");
+	const char *reboot = cfg_getstr(tcfg, "reboot");
+	int timeout        = cfg_getint(tcfg, "timeout");
 
-		if (str_isempty(init))
-			init = "/sbin/init";
+	if (str_isempty(init) || !str_path_isabs(init))
+		method_return_faultf(env, MECONF,
+				"invalid template configuration for init: %s", init);
 
-		if (str_isempty(halt))
-			halt = "/sbin/halt";
+	if (str_isempty(halt) || !str_path_isabs(halt))
+		method_return_faultf(env, MECONF,
+				"invalid template configuration for halt: %s", halt);
 
-		if (str_isempty(reboot))
-			reboot = "/sbin/reboot";
+	if (str_isempty(reboot) || !str_path_isabs(reboot))
+		method_return_faultf(env, MECONF,
+				"invalid template configuration for reboot: %s", reboot);
 
-		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO init (xid, init, halt, reboot) "
-			"VALUES (%d, '%s', '%s', '%s');",
-			xid, init, halt, reboot);
-	}
+	timeout = timeout < 0 ? 0 : timeout;
 
-	if (rebuild)
-		goto commit;
+	stralloc_catf(sa,
+			"INSERT INTO init (xid, init, halt, reboot, timeout) "
+			"VALUES (%d, '%s', '%s', '%s', %d);",
+			xid, init, halt, reboot, timeout);
 
-	vx_bcaps_size = cfg_size(tcfg, "vx_bcaps");
+	int i;
+
+	/* get bcaps */
+	int vx_bcaps_size = cfg_size(tcfg, "vx_bcaps");
 
 	for (i = 0; i < vx_bcaps_size; i++) {
-		bcap = cfg_getnstr(tcfg, "vx_bcaps", i);
+		const char *bcap = cfg_getnstr(tcfg, "vx_bcaps", i);
 
 		if (!flist64_getval(bcaps_list, bcap))
-			method_return_faultf(env, MECONF, "invalid bcap: %s", bcap);
+			method_return_faultf(env, MECONF,
+					"invalid template configuration for bcap: %s", bcap);
 
-		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO vx_bcaps (xid, bcap) "
-			"VALUES (%d, '%s');",
-			xid, bcap);
+		stralloc_catf(sa,
+				"INSERT INTO vx_bcaps (xid, bcap) "
+				"VALUES (%d, '%s');",
+				xid, bcap);
 	}
 
-	vx_ccaps_size = cfg_size(tcfg, "vx_ccaps");
+	/* get ccaps */
+	int vx_ccaps_size = cfg_size(tcfg, "vx_ccaps");
 
 	for (i = 0; i < vx_ccaps_size; i++) {
-		ccap = cfg_getnstr(tcfg, "vx_ccaps", i);
+		const char *ccap = cfg_getnstr(tcfg, "vx_ccaps", i);
 
 		if (!flist64_getval(ccaps_list, ccap))
-			method_return_faultf(env, MECONF, "invalid ccap: %s", ccap);
+			method_return_faultf(env, MECONF,
+					"invalid template configuration for ccap: %s", ccap);
 
-		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO vx_ccaps (xid, ccap) "
-			"VALUES (%d, '%s');",
-			xid, ccap);
+		stralloc_catf(sa,
+				"INSERT INTO vx_ccaps (xid, ccap) "
+				"VALUES (%d, '%s');",
+				xid, ccap);
 	}
 
-	vx_flags_size = cfg_size(tcfg, "vx_flags");
+	/* get cflags */
+	int vx_flags_size = cfg_size(tcfg, "vx_flags");
 
 	for (i = 0; i < vx_flags_size; i++) {
-		flag = cfg_getnstr(tcfg, "vx_flags", i);
+		const char *flag = cfg_getnstr(tcfg, "vx_flags", i);
 
 		if (!flist64_getval(cflags_list, flag))
-			method_return_faultf(env, MECONF, "invalid cflag: %s", flag);
+			method_return_faultf(env, MECONF,
+					"invalid template configuration for cflag: %s", flag);
 
-		stralloc_catf(&sa,
-			"INSERT OR REPLACE INTO vx_flags (xid, flag) "
-			"VALUES (%d, '%s');",
-			xid, flag);
+		stralloc_catf(sa,
+				"INSERT INTO vx_flags (xid, flag) "
+				"VALUES (%d, '%s');",
+				xid, flag);
 	}
 
-	stralloc_catf(&sa,
-		"INSERT OR REPLACE INTO xid_name_map (xid, name) VALUES (%d, '%s');",
-		xid, name);
+	/* insert name */
+	stralloc_catf(sa,
+			"INSERT INTO xid_name_map (xid, name) VALUES (%d, '%s');",
+			xid, name);
 
-commit:
-	stralloc_cats(&sa, "COMMIT TRANSACTION;");
-	sql = strndup(sa.s, sa.len);
-	stralloc_free(&sa);
+	/* commit transaction */
+	stralloc_cats(sa, "COMMIT TRANSACTION;");
 
-	rc = vxdb_exec(sql);
+	char *sql = stralloc_finalize(sa);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
+	if (vxdb_exec(sql) != SQLITE_OK) {
+		method_set_vxdb_fault(env);
+		runlink(vdir);
+	}
 
 	return NULL;
 }
 
-/* vx.create(string name, string template, bool rebuild) */
+/* vx.create(string name, string template, bool force[, string vdir]) */
 xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *user, *template;
 
-	method_init(env, p, c, VCD_CAP_CREATE, M_LOCK);
-	method_return_if_fault(env);
-
-	xmlrpc_decompose_value(env, p,
-		"({s:s,*}V)",
-		"username", &user,
-		&params);
+	params = method_init(env, p, c, VCD_CAP_CREATE, M_LOCK);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:b,*}",
-		"name", &name,
-		"template", &template,
-		"rebuild", &rebuild);
+			"{s:s,s:s,s:b,*}",
+			"name", &name,
+			"template", &template,
+			"force", &force,
+			"vdir", &vdir);
 	method_return_if_fault(env);
 
-	if (!validate_name(name) || str_isempty(template) || !str_isgraph(template))
-		method_return_fault(env, MEINVAL);
+	/* get template dir */
+	if (str_isempty(template) || !str_isgraph(template))
+		method_return_faultf(env, MEINVAL,
+				"invalid template name: %s", template);
 
+	const char *tbasedir = cfg_getstr(cfg, "templatedir");
+
+	if (!str_path_isabs(tbasedir) || !isdir(tbasedir))
+		method_return_faultf(env, MECONF,
+				"tbasedir does not exist: %s", tbasedir);
+
+	if (!(tdir = str_path_concat(tbasedir, template)))
+		method_return_faultf(env, MEINVAL,
+				"invalid template path: %s/%s", tbasedir, template);
+
+	if (!isdir(tdir))
+		method_return_faultf(env, MEINVAL,
+				"template does not exist: %s", template);
+
+	/* check vdir */
+	if (str_isempty(vdir))
+		vdir = vxdb_getvdir(name);
+
+	if (!str_path_isabs(vdir))
+		method_return_faultf(env, MEINVAL,
+				"invalid vdir: %s", vdir);
+
+	if (!force && ispath(vdir))
+		method_return_faultf(env, MEEXIST,
+				"vdir already exists: %s", vdir);
+
+	/* get old xid if rebuild */
 	if ((xid = vxdb_getxid(name))) {
-		if (auth_isadmin(user) || auth_isowner(user, name)) {
-			if (!rebuild)
-				method_return_fault(env, MEEXIST);
-			else if (vx_info(xid, NULL) == 0)
-				method_return_fault(env, MERUNNING);
-		}
-
-		else
-			method_return_fault(env, MEPERM);
+		if (!force)
+			method_return_fault(env, MEEXIST);
+		else if (vx_info(xid, NULL) == 0)
+			method_return_fault(env, MERUNNING);
 	}
 
-	else {
-		xid = 0;
-		rebuild = 0;
-	}
-
-	build_root_filesystem(env, template);
+	build_root_filesystem(env);
 	method_return_if_fault(env);
 
-	create_vxdb_entries(env, template);
+	create_vxdb_entries(env);
 	method_return_if_fault(env);
 
 	return xmlrpc_nil_new(env);
