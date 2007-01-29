@@ -25,20 +25,24 @@
 
 void cmd_create(xmlrpc_env *env, int argc, char **argv)
 {
-	char *template;
-	int rebuild = 0;
+	char *template, *vdir = "";
+	int force = 0;
 	
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 	
 	template = argv[0];
 	
-	if (argc >= 2)
-		rebuild = atoi(argv[1]);
+	if (argc > 1)
+		force = atoi(argv[1]);
+
+	if (argc > 2)
+		vdir = argv[2];
 	
 	xmlrpc_client_call(env, uri, "vx.create",
-		SIGNATURE("{s:s,s:s,s:b}"),
+		SIGNATURE("{s:s,s:s,s:b,s:s}"),
 		"name", name,
 		"template", template,
-		"rebuild", rebuild);
+		"force", force,
+		"vdir", vdir);
 }
