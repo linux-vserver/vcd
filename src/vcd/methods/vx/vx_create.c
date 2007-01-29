@@ -178,7 +178,8 @@ xmlrpc_value *link_unified_root(xmlrpc_env *env)
 	vdirfd = open_read(".");
 
 	global_env = env;
-	nftw(tdir, handle_file, 50, FTW_ACTIONRETVAL|FTW_PHYS);
+	chdir(tdir);
+	nftw(".", handle_file, 50, FTW_ACTIONRETVAL|FTW_PHYS);
 	global_env = NULL;
 
 	close(vdirfd);
