@@ -212,7 +212,7 @@ char *vxdb_getvdir(const char *name)
 	LOG_TRACEME
 
 	int rc;
-	char *vbasedir, *vdir;
+	char *vbasedir, *vdir = NULL;
 	vxdb_result *dbr;
 	xid_t xid;
 
