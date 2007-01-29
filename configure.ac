@@ -130,12 +130,6 @@ AC_CHECK_LIB(sqlite3, sqlite3_open,
 	SQLITE3_LIBS="-lsqlite3", AC_MSG_ERROR([sqlite3 not found]))
 
 AC_SUBST(SQLITE3_LIBS)
-
-# tar
-AC_CHECK_LIB(tar, tar_extract_all,
-	TAR_LIBS="-ltar", AC_MSG_ERROR([libtar not found]),)
-
-AC_SUBST(TAR_LIBS)
 fi
 
 # Checks for header files.

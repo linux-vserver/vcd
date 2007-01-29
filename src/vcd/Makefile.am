@@ -44,7 +44,6 @@ vcd_LDADD = $(top_builddir)/src/vcd/methods/libmethods.a \
             $(CONFUSE_LIBS) \
             $(LUCID_LIBS) \
             $(SQLITE3_LIBS) \
-            $(TAR_LIBS) \
             $(VSERVER_LIBS) \
             $(XMLRPC_C_SERVER_LIBS)
 
