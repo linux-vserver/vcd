@@ -320,7 +320,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 			"DELETE FROM mount        WHERE xid = %d;"
 			"DELETE FROM nx_addr      WHERE xid = %d;"
 			"DELETE FROM nx_broadcast WHERE xid = %d;"
-			"DELETE FROM reboot       WHERE xid = %d;"
+			"DELETE FROM restart      WHERE xid = %d;"
 			"DELETE FROM vdir         WHERE xid = %d;"
 			"DELETE FROM vx_bcaps     WHERE xid = %d;"
 			"DELETE FROM vx_ccaps     WHERE xid = %d;"
