@@ -127,6 +127,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 		}
 
 		fchdir(curfd);
+		close(curfd);
 		return FTW_CONTINUE;
 
 	case FTW_F:
@@ -142,6 +143,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 		}
 
 		fchdir(curfd);
+		close(curfd);
 		return FTW_CONTINUE;
 
 	case FTW_SL:
@@ -157,12 +159,12 @@ int handle_file(const char *fpath, const struct stat *sb,
 		}
 
 		fchdir(curfd);
+		close(curfd);
 		return FTW_CONTINUE;
 
 	default:
 		method_set_faultf(global_env, MESYS,
-				"%s: nftw returned %d on %s/%s",
-				__FUNCTION__, typeflag, tdir, fpath);
+				"nftw returned %d on %s", typeflag, src);
 	}
 
 	return FTW_STOP;
