@@ -28,7 +28,7 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *newname;
+	char *name, *newname, *vdir;
 	xid_t xid;
 	int rc;
 
@@ -53,12 +53,18 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
 
-	rc = vxdb_exec(
-			"UPDATE xid_name_map SET name = '%s' WHERE xid = %d",
-			newname, xid);
+	if (!(vdir = vxdb_getvdir(name)))
+		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	rc = vxdb_exec(
+			"BEGIN EXCLUSIVE TRANSACTION;"
+			"INSERT OR REPLACE INTO vdir (xid, vdir) VALUES (%d, '%s');"
+			"UPDATE xid_name_map SET name = '%s' WHERE xid = %d;"
+			"COMMIT TRANSACTION;",
+			xid, vdir, newname, xid);
+
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

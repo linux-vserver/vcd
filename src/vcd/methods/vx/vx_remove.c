@@ -46,6 +46,9 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_info(xid, NULL) != -1)
 		method_return_fault(env, MERUNNING);
 
+	if (!(vdir = vxdb_getvdir(name)))
+		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
+
 	rc = vxdb_exec("BEGIN TRANSACTION;"
 			"DELETE FROM dx_limit     WHERE xid = %1$d;"
 			"DELETE FROM init         WHERE xid = %1$d;"
@@ -62,11 +65,8 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"COMMIT TRANSACTION;",
 			xid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
-
-	if (!(vdir = vxdb_getvdir(name)))
-		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	if (runlink(vdir) == -1)
 		method_return_sys_fault(env, "runlink");

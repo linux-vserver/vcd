@@ -49,8 +49,8 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_exec("DELETE FROM restart WHERE xid = %d", xid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	if (sqlite3_changes(vxdb) < 1)
 		return xmlrpc_nil_new(env);

@@ -35,7 +35,7 @@ int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...);
 int vxdb_step(vxdb_result *dbr);
 
 #define vxdb_foreach_step(RC, DBR) \
-	for (RC = vxdb_step(DBR); RC == 1; RC = vxdb_step(DBR))
+	for (RC = vxdb_step(DBR); RC == SQLITE_ROW; RC = vxdb_step(DBR))
 
 int vxdb_exec(const char *fmt, ...);
 

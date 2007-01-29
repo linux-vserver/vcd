@@ -52,18 +52,12 @@ xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_prepare(&dbr, "SELECT reboot FROM init WHERE xid = %d", xid);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
-
-	else {
-		rc = vxdb_step(dbr);
-
-		if (rc == -1)
-			method_set_fault(env, MEVXDB);
-
-		else if (rc > 0)
+	if (rc == SQLITE_OK)
+		vxdb_foreach_step(rc, dbr)
 			reboot = strdup(sqlite3_column_text(dbr, 0));
-	}
+
+	if (rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);

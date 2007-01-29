@@ -41,6 +41,7 @@ m_err_t method_error_codes[] = {
 	{ MEEXIST,   "Conflict/Already exists" },
 	{ MENOVPS,   "Not found" },
 	{ MESYS,     "System call failed" },
+	{ MEEXEC,    "Command execution failed" },
 	{ 0,         NULL },
 };
 
@@ -241,6 +242,9 @@ void method_empty_params(int num, ...)
 char *method_strerror(int id)
 {
 	LOG_TRACEME
+
+	if (id - MEEXEC > 0)
+		id = MEEXEC;
 
 	int i;
 

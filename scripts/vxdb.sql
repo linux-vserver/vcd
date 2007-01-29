@@ -79,11 +79,11 @@ INSERT INTO user_caps VALUES(1, 'EXEC');
 INSERT INTO user_caps VALUES(1, 'INFO');
 INSERT INTO user_caps VALUES(2, 'HELPER');
 
-CREATE TABLE IF NOT EXISTS vx {
+CREATE TABLE IF NOT EXISTS vdir (
   xid SMALLINT NOT NULL,
   vdir TEXT,
-  onboot TINYINT,
-  UNIQUE(xid)
+  UNIQUE(xid),
+  UNIQUE(vdir)
 );
 
 CREATE TABLE IF NOT EXISTS vx_bcaps (

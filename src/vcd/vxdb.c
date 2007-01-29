@@ -40,14 +40,14 @@ void vxdb_sanity_check(void)
 
 	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE admin = 1");
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) < 1)
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW)
 		log_warn("No admin user found");
 
 	sqlite3_finalize(dbr);
 
 	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE name = 'vshelper'");
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) < 1)
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW)
 		log_warn("No vshelper user found");
 
 	sqlite3_finalize(dbr);
@@ -107,10 +107,10 @@ int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
 
 	rc = sqlite3_prepare(vxdb, sql, -1, dbr, NULL);
 
-	mem_free(sql);
-
 	if (rc != SQLITE_OK)
 		log_warn("vxdb_prepare(%s): %s", sql, sqlite3_errmsg(vxdb));
+
+	mem_free(sql);
 
 	return rc;
 }
@@ -119,23 +119,24 @@ int vxdb_step(vxdb_result *dbr)
 {
 	LOG_TRACEME
 
-	switch (sqlite3_step(dbr)) {
+	int rc = sqlite3_step(dbr);
+
+	switch (rc) {
+		case SQLITE_DONE:
+		case SQLITE_ROW:
+		case SQLITE_OK:
+			break;
+
 		case SQLITE_BUSY:
 			/* the timeout handler will sleep */
 			return vxdb_step(dbr);
 
-		case SQLITE_DONE:
-			return 0;
-
-		case SQLITE_ERROR:
+		default:
 			log_warn("vxdb_step: %s", sqlite3_errmsg(vxdb));
-			return -1;
-
-		case SQLITE_ROW:
-			return 1;
+			break;
 	}
 
-	return 0;
+	return rc;
 }
 
 int vxdb_exec(const char *fmt, ...)
@@ -171,12 +172,13 @@ xid_t vxdb_getxid(const char *name)
 	if (!validate_name(name))
 		return 0;
 
-	rc = vxdb_prepare(&dbr, "SELECT xid FROM xid_name_map WHERE name = '%s'", name);
+	rc = vxdb_prepare(&dbr,
+			"SELECT xid FROM xid_name_map WHERE name = '%s'", name);
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) < 1)
-		xid = 0;
-	else
+	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
 		xid = sqlite3_column_int(dbr, 0);
+	else
+		xid = 0;
 
 	sqlite3_finalize(dbr);
 	return xid;
@@ -193,12 +195,13 @@ char *vxdb_getname(xid_t xid)
 	if (!validate_xid(xid))
 		return NULL;
 
-	rc = vxdb_prepare(&dbr, "SELECT name FROM xid_name_map WHERE xid = '%d'", xid);
+	rc = vxdb_prepare(&dbr,
+			"SELECT name FROM xid_name_map WHERE xid = '%d'", xid);
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) < 1)
-		name = NULL;
-	else
+	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
 		name = str_dup(sqlite3_column_text(dbr, 0));
+	else
+		name = NULL;
 
 	sqlite3_finalize(dbr);
 	return name;
@@ -211,19 +214,22 @@ char *vxdb_getvdir(const char *name)
 	int rc;
 	char *vbasedir, *vdir;
 	vxdb_result *dbr;
+	xid_t xid;
 
-	if (!validate_name(name))
-		return 0;
+	if (!(xid = vxdb_getxid(name)))
+		return NULL;
 
-	rc = vxdb_prepare(&dbr, "SELECT vdir FROM vx WHERE name = '%s'", name);
+	rc = vxdb_prepare(&dbr, "SELECT vdir FROM vdir WHERE xid = '%d'", xid);
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) < 1) {
+	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+		vdir = str_dup(sqlite3_column_text(dbr, 0));
+	else
+		vdir = NULL;
+
+	if (str_isempty(vdir)) {
 		vbasedir = cfg_getstr(cfg, "vbasedir");
 		vdir = str_path_concat(vbasedir, name);
 	}
-
-	else
-		vdir = str_dup(sqlite3_column_text(dbr, 0));
 
 	sqlite3_finalize(dbr);
 	return vdir;

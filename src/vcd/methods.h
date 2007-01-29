@@ -41,6 +41,7 @@ typedef struct {
 #define MENOVPS   401
 #define MEBUSY    402
 #define MESYS     500
+#define MEEXEC    1000 /* this should always be the last error code */
 
 #define M_OWNER 0x0001
 #define M_LOCK  0x0002
@@ -71,8 +72,13 @@ char *method_strerror(int id);
 } while(0)
 
 #define method_set_sys_fault(ENV, MSG) do { \
-	xmlrpc_env_set_fault_formatted(ENV, MESYS, "%s: %s: %s", \
-			__FUNCTION__, MSG, strerror(errno)); \
+	xmlrpc_env_set_fault_formatted(ENV, MESYS, "%s(%d): %s: %s", \
+			__FUNCTION__, __LINE__, MSG, strerror(errno)); \
+} while (0)
+
+#define method_set_vxdb_fault(ENV) do { \
+	xmlrpc_env_set_fault_formatted(ENV, MEVXDB, "%s: error in vxdb: %s", \
+			__FUNCTION__, sqlite3_errmsg(vxdb)); \
 } while (0)
 
 #define method_set_faultf(ENV, ID, FMT, ...) do { \
@@ -86,6 +92,11 @@ char *method_strerror(int id);
 
 #define method_return_sys_fault(ENV, MSG) do { \
 	method_set_sys_fault(ENV, MSG); \
+	return NULL; \
+} while (0)
+
+#define method_return_vxdb_fault(ENV) do { \
+	method_set_vxdb_fault(ENV); \
 	return NULL; \
 } while (0)
 

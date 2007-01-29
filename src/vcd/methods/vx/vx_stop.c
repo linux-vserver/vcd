@@ -32,7 +32,7 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *halt = "/sbin/halt";
 	xid_t xid;
-	int rc, timeout = 5;
+	int rc, timeout = 15;
 	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
@@ -56,21 +56,16 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	rc = vxdb_prepare(&dbr,
 			"SELECT halt,timeout FROM init WHERE xid = %d", xid);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
-
-	else {
-		rc = vxdb_step(dbr);
-
-		if (rc == -1)
-			method_set_fault(env, MEVXDB);
-
-		else if (rc > 0) {
+	if (rc == SQLITE_OK) {
+		vxdb_foreach_step(rc, dbr) {
 			halt = str_dup(sqlite3_column_text(dbr, 0));
 			timeout = sqlite3_column_int(dbr, 1);
-			timeout = timeout < 1 ? 5 : timeout;
+			timeout = timeout < 1 ? 15 : timeout;
 		}
 	}
+
+	if (rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
 	method_return_if_fault(env);

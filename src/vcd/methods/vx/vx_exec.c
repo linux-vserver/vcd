@@ -107,7 +107,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			close(pfds[1]);
 
 			if (str_readfile(pfds[0], &output) == -1)
-				method_return_sys_fault(env, "io_read_eof");
+				method_return_sys_fault(env, "str_readfile");
 
 			close(pfds[0]);
 
@@ -115,9 +115,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				method_return_sys_fault(env, "waitpid");
 
 			if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-				method_return_faultf(env, MESYS,
-						"command failed with exit code %d:\n%s",
-						WEXITSTATUS(status), output);
+				method_return_faultf(env, MEEXEC + WEXITSTATUS(status), "%s", output);
 		}
 	}
 

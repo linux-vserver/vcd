@@ -42,10 +42,7 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 			"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
 			xid);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
-
-	else {
+	if (rc == SQLITE_OK) {
 		vxdb_foreach_step(rc, dbr) {
 			const char *ip   = sqlite3_column_text(dbr, 0);
 			const char *netm = sqlite3_column_text(dbr, 1);
@@ -71,13 +68,12 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 				break;
 			}
 		}
-
-		if (rc == -1)
-			method_set_fault(env, MEVXDB);
 	}
 
-	sqlite3_finalize(dbr);
+	if (!env->fault_occurred && rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
+	sqlite3_finalize(dbr);
 	return NULL;
 }
 
@@ -93,16 +89,8 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 			"SELECT broadcast FROM nx_broadcast WHERE xid = %d",
 			xid);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
-
-	else {
-		rc = vxdb_step(dbr);
-
-		if (rc == -1)
-			method_set_fault(env, MEVXDB);
-
-		else if (rc == 1) {
+	if (rc == SQLITE_OK) {
+		vxdb_foreach_step(rc, dbr) {
 			nx_addr_t addr = {
 				.type  = NXA_TYPE_IPV4 | NXA_MOD_BCAST,
 				.count = 1,
@@ -123,8 +111,10 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 		}
 	}
 
-	sqlite3_finalize(dbr);
+	if (!env->fault_occurred && rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
+	sqlite3_finalize(dbr);
 	return NULL;
 }
 
