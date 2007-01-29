@@ -76,6 +76,11 @@ char *method_strerror(int id);
 			__FUNCTION__, __LINE__, MSG, strerror(errno)); \
 } while (0)
 
+#define method_set_sys_faultf(ENV, MSG, ...) do { \
+	xmlrpc_env_set_fault_formatted(ENV, MESYS, "%s(%d): " MSG ": %s", \
+			__FUNCTION__, __LINE__, __VA_ARGS__, strerror(errno)); \
+} while (0)
+
 #define method_set_vxdb_fault(ENV) do { \
 	xmlrpc_env_set_fault_formatted(ENV, MEVXDB, "%s: error in vxdb: %s", \
 			__FUNCTION__, sqlite3_errmsg(vxdb)); \
@@ -92,6 +97,11 @@ char *method_strerror(int id);
 
 #define method_return_sys_fault(ENV, MSG) do { \
 	method_set_sys_fault(ENV, MSG); \
+	return NULL; \
+} while (0)
+
+#define method_return_sys_faultf(ENV, MSG, ...) do { \
+	method_set_sys_fault(ENV, MSG, __VA_ARGS__); \
 	return NULL; \
 } while (0)
 

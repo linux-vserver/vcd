@@ -117,12 +117,12 @@ int handle_file(const char *fpath, const struct stat *sb,
 	case FTW_D:
 		/* create new directory */
 		if (mkdir(fpath, sb->st_mode) == -1) {
-			method_set_sys_fault(global_env, "mkdir");
+			method_set_sys_faultf(global_env, "mkdir(%s)", fpath);
 			return FTW_STOP;
 		}
 
 		if (lchown(fpath, sb->st_uid, sb->st_gid) == -1) {
-			method_set_sys_fault(global_env, "lchown");
+			method_set_sys_faultf(global_env, "lchown(%s)", fpath);
 			return FTW_STOP;
 		}
 
@@ -132,12 +132,12 @@ int handle_file(const char *fpath, const struct stat *sb,
 	case FTW_F:
 		/* link file */
 		if (ix_attr_set(&attr) == -1) {
-			method_set_sys_fault(global_env, "ix_attr_set");
+			method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
 			return FTW_STOP;
 		}
 
 		if (link(src, fpath) == -1) {
-			method_set_sys_fault(global_env, "link");
+			method_set_sys_faultf(global_env, "link(%s, %s)", src, fpath);
 			return FTW_STOP;
 		}
 
@@ -147,12 +147,12 @@ int handle_file(const char *fpath, const struct stat *sb,
 	case FTW_SL:
 		/* copy symlink */
 		if (!(buf = readsymlink(src))) {
-			method_set_sys_fault(global_env, "readsymlink");
+			method_set_sys_faultf(global_env, "readsymlink(%s)", src);
 			return FTW_STOP;
 		}
 
 		if (symlink(buf, fpath) == -1) {
-			method_set_sys_fault(global_env, "symlink");
+			method_set_sys_faultf(global_env, "symlink(%s, %s)", buf, fpath);
 			return FTW_STOP;
 		}
 
