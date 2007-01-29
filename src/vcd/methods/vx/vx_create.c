@@ -75,7 +75,7 @@ static
 int handle_file(const char *fpath, const struct stat *sb,
 		int typeflag, struct FTW *ftwbuf)
 {
-	char *buf;
+	char *src;
 
 	ix_attr_t attr = {
 		.filename = NULL,
@@ -95,17 +95,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 			S_ISSOCK(sb->st_mode))
 		return FTW_CONTINUE;
 
-	const char *src = str_path_concat(tdir, fpath);
-
-	if (str_isempty(src)) {
-		method_set_faultf(global_env, MEINVAL,
-				"%s: invalid src path: %s/%s", __FUNCTION__, tdir, fpath);
-		return FTW_STOP;
-	}
-
-	attr.filename = src;
-
-	/* just to be sure */
+	/* remember */
 	int curfd = open_read(".");
 
 	if (fchdir(vdirfd) == -1) {
@@ -131,6 +121,17 @@ int handle_file(const char *fpath, const struct stat *sb,
 		return FTW_CONTINUE;
 
 	case FTW_F:
+	case FTW_SL:
+		src = str_path_concat(tdir, fpath);
+
+		if (str_isempty(src)) {
+			method_set_faultf(global_env, MEINVAL,
+					"%s: invalid src path: %s/%s", __FUNCTION__, tdir, fpath);
+			return FTW_STOP;
+		}
+
+		attr.filename = src;
+
 		/* link file */
 		if (ix_attr_set(&attr) == -1) {
 			method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
@@ -142,21 +143,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 			return FTW_STOP;
 		}
 
-		fchdir(curfd);
-		close(curfd);
-		return FTW_CONTINUE;
-
-	case FTW_SL:
-		/* copy symlink */
-		if (!(buf = readsymlink(src))) {
-			method_set_sys_faultf(global_env, "readsymlink(%s)", src);
-			return FTW_STOP;
-		}
-
-		if (symlink(buf, fpath) == -1) {
-			method_set_sys_faultf(global_env, "symlink(%s, %s)", buf, fpath);
-			return FTW_STOP;
-		}
+		mem_free(src);
 
 		fchdir(curfd);
 		close(curfd);
@@ -164,7 +151,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 
 	default:
 		method_set_faultf(global_env, MESYS,
-				"nftw returned %d on %s", typeflag, src);
+				"nftw returned %d on %s", typeflag, fpath);
 	}
 
 	return FTW_STOP;
