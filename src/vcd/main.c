@@ -20,6 +20,7 @@
 #include <string.h>
 #include <errno.h>
 #include <getopt.h>
+#include <signal.h>
 #include <sys/stat.h>
 #include <syslog.h>
 
@@ -71,10 +72,34 @@ void usage(int rc)
 	exit(rc);
 }
 
+void sigsegv_handler(int sig, siginfo_t *info, void *ucontext)
+{
+	log_error("Received SIGSEGV for virtual address %p (%d,%d)",
+			info->si_addr, info->si_errno, info->si_code);
+
+	log_error("You probably found a bug in vcd!");
+	log_error("Please report it to hollow@gentoo.org");
+
+	exit(EXIT_FAILURE);
+}
+
 int main(int argc, char **argv)
 {
 	char *cfg_file = SYSCONFDIR "/vcd.conf";
 	int c, debug = 0;
+
+	struct sigaction sa;
+
+	sa.sa_sigaction = sigsegv_handler;
+	sa.sa_flags = SA_RESETHAND|SA_SIGINFO;
+
+	sigfillset(&sa.sa_mask);
+
+	if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+		dprintf(STDERR_FILENO, "sigaction: %s", strerror(errno));
+		exit(EXIT_FAILURE);
+	}
+
 
 	/* parse command line */
 	while ((c = getopt(argc, argv, "dc:")) != -1) {
