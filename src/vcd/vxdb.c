@@ -216,21 +216,21 @@ char *vxdb_getvdir(const char *name)
 	vxdb_result *dbr;
 	xid_t xid;
 
-	if (!(xid = vxdb_getxid(name)))
-		return NULL;
+	if ((xid = vxdb_getxid(name))) {
+		rc = vxdb_prepare(&dbr, "SELECT vdir FROM vdir WHERE xid = '%d'", xid);
 
-	rc = vxdb_prepare(&dbr, "SELECT vdir FROM vdir WHERE xid = '%d'", xid);
+		if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+			vdir = str_dup(sqlite3_column_text(dbr, 0));
+		else
+			vdir = NULL;
 
-	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
-		vdir = str_dup(sqlite3_column_text(dbr, 0));
-	else
-		vdir = NULL;
+		sqlite3_finalize(dbr);
+	}
 
 	if (str_isempty(vdir)) {
 		vbasedir = cfg_getstr(cfg, "vbasedir");
 		vdir = str_path_concat(vbasedir, name);
 	}
 
-	sqlite3_finalize(dbr);
 	return vdir;
 }
