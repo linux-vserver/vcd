@@ -360,25 +360,41 @@ xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int 
 	if (str_isempty(opts))
 		opts = "defaults";
 
-	if (chroot_secure_chdir(vdir, dst) == -1)
-		method_return_sys_fault(env, "chroot_secure_chdir");
-
 	log_debug("mount(%d): %s %s %s %s", xid, src, dst, type, opts);
 
-	status = exec_fork_pipe(&buf, "/bin/mount -n -t %s -o %s %s .",
-			type, opts, src);
+	switch ((pid = fork())) {
+	case -1:
+		method_return_sys_fault(env, "ns_clone");
 
-	if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
-		method_return_faultf(env, MEEXEC + WEXITSTATUS(status),
-				"command '/bin/mount -n -t %s -o %s %s %s' failed:\n%s",
-				type, opts, src, dst, buf);
+	case 0:
+		if (ns_enter(xid, 0) == -1)
+			exit(errno);
 
-	if (WIFSIGNALED(status))
-		method_return_faultf(env, MEEXEC,
-				"command '/bin/mount -n -t %s -o %s %s %s' caught signal: %s",
-				type, opts, src, dst, strsignal(WTERMSIG(status)));
+		if (chroot_secure_chdir(vdir, dst) == -1)
+			exit(errno);
 
-	dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+		exec_replace("/bin/mount -n -t %s -o %s %s .",
+				type, opts, src);
+
+		exit(errno);
+
+	default:
+		if (waitpid(pid, &status, 0) == -1)
+			method_return_sys_fault(env, "waitpid");
+
+		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
+			method_return_faultf(env, MEEXEC + WEXITSTATUS(status),
+					"command '/bin/mount -n -t %s -o %s %s %s' failed:\n%s",
+					type, opts, src, dst, buf);
+
+		if (WIFSIGNALED(status))
+			method_return_faultf(env, MEEXEC,
+					"command '/bin/mount -n -t %s -o %s %s %s' caught signal: %s",
+					type, opts, src, dst, strsignal(WTERMSIG(status)));
+
+		dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+	}
+
 	return NULL;
 }
 
@@ -392,9 +408,6 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 	int rc, mtabfd;
 
 	log_debug("vdir(%d): %s", xid, vdir);
-
-	if (ns_enter(xid, 0) == -1)
-		method_return_sys_fault(env, "vx_enter_namespace");
 
 	if (chroot_secure_chdir(vdir, "/etc") == -1)
 		method_return_sys_fault(env, "chroot_secure_chdir");
@@ -484,7 +497,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (rc == SQLITE_OK)
 		vxdb_foreach_step(rc, dbr)
 			init = str_dup(sqlite3_column_text(dbr, 0));
-	
+
 	if (rc != SQLITE_DONE)
 		method_set_vxdb_fault(env);
 
