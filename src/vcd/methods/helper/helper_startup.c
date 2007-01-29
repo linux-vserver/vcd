@@ -347,8 +347,6 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env)
 static
 xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int mtabfd)
 {
-	int status;
-	char *buf = NULL;
 	const char *src  = sqlite3_column_text(dbr, 0);
 	const char *dst  = sqlite3_column_text(dbr, 1);
 	const char *type = sqlite3_column_text(dbr, 2);
@@ -361,6 +359,9 @@ xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int 
 		opts = "defaults";
 
 	log_debug("mount(%d): %s %s %s %s", xid, src, dst, type, opts);
+
+	pid_t pid;
+	int status;
 
 	switch ((pid = fork())) {
 	case -1:
@@ -384,8 +385,8 @@ xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int 
 
 		if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 			method_return_faultf(env, MEEXEC + WEXITSTATUS(status),
-					"command '/bin/mount -n -t %s -o %s %s %s' failed:\n%s",
-					type, opts, src, dst, buf);
+					"command '/bin/mount -n -t %s -o %s %s %s' failed",
+					type, opts, src, dst);
 
 		if (WIFSIGNALED(status))
 			method_return_faultf(env, MEEXEC,
