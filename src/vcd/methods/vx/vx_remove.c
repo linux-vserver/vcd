@@ -49,21 +49,25 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(vdir = vxdb_getvdir(name)))
 		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
 
-	rc = vxdb_exec("BEGIN TRANSACTION;"
-			"DELETE FROM dx_limit     WHERE xid = %1$d;"
-			"DELETE FROM init         WHERE xid = %1$d;"
-			"DELETE FROM nx_addr      WHERE xid = %1$d;"
-			"DELETE FROM nx_broadcast WHERE xid = %1$d;"
-			"DELETE FROM vx_bcaps     WHERE xid = %1$d;"
-			"DELETE FROM vx_ccaps     WHERE xid = %1$d;"
-			"DELETE FROM vx_flags     WHERE xid = %1$d;"
-			"DELETE FROM vx_limit     WHERE xid = %1$d;"
-			"DELETE FROM vx_sched     WHERE xid = %1$d;"
-			"DELETE FROM vx_uname     WHERE xid = %1$d;"
-			"DELETE FROM xid_name_map WHERE xid = %1$d;"
-			"DELETE FROM xid_uid_map  WHERE xid = %1$d;"
+	rc = vxdb_exec("BEGIN EXCLUSIVE TRANSACTION;"
+			"DELETE FROM dx_limit     WHERE xid = %d;"
+			"DELETE FROM init         WHERE xid = %d;"
+			"DELETE FROM mount        WHERE xid = %d;"
+			"DELETE FROM nx_addr      WHERE xid = %d;"
+			"DELETE FROM nx_broadcast WHERE xid = %d;"
+			"DELETE FROM restart      WHERE xid = %d;"
+			"DELETE FROM vdir         WHERE xid = %d;"
+			"DELETE FROM vx_bcaps     WHERE xid = %d;"
+			"DELETE FROM vx_ccaps     WHERE xid = %d;"
+			"DELETE FROM vx_flags     WHERE xid = %d;"
+			"DELETE FROM vx_limit     WHERE xid = %d;"
+			"DELETE FROM vx_sched     WHERE xid = %d;"
+			"DELETE FROM vx_uname     WHERE xid = %d;"
+			"DELETE FROM xid_name_map WHERE xid = %d;"
+			"DELETE FROM xid_uid_map  WHERE xid = %d;" /* 15 */
 			"COMMIT TRANSACTION;",
-			xid);
+			xid, xid, xid, xid, xid, xid, xid
+			xid, xid, xid, xid, xid, xid, xid, xid);
 
 	if (rc != SQLITE_OK)
 		method_return_vxdb_fault(env);

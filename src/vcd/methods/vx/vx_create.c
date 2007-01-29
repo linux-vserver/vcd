@@ -316,8 +316,10 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	stralloc_catf(sa,
 			"DELETE FROM dx_limit     WHERE xid = %d;"
 			"DELETE FROM init         WHERE xid = %d;"
+			"DELETE FROM mount        WHERE xid = %d;"
 			"DELETE FROM nx_addr      WHERE xid = %d;"
 			"DELETE FROM nx_broadcast WHERE xid = %d;"
+			"DELETE FROM reboot       WHERE xid = %d;"
 			"DELETE FROM vdir         WHERE xid = %d;"
 			"DELETE FROM vx_bcaps     WHERE xid = %d;"
 			"DELETE FROM vx_ccaps     WHERE xid = %d;"
@@ -325,9 +327,9 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 			"DELETE FROM vx_limit     WHERE xid = %d;"
 			"DELETE FROM vx_sched     WHERE xid = %d;"
 			"DELETE FROM vx_uname     WHERE xid = %d;"
-			"DELETE FROM xid_name_map WHERE xid = %d;", /* 12 */
-			xid, xid, xid, xid, xid, xid,
-			xid, xid, xid, xid, xid, xid);
+			"DELETE FROM xid_name_map WHERE xid = %d;", /* 14 */
+			xid, xid, xid, xid, xid, xid, xid
+			xid, xid, xid, xid, xid, xid, xid);
 
 	/* get init configuration */
 	const char *init   = cfg_getstr(tcfg, "init");
