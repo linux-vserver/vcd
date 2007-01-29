@@ -66,7 +66,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"DELETE FROM xid_name_map WHERE xid = %d;"
 			"DELETE FROM xid_uid_map  WHERE xid = %d;" /* 15 */
 			"COMMIT TRANSACTION;",
-			xid, xid, xid, xid, xid, xid, xid
+			xid, xid, xid, xid, xid, xid, xid,
 			xid, xid, xid, xid, xid, xid, xid, xid);
 
 	if (rc != SQLITE_OK)

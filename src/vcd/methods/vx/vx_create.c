@@ -328,7 +328,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 			"DELETE FROM vx_sched     WHERE xid = %d;"
 			"DELETE FROM vx_uname     WHERE xid = %d;"
 			"DELETE FROM xid_name_map WHERE xid = %d;", /* 14 */
-			xid, xid, xid, xid, xid, xid, xid
+			xid, xid, xid, xid, xid, xid, xid,
 			xid, xid, xid, xid, xid, xid, xid);
 
 	/* get init configuration */
