@@ -25,12 +25,14 @@
 #include "methods.h"
 #include "vxdb.h"
 
+#define _LUCID_PRINTF_MACROS
 #include <lucid/chroot.h>
 #include <lucid/flist.h>
 #include <lucid/mem.h>
 #include <lucid/misc.h>
 #include <lucid/log.h>
 #include <lucid/open.h>
+#include <lucid/printf.h>
 #include <lucid/str.h>
 #include <lucid/stralloc.h>
 
@@ -280,11 +282,11 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 {
 	LOG_TRACEME
 
-	char *tconf;
-	if (vasprintf(&tconf, "%s.conf", tdir) < 1)
-		method_return_sys_fault(env, "vasprintf");
+	char *tconf = NULL;
 
-	if (!isfile(tconf))
+	asprintf(&tconf, "%s.conf", tdir);
+
+	if (str_isempty(tconf) || !isfile(tconf))
 		tconf = "/dev/null";
 
 	cfg_t *tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
