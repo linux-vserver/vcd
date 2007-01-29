@@ -84,6 +84,10 @@ int handle_file(const char *fpath, const struct stat *sb,
 		.mask  = IATTR_IUNLINK|IATTR_IMMUTABLE,
 	};
 
+	/* skip vdir */
+	if (ftwbuf->level < 1)
+		return FTW_CONTINUE;
+
 	/* skip character/block devices, fifos and sockets */
 	if (S_ISCHR(sb->st_mode) ||
 			S_ISBLK(sb->st_mode) ||
@@ -102,6 +106,8 @@ int handle_file(const char *fpath, const struct stat *sb,
 	attr.filename = src;
 
 	/* just to be sure */
+	int curfd = open_read(".");
+
 	if (fchdir(vdirfd) == -1) {
 		method_set_sys_fault(global_env, "fchdir");
 		return FTW_STOP;
@@ -120,6 +126,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 			return FTW_STOP;
 		}
 
+		fchdir(curfd);
 		return FTW_CONTINUE;
 
 	case FTW_F:
@@ -134,6 +141,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 			return FTW_STOP;
 		}
 
+		fchdir(curfd);
 		return FTW_CONTINUE;
 
 	case FTW_SL:
@@ -148,6 +156,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 			return FTW_STOP;
 		}
 
+		fchdir(curfd);
 		return FTW_CONTINUE;
 
 	default:
