@@ -252,10 +252,10 @@ xmlrpc_value *find_free_xid(xmlrpc_env *env)
 
 			else if (max < 65535)
 				xid = max + 1;
-	
+
 			else if (cnt < 65535) {
 				int i;
-	
+
 				for (i = 2; i < 65535; i++) {
 					if (!vxdb_getname(i)) {
 						xid = i;
@@ -469,6 +469,10 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!str_path_isabs(vdir))
 		method_return_faultf(env, MEINVAL,
 				"invalid vdir: %s", vdir);
+
+	if (str_len(vdir) > 31)
+		method_return_faultf(env, MEINVAL,
+				"vdir too long: %s", vdir);
 
 	if (!force && ispath(vdir))
 		method_return_faultf(env, MEEXIST,

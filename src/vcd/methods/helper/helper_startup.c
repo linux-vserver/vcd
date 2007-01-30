@@ -259,7 +259,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 }
 
 static
-xmlrpc_value *context_uname(xmlrpc_env *env)
+xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 {
 	LOG_TRACEME
 
@@ -300,7 +300,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env)
 
 	if (!str_isempty(name)) {
 		uname.id = VHIN_CONTEXT;
-		snprintf(uname.value, 65, "%s", name);
+		snprintf(uname.value, 65, "%s:%s", name, vdir);
 
 		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
 
@@ -514,7 +514,7 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	context_scheduler(env);
 	method_return_if_fault(env);
 
-	context_uname(env);
+	context_uname(env, vdir);
 	method_return_if_fault(env);
 
 	namespace_setup(env);

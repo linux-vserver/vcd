@@ -94,30 +94,30 @@ int vshelper_restart(xmlrpc_env *env, xid_t xid)
 		.flags = 0,
 		.mask = NXF_PERSISTENT,
 	};
-	
+
 	vx_flags_t vflags = {
 		.flags = VXF_REBOOT_KILL,
 		.mask  = VXF_REBOOT_KILL|VXF_PERSISTENT,
 	};
-	
+
 	log_info("context %d has commited suicide with rebirth request", xid);
-	
+
 	xmlrpc_client_call(env, uri, "helper.restart",
 	                   SIGNATURE("{s:i}"),
 	                   "xid", xid);
 	log_and_return_if_fault(env);
-	
+
 	log_info("context %d has been scheduled for rebirth", xid);
-	
+
 	if (nx_flags_set(xid, &nflags) == -1)
 		log_perror("nx_flags_set(%d)", xid);
-	
+
 	else if (vx_flags_set(xid, &vflags) == -1)
 		log_perror("vx_flags_set(%d)", xid);
-	
+
 	else
 		return EXIT_SUCCESS;
-	
+
 	return EXIT_FAILURE;
 }
 
@@ -128,23 +128,23 @@ int vshelper_halt(xmlrpc_env *env, xid_t xid)
 		.flags = 0,
 		.mask = NXF_PERSISTENT,
 	};
-	
+
 	vx_flags_t vflags = {
 		.flags = VXF_REBOOT_KILL,
 		.mask  = VXF_REBOOT_KILL|VXF_PERSISTENT,
 	};
-	
+
 	log_info("context %d has commited suicide", xid);
-	
+
 	if (nx_flags_set(xid, &nflags) == -1)
 		log_perror("nx_flags_set(%d)", xid);
-	
+
 	else if (vx_flags_set(xid, &vflags) == -1)
 		log_perror("vx_flags_set(%d)", xid);
-	
+
 	else
 		return EXIT_SUCCESS;
-	
+
 	return EXIT_FAILURE;
 }
 
@@ -152,7 +152,7 @@ static
 int vshelper_swsusp(xmlrpc_env *env, xid_t xid)
 {
 	log_info("context %d has requested to be suspended - fool!", xid);
-	
+
 	return EXIT_FAILURE;
 }
 
@@ -162,91 +162,91 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	xmlrpc_value *response;
 	char *vdir, *init;
 	int i;
-	
+
 	vx_flags_t migrate_flags = {
 		.flags = VXM_SET_INIT|VXM_SET_REAPER,
 	};
-	
+
 	log_info("context %d emerges from the darkness", xid);
-	
+
 	response = xmlrpc_client_call(env, uri, "helper.startup",
 	                              SIGNATURE("{s:i}"),
 	                              "xid", xid);
 	log_and_return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, response,
 		"{s:s,s:s,*}",
 		"vdir", &vdir,
 		"init", &init);
 	log_and_return_if_fault(env);
-	
+
 	switch (fork()) {
 	case -1:
 		log_perror("fork");
 		break;
-	
+
 	case 0:
 		if (ns_enter(xid, 0) == -1)
 			log_perror("vx_enter_namespace(%d)", xid);
-		
+
 		else if (chroot_secure_chdir(vdir, "/") == -1)
 			log_perror("chroot_secure_chdir(%s)", vdir);
-		
+
 		else if (chroot(".") == -1)
 			log_perror("chroot");
-		
+
 		else if (nx_migrate(xid) == -1)
 			log_perror("nx_migrate(%d)", xid);
-		
-		else if (vx_migrate(xid, &migrate_flags) == -1)
-			log_perror("vx_migrate(%d)", xid);
-		
+
 		for (i = 0; i < 256; i++)
 			close(i);
-		
+
+		if (vx_migrate(xid, &migrate_flags) == -1)
+			exit(errno);
+
 		clearenv();
-		
+
 		exec_replace(init);
 		exit(EXIT_FAILURE);
-	
+
 	default:
 		log_info("context %d is up - now starting init", xid);
 		break;
 	}
-	
+
 	int n = 0;
 	vx_stat_t stat;
 	nx_flags_t nflags = { .flags = 0, .mask = VXF_PERSISTENT };
 	vx_flags_t vflags = { .flags = 0, .mask = NXF_PERSISTENT };
-	
+
 	while (n++ < 5) {
 		sleep(1);
-		
+
 		if (vx_stat(xid, &stat) == -1)
 			log_perror("vx_info(%d)", xid);
-		
+
 		else if (stat.tasks > 0) {
 			if (nx_flags_set(xid, &nflags) == -1)
 				log_perror("nx_flags_set(%d)", xid);
-			
+
 			if (vx_flags_set(xid, &vflags) == -1)
 				log_perror("vx_flags_set(%d)", xid);
-			
+
 			return EXIT_SUCCESS;
 		}
-		
+
 		log_error("task count for context %d still zero after %d %s",
 		          xid, n, n > 1 ? "seconds" : "second");
 	}
-	
+
 	log_error("context %d failed to start init - shutting down", xid);
-	
+
 	if (nx_flags_set(xid, &nflags) == -1)
 		log_perror("nx_flags_set(%d)", xid);
-	
+
 	if (vx_flags_set(xid, &vflags) == -1)
 		log_perror("vx_flags_set(%d)", xid);
-	
+
 	return EXIT_FAILURE;
 }
 
@@ -254,14 +254,14 @@ static
 int vshelper_shutdown(xmlrpc_env *env, xid_t xid)
 {
 	xmlrpc_value *response;
-	
+
 	log_info("context %d has fallen into oblivion - checking rebirth schedule", xid);
-	
+
 	response = xmlrpc_client_call(env, uri, "helper.shutdown",
 	                              SIGNATURE("{s:i}"),
 	                              "xid", xid);
 	log_and_return_if_fault(env);
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -269,14 +269,14 @@ static
 int vshelper_netup(xmlrpc_env *env, xid_t xid)
 {
 	log_info("network context %d emerges from the darkness", xid);
-	
+
 	xmlrpc_client_call(env, uri, "helper.netup",
 	                   SIGNATURE("{s:i}"),
 	                   "xid", xid);
 	log_and_return_if_fault(env);
-	
+
 	log_info("network context %d is up", xid);
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -284,7 +284,7 @@ static
 int vshelper_netdown(xmlrpc_env *env, xid_t xid)
 {
 	log_info("network context %d has fallen into oblivion", xid);
-	
+
 	return EXIT_SUCCESS;
 }
 
@@ -294,31 +294,31 @@ int do_vshelper(xid_t xid, action_t *action)
 	char *host;
 	int port, ret = EXIT_FAILURE;
 	xmlrpc_env env;
-	
+
 	host = cfg_getstr(cfg, "host");
 	port = cfg_getint(cfg, "port");
 	user = cfg_getstr(cfg, "user");
 	pass = cfg_getstr(cfg, "pass");
-	
+
 	asprintf(&uri, "http://%s:%d/RPC2", host, port);
-	
+
 	/* init xmlrpc environment */
 	xmlrpc_env_init(&env);
-	
+
 	/* init xmlrpc client */
 	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, "vshelper", PACKAGE_VERSION, NULL, 0);
-	
+
 	if (env.fault_occurred)
 		log_error("could not init xmlrpc client: %s", env.fault_string);
-	
+
 	else
 		ret = action->func(&env, xid);
-	
+
 	xmlrpc_env_clean(&env);
 	xmlrpc_client_cleanup();
-	
+
 	log_info("vshelper returns with %d", ret);
-	
+
 	return ret;
 }
 
@@ -326,23 +326,23 @@ int main(int argc, char *argv[])
 {
 	int i, xid;
 	const char *action, *logfile;
-	
+
 	/* load configuration */
 	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
-	
+
 	switch (cfg_parse(cfg, SYSCONFDIR "/vshelper.conf")) {
 	case CFG_FILE_ERROR:
 		exit(EXIT_FAILURE);
-	
+
 	case CFG_PARSE_ERROR:
 		exit(EXIT_FAILURE);
-	
+
 	default:
 		break;
 	}
-	
+
 	atexit(cfg_atexit);
-	
+
 	/* start logging & debugging */
 	log_options_t log_options = {
 		.ident  = argv[0],
@@ -350,33 +350,33 @@ int main(int argc, char *argv[])
 		.time   = true,
 		.flags  = LOG_PID,
 	};
-	
+
 	logfile = cfg_getstr(cfg, "logfile");
-	
+
 	if (logfile && strlen(logfile) > 0) {
 		log_options.fd = open_append(logfile);
 		log_options.file = true;
 	}
-	
+
 	log_init(&log_options);
-	
+
 	/* parse command line */
 	if (argc < 2)
 		log_error_and_die("no action specified");
-	
+
 	if (argc < 3)
 		log_error_and_die("no xid specified");
-	
+
 	action = argv[1];
 	xid    = atoi(argv[2]);
-	
+
 	if (xid < 2 || xid > 65535)
 		log_error_and_die("invalid xid: %d", xid);
-	
+
 	for (i = 0; ACTIONS[i].name; i++)
 		if (strcmp(ACTIONS[i].name, action) == 0)
 			exit(do_vshelper(xid, &ACTIONS[i]));
-	
+
 	log_error("invalid action: %s", action);
 	exit(EXIT_FAILURE);
 }

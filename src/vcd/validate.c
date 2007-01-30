@@ -28,7 +28,7 @@ int validate_name(const char *name)
 {
 	LOG_TRACEME
 	return !(str_isempty(name) || str_len(name) < 3 ||
-			str_len(name) > 64 || !str_isalnum(name));
+			str_len(name) > 32 || !str_isalnum(name));
 }
 
 int validate_xid(xid_t xid)
