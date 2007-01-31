@@ -135,7 +135,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 		attr.filename = src;
 
 		/* link file */
-		if (ix_attr_set(&attr) == -1) {
+		if (typeflag == FTW_F && ix_attr_set(&attr) == -1) {
 			method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
 			return FTW_STOP;
 		}
