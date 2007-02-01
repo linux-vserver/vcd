@@ -15,11 +15,9 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
+
+#include <lucid/scanf.h>
 
 #include "cmd.h"
 
@@ -34,7 +32,7 @@ void cmd_create(xmlrpc_env *env, int argc, char **argv)
 	template = argv[0];
 	
 	if (argc > 1)
-		force = atoi(argv[1]);
+		sscanf(argv[1], "%d", &force);
 
 	if (argc > 2)
 		vdir = argv[2];

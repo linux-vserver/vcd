@@ -15,15 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
-#include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
+
 #include <lucid/log.h>
-#include <lucid/mem.h>
+#include <lucid/printf.h>
 #include <lucid/strtok.h>
 
 #include "cmd.h"
@@ -49,8 +44,6 @@ void cmd_exec(xmlrpc_env *env, int argc, char **argv)
 		"name", name,
 		"command", command);
 	return_if_fault(env);
-
-	mem_free(command);
 
 	xmlrpc_decompose_value(env, result, "s", &output);
 	return_if_fault(env);

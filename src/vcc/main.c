@@ -15,21 +15,21 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <getopt.h>
 #include <termios.h>
 #include <confuse.h>
+
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
+
 #include <lucid/log.h>
+#include <lucid/misc.h>
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
 #include <lucid/str.h>
+
 #include "cmd.h"
 
 static char *host = "localhost";
@@ -74,13 +74,13 @@ void read_config(char *file, int ignore_noent)
 	cfg_t *cfg;
 	
 	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
+
+	if (ignore_noent && !isfile(file))
+		file = "/dev/null";
 	
 	switch (cfg_parse(cfg, file)) {
 	case CFG_FILE_ERROR:
-		if (ignore_noent)
-			break;
-		else
-			log_perror_and_die("cfg_parse");
+		log_perror_and_die("cfg_parse");
 	
 	case CFG_PARSE_ERROR:
 		log_error_and_die("cfg_parse: Parse error\n");
@@ -130,8 +130,7 @@ void read_password(void)
 
 int main(int argc, char **argv)
 {
-	char c, *cmd;
-	int i;
+	char *cmd;
 	xmlrpc_env env;
 	
 	log_options_t log_options = {
@@ -142,8 +141,10 @@ int main(int argc, char **argv)
 	};
 	
 	log_init(&log_options);
-	
+
 	read_config(SYSCONFDIR "/vcc.conf", 1);
+	
+	char c;
 	
 	/* parse command line */
 	while ((c = getopt(argc, argv, "c:h:p:u:")) != -1) {
@@ -157,7 +158,7 @@ int main(int argc, char **argv)
 			break;
 		
 		case 'p':
-			port = atoi(optarg);
+			sscanf(optarg, "%d", &port);
 			break;
 		
 		case 'u':
@@ -175,9 +176,11 @@ int main(int argc, char **argv)
 	
 	cmd  = argv[optind++];
 	name = argv[optind++];
+
+	int i;
 	
 	for (i = 0; CMDS[i].name; i++)
-		if (strcmp(cmd, CMDS[i].name) == 0)
+		if (str_equal(cmd, CMDS[i].name))
 			goto init;
 	
 	log_error_and_die("invalid command: %s", cmd);
@@ -196,7 +199,7 @@ init:
 	read_password();
 	
 	for (i = 0; CMDS[i].name; i++)
-		if (strcmp(cmd, CMDS[i].name) == 0)
+		if (str_equal(cmd, CMDS[i].name))
 			CMDS[i].func(&env, argc - optind, argv + optind);
 	
 	if (env.fault_occurred)
