@@ -28,7 +28,6 @@
 #include "methods.h"
 #include "vxdb.h"
 
-#define _LUCID_PRINTF_MACROS
 #include <lucid/log.h>
 #include <lucid/mem.h>
 #include <lucid/open.h>
@@ -72,6 +71,7 @@ void usage(int rc)
 	exit(rc);
 }
 
+static
 void sigsegv_handler(int sig, siginfo_t *info, void *ucontext)
 {
 	log_error("Received SIGSEGV for virtual address %p (%d,%d)",
@@ -88,6 +88,7 @@ int main(int argc, char **argv)
 	char *cfg_file = SYSCONFDIR "/vcd.conf";
 	int c, debug = 0;
 
+	/* install SIGSEGV handler */
 	struct sigaction sa;
 
 	sa.sa_sigaction = sigsegv_handler;
@@ -99,7 +100,6 @@ int main(int argc, char **argv)
 		dprintf(STDERR_FILENO, "sigaction: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-
 
 	/* parse command line */
 	while ((c = getopt(argc, argv, "dc:")) != -1) {

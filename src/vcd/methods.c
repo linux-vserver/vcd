@@ -23,7 +23,6 @@
 #include "methods.h"
 #include "validate.h"
 
-#define _LUCID_PRINTF_MACROS
 #include <lucid/log.h>
 #include <lucid/misc.h>
 #include <lucid/open.h>

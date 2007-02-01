@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -34,9 +35,9 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"name", &name,
-		"username", &user);
+			"{s:s,s:s,*}",
+			"name", &name,
+			"username", &user);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &user);
@@ -52,16 +53,16 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (uid)
 		rc = vxdb_exec(
-			"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
-			xid, uid);
+				"DELETE FROM xid_uid_map WHERE xid = %d AND uid = %d",
+				xid, uid);
 
 	else
 		rc = vxdb_exec(
-			"DELETE FROM xid_uid_map WHERE xid = %d",
-			xid);
+				"DELETE FROM xid_uid_map WHERE xid = %d",
+				xid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

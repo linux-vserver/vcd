@@ -16,10 +16,10 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_nx_broadcast_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -35,36 +35,29 @@ xmlrpc_value *m_vxdb_nx_broadcast_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,*}",
-		"name", &name);
+			"{s:s,*}",
+			"name", &name);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_prepare(&dbr,
-		"SELECT broadcast FROM nx_broadcast "
-		"WHERE xid = %d",
-		xid);
+			"SELECT broadcast FROM nx_broadcast "
+			"WHERE xid = %d",
+			xid);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
-	else {
-		rc = vxdb_step(dbr);
+	rc = vxdb_step(dbr);
 
-		if (rc == -1)
-			method_set_fault(env, MEVXDB);
-
-		else if (rc == 0)
-			response = xmlrpc_build_value(env, "s", "");
-
-		else
-			response = xmlrpc_build_value(env, "s", sqlite3_column_text(dbr, 0));
-	}
+	if (rc == SQLITE_ROW)
+		response = xmlrpc_build_value(env, "s", sqlite3_column_text(dbr, 0));
+	else if (rc == SQLITE_DONE)
+		response = xmlrpc_build_value(env, "s", "");
+	else
+		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
 

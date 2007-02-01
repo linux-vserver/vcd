@@ -19,7 +19,6 @@
 
 #include "cfg.h"
 
-#define _LUCID_SCANF_MACROS
 #include <lucid/addr.h>
 #include <lucid/log.h>
 #include <lucid/scanf.h>

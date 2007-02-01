@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -34,28 +35,27 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:i,s:i,s:i,*}",
-		"name", &name,
-		"path", &path,
-		"space", &space,
-		"inodes", &inodes,
-		"reserved", &reserved);
+			"{s:s,s:s,s:i,s:i,s:i,*}",
+			"name", &name,
+			"path", &path,
+			"space", &space,
+			"inodes", &inodes,
+			"reserved", &reserved);
 	method_return_if_fault(env);
 
-	if (!validate_name(name) || !validate_path(path) ||
-	    !validate_dlimits(space, inodes, reserved))
+	if (!validate_path(path) || !validate_dlimits(space, inodes, reserved))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO dx_limit (xid, path, space, inodes, reserved) "
-		"VALUES (%d, '%s', %d, %d, %d)",
-		xid, path, space, inodes, reserved);
+			"INSERT OR REPLACE INTO dx_limit (xid, path, space, inodes, reserved) "
+			"VALUES (%d, '%s', %d, %d, %d)",
+			xid, path, space, inodes, reserved);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

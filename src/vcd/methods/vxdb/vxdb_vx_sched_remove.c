@@ -16,10 +16,10 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -34,27 +34,25 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:i,*}",
-		"name", &name,
-		"cpuid", &cpuid);
+			"{s:s,s:i,*}",
+			"name", &name,
+			"cpuid", &cpuid);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
+	/* TODO: -2 ?? */
 	if (cpuid == -2)
 		rc = vxdb_exec("DELETE FROM vx_sched WHERE xid = %d", xid);
 
 	else
 		rc = vxdb_exec(
-			"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
-			xid, cpuid);
+				"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
+				xid, cpuid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

@@ -15,13 +15,13 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <lucid/str.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
+#include <lucid/str.h>
 
 xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -36,11 +36,11 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:s,s:s,*}",
-		"name", &name,
-		"init", &init,
-		"halt", &halt,
-		"reboot", &reboot);
+			"{s:s,s:s,s:s,s:s,*}",
+			"name", &name,
+			"init", &init,
+			"halt", &halt,
+			"reboot", &reboot);
 	method_return_if_fault(env);
 
 	method_empty_params(3, &init, &halt, &reboot);
@@ -54,8 +54,7 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!reboot)
 		reboot = "/sbin/reboot";
 
-	if (!validate_name(name) ||
-	    !str_path_isabs(init) ||
+	if (!str_path_isabs(init) ||
 	    !str_path_isabs(halt) ||
 	    !str_path_isabs(reboot))
 		method_return_fault(env, MEINVAL);
@@ -64,12 +63,12 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO init (xid, init, halt, reboot) "
-		"VALUES (%d, '%s', '%s', '%s')",
-		xid, init, halt, reboot);
+			"INSERT OR REPLACE INTO init (xid, init, halt, reboot) "
+			"VALUES (%d, '%s', '%s', '%s')",
+			xid, init, halt, reboot);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

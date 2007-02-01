@@ -25,7 +25,6 @@
 #include "methods.h"
 #include "vxdb.h"
 
-#define _LUCID_PRINTF_MACROS
 #include <lucid/chroot.h>
 #include <lucid/flist.h>
 #include <lucid/mem.h>

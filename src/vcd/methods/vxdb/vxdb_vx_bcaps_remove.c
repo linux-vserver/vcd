@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vx_bcaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -34,14 +35,14 @@ xmlrpc_value *m_vxdb_vx_bcaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"name", &name,
-		"bcap", &bcap);
+			"{s:s,s:s,*}",
+			"name", &name,
+			"bcap", &bcap);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &bcap);
 
-	if (!validate_name(name) || (bcap && !validate_bcap(bcap)))
+	if (bcap && !validate_bcap(bcap))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
@@ -49,16 +50,16 @@ xmlrpc_value *m_vxdb_vx_bcaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (bcap)
 		rc = vxdb_exec(
-			"DELETE FROM vx_bcaps WHERE xid = %d AND bcap = '%s'",
-			xid, bcap);
+				"DELETE FROM vx_bcaps WHERE xid = %d AND bcap = '%s'",
+				xid, bcap);
 
 	else
 		rc = vxdb_exec(
-			"DELETE FROM vx_bcaps WHERE xid = %d",
-			xid);
+				"DELETE FROM vx_bcaps WHERE xid = %d",
+				xid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

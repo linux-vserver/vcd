@@ -20,6 +20,7 @@
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/str.h>
 
 /* vx.reboot(string name) */
 xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -54,7 +55,7 @@ xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (rc == SQLITE_OK)
 		vxdb_foreach_step(rc, dbr)
-			reboot = strdup(sqlite3_column_text(dbr, 0));
+			reboot = str_dup(sqlite3_column_text(dbr, 0));
 
 	if (rc != SQLITE_DONE)
 		method_set_vxdb_fault(env);

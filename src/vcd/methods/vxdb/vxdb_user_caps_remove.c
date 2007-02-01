@@ -15,14 +15,12 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <string.h>
-#include <lucid/str.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -37,9 +35,9 @@ xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"username", &user,
-		"cap", &cap);
+			"{s:s,s:s,*}",
+			"username", &user,
+			"cap", &cap);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &cap);
@@ -52,16 +50,16 @@ xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (cap)
 		rc = vxdb_exec(
-			"DELETE FROM user_caps WHERE uid = %d AND cap = '%s'",
-			uid, cap);
+				"DELETE FROM user_caps WHERE uid = %d AND cap = '%s'",
+				uid, cap);
 
 	else
 		rc = vxdb_exec(
-			"DELETE FROM user_caps WHERE uid = %d",
-			uid);
+				"DELETE FROM user_caps WHERE uid = %d",
+				uid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

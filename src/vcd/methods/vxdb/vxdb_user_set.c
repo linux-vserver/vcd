@@ -15,16 +15,14 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <string.h>
-
-#include <stdlib.h>
-#include <lucid/whirlpool.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
+#include <lucid/str.h>
+#include <lucid/whirlpool.h>
 
 xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -39,10 +37,10 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:b,*}",
-		"username", &user,
-		"password", &pass,
-		"admin", &admin);
+			"{s:s,s:s,s:b,*}",
+			"username", &user,
+			"password", &pass,
+			"admin", &admin);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &pass);
@@ -58,61 +56,55 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 		rc = vxdb_prepare(&dbr, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
 
-		if (rc)
-			method_set_fault(env, MEVXDB);
+		if (rc != SQLITE_OK)
+			method_return_vxdb_fault(env);
 
-		else {
-			rc = vxdb_step(dbr);
+		rc = vxdb_step(dbr);
 
-			if (rc == -1)
-				method_set_fault(env, MEVXDB);
+		if (rc == SQLITE_ROW)
+			uid = sqlite3_column_int(dbr, 0);
+		else if (rc != SQLITE_DONE)
+			method_set_vxdb_fault(env);
 
-			else if (rc == 1)
-				uid = sqlite3_column_int(dbr, 0);
+		uid++;
 
-			uid++;
+		sqlite3_finalize(dbr);
+		method_return_if_fault(env);
 
-			sqlite3_finalize(dbr);
+		if (str_cmpn(pass, "WHIRLPOOLENC//", 14) == 0)
+			whirlpool_pass = str_dup(pass+14);
+		else
+			whirlpool_pass = whirlpool_digest(pass);
 
-			if (!strncmp(pass, "WHIRLPOOLENC//", 14)) {
-				whirlpool_pass = strdup(pass+14);
-			}
-			else {
-				whirlpool_pass = whirlpool_digest(pass);
-			}
-
-			rc = vxdb_exec(
+		rc = vxdb_exec(
 				"INSERT INTO user (uid, name, password, admin) "
 				"VALUES (%d, '%s', '%s', %d)",
 				uid, user, whirlpool_pass, admin);
 
-			if (rc)
-				method_set_fault(env, MEVXDB);
-		}
+		if (rc != SQLITE_OK)
+			method_return_vxdb_fault(env);
 	}
 
 	else {
 		rc = vxdb_exec(
-			"UPDATE user SET admin = %d WHERE uid = %d",
-			admin, uid);
+				"UPDATE user SET admin = %d WHERE uid = %d",
+				admin, uid);
 
-		if (rc)
-			method_set_fault(env, MEVXDB);
+		if (rc != SQLITE_OK)
+			method_return_vxdb_fault(env);
 
-		else if (pass) {
-			if (!strncmp(pass, "WHIRLPOOLENC//", 14)) {
-				whirlpool_pass = strdup(pass+14);
-			}
-			else {
+		if (pass) {
+			if (str_cmpn(pass, "WHIRLPOOLENC//", 14) == 0)
+				whirlpool_pass = str_dup(pass+14);
+			else
 				whirlpool_pass = whirlpool_digest(pass);
-			}
 
 			rc = vxdb_exec(
-				"UPDATE user SET password = '%s' WHERE uid = %d",
-				whirlpool_pass, uid);
+					"UPDATE user SET password = '%s' WHERE uid = %d",
+					whirlpool_pass, uid);
 
-			if (rc)
-				method_set_fault(env, MEVXDB);
+			if (rc != SQLITE_OK)
+				method_return_vxdb_fault(env);
 		}
 	}
 

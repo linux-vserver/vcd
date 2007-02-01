@@ -16,11 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include "lists.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -30,64 +30,50 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name, *uname;
 	xid_t xid;
 	vxdb_result *dbr;
-	int i, rc;
+	int rc;
 
 	params = method_init(env, p, c, VCD_CAP_UNAME, M_OWNER);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"name", &name,
-		"uname", &uname);
+			"{s:s,s:s,*}",
+			"name", &name,
+			"uname", &uname);
 	method_return_if_fault(env);
 
 	method_empty_params(2, &name, &uname);
 
-	if (!name) {
-		response = xmlrpc_array_new(env);
+	if (uname && !validate_uname(uname))
+		method_return_fault(env, MEINVAL);
 
-		for (i = 0; uname_list[i].key; i++)
-			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:s}",
-				"uname", uname_list[i].key,
-				"value", ""));
-	}
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 
-	else {
-		if (!validate_name(name) || (uname && !validate_uname(uname)))
-			method_return_fault(env, MEINVAL);
-
-		if (!(xid = vxdb_getxid(name)))
-			method_return_fault(env, MENOVPS);
-
-		if (uname)
-			rc = vxdb_prepare(&dbr,
+	if (uname)
+		rc = vxdb_prepare(&dbr,
 				"SELECT uname,value FROM vx_uname WHERE xid = %d AND uname = '%s'",
 				xid, uname);
 
-		else
-			rc = vxdb_prepare(&dbr,
+	else
+		rc = vxdb_prepare(&dbr,
 				"SELECT uname,value FROM vx_uname WHERE xid = %d",
 				xid);
 
-		if (rc)
-			method_set_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
-		else {
-			response = xmlrpc_array_new(env);
+	response = xmlrpc_array_new(env);
 
-			for (rc = vxdb_step(dbr); rc == 1; rc = vxdb_step(dbr))
-				xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-					"{s:s,s:s}",
-					"uname", sqlite3_column_text(dbr, 0),
-					"value", sqlite3_column_text(dbr, 1)));
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:s}",
+				"uname", sqlite3_column_text(dbr, 0),
+				"value", sqlite3_column_text(dbr, 1)));
 
-			if (rc == -1)
-				method_set_fault(env, MEVXDB);
-		}
+	if (rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
-		sqlite3_finalize(dbr);
-	}
+	sqlite3_finalize(dbr);
 
 	return response;
 }

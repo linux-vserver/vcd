@@ -31,17 +31,17 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:s,s:s,s:s,*}",
-		"name", &name,
-		"src", &src,
-		"dst", &dst,
-		"type", &type,
-		"opts", &opts);
+			"{s:s,s:s,s:s,s:s,s:s,*}",
+			"name", &name,
+			"src", &src,
+			"dst", &dst,
+			"type", &type,
+			"opts", &opts);
 	method_return_if_fault(env);
 
 	method_empty_params(3, &src, &type, &opts);
 
-	if (!validate_name(name) || !validate_path(dst))
+	if (!validate_path(dst))
 		method_return_fault(env, MEINVAL);
 
 	if (!src && !type)
@@ -60,12 +60,12 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		opts = "defaults";
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO mount (xid, src, dst, type, opts) "
-		"VALUES (%d, '%s', '%s', '%s', '%s')",
-		xid, src, dst, type, opts);
+			"INSERT OR REPLACE INTO mount (xid, src, dst, type, opts) "
+			"VALUES (%d, '%s', '%s', '%s', '%s')",
+			xid, src, dst, type, opts);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

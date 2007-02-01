@@ -21,7 +21,6 @@
 #include "validate.h"
 #include "vxdb.h"
 
-#define _LUCID_PRINTF_MACROS
 #include <lucid/mem.h>
 #include <lucid/log.h>
 #include <lucid/printf.h>

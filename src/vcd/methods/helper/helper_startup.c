@@ -27,8 +27,6 @@
 #include "methods.h"
 #include "vxdb.h"
 
-#define _LUCID_PRINTF_MACROS
-#define _LUCID_SCANF_MACROS
 #include <lucid/bitmap.h>
 #include <lucid/chroot.h>
 #include <lucid/exec.h>

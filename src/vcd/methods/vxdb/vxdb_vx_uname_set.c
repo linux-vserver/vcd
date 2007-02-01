@@ -15,13 +15,12 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <lucid/str.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -36,26 +35,25 @@ xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:s,*}",
-		"name", &name,
-		"uname", &uname,
-		"value", &value);
+			"{s:s,s:s,s:s,*}",
+			"name", &name,
+			"uname", &uname,
+			"value", &value);
 	method_return_if_fault(env);
 
-	if (!validate_name(name) || !validate_uname(uname) ||
-	    !validate_uname_value(value))
+	if (!validate_uname(uname) || !validate_uname_value(value))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO vx_uname (xid, uname, value) "
-		"VALUES (%d, '%s', '%s')",
-		xid, uname, value);
+			"INSERT OR REPLACE INTO vx_uname (xid, uname, value) "
+			"VALUES (%d, '%s', '%s')",
+			xid, uname, value);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

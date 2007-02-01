@@ -16,16 +16,16 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params, *response;
+	xmlrpc_value *params, *response = NULL;
 	char *name;
 	int cpuid;
 	xid_t xid;
@@ -36,37 +36,34 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:i,*}",
-		"name", &name,
-		"cpuid", &cpuid);
+			"{s:s,s:i,*}",
+			"name", &name,
+			"cpuid", &cpuid);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
+	/* TODO: -2 ?? */
 	if (cpuid == -2)
 		rc = vxdb_prepare(&dbr,
-			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
-			"FROM vx_sched WHERE xid = %d",
-			xid);
+				"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
+				"FROM vx_sched WHERE xid = %d",
+				xid);
 
 	else
 		rc = vxdb_prepare(&dbr,
-			"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
-			"FROM vx_sched WHERE xid = %d AND cpuid = %d",
-			xid, cpuid);
+				"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
+				"FROM vx_sched WHERE xid = %d AND cpuid = %d",
+				xid, cpuid);
+
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	response = xmlrpc_array_new(env);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
-
-	else {
-		for (rc = vxdb_step(dbr); rc == 1; rc = vxdb_step(dbr))
-			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
 				"cpuid",     sqlite3_column_int(dbr, 0),
 				"fillrate",  sqlite3_column_int(dbr, 1),
@@ -75,7 +72,9 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"interval2", sqlite3_column_int(dbr, 4),
 				"tokensmin", sqlite3_column_int(dbr, 5),
 				"tokensmax", sqlite3_column_int(dbr, 6)));
-	}
+
+	if (rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
 

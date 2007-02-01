@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_nx_addr_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -34,14 +35,14 @@ xmlrpc_value *m_vxdb_nx_addr_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"name", &name,
-		"addr", &addr);
+			"{s:s,s:s,*}",
+			"name", &name,
+			"addr", &addr);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &addr);
 
-	if (!validate_name(name) || (addr && !validate_addr(addr)))
+	if (addr && !validate_addr(addr))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
@@ -49,16 +50,16 @@ xmlrpc_value *m_vxdb_nx_addr_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (addr)
 		rc = vxdb_exec(
-			"DELETE FROM nx_addr WHERE xid = %d AND addr = '%s'",
-			xid, addr);
+				"DELETE FROM nx_addr WHERE xid = %d AND addr = '%s'",
+				xid, addr);
 
 	else
 		rc = vxdb_exec(
-			"DELETE FROM nx_addr WHERE xid = %d",
-			xid);
+				"DELETE FROM nx_addr WHERE xid = %d",
+				xid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

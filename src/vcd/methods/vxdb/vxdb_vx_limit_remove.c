@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -41,7 +42,7 @@ xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	method_empty_params(1, &limit);
 
-	if (!validate_name(name) || (limit && !validate_rlimit(limit)))
+	if (limit && !validate_rlimit(limit))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
@@ -49,16 +50,16 @@ xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (limit)
 		rc = vxdb_exec(
-			"DELETE FROM vx_limit WHERE xid = %d AND type = '%s'",
-			xid, limit);
+				"DELETE FROM vx_limit WHERE xid = %d AND type = '%s'",
+				xid, limit);
 
 	else
 		rc = vxdb_exec(
-			"DELETE FROM vx_limit WHERE xid = %d",
-			xid);
+				"DELETE FROM vx_limit WHERE xid = %d",
+				xid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

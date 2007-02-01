@@ -31,14 +31,14 @@ xmlrpc_value *m_vxdb_mount_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"name", &name,
-		"dst", &dst);
+			"{s:s,s:s,*}",
+			"name", &name,
+			"dst", &dst);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &dst);
 
-	if (!validate_name(name) || (dst && !validate_path(dst)))
+	if (dst && !validate_path(dst))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
@@ -46,16 +46,16 @@ xmlrpc_value *m_vxdb_mount_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (dst)
 		rc = vxdb_exec(
-			"DELETE FROM mount WHERE xid = %d AND dst = '%s'",
-			xid, dst);
+				"DELETE FROM mount WHERE xid = %d AND dst = '%s'",
+				xid, dst);
 
 	else
 		rc = vxdb_exec(
-			"DELETE FROM mount WHERE xid = %d",
-			xid);
+				"DELETE FROM mount WHERE xid = %d",
+				xid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

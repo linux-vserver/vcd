@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -34,16 +35,15 @@ xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,s:s,*}",
-		"name", &name,
-		"addr", &addr,
-		"netmask", &netmask);
+			"{s:s,s:s,s:s,*}",
+			"name", &name,
+			"addr", &addr,
+			"netmask", &netmask);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &netmask);
 
-	if (!validate_name(name) || !validate_addr(addr) ||
-	   (netmask && !validate_addr(netmask)))
+	if (!validate_addr(addr) || (netmask && !validate_addr(netmask)))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
@@ -53,12 +53,12 @@ xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		netmask = "255.255.255.255";
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO nx_addr (xid, addr, netmask) "
-		"VALUES (%d, '%s', '%s')",
-		xid, addr, netmask);
+			"INSERT OR REPLACE INTO nx_addr (xid, addr, netmask) "
+			"VALUES (%d, '%s', '%s')",
+			xid, addr, netmask);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

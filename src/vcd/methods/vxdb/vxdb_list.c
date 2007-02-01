@@ -15,13 +15,13 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <string.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
+#include <lucid/str.h>
 
 xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -36,10 +36,10 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, p,
-		"({s:s,*}{s:s,*})",
-		"username", &curuser,
-		"username", &user,
-		&params);
+			"({s:s,*}{s:s,*})",
+			"username", &curuser,
+			"username", &user,
+			&params);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &user);
@@ -53,7 +53,7 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	}
 
 	else {
-		if (user && strcmp(curuser, user) != 0)
+		if (user && !str_equal(curuser, user))
 			method_return_fault(env, MEINVAL);
 
 		uid = auth_getuid(curuser);
@@ -61,27 +61,28 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (uid)
 		rc = vxdb_prepare(&dbr,
-			"SELECT xid_name_map.name FROM xid_name_map "
-			"INNER JOIN xid_uid_map "
-			"ON xid_name_map.xid = xid_uid_map.xid "
-			"WHERE xid_uid_map.uid = %d "
-			"ORDER BY name ASC",
-			uid);
+				"SELECT xid_name_map.name FROM xid_name_map "
+				"INNER JOIN xid_uid_map "
+				"ON xid_name_map.xid = xid_uid_map.xid "
+				"WHERE xid_uid_map.uid = %d "
+				"ORDER BY name ASC",
+				uid);
 
 	else
 		rc = vxdb_prepare(&dbr,
-			"SELECT name FROM xid_name_map ORDER BY name ASC");
+				"SELECT name FROM xid_name_map ORDER BY name ASC");
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
-	else {
-		response = xmlrpc_array_new(env);
+	response = xmlrpc_array_new(env);
 
-		vxdb_foreach_step(rc, dbr)
-			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"s", sqlite3_column_text(dbr, 0)));
-	}
+	
+	if (rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
 

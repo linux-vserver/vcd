@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -34,9 +35,9 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"name", &name,
-		"username", &user);
+			"{s:s,s:s,*}",
+			"name", &name,
+			"username", &user);
 	method_return_if_fault(env);
 
 	if (!validate_name(name) || !validate_username(user))
@@ -48,11 +49,11 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	uid = auth_getuid(user);
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO xid_uid_map (xid, uid) VALUES (%d, %d)",
-		xid, uid);
+			"INSERT OR REPLACE INTO xid_uid_map (xid, uid) VALUES (%d, %d)",
+			xid, uid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

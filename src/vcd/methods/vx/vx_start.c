@@ -23,7 +23,6 @@
 #include "methods.h"
 #include "vxdb.h"
 
-#define _LUCID_PRINTF_MACROS
 #include <lucid/log.h>
 #include <lucid/printf.h>
 #include <lucid/str.h>

@@ -15,13 +15,12 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#include <lucid/str.h>
-
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -36,9 +35,9 @@ xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"username", &user,
-		"cap", &cap);
+			"{s:s,s:s,*}",
+			"username", &user,
+			"cap", &cap);
 	method_return_if_fault(env);
 
 	if (!validate_username(user) || !validate_vcd_cap(cap))
@@ -48,11 +47,11 @@ xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOUSER);
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
-		uid, cap);
+			"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
+			uid, cap);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

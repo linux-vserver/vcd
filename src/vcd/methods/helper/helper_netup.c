@@ -19,7 +19,6 @@
 #include "methods.h"
 #include "vxdb.h"
 
-#define _LUCID_PRINTF_MACROS
 #include <lucid/addr.h>
 #include <lucid/log.h>
 #include <lucid/mem.h>

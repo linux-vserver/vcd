@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -35,19 +36,16 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i,*}",
-		"name", &name,
-		"cpuid", &cpuid,
-		"fillrate", &fillrate,
-		"interval", &interval,
-		"fillrate2", &fillrate2,
-		"interval2", &interval2,
-		"tokensmin", &tokensmin,
-		"tokensmax", &tokensmax);
+			"{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i,*}",
+			"name", &name,
+			"cpuid", &cpuid,
+			"fillrate", &fillrate,
+			"interval", &interval,
+			"fillrate2", &fillrate2,
+			"interval2", &interval2,
+			"tokensmin", &tokensmin,
+			"tokensmax", &tokensmax);
 	method_return_if_fault(env);
-
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
 
 	if (!validate_token_bucket(fillrate, interval,
 	                           fillrate2, interval2,
@@ -58,14 +56,14 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-		"INSERT OR REPLACE INTO vx_sched (xid, fillrate, interval, fillrate2, "
-		"interval2, tokensmin, tokensmax, cpuid) "
-		"VALUES (%d, %d, %d, %d, %d, %d, %d, %d)",
-		xid, fillrate, interval, fillrate2, interval2,
-		tokensmin, tokensmax, cpuid);
+			"INSERT OR REPLACE INTO vx_sched (xid, fillrate, interval, fillrate2, "
+			"interval2, tokensmin, tokensmax, cpuid) "
+			"VALUES (%d, %d, %d, %d, %d, %d, %d, %d)",
+			xid, fillrate, interval, fillrate2, interval2,
+			tokensmin, tokensmax, cpuid);
 
-	if (rc)
-		method_return_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

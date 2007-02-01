@@ -17,10 +17,11 @@
 
 #include "auth.h"
 #include "lists.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -28,52 +29,42 @@ xmlrpc_value *m_vxdb_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params, *response = NULL;
 	char *user;
-	int uid, i, rc;
+	int uid, rc;
 	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,*}",
-		"username", &user);
+			"{s:s,*}",
+			"username", &user);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &user);
 
-	response = xmlrpc_array_new(env);
+	if (!validate_username(user))
+		method_return_fault(env, MEINVAL);
 
-	if (user) {
-		if (!validate_username(user))
-			method_return_fault(env, MEINVAL);
+	if (!(uid = auth_getuid(user)))
+		method_return_fault(env, MENOUSER);
 
-		if (!(uid = auth_getuid(user)))
-			method_return_fault(env, MENOUSER);
-
-		rc = vxdb_prepare(&dbr,
+	rc = vxdb_prepare(&dbr,
 			"SELECT cap FROM user_caps WHERE uid = %d",
 			uid);
 
-		if (rc)
-			method_set_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
-		else {
-			vxdb_foreach_step(rc, dbr)
-				xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-					"s", sqlite3_column_text(dbr, 0)));
+	response = xmlrpc_array_new(env);
 
-			if (rc == -1)
-				method_set_fault(env, MEVXDB);
-		}
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"s", sqlite3_column_text(dbr, 0)));
 
-		sqlite3_finalize(dbr);
-	}
+	if (rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
-	else {
-		for (i = 0; vcd_caps_list[i].key; i++)
-			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"s", vcd_caps_list[i].key));
-	}
+	sqlite3_finalize(dbr);
 
 	return response;
 }

@@ -16,10 +16,11 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include <lucid/log.h>
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
+
+#include <lucid/log.h>
 
 xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -35,14 +36,14 @@ xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-		"{s:s,s:s,*}",
-		"name", &name,
-		"addr", &addr);
+			"{s:s,s:s,*}",
+			"name", &name,
+			"addr", &addr);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &addr);
 
-	if (!validate_name(name) || (addr && !validate_addr(addr)))
+	if (addr && !validate_addr(addr))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
@@ -50,31 +51,29 @@ xmlrpc_value *m_vxdb_nx_addr_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (addr)
 		rc = vxdb_prepare(&dbr,
-			"SELECT addr,netmask FROM nx_addr "
-			"WHERE xid = %d AND addr = '%s'",
-			xid, addr);
+				"SELECT addr,netmask FROM nx_addr "
+				"WHERE xid = %d AND addr = '%s'",
+				xid, addr);
 
 	else
 		rc = vxdb_prepare(&dbr,
-			"SELECT addr,netmask FROM nx_addr "
-			"WHERE xid = %d",
-			xid);
+				"SELECT addr,netmask FROM nx_addr "
+				"WHERE xid = %d",
+				xid);
 
-	if (rc)
-		method_set_fault(env, MEVXDB);
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
-	else {
-		response = xmlrpc_array_new(env);
+	response = xmlrpc_array_new(env);
 
-		vxdb_foreach_step(rc, dbr)
-			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s}",
 				"addr",    sqlite3_column_text(dbr, 0),
 				"netmask", sqlite3_column_text(dbr, 1)));
 
-		if (rc == -1)
-			method_set_fault(env, MEVXDB);
-	}
+	if (rc != SQLITE_DONE)
+		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
 
