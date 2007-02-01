@@ -15,19 +15,15 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <termios.h>
+#include <sqlite3.h>
+
 #include <lucid/log.h>
+#include <lucid/printf.h>
 #include <lucid/str.h>
 #include <lucid/whirlpool.h>
-#include <sqlite3.h>
 
 static
 void usage(int rc)
@@ -81,7 +77,7 @@ int main(int argc, char **argv)
 		log_error_and_die("invalid username: %s", username);
 	
 	if (argc >= 4)
-		password = strdup(argv[3]);
+		password = str_dup(argv[3]);
 	
 	if (!password) {
 		write(STDERR_FILENO, "password: ", 10);
@@ -90,13 +86,13 @@ int main(int argc, char **argv)
 		write(STDERR_FILENO, "repeat password: ", 17);
 		read_password(&buf);
 		
-		if (strcmp(password, buf) != 0) {
+		if (!str_equal(password, buf)) {
 			log_error("passwords don't match!");
 			exit(EXIT_FAILURE);
 		}
 	}
 	
-	if (strlen(password) < 8)
+	if (str_len(password) < 8)
 		log_error_and_die("password too short: %s", username);
 	
 	rc = sqlite3_open(vxdbfile, &vxdb);

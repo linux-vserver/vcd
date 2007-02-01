@@ -15,24 +15,22 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
 #include <errno.h>
-#include <string.h>
 #include <confuse.h>
 #include <vserver.h>
 #include <syslog.h>
+#include <xmlrpc-c/base.h>
+#include <xmlrpc-c/client.h>
+
 #include <lucid/chroot.h>
 #include <lucid/exec.h>
 #include <lucid/log.h>
 #include <lucid/open.h>
-#include <xmlrpc-c/base.h>
-#include <xmlrpc-c/client.h>
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
+#include <lucid/str.h>
 
 #include "cfg.h"
 
@@ -353,7 +351,7 @@ int main(int argc, char *argv[])
 
 	logfile = cfg_getstr(cfg, "logfile");
 
-	if (logfile && strlen(logfile) > 0) {
+	if (logfile && str_len(logfile) > 0) {
 		log_options.fd = open_append(logfile);
 		log_options.file = true;
 	}
@@ -368,13 +366,13 @@ int main(int argc, char *argv[])
 		log_error_and_die("no xid specified");
 
 	action = argv[1];
-	xid    = atoi(argv[2]);
+	sscanf(argv[2], "%d", &xid);
 
 	if (xid < 2 || xid > 65535)
 		log_error_and_die("invalid xid: %d", xid);
 
 	for (i = 0; ACTIONS[i].name; i++)
-		if (strcmp(ACTIONS[i].name, action) == 0)
+		if (str_equal(ACTIONS[i].name, action))
 			exit(do_vshelper(xid, &ACTIONS[i]));
 
 	log_error("invalid action: %s", action);
