@@ -18,7 +18,6 @@
 # Generic configuration
 AC_PREREQ(2.59)
 AC_INIT(vcd, 1.0_pre1, hollow@gentoo.org)
-AC_CONFIG_HEADER([config.h])
 AC_GNU_SOURCE
 
 AC_CANONICAL_BUILD
@@ -75,6 +74,9 @@ AC_CHECK_LIB(ucid, str_path_concat,
 	LUCID_LIBS="-lucid", AC_MSG_ERROR([lucid not found]),)
 
 AC_SUBST(LUCID_LIBS)
+
+AC_DEFINE(_LUCID_PRINTF_MACROS)
+AC_DEFINE(_LUCID_SCANF_MACROS)
 
 # vserver
 AC_CHECK_LIB(vserver, vx_stat,
