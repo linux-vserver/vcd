@@ -15,12 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
-#include <stdio.h>
+
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
 
 #include "cmd.h"
 
@@ -88,10 +86,10 @@ void cmd_vx_limit_set(xmlrpc_env *env, int argc, char **argv)
 		usage(EXIT_FAILURE);
 	
 	limit = argv[0];
-	soft = atoi(argv[1]);
+	sscanf(argv[1], "%d", &soft);
 	
 	if (argc > 2)
-		max = atoi(argv[2]);
+		sscanf(argv[2], "%d", &max);
 	else
 		max = soft;
 	

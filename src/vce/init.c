@@ -15,12 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
-#include <stdio.h>
+
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
 
 #include "cmd.h"
 
@@ -51,18 +49,22 @@ void cmd_init_get(xmlrpc_env *env, int argc, char **argv)
 void cmd_init_set(xmlrpc_env *env, int argc, char **argv)
 {
 	char *init, *halt, *reboot;
+	int timeout;
 	
-	if (argc < 3)
+	if (argc < 4)
 		usage(EXIT_FAILURE);
 	
 	init   = argv[0];
 	halt   = argv[1];
 	reboot = argv[2];
+
+	sscanf(argv[3], "%d", &timeout);
 	
 	xmlrpc_client_call(env, uri, "vxdb.init.set",
-		SIGNATURE("{s:s,s:s,s:s,s:s}"),
+		SIGNATURE("{s:s,s:s,s:s,s:s,s:i}"),
 		"name", name,
 		"init", init,
 		"halt", halt,
-		"reboot", reboot);
+		"reboot", reboot,
+		"timeout", timeout);
 }

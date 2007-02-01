@@ -15,20 +15,17 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <unistd.h>
 #include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include <getopt.h>
 #include <termios.h>
 #include <confuse.h>
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
+
 #include <lucid/log.h>
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
 #include <lucid/str.h>
 
 #include "cmd.h"
@@ -193,7 +190,7 @@ int main(int argc, char **argv)
 			break;
 		
 		case 'p':
-			port = atoi(optarg);
+			sscanf(optarg, "%d", &port);
 			break;
 		
 		case 'u':
@@ -213,7 +210,7 @@ int main(int argc, char **argv)
 	name = argv[optind++];
 	
 	for (i = 0; CMDS[i].name; i++)
-		if (strcmp(cmd, CMDS[i].name) == 0)
+		if (str_equal(cmd, CMDS[i].name))
 			goto init;
 	
 	log_error_and_die("invalid command: %s", cmd);
@@ -231,7 +228,7 @@ init:
 	read_password();
 	
 	for (i = 0; CMDS[i].name; i++)
-		if (strcmp(cmd, CMDS[i].name) == 0)
+		if (str_equal(cmd, CMDS[i].name))
 			CMDS[i].func(&env, argc - optind, argv + optind);
 	
 	if (env.fault_occurred)

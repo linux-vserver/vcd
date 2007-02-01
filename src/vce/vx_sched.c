@@ -15,12 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
-#include <stdio.h>
+
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
 
 #include "cmd.h"
 
@@ -34,7 +32,7 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 	if (argc < 1)
 		cpuid = -2;
 	else
-		cpuid = atoi(argv[0]);
+		sscanf(argv[0], "%d", &cpuid);
 	
 	response = xmlrpc_client_call(env, uri, "vxdb.vx.sched.get",
 		SIGNATURE("{s:s,s:i}"),
@@ -76,7 +74,7 @@ void cmd_vx_sched_remove(xmlrpc_env *env, int argc, char **argv)
 	if (argc < 1)
 		cpuid = -2;
 	else
-		cpuid = atoi(argv[0]);
+		sscanf(argv[0], "%d", &cpuid);
 	
 	xmlrpc_client_call(env, uri, "vxdb.vx.sched.remove",
 		SIGNATURE("{s:s,s:i}"),
@@ -93,14 +91,14 @@ void cmd_vx_sched_set(xmlrpc_env *env, int argc, char **argv)
 		usage(EXIT_FAILURE);
 	
 	if (argc > 6)
-		cpuid = atoi(argv[i++]);
+		sscanf(argv[i++], "%d", &cpuid);
 	
-	interval  = atoi(argv[i++]);
-	fillrate  = atoi(argv[i++]);
-	interval2 = atoi(argv[i++]);
-	fillrate2 = atoi(argv[i++]);
-	tokensmin = atoi(argv[i++]);
-	tokensmax = atoi(argv[i++]);
+	sscanf(argv[i++], "%d", &interval);
+	sscanf(argv[i++], "%d", &fillrate);
+	sscanf(argv[i++], "%d", &interval2);
+	sscanf(argv[i++], "%d", &fillrate2);
+	sscanf(argv[i++], "%d", &tokensmin);
+	sscanf(argv[i++], "%d", &tokensmax);
 	
 	xmlrpc_client_call(env, uri, "vxdb.vx.sched.set",
 		SIGNATURE("{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i}"),

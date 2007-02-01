@@ -15,12 +15,10 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
 #include <stdlib.h>
-#include <stdio.h>
+
+#include <lucid/printf.h>
+#include <lucid/scanf.h>
 
 #include "cmd.h"
 
@@ -89,9 +87,10 @@ void cmd_dx_limit_set(xmlrpc_env *env, int argc, char **argv)
 		usage(EXIT_FAILURE);
 	
 	path = argv[0];
-	space = atoi(argv[1]);
-	inodes = atoi(argv[2]);
-	reserved = atoi(argv[3]);
+
+	sscanf(argv[1], "%d", &space);
+	sscanf(argv[2], "%d", &inodes);
+	sscanf(argv[3], "%d", &reserved);
 	
 	xmlrpc_client_call(env, uri, "vxdb.dx.limit.set",
 		SIGNATURE("{s:s,s:s,s:i,s:i,s:i}"),
