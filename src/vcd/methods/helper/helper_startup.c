@@ -290,7 +290,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 		}
 	}
 
-	if (rc != SQLITE_DONE)
+	if (!env->fault_occurred && rc != SQLITE_DONE)
 		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
@@ -512,10 +512,10 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	context_scheduler(env);
 	method_return_if_fault(env);
 
-	context_uname(env, vdir);
+	namespace_setup(env);
 	method_return_if_fault(env);
 
-	namespace_setup(env);
+	context_uname(env, vdir);
 	method_return_if_fault(env);
 
 	namespace_mount(env, vdir);
