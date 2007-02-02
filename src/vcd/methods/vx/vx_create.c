@@ -76,7 +76,7 @@ static
 int handle_file(const char *fpath, const struct stat *sb,
 		int typeflag, struct FTW *ftwbuf)
 {
-	char *src;
+	char *src, *buf;
 
 	ix_attr_t attr = {
 		.filename = NULL,
@@ -122,7 +122,6 @@ int handle_file(const char *fpath, const struct stat *sb,
 		return FTW_CONTINUE;
 
 	case FTW_F:
-	case FTW_SL:
 		src = str_path_concat(tdir, fpath);
 
 		if (str_isempty(src)) {
@@ -145,6 +144,30 @@ int handle_file(const char *fpath, const struct stat *sb,
 		}
 
 		mem_free(src);
+
+		fchdir(curfd);
+		close(curfd);
+		return FTW_CONTINUE;
+
+	case FTW_SL:
+		src = str_path_concat(tdir, fpath);
+
+		if (str_isempty(src)) {
+			method_set_faultf(global_env, MEINVAL,
+					"%s: invalid src path: %s/%s", __FUNCTION__, tdir, fpath);
+			return FTW_STOP;
+		}
+
+		/* copy symlink */
+		if (!(buf = readsymlink(src))) {
+			method_set_sys_faultf(global_env, "readsymlink(%s)", src);
+			return FTW_STOP;
+		}
+
+		if (symlink(buf, fpath) == -1) {
+			method_set_sys_faultf(global_env, "symlink(%s, %s)", buf, fpath);
+			return FTW_STOP;
+		}
 
 		fchdir(curfd);
 		close(curfd);
