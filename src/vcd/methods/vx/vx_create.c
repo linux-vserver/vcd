@@ -429,6 +429,11 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 				xid, flag);
 	}
 
+	/* insert vdir */
+	stralloc_catf(sa,
+			"INSERT INTO vdir (xid, vdir) VALUES (%d, '%s');",
+			xid, vdir);
+
 	/* insert name */
 	stralloc_catf(sa,
 			"INSERT INTO xid_name_map (xid, name) VALUES (%d, '%s');",
