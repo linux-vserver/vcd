@@ -270,27 +270,27 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 			"SELECT uname,value FROM vx_uname WHERE xid = %d",
 			xid);
 
-	if (rc == SQLITE_OK) {
-		vxdb_foreach_step(rc, dbr) {
-			if (!(id = flist32_getval(uname_list,
-							sqlite3_column_text(dbr, 0))))
-				continue;
+	if (rc != SQLITE_OK)
+		method_return_vxdb_fault(env);
 
-			uname.id = v2i32(id);
+	vxdb_foreach_step(rc, dbr) {
+		if (!(id = flist32_getval(uname_list, sqlite3_column_text(dbr, 0))))
+			continue;
 
-			mem_set(uname.value, 0, 65);
-			mem_cpy(uname.value, sqlite3_column_text(dbr, 1), 64);
+		uname.id = v2i32(id);
 
-			log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
+		mem_set(uname.value, 0, 65);
+		mem_cpy(uname.value, sqlite3_column_text(dbr, 1), 64);
 
-			if (vx_uname_set(xid, &uname) == -1) {
-				method_set_sys_fault(env, "vx_set_uname");
-				break;
-			}
+		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
+
+		if (vx_uname_set(xid, &uname) == -1) {
+			method_set_sys_fault(env, "vx_set_uname");
+			break;
 		}
 	}
 
-	if (!env->fault_occurred && rc != SQLITE_DONE)
+	if (rc != SQLITE_DONE)
 		method_set_vxdb_fault(env);
 
 	sqlite3_finalize(dbr);
