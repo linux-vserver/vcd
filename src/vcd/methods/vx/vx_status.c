@@ -42,12 +42,15 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (vx_info(xid, NULL) != -1) {
+	if (vx_info(xid, NULL) == -1) {
 		if (errno != ESRCH)
 			method_return_sys_fault(env, "vx_info");
 		else
-			running = 1;
+			running = 0;
 	}
+
+	else
+		running = 1;
 
 	return xmlrpc_build_value(env, "{s:i}", "running", running);
 }
