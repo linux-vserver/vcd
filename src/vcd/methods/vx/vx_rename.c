@@ -50,18 +50,9 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (vx_info(xid, NULL) != -1)
-		method_return_fault(env, MERUNNING);
-
-	if (!(vdir = vxdb_getvdir(name)))
-		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
-
 	rc = vxdb_exec(
-			"BEGIN EXCLUSIVE TRANSACTION;"
-			"INSERT OR REPLACE INTO vdir (xid, vdir) VALUES (%d, '%s');"
-			"UPDATE xid_name_map SET name = '%s' WHERE xid = %d;"
-			"COMMIT TRANSACTION;",
-			xid, vdir, newname, xid);
+			"UPDATE xid_name_map SET name = '%s' WHERE xid = %d;",
+			newname, xid);
 
 	if (rc != SQLITE_OK)
 		method_return_vxdb_fault(env);
