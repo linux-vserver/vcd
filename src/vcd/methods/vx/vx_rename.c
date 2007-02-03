@@ -29,7 +29,7 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *newname, *vdir;
+	char *name, *newname;
 	xid_t xid;
 	int rc;
 

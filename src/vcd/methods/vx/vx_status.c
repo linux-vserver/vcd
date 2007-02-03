@@ -43,10 +43,10 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	if (vx_info(xid, NULL) == -1) {
-		if (errno != ESRCH)
-			method_return_sys_fault(env, "vx_info");
-		else
+		if (errno == ESRCH)
 			running = 0;
+		else
+			method_return_sys_fault(env, "vx_info");
 	}
 
 	else

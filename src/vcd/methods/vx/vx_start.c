@@ -63,7 +63,7 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (vx_info(xid, NULL) != -1)
+	if (vx_info(xid, NULL) == 0)
 		method_return_fault(env, MERUNNING);
 
 	int pfds[2];

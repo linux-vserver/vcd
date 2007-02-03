@@ -92,9 +92,9 @@ int handle_file(const char *fpath, const struct stat *sb,
 
 	/* skip character/block devices, fifos and sockets */
 	if (S_ISCHR(sb->st_mode) ||
-			S_ISBLK(sb->st_mode) ||
-			S_ISFIFO(sb->st_mode) ||
-			S_ISSOCK(sb->st_mode))
+		S_ISBLK(sb->st_mode) ||
+		S_ISFIFO(sb->st_mode) ||
+		S_ISSOCK(sb->st_mode))
 		return FTW_CONTINUE;
 
 	/* remember */
@@ -143,8 +143,8 @@ int handle_file(const char *fpath, const struct stat *sb,
 
 		else {
 			/* link file */
-			if (typeflag == FTW_F && ix_attr_set(&attr) == -1) {
-				method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
+			if (ix_attr_set(&attr) == -1) {
+				method_set_sys_faultf(global_env, "ix_attr_set(%s)", src);
 				return FTW_STOP;
 			}
 
@@ -180,11 +180,16 @@ int handle_file(const char *fpath, const struct stat *sb,
 			return FTW_STOP;
 		}
 
+		mem_free(src);
+		mem_free(buf);
+
 		fchdir(curfd);
 		close(curfd);
 		return FTW_CONTINUE;
 
 	default:
+		close(curfd);
+
 		method_set_faultf(global_env, MESYS,
 				"nftw returned %d on %s", typeflag, fpath);
 	}
@@ -245,7 +250,7 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 	if (mkdirp(vdir, 0755) == -1)
 		method_return_sys_fault(env, "mkdirp");
 
-	/* now link the template to new vdir */
+	/* now link the template to the new vdir */
 	link_unified_root(env);
 
 	/* runlink on failure */
@@ -475,7 +480,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	return NULL;
 }
 
-/* vx.create(string name, string template, bool force[, string vdir]) */
+/* vx.create(string name, string template, bool force, bool copy[, string vdir]) */
 xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

@@ -60,7 +60,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
 
 	if (ns_enter(xid, 0) == -1)
-		method_return_sys_fault(env, "vx_enter_namespace");
+		method_return_sys_fault(env, "ns_enter");
 
 	else if (chroot_secure_chdir(vdir, "/") == -1)
 		method_return_sys_fault(env, "chroot_secure_chdir");
