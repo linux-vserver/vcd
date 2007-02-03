@@ -74,32 +74,6 @@ static int copy  = 0;
 static xmlrpc_env *global_env = NULL;
 
 static
-int copy_file(const char *src, const char *dst)
-{
-	int srcfd = open_read(src);
-
-	if (srcfd == -1)
-		return -1;
-
-	int dstfd = open_trunc(dst);
-
-	if (dstfd == -1)
-		return -1;
-
-	int len;
-	char buf[4096];
-
-	while ((len = read(srcfd, buf, 4096)) > 0)
-		if (write(dstfd, buf, len) == -1)
-			return -1;
-
-	if (len == -1)
-		return -1;
-
-	return 0;
-}
-
-static
 int handle_file(const char *fpath, const struct stat *sb,
 		int typeflag, struct FTW *ftwbuf)
 {
