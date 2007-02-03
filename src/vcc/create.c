@@ -24,7 +24,7 @@
 void cmd_create(xmlrpc_env *env, int argc, char **argv)
 {
 	char *template, *vdir = "";
-	int force = 0;
+	int force = 0, copy = 0;
 	
 	if (argc < 1)
 		usage(EXIT_FAILURE);
@@ -35,7 +35,10 @@ void cmd_create(xmlrpc_env *env, int argc, char **argv)
 		sscanf(argv[1], "%d", &force);
 
 	if (argc > 2)
-		vdir = argv[2];
+		sscanf(argv[2], "%d", &copy);
+
+	if (argc > 3)
+		vdir = argv[3];
 	
 	xmlrpc_client_call(env, uri, "vx.create",
 		SIGNATURE("{s:s,s:s,s:b,s:s}"),

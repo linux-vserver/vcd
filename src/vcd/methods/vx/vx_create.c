@@ -69,8 +69,35 @@ static char *template = NULL;
 static char *tdir = NULL;
 
 static int force = 0;
+static int copy  = 0;
 
 static xmlrpc_env *global_env = NULL;
+
+static
+int copy_file(const char *src, const char *dst)
+{
+	int srcfd = open_read(src);
+
+	if (srcfd == -1)
+		return -1;
+
+	int dstfd = open_trunc(dst);
+
+	if (dstfd == -1)
+		return -1;
+
+	int len;
+	char buf[4096];
+
+	while ((len = read(srcfd, buf, 4096)) > 0)
+		if (write(dstfd, buf, len) == -1)
+			return -1;
+
+	if (len == -1)
+		return -1;
+
+	return 0;
+}
 
 static
 int handle_file(const char *fpath, const struct stat *sb,
@@ -132,15 +159,25 @@ int handle_file(const char *fpath, const struct stat *sb,
 
 		attr.filename = src;
 
-		/* link file */
-		if (typeflag == FTW_F && ix_attr_set(&attr) == -1) {
-			method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
-			return FTW_STOP;
+		if (copy) {
+			/* copy file */
+			if (copy_file(src, fpath) == -1) {
+				method_set_sys_faultf(global_env, "copy_file(%s, %s)", src, fpath);
+				return FTW_STOP;
+			}
 		}
 
-		if (link(src, fpath) == -1) {
-			method_set_sys_faultf(global_env, "link(%s, %s)", src, fpath);
-			return FTW_STOP;
+		else {
+			/* link file */
+			if (typeflag == FTW_F && ix_attr_set(&attr) == -1) {
+				method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
+				return FTW_STOP;
+			}
+
+			if (link(src, fpath) == -1) {
+				method_set_sys_faultf(global_env, "link(%s, %s)", src, fpath);
+				return FTW_STOP;
+			}
 		}
 
 		mem_free(src);
@@ -190,8 +227,20 @@ xmlrpc_value *link_unified_root(xmlrpc_env *env)
 	/* handle_file uses this to make sure we are in vdir */
 	vdirfd = open_read(".");
 
-	global_env = env;
+	struct stat vdirsb, tdirsb;
+
+	if (fstat(vdirfd, &vdirsb) == -1)
+		method_return_sys_fault(env, "fstat");
+
 	chdir(tdir);
+
+	if (lstat(".", &tdirsb) == -1)
+		method_return_sys_fault(env, "lstat");
+
+	if (vdirsb.st_dev != tdirsb.st_dev)
+		copy = 1;
+
+	global_env = env;
 	nftw(".", handle_file, 50, FTW_ACTIONRETVAL|FTW_PHYS);
 	global_env = NULL;
 
@@ -463,10 +512,11 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,s:b,s:s,*}",
+			"{s:s,s:s,s:b,s:b,s:s,*}",
 			"name", &name,
 			"template", &template,
 			"force", &force,
+			"copy", &copy,
 			"vdir", &vdir);
 	method_return_if_fault(env);
 

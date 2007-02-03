@@ -48,7 +48,7 @@ void usage(int rc)
 	printf("Usage: vcc <opts>* <command>\n"
 	       "\n"
 	       "Available commands:\n"
-	       "   create  <name> <template> [<force> [<vdir>]]\n"
+	       "   create  <name> <template> [<force> [copy [<vdir>]]]\n"
 	       "   exec    <name> <program> <args>*\n"
 	       "   kill    <name>\n"
 	       "   login   <name>\n"
