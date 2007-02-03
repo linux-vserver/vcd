@@ -21,6 +21,7 @@
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/printf.h>
 
 /* vx.rename(string name, string newname) */
 xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -56,6 +57,14 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (rc != SQLITE_OK)
 		method_return_vxdb_fault(env);
+
+	vx_uname_t unameb;
+
+	unameb.id = VHIN_CONTEXT;
+	snprintf(unameb.value, 65, "%s:%s", newname, vxdb_getvdir(newname));
+
+	if (vx_info(xid, NULL) == 0 && vx_uname_set(xid, &unameb) == -1)
+		method_return_sys_fault("vx_uname_set");
 
 	return xmlrpc_nil_new(env);
 }
