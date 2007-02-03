@@ -101,8 +101,8 @@ int vshelper_restart(xmlrpc_env *env, xid_t xid)
 	log_info("context %d has commited suicide with rebirth request", xid);
 
 	xmlrpc_client_call(env, uri, "helper.restart",
-	                   SIGNATURE("{s:i}"),
-	                   "xid", xid);
+			SIGNATURE("{s:i}"),
+			"xid", xid);
 	log_and_return_if_fault(env);
 
 	log_info("context %d has been scheduled for rebirth", xid);
@@ -168,14 +168,14 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	log_info("context %d emerges from the darkness", xid);
 
 	response = xmlrpc_client_call(env, uri, "helper.startup",
-	                              SIGNATURE("{s:i}"),
-	                              "xid", xid);
+			SIGNATURE("{s:i}"),
+			"xid", xid);
 	log_and_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, response,
-		"{s:s,s:s,*}",
-		"vdir", &vdir,
-		"init", &init);
+			"{s:s,s:s,*}",
+			"vdir", &vdir,
+			"init", &init);
 	log_and_return_if_fault(env);
 
 	switch (fork()) {
@@ -217,13 +217,13 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 	nx_flags_t nflags = { .flags = 0, .mask = VXF_PERSISTENT };
 	vx_flags_t vflags = { .flags = 0, .mask = NXF_PERSISTENT };
 
-	while (n++ < 5) {
+	while (n++ < 15) {
 		sleep(1);
 
 		if (vx_stat(xid, &stat) == -1)
 			log_perror("vx_info(%d)", xid);
 
-		else if (stat.tasks > 0) {
+		else if (stat.tasks > 1) {
 			if (nx_flags_set(xid, &nflags) == -1)
 				log_perror("nx_flags_set(%d)", xid);
 
@@ -234,7 +234,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 		}
 
 		log_error("task count for context %d still zero after %d %s",
-		          xid, n, n > 1 ? "seconds" : "second");
+				xid, n, n > 1 ? "seconds" : "second");
 	}
 
 	log_error("context %d failed to start init - shutting down", xid);
@@ -253,11 +253,12 @@ int vshelper_shutdown(xmlrpc_env *env, xid_t xid)
 {
 	xmlrpc_value *response;
 
-	log_info("context %d has fallen into oblivion - checking rebirth schedule", xid);
+	log_info("context %d has fallen into oblivion - checking rebirth schedule",
+			xid);
 
 	response = xmlrpc_client_call(env, uri, "helper.shutdown",
-	                              SIGNATURE("{s:i}"),
-	                              "xid", xid);
+			SIGNATURE("{s:i}"),
+			"xid", xid);
 	log_and_return_if_fault(env);
 
 	return EXIT_SUCCESS;
@@ -269,8 +270,8 @@ int vshelper_netup(xmlrpc_env *env, xid_t xid)
 	log_info("network context %d emerges from the darkness", xid);
 
 	xmlrpc_client_call(env, uri, "helper.netup",
-	                   SIGNATURE("{s:i}"),
-	                   "xid", xid);
+			SIGNATURE("{s:i}"),
+			"xid", xid);
 	log_and_return_if_fault(env);
 
 	log_info("network context %d is up", xid);
@@ -304,7 +305,8 @@ int do_vshelper(xid_t xid, action_t *action)
 	xmlrpc_env_init(&env);
 
 	/* init xmlrpc client */
-	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, "vshelper", PACKAGE_VERSION, NULL, 0);
+	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, "vshelper",
+			PACKAGE_VERSION, NULL, 0);
 
 	if (env.fault_occurred)
 		log_error("could not init xmlrpc client: %s", env.fault_string);

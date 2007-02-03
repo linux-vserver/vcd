@@ -44,7 +44,7 @@ xmlrpc_value *m_vxdb_init_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_prepare(&dbr,
-			"SELECT init,halt,reboot FROM init WHERE xid = %d",
+			"SELECT init,halt,reboot,timeout FROM init WHERE xid = %d",
 			xid);
 
 	if (rc != SQLITE_OK)
@@ -54,17 +54,19 @@ xmlrpc_value *m_vxdb_init_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (rc == SQLITE_ROW)
 		response = xmlrpc_build_value(env,
-				"{s:s,s:s,s:s}",
+				"{s:s,s:s,s:s,s:i}",
 				"init",   sqlite3_column_text(dbr, 0),
 				"halt",   sqlite3_column_text(dbr, 1),
-				"reboot", sqlite3_column_text(dbr, 2));
+				"reboot", sqlite3_column_text(dbr, 2),
+				"timeout", sqlite3_column_int(dbr, 3));
 
 	else if (rc == SQLITE_DONE)
 		response = xmlrpc_build_value(env,
-				"{s:s,s:s,s:s}",
+				"{s:s,s:s,s:s,s:i}",
 				"init",   "/sbin/init",
 				"halt",   "/sbin/halt",
-				"reboot", "/sbin/reboot");
+				"reboot", "/sbin/reboot",
+				"timeout", 15);
 
 	else
 		method_set_vxdb_fault(env);

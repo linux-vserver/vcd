@@ -29,18 +29,19 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name, *init, *halt, *reboot;
-	int rc;
+	int rc, timeout = 0;
 	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,s:s,s:s,*}",
+			"{s:s,s:s,s:s,s:s,s:i,*}",
 			"name", &name,
 			"init", &init,
 			"halt", &halt,
-			"reboot", &reboot);
+			"reboot", &reboot,
+			"timeout", &timeout);
 	method_return_if_fault(env);
 
 	method_empty_params(3, &init, &halt, &reboot);
@@ -63,9 +64,9 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-			"INSERT OR REPLACE INTO init (xid, init, halt, reboot) "
-			"VALUES (%d, '%s', '%s', '%s')",
-			xid, init, halt, reboot);
+			"INSERT OR REPLACE INTO init (xid, init, halt, reboot, timeout) "
+			"VALUES (%d, '%s', '%s', '%s', %d)",
+			xid, init, halt, reboot, timeout);
 
 	if (rc != SQLITE_OK)
 		method_return_vxdb_fault(env);

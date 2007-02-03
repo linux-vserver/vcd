@@ -32,7 +32,7 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	xid_t xid;
-	int n, rc, status;
+	int n, rc, status, timeout = 15;
 	pid_t pid;
 	char *name;
 
@@ -55,6 +55,18 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (sqlite3_changes(vxdb) < 1)
 		return xmlrpc_nil_new(env);
 
+	vxdb_result *dbr;
+	rc = vxdb_prepare(&dbr, "SELECT timeout FROM init WHERE xid = %d", xid);
+
+	if (rc == SQLITE_OK) {
+		if (vxdb_step(dbr) == SQLITE_ROW)
+			timeout = sqlite3_column_int(dbr, 0);
+
+		sqlite3_finalize(dbr);
+	}
+
+	timeout = timeout < 1 ? 15 : timeout;
+
 	params = xmlrpc_build_value(env, "{s:s}", "name", name);
 
 	switch((pid = fork())) {
@@ -65,7 +77,7 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	case 0:
 		n = 0;
 
-		while (n++ < 5) {
+		while (n++ < timeout) {
 			sleep(1);
 
 			if (nx_info(xid, NULL) == -1) {
@@ -86,7 +98,7 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		waitvx:
 		n = 0;
 
-		while (n++ < 5) {
+		while (n++ < timeout) {
 			if (vx_info(xid, NULL) == -1) {
 				if (errno == ESRCH)
 					goto startvx;
