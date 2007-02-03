@@ -64,7 +64,7 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	snprintf(unameb.value, 65, "%s:%s", newname, vxdb_getvdir(newname));
 
 	if (vx_info(xid, NULL) == 0 && vx_uname_set(xid, &unameb) == -1)
-		method_return_sys_fault("vx_uname_set");
+		method_return_sys_fault(env, "vx_uname_set");
 
 	return xmlrpc_nil_new(env);
 }
