@@ -33,10 +33,10 @@ void cmd_load(xmlrpc_env *env, int argc, char **argv)
 		"{s:s,s:s,s:s,*}",
 		"1m", &loadavg1m,
 		"5m", &loadavg5m,
-		"15m", &loadavg15m;
+		"15m", &loadavg15m);
 	return_if_fault(env);
 
 	xmlrpc_DECREF(result);
 
-	printf("load average: %4s, %4s, %4s\n", loadavg1m, loadavg5m, loadavg15m);
+	printf("load average: %s, %s, %s\n", loadavg1m, loadavg5m, loadavg15m);
 }

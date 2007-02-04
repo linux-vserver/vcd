@@ -63,7 +63,12 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 
 	xmlrpc_DECREF(result);
 
-	printf("running: %d\n", running);
-	printf("nproc: %d\n", nproc);
-	printf("uptime: %s\n", pretty_uptime(uptime));
+	if (running == 0) {
+		printf("running: %d\n", running);
+	}
+	else {
+		printf("running: %d\n", running);
+		printf("nproc: %d\n", nproc);
+		printf("uptime: %s\n", pretty_uptime(uptime));
+	}
 }
