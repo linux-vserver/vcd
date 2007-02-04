@@ -1,4 +1,5 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
+//           2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -19,22 +20,50 @@
 
 #include "cmd.h"
 
+static
+char *pretty_uptime(int sec)
+{
+	char *buf = NULL;
+	int d = 0, h = 0, m = 0, s = 0;
+
+	s = sec % 60;
+	sec /= 60;
+	m = sec % 60;
+	sec /= 60;
+	h = sec % 24;
+	sec /= 24;
+	d = sec;
+
+	if (d > 0)
+		asprintf(&buf, "%4dd%02dh%02dm%02ds", d, h, m, s);
+	else if (h > 0)
+		asprintf(&buf, "%2dh%02dm%02ds", h, m, s);
+	else
+		asprintf(&buf, "%2dm%02ds", m, s);
+
+	return buf;
+}
+
 void cmd_status(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	int running;
-	
+	int running, nproc, uptime;
+
 	result = xmlrpc_client_call(env, uri, "vx.status",
 		SIGNATURE("{s:s}"),
 		"name", name);
 	return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, result,
-		"{s:i,*}",
-		"running", &running);
+		"{s:i,s:i,s:i,*}",
+		"running", &running,
+		"nproc", &nproc,
+		"uptime", &uptime);
 	return_if_fault(env);
-	
+
 	xmlrpc_DECREF(result);
-	
-	printf("running: %d\n", running == 0 ? 0 : 1);
+
+	printf("running: %d\n", running);
+	printf("nproc: %d\n", nproc);
+	printf("uptime: %s\n", pretty_uptime(uptime));
 }

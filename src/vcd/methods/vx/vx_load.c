@@ -1,5 +1,4 @@
-// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
-//           2007 Luca Longinotti <chtekk@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,19 +20,28 @@
 #include "vxdb.h"
 
 #include <vserver.h>
-#include <sys/resource.h>
 
 #include <lucid/log.h>
+#include <lucid/printf.h>
 
-/* vx.status(string name) */
-xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
+static
+char *pretty_load(int load)
+{
+	char *buf = NULL;
+
+	asprintf(&buf, "%d.%02d", load >> 11, ((load & ((1 << 11) - 1)) * 100) >> 11);
+
+	return buf;
+}
+
+/* vx.load(string name) */
+xmlrpc_value *m_vx_load(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params, *response = NULL;
-	char *name;
+	char *name, *loadavg1m = NULL, *loadavg5m = NULL, *loadavg15m = NULL;
 	xid_t xid;
-	int running = 0, nproc = 0, uptime = 0;
 
 	params = method_init(env, p, c, VCD_CAP_INFO, M_OWNER);
 	method_return_if_fault(env);
@@ -48,9 +56,9 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH) {
-			running = 0;
-			nproc = 0;
-			uptime = 0;
+			loadavg1m = "0";
+			loadavg5m = "0";
+			loadavg15m = "0";
 		}
 
 		else
@@ -59,27 +67,21 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	else {
 		vx_stat_t statb;
-		vx_limit_stat_t limnproc;
-
-		limnproc.id = RLIMIT_NPROC;
 
 		if (vx_stat(xid, &statb) == -1)
 			log_perror("vx_stat(%d)", xid);
 
-		else if (vx_limit_stat(xid, &limnproc) == -1)
-			log_perror("vx_limit_stat(NPROC, %d)", xid);
-
 		else {
-			running = 1;
-			nproc = (int) limnproc.value;
-			uptime = statb.uptime/1000000000;
+			loadavg1m = pretty_load(statb.load[0]);
+			loadavg5m = pretty_load(statb.load[1]);
+			loadavg15m = pretty_load(statb.load[2]);
 		}
 	}
 
-	response = xmlrpc_build_value(env, "{s:i,s:i,s:i}",
-				"running", running,
-				"nproc", nproc, 
-				"uptime", uptime);
+	response = xmlrpc_build_value(env, "{s:s,s:s,s:s}",
+				"1m", loadavg1m,
+				"5m", loadavg5m, 
+				"15m", loadavg15m);
 
 	return response;
 }

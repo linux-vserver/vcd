@@ -13,8 +13,7 @@ NEEDED FEATURES:
 - debian/ dir, RPM .spec file, init scripts, distrib make targets, pathprog probably
 
 WANTED FEATURES:
-- extended vx.status method, possibly a big array with other important info such as
-CPU, RAM, NPROC, etc. taken directly from the syscalls
+- add vx.limits and vx.netload methods to get more info
 - vx.move method to also move the VServer around on the disk
 - sysctl support
 - cpuset support

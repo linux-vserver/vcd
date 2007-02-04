@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,24 +15,28 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <lucid/printf.h>
+
 #include "cmd.h"
 
-char *uri  = NULL;
-char *user = "admin";
-char *pass = NULL;
-char *name = NULL;
+void cmd_load(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_value *result;
+	char *loadavg1m, *loadavg5m, *loadavg15m;
 
-cmd_t CMDS[] = {
-	{ "create",  cmd_create },
-	{ "exec",    cmd_exec },
-	{ "kill",    cmd_kill },
-	{ "load",    cmd_load },
-	{ "login",   cmd_login },
-	{ "reboot",  cmd_reboot },
-	{ "remove",  cmd_remove },
-	{ "rename",  cmd_rename },
-	{ "start",   cmd_start },
-	{ "status",  cmd_status },
-	{ "stop",    cmd_stop },
-	{ NULL,      NULL }
-};
+	result = xmlrpc_client_call(env, uri, "vx.load",
+		SIGNATURE("{s:s}"),
+		"name", name);
+	return_if_fault(env);
+
+	xmlrpc_decompose_value(env, result,
+		"{s:s,s:s,s:s,*}",
+		"1m", &loadavg1m,
+		"5m", &loadavg5m,
+		"15m", &loadavg15m;
+	return_if_fault(env);
+
+	xmlrpc_DECREF(result);
+
+	printf("load average: %4s, %4s, %4s\n", loadavg1m, loadavg5m, loadavg15m);
+}
