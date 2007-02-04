@@ -32,6 +32,7 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params, *response = NULL;
 	char *name;
 	xid_t xid;
+	int running, nproc, uptime;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER);
 	method_return_if_fault(env);
@@ -46,8 +47,9 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH)
-			response = xmlrpc_build_value(env, "{s:i}",
-				"running", 0);
+			running = 0;
+			nproc = 0;
+			uptime = 0;
 		else
 			method_return_sys_fault(env, "vx_info");
 	}
@@ -64,12 +66,17 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		else if (vx_limit_stat(xid, &limnproc) == -1)
 			log_perror("vx_limit_stat(NPROC, %d)", xid);
 
-		else
-			response = xmlrpc_build_value(env, "{s:i,s:i,s:i}",
-						"running", 1,
-						"nproc", (int) limnproc.value,
-						"uptime", statb.uptime/1000000000);
+		else {
+			running = 1;
+			nproc = (int) limnproc.value;
+			uptime = statb.uptime/1000000000;
+		}
 	}
+
+	response = xmlrpc_build_value(env, "{s:i,s:i,s:i}",
+				"running", running,
+				"nproc", nproc, 
+				"uptime", uptime);
 
 	return response;
 }
