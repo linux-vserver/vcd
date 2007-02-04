@@ -19,6 +19,9 @@
 #include "methods.h"
 #include "vxdb.h"
 
+#include <vserver.h>
+#include <sys/resource.h>
+
 #include <lucid/log.h>
 
 /* vx.status(string name) */
@@ -26,10 +29,9 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params;
+	xmlrpc_value *params, *response = NULL;
 	char *name;
 	xid_t xid;
-	int running = 0;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER);
 	method_return_if_fault(env);
@@ -44,13 +46,30 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH)
-			running = 0;
+			response = xmlrpc_build_value(env, "{s:i}",
+				"running", 0);
 		else
 			method_return_sys_fault(env, "vx_info");
 	}
 
-	else
-		running = 1;
+	else {
+		vx_stat_t statb;
+		vx_limit_stat_t limnproc;
 
-	return xmlrpc_build_value(env, "{s:i}", "running", running);
+		limnproc.id = RLIMIT_NPROC;
+
+		if (vx_stat(xid, &statb) == -1)
+			log_perror("vx_stat(%d)", xid);
+
+		else if (vx_limit_stat(xid, &limnproc) == -1)
+			log_perror("vx_limit_stat(NPROC, %d)", xid);
+
+		else
+			response = xmlrpc_build_value(env, "{s:i,s:i,s:i}",
+						"running", 1,
+						"nproc", (int) limnproc.value,
+						"uptime", statb.uptime/1000000000);
+	}
+
+	return response;
 }
