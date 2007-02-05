@@ -11,6 +11,7 @@ NEEDED FEATURES:
 - onboot settings, to start VServers on VCD startup
 - fix/cleanup mount (esp. wrt. vdir being a top-level mount point)
 - debian/ dir, RPM .spec file, init scripts, distrib make targets, pathprog probably
+- add mount points to template configuration/provide default mount points
 
 WANTED FEATURES:
 - add vx.limits and vx.netload methods to get more info

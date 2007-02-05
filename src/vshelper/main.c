@@ -345,17 +345,16 @@ int main(int argc, char *argv[])
 
 	/* start logging & debugging */
 	log_options_t log_options = {
-		.ident  = argv[0],
-		.syslog = true,
-		.time   = true,
-		.flags  = LOG_PID,
+		.log_ident = argv[0],
+		.log_dest = LOGD_SYSLOG,
+		.log_opts = LOGO_PRIO|LOGO_TIME|LOGO_IDENT|LOGO_PID,
 	};
 
 	logfile = cfg_getstr(cfg, "logfile");
 
-	if (logfile && str_len(logfile) > 0) {
-		log_options.fd = open_append(logfile);
-		log_options.file = true;
+	if (!str_isempty(logfile)) {
+		log_options.log_dest |= LOGD_FILE;
+		log_options.log_fd = open_append(logfile);
 	}
 
 	log_init(&log_options);

@@ -135,10 +135,9 @@ int main(int argc, char **argv)
 	xmlrpc_env env;
 	
 	log_options_t log_options = {
-		.ident  = argv[0],
-		.file   = false,
-		.stderr = true,
-		.syslog = false,
+		.log_ident = argv[0],
+		.log_dest  = LOGD_STDERR,
+		.log_opts  = LOGO_PRIO|LOGO_IDENT,
 	};
 	
 	log_init(&log_options);
