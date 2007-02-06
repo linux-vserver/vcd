@@ -41,9 +41,10 @@ void cmd_create(xmlrpc_env *env, int argc, char **argv)
 		vdir = argv[3];
 	
 	xmlrpc_client_call(env, uri, "vx.create",
-		SIGNATURE("{s:s,s:s,s:b,s:s}"),
+		SIGNATURE("{s:s,s:s,s:b,s:b,s:s}"),
 		"name", name,
 		"template", template,
 		"force", force,
+		"copy", copy,
 		"vdir", vdir);
 }
