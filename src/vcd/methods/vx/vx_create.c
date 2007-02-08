@@ -124,6 +124,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 			int dstfd = openat(vdirfd, fpath, O_RDWR|O_CREAT|O_EXCL, 0200);
 
 			if (dstfd == -1) {
+				close(srcfd);
 				method_set_sys_faultf(global_env, "openat(%s)", fpath);
 				return FTW_STOP;
 			}
@@ -132,6 +133,9 @@ int handle_file(const char *fpath, const struct stat *sb,
 				method_set_sys_faultf(global_env, "copy_fileat(%s)", fpath);
 				return FTW_STOP;
 			}
+
+			close(dstfd);
+			close(srcfd);
 
 			do_chown = do_chmod = 1;
 		}
@@ -173,16 +177,43 @@ int handle_file(const char *fpath, const struct stat *sb,
 				"nftw returned %d on %s", typeflag, fpath);
 	}
 
-	if (do_chmod && fchmodat(vdirfd, fpath, sb->st_mode,
-				AT_SYMLINK_NOFOLLOW) == -1) {
-		method_set_sys_faultf(global_env, "fchmodat(%s)", fpath);
-		return FTW_STOP;
+	int chownmodfd = -1;
+
+	/* fchmodat/fchownat do not handle symlinks. narf. */
+	if (typeflag == FTW_SL) {
+		chownmodfd = openat(vdirfd, fpath, O_RDWR|O_NOFOLLOW, 0);
+
+		if (chownmodfd == -1) {
+			method_set_sys_faultf(global_env, "openat(%s)", fpath);
+			return FTW_STOP;
+		}
+
+		if (do_chmod && fchmod(chownmodfd, sb->st_mode) == -1) {
+			close(chownmodfd);
+			method_set_sys_faultf(global_env, "fchmod(%s)", fpath);
+			return FTW_STOP;
+		}
+
+		if (do_chown && fchown(chownmodfd, sb->st_uid, sb->st_gid) == -1) {
+			close(chownmodfd);
+			method_set_sys_faultf(global_env, "fchown(%s)", fpath);
+			return FTW_STOP;
+		}
+
+		close(chownmodfd);
 	}
 
-	if (do_chown && fchownat(vdirfd, fpath, sb->st_uid, sb->st_gid,
-				AT_SYMLINK_NOFOLLOW) == -1) {
-		method_set_sys_faultf(global_env, "fchownat(%s)", fpath);
-		return FTW_STOP;
+	else {
+		if (do_chmod && fchmodat(vdirfd, fpath, sb->st_mode, 0) == -1) {
+			method_set_sys_faultf(global_env, "fchmodat(%s)", fpath);
+			return FTW_STOP;
+		}
+
+		if (do_chown && fchownat(vdirfd, fpath, sb->st_uid,
+					sb->st_gid, 0) == -1) {
+			method_set_sys_faultf(global_env, "fchownat(%s)", fpath);
+			return FTW_STOP;
+		}
 	}
 
 	return FTW_CONTINUE;
