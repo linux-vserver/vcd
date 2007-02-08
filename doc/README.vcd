@@ -13,7 +13,7 @@ Setup the VServer Control Daemon
 # vxpasswd /var/lib/vcd/vxdb admin
 # vxpasswd /var/lib/vcd/vxdb vshelper
 
-# ix -set-attr /vservers BARRIER
+# ix -attr-set /vservers=BARRIER
 
 # $EDITOR /etc/vshelper.conf
 # echo 'kernel.vshelper = /usr/sbin/vshelper' >> /etc/sysctl.conf

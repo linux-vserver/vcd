@@ -5,7 +5,6 @@ BUGS:
  -> should work with Gentoo's baselayout 1.12, needs fixing with 1.13
 - vshelper checkup (wrt non-standard vdir etc. for example), cleanup ???
 - better error messages (esp. on MEINVAL), check error handling in general
-- xid tagging on template, failure of successive starts of linked templates ???
 
 NEEDED FEATURES:
 - disk limits implementation, important feature for hosting/reselling/etc. solutions
