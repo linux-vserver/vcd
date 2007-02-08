@@ -84,15 +84,11 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		dup2(pfds[1], STDOUT_FILENO);
 		dup2(pfds[1], STDERR_FILENO);
 
-		if (nx_create(xid, &ncf) == -1) {
-			printf("nx_create(%d): %s", xid, strerror(errno));
+		if (nx_create(xid, &ncf) == -1)
 			log_perror_and_die("nx_create");
-		}
 
-		if (vx_create(xid, &vcf) == -1) {
-			printf("vx_create(%d): %s", xid, strerror(errno));
+		if (vx_create(xid, &vcf) == -1)
 			log_perror_and_die("vx_create");
-		}
 
 		exit(EXIT_SUCCESS);
 
@@ -109,7 +105,7 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 		else if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 			method_set_faultf(env, MESYS,
-					"startup failed: %s", buf);
+					"startup failed:\n%s", buf);
 	}
 
 	return xmlrpc_nil_new(env);

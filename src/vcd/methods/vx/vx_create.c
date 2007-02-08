@@ -16,6 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <ftw.h>
 #include <confuse.h>
 
@@ -77,13 +78,14 @@ static
 int handle_file(const char *fpath, const struct stat *sb,
 		int typeflag, struct FTW *ftwbuf)
 {
-	char *src, *buf;
+	char *buf;
+	int do_chown = 0, do_chmod = 0;
 
 	ix_attr_t attr = {
-		.filename = NULL,
-		.xid   = xid,
-		.flags = IATTR_IUNLINK|IATTR_IMMUTABLE,
-		.mask  = IATTR_IUNLINK|IATTR_IMMUTABLE,
+		.filename = fpath,
+		.xid      = 0,
+		.flags    = IATTR_IUNLINK|IATTR_IMMUTABLE,
+		.mask     = IATTR_IUNLINK|IATTR_IMMUTABLE,
 	};
 
 	/* skip vdir */
@@ -91,120 +93,82 @@ int handle_file(const char *fpath, const struct stat *sb,
 		return FTW_CONTINUE;
 
 	/* skip character/block devices, fifos and sockets */
-	if (S_ISCHR(sb->st_mode) ||
-		S_ISBLK(sb->st_mode) ||
+	if (S_ISCHR(sb->st_mode)  ||
+		S_ISBLK(sb->st_mode)  ||
 		S_ISFIFO(sb->st_mode) ||
 		S_ISSOCK(sb->st_mode))
 		return FTW_CONTINUE;
 
-	/* remember */
-	int curfd = open_read(".");
-
-	if (fchdir(vdirfd) == -1) {
-		method_set_sys_fault(global_env, "fchdir");
-		return FTW_STOP;
-	}
-
 	switch (typeflag) {
 	case FTW_D:
 		/* create new directory */
-		if (mkdir(fpath, sb->st_mode) == -1) {
-			method_set_sys_faultf(global_env, "mkdir(%s)", fpath);
+		if (mkdirat(vdirfd, fpath, sb->st_mode) == -1) {
+			method_set_sys_faultf(global_env, "mkdirat(%s)", fpath);
 			return FTW_STOP;
 		}
 
-		if (lchown(fpath, sb->st_uid, sb->st_gid) == -1) {
-			method_set_sys_faultf(global_env, "lchown(%s)", fpath);
-			return FTW_STOP;
-		}
-
-		fchdir(curfd);
-		close(curfd);
-		return FTW_CONTINUE;
+		do_chown = 1;
+		break;
 
 	case FTW_F:
-		src = str_path_concat(tdir, fpath);
-
-		if (str_isempty(src)) {
-			method_set_faultf(global_env, MEINVAL,
-					"%s: invalid src path: %s/%s", __FUNCTION__, tdir, fpath);
-			return FTW_STOP;
-		}
-
-		attr.filename = src;
-
+		/* copy file */
 		if (copy) {
-			/* copy file */
-			if (copy_file(src, fpath) == -1) {
-				method_set_sys_faultf(global_env, "copy_file(%s, %s)", src, fpath);
+			if (copy_fileat(AT_FDCWD, fpath, vdirfd, fpath) == -1) {
+				method_set_sys_faultf(global_env, "copy_fileat(%s)", fpath);
 				return FTW_STOP;
 			}
 
-			if (chmod(fpath, sb->st_mode) == -1) {
-				method_set_sys_faultf(global_env, "chmod(%s)", fpath);
-				return FTW_STOP;
-			}
-
-			if (lchown(fpath, sb->st_uid, sb->st_gid) == -1) {
-				method_set_sys_faultf(global_env, "lchown(%s)", fpath);
-				return FTW_STOP;
-			}
+			do_chown = do_chmod = 1;
 		}
 
+		/* link file */
 		else {
-			/* link file */
 			if (ix_attr_set(&attr) == -1) {
-				method_set_sys_faultf(global_env, "ix_attr_set(%s)", src);
+				method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
 				return FTW_STOP;
 			}
 
-			if (link(src, fpath) == -1) {
-				method_set_sys_faultf(global_env, "link(%s, %s)", src, fpath);
+			if (linkat(AT_FDCWD, fpath, vdirfd, fpath, 0) == -1) {
+				method_set_sys_faultf(global_env, "linkat(%s)", fpath);
 				return FTW_STOP;
 			}
 		}
 
-		mem_free(src);
-
-		fchdir(curfd);
-		close(curfd);
-		return FTW_CONTINUE;
+		break;
 
 	case FTW_SL:
-		src = str_path_concat(tdir, fpath);
-
-		if (str_isempty(src)) {
-			method_set_faultf(global_env, MEINVAL,
-					"%s: invalid src path: %s/%s", __FUNCTION__, tdir, fpath);
-			return FTW_STOP;
-		}
-
 		/* copy symlink */
-		if (!(buf = readsymlink(src))) {
-			method_set_sys_faultf(global_env, "readsymlink(%s)", src);
+		if (!(buf = readsymlink(fpath))) {
+			method_set_sys_faultf(global_env, "readsymlink(%s)", fpath);
 			return FTW_STOP;
 		}
 
-		if (symlink(buf, fpath) == -1) {
-			method_set_sys_faultf(global_env, "symlink(%s, %s)", buf, fpath);
+		if (symlinkat(buf, vdirfd, fpath) == -1) {
+			method_set_sys_faultf(global_env, "symlinkat(%s, %s)", buf, fpath);
 			return FTW_STOP;
 		}
 
-		mem_free(src);
 		mem_free(buf);
 
-		fchdir(curfd);
-		close(curfd);
-		return FTW_CONTINUE;
+		do_chmod = do_chown = 1;
+		break;
 
 	default:
-		close(curfd);
-
 		method_set_faultf(global_env, MESYS,
 				"nftw returned %d on %s", typeflag, fpath);
 	}
 
-	return FTW_STOP;
+	if (do_chmod && fchmodat(vdirfd, fpath, sb->st_mode, 0) == -1) {
+		method_set_sys_faultf(global_env, "fchmodat(%s)", fpath);
+		return FTW_STOP;
+	}
+
+	if (do_chown && fchownat(vdirfd, fpath, sb->st_uid, sb->st_gid, 0) == -1) {
+		method_set_sys_faultf(global_env, "fchownat(%s)", fpath);
+		return FTW_STOP;
+	}
+
+	return FTW_CONTINUE;
 }
 
 static
