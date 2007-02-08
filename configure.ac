@@ -59,6 +59,9 @@ AC_ARG_ENABLE([client],
 AM_CONDITIONAL(ENABLE_CLIENT, test x$enable_client = xtrue)
 
 # Checks for libraries.
+# syscalls not in glibc < 2.4
+AC_CHECK_FUNCS([fchmodat fchownat linkat mkdirat openat symlinkat])
+
 # confuse
 AC_PATH_PROG(CONFUSE_CONFIG, confuse-config)
 if test -z "$CONFUSE_CONFIG"; then
@@ -191,6 +194,7 @@ AC_CONFIG_FILES([Makefile
                  src/vshelper/Makefile
                  src/vxpasswd/Makefile
                  src/Makefile
+                 syscall/Makefile
                  test/Makefile])
 
 AC_OUTPUT

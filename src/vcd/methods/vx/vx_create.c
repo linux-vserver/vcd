@@ -24,6 +24,7 @@
 #include "cfg.h"
 #include "lists.h"
 #include "methods.h"
+#include "syscall-compat.h"
 #include "vxdb.h"
 
 #include <lucid/chroot.h>
@@ -113,7 +114,21 @@ int handle_file(const char *fpath, const struct stat *sb,
 	case FTW_F:
 		/* copy file */
 		if (copy) {
-			if (copy_fileat(AT_FDCWD, fpath, vdirfd, fpath) == -1) {
+			int srcfd = open(fpath, O_RDONLY|O_NONBLOCK|O_NOFOLLOW);
+
+			if (srcfd == -1) {
+				method_set_sys_faultf(global_env, "open_read(%s)", fpath);
+				return FTW_STOP;
+			}
+
+			int dstfd = openat(vdirfd, fpath, O_RDWR|O_CREAT|O_EXCL, 0200);
+
+			if (dstfd == -1) {
+				method_set_sys_faultf(global_env, "openat(%s)", fpath);
+				return FTW_STOP;
+			}
+
+			if (copy_file(srcfd, dstfd) == -1) {
 				method_set_sys_faultf(global_env, "copy_fileat(%s)", fpath);
 				return FTW_STOP;
 			}

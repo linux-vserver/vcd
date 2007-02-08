@@ -21,12 +21,15 @@ SUBDIRS = methods
 
 EXTRA_DIST = vcd.conf
 
+INCLUDES = -I$(top_srcdir)/syscall
+
 AM_CPPFLAGS = $(PATH_CPPFLAGS)
 
 noinst_HEADERS = auth.h \
                  cfg.h \
                  lists.h \
                  methods.h \
+                 syscall-compat.h \
                  validate.h \
                  vxdb.h
 
@@ -37,6 +40,7 @@ vcd_SOURCES = auth.c \
               lists.c \
               main.c \
               methods.c \
+              syscall-compat.c \
               validate.c \
               vxdb.c
 
