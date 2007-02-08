@@ -24,6 +24,10 @@
 #define AT_FDCWD -100
 #endif
 
+#ifndef AT_SYMLINK_NOFOLLOW
+#define AT_SYMLINK_NOFOLLOW 0x100
+#endif
+
 #ifndef HAVE_FCHMODAT
 int fchmodat(int dirfd, const char *pathname, mode_t mode, int flags);
 #endif
