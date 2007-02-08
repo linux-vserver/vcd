@@ -183,7 +183,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 	}
 
 	if (do_chown && fchownat(vdirfd, fpath, sb->st_uid,
-			sb->st_gid, 0) == -1) {
+			sb->st_gid, AT_SYMLINK_NOFOLLOW) == -1) {
 		method_set_sys_faultf(global_env, "fchownat(%s)", fpath);
 		return FTW_STOP;
 	}
