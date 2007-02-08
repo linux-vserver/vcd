@@ -139,6 +139,16 @@ int handle_file(const char *fpath, const struct stat *sb,
 				method_set_sys_faultf(global_env, "copy_file(%s, %s)", src, fpath);
 				return FTW_STOP;
 			}
+
+			if (chmod(fpath, sb->st_mode) == -1) {
+				method_set_sys_faultf(global_env, "chmod(%s)", fpath);
+				return FTW_STOP;
+			}
+
+			if (lchown(fpath, sb->st_uid, sb->st_gid) == -1) {
+				method_set_sys_faultf(global_env, "lchown(%s)", fpath);
+				return FTW_STOP;
+			}
 		}
 
 		else {

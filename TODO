@@ -5,17 +5,14 @@ BUGS:
  -> should work with Gentoo's baselayout 1.12, needs fixing with 1.13
 - vshelper checkup (wrt non-standard vdir etc. for example), cleanup ???
 - better error messages (esp. on MEINVAL), check error handling in general
-- vcc create test3 stage4 0 0 /vservers/t/test3 doesn't work for example,
-  it seems to continue on and on in handle_file, and it doesn't seem to be related
-  to copy_file as copy = 0 and a LOG_TRACEME in the linking part of the if/else
-  showed it is indeed trying to link files... on and on and on...
+- xid tagging on template, failure of successive starts of linked templates ???
 
 NEEDED FEATURES:
 - disk limits implementation, important feature for hosting/reselling/etc. solutions
 - onboot settings, to start VServers on VCD startup
 - fix/cleanup mount (esp. wrt. vdir being a top-level mount point)
-- debian/ dir, RPM .spec file, init scripts, distrib make targets, pathprog probably
 - add mount points to template configuration/provide default mount points
+- debian/ dir, RPM .spec file, init scripts, distrib make targets, pathprog probably
 
 WANTED FEATURES:
 - add vx.limits and vx.netload methods to get more info
