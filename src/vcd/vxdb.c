@@ -119,10 +119,8 @@ void vxdb_sanity_check_table(struct _vxdb_table *table)
 			"WHERE name = '%s' AND type = 'table'",
 			table->name);
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW) {
-		log_warn("table '%s' does not exist", table->name);
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW)
 		vxdb_create_table(table);
-	}
 
 	else
 		vxdb_sanity_check_unique(table);
