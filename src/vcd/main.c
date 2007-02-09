@@ -65,6 +65,7 @@ void usage(int rc)
 	printf("Usage: vcd [<opts>*]\n"
 			"\n"
 			"Available options:\n"
+			"   -b            fork to background (daemonize)\n"
 			"   -c <file>     configuration file (default: %s/vcd.conf)\n"
 			"   -d            debug mode (do not fork to background)\n",
 			SYSCONFDIR);
@@ -86,7 +87,7 @@ void sigsegv_handler(int sig, siginfo_t *info, void *ucontext)
 int main(int argc, char **argv)
 {
 	char *cfg_file = SYSCONFDIR "/vcd.conf";
-	int c, debug = 0;
+	int c, background = 0, debug = 0;
 
 	/* install SIGSEGV handler */
 	struct sigaction sa;
@@ -102,13 +103,19 @@ int main(int argc, char **argv)
 	}
 
 	/* parse command line */
-	while ((c = getopt(argc, argv, "dc:")) != -1) {
+	while ((c = getopt(argc, argv, "bc:d")) != -1) {
 		switch (c) {
+		case 'b':
+			if (!debug)
+				background = 1;
+			break;
+
 		case 'c':
 			cfg_file = optarg;
 			break;
 
 		case 'd':
+			background = 0;
 			debug = 1;
 			break;
 
@@ -169,7 +176,7 @@ int main(int argc, char **argv)
 	atexit(log_close);
 
 	/* fork to background */
-	if (!debug) {
+	if (background) {
 		log_info("Running in background mode ...");
 
 		pid_t pid = fork();
