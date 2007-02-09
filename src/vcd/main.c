@@ -197,8 +197,11 @@ int main(int argc, char **argv)
 		close(STDERR_FILENO);
 	}
 
-	else
+	else if (debug)
 		log_info("Running in debugging mode ...");
+
+	else
+		log_info("Running in foreground mode ...");
 
 	/* daemonize */
 	close(STDIN_FILENO);

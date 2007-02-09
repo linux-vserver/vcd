@@ -225,7 +225,7 @@ void vxdb_sanity_check(void)
 				vxdb_version, VXDB_VERSION);
 
 	/* notify if minor changes will be made */
-	else if (vxdb_vminor < VXDB_VERSION)
+	else if (vxdb_vminor < VXDB_VERSION_MINOR)
 		log_info("updating minor changes to the database automatically ..");
 
 	/* check database schema */
