@@ -17,37 +17,202 @@
 
 #include <stdlib.h>
 
+#include "auth.h"
 #include "cfg.h"
 #include "validate.h"
 #include "vxdb.h"
+#include "vxdb-tables.h"
 
 #include <lucid/mem.h>
 #include <lucid/log.h>
 #include <lucid/printf.h>
 #include <lucid/str.h>
+#include <lucid/stralloc.h>
 
 
 sqlite3 *vxdb = NULL;
+
+static
+void vxdb_create_table(struct _vxdb_table *table)
+{
+	log_info("creating table '%s'", table->name);
+
+	stralloc_t _sa, *sa = &_sa;
+	stralloc_init(sa);
+
+	stralloc_catf(sa,
+			"BEGIN EXCLUSIVE TRANSACTION;"
+			"CREATE TABLE '%s' (",
+			table->name);
+
+	int i;
+
+	for (i = 0; table->columns[i]; i++)
+		stralloc_catf(sa, "%s%s", table->columns[i],
+				table->columns[i+1] ? ", " : ");");
+
+	for (i = 0; table->unique[i]; i++)
+		stralloc_catf(sa, "CREATE UNIQUE INDEX 'u_%s' ON '%s' (%s);",
+				table->unique[i],
+				table->name,
+				table->unique[i]);
+
+	stralloc_cats(sa, "COMMIT TRANSACTION;");
+
+	char *sql = stralloc_finalize(sa);
+	stralloc_free(sa);
+
+	int rc = vxdb_exec(sql);
+
+	if (rc != SQLITE_OK)
+		log_error_and_die("could not create table '%s': %s",
+				table->name, sqlite3_errmsg(vxdb));
+
+	mem_free(sql);
+}
+
+static
+void vxdb_create_index(const char *table, const char *columns)
+{
+	log_info("creating unique index for (%s) in table '%s'",
+			columns, table);
+
+	int rc = vxdb_exec("CREATE UNIQUE INDEX 'u_%s' ON '%s' (%s)",
+				columns, table, columns);
+
+	if (rc != SQLITE_OK)
+		log_error_and_die("could not create unique index "
+				"for (%s) in table '%s': %s",
+				columns, table, sqlite3_errmsg(vxdb));
+}
+
+static
+void vxdb_sanity_check_unique(struct _vxdb_table *table)
+{
+	vxdb_result *dbr;
+
+	int i, rc;
+
+	for (i = 0; table->unique[i]; i++) {
+		rc = vxdb_prepare(&dbr,
+				"SELECT name FROM sqlite_master "
+				"WHERE name = '%s' AND tbl_name '%s' AND type = 'index'",
+				table->unique[i], table->name);
+
+		if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW) {
+			log_warn("unique index for (%s) missing in table '%s'",
+					table->unique[i], table->name);
+			vxdb_create_index(table->name, table->unique[i]);
+		}
+	}
+}
+
+static
+void vxdb_sanity_check_table(struct _vxdb_table *table)
+{
+	vxdb_result *dbr;
+
+	int rc = vxdb_prepare(&dbr,
+			"SELECT name FROM sqlite_master "
+			"WHERE name = '%s' AND type = 'table'",
+			table->name);
+
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW) {
+		log_warn("table '%s' does not exist", table->name);
+		vxdb_create_table(table);
+	}
+
+	else
+		vxdb_sanity_check_unique(table);
+}
+
+static
+void vxdb_create_user(const char *name)
+{
+	log_info("creating user '%s' with empty password", name);
+
+	int rc = SQLITE_OK, uid = auth_getnextuid();
+
+	if (str_equal(name, "admin")) {
+		rc = vxdb_exec(
+				"BEGIN EXCLUSIVE TRANSACTION;"
+				"INSERT INTO user (uid, name, password, admin) "
+				"VALUES (%d, 'admin', '*', 1);"
+				"INSERT INTO user_caps VALUES(%d, 'AUTH');"
+				"INSERT INTO user_caps VALUES(%d, 'DLIM');"
+				"INSERT INTO user_caps VALUES(%d, 'INIT');"
+				"INSERT INTO user_caps VALUES(%d, 'MOUNT');"
+				"INSERT INTO user_caps VALUES(%d, 'NET');"
+				"INSERT INTO user_caps VALUES(%d, 'BCAP');"
+				"INSERT INTO user_caps VALUES(%d, 'CCAP');"
+				"INSERT INTO user_caps VALUES(%d, 'CFLAG');"
+				"INSERT INTO user_caps VALUES(%d, 'RLIM');"
+				"INSERT INTO user_caps VALUES(%d, 'SCHED');"
+				"INSERT INTO user_caps VALUES(%d, 'UNAME');"
+				"INSERT INTO user_caps VALUES(%d, 'CREATE');"
+				"INSERT INTO user_caps VALUES(%d, 'EXEC');"
+				"INSERT INTO user_caps VALUES(%d, 'INFO');" /* 15 */
+				"COMMIT TRANSACTION;",
+				uid, uid, uid, uid, uid, uid, uid,
+				uid, uid, uid, uid, uid, uid, uid, uid);
+	}
+
+	else if (str_equal(name, "vshelper")) {
+		rc = vxdb_exec(
+				"BEGIN EXCLUSIVE TRANSACTION;"
+				"INSERT INTO user (uid, name, password, admin) "
+				"VALUES (%d, 'vshelper', '*', 0);"
+				"INSERT INTO user_caps VALUES(%d, 'HELPER');"
+				"COMMIT TRANSACTION",
+				uid, uid);
+	}
+
+	if (rc != SQLITE_OK)
+		log_error_and_die("could not create user '%s': %s",
+				name, sqlite3_errmsg(vxdb));
+
+	log_info("remember to set a password for user '%s'", name);
+}
 
 static
 void vxdb_sanity_check(void)
 {
 	LOG_TRACEME
 
-	int rc;
+	int rc, i;
 	vxdb_result *dbr;
 
-	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE admin = 1");
+	/* check database schema */
+	for (i = 0; _vxdb_tables[i].name; i++)
+		vxdb_sanity_check_table(&(_vxdb_tables[i]));
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW)
-		log_warn("No admin user found");
+	/* check if there are users */
+	rc = vxdb_prepare(&dbr, "SELECT uid FROM user LIMIT 1");
+
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW) {
+		log_warn("no user exists in the database");
+		vxdb_create_user("admin");
+	}
 
 	sqlite3_finalize(dbr);
 
+	/* check if there is an admin user */
+	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE admin = 1 LIMIT 1");
+
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW) {
+		log_warn("no admin user exists in the database");
+		vxdb_create_user("admin");
+	}
+
+	sqlite3_finalize(dbr);
+
+	/* check if there is a vshelper user */
 	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE name = 'vshelper'");
 
-	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW)
-		log_warn("No vshelper user found");
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW) {
+		log_warn("no vshelper user exists in the database");
+		vxdb_create_user("vshelper");
+	}
 
 	sqlite3_finalize(dbr);
 }

@@ -40,6 +40,7 @@ int auth_isvalid(const char *user, const char *pass);
 int auth_isadmin(const char *user);
 int auth_capable(const char *user, uint64_t caps);
 int auth_isowner(const char *user, const char *name);
-int auth_getuid (const char *user);
+int auth_getuid(const char *user);
+int auth_getnextuid(void);
 
 #endif

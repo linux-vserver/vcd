@@ -31,7 +31,8 @@ noinst_HEADERS = auth.h \
                  methods.h \
                  syscall-compat.h \
                  validate.h \
-                 vxdb.h
+                 vxdb.h \
+                 vxdb-tables.h
 
 sbin_PROGRAMS = vcd
 

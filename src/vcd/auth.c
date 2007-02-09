@@ -168,3 +168,23 @@ int auth_getuid(const char *user)
 
 	return uid;
 }
+
+int auth_getnextuid(void)
+{
+	LOG_TRACEME
+
+	int uid, rc;
+	vxdb_result *dbr;
+
+	rc = vxdb_prepare(&dbr,
+			"SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
+
+	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+		uid = sqlite3_column_int(dbr, 0);
+	else
+		uid = 0;
+
+	sqlite3_finalize(dbr);
+
+	return uid + 1;
+}
