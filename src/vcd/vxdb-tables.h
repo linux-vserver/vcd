@@ -24,6 +24,10 @@ struct _vxdb_table {
 	const char **unique;
 };
 
+#define VXDB_VERSION_MAJOR 1
+#define VXDB_VERSION_MINOR 1
+#define VXDB_VERSION ((VXDB_VERSION_MAJOR << 8) | VXDB_VERSION_MINOR)
+
 #define VXDB_COLUMNS_NEW(NAME, ...) \
 	static const char *_ ## NAME ## _columns[] = { __VA_ARGS__, NULL };
 

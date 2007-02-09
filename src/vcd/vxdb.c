@@ -184,9 +184,60 @@ void vxdb_sanity_check(void)
 	int rc, i;
 	vxdb_result *dbr;
 
+	/* check database version */
+	rc = vxdb_prepare(&dbr, "PRAGMA user_version");
+
+	if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW)
+		log_error_and_die("could not get database version: %s",
+				sqlite3_errmsg(vxdb));
+
+	int vxdb_version = sqlite3_column_int(dbr, 0);
+	int vxdb_vmajor  = vxdb_version >> 8;
+	int vxdb_vminor  = vxdb_version & 0xff;
+
+	sqlite3_finalize(dbr);
+
+	/* check foreign database */
+	if (vxdb_version == 0) {
+		log_warn("no database version found");
+
+		rc = vxdb_prepare(&dbr,
+				"SELECT name FROM sqlite_master LIMIT 1");
+
+		if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+			log_error_and_die("cannot create initial schema: "
+					"database is not empty, but has no version either");
+
+		else
+			log_info("database is empty, creating new one from scratch ..");
+	}
+
+	/* check if manual upgrade is required */
+	else if (vxdb_vmajor < VXDB_VERSION_MAJOR)
+		log_error_and_die("your database schema needs to be updated manually. "
+				"please run 'vxdbupdate'");
+
+	/* check if the user has downgraded */
+	else if (vxdb_vmajor > VXDB_VERSION_MAJOR ||
+			vxdb_vminor > VXDB_VERSION_MINOR)
+		log_error_and_die("found database version %#.4x, "
+				"but current is %#.4x. downgrade will not work!",
+				vxdb_version, VXDB_VERSION);
+
+	/* notify if minor changes will be made */
+	else if (vxdb_vminor < VXDB_VERSION)
+		log_info("updating minor changes to the database automatically ..");
+
 	/* check database schema */
 	for (i = 0; _vxdb_tables[i].name; i++)
 		vxdb_sanity_check_table(&(_vxdb_tables[i]));
+
+	/* set current version after schema check has passed */
+	rc = vxdb_exec("PRAGMA user_version = %d", VXDB_VERSION);
+
+	if (rc != SQLITE_OK)
+		log_error_and_die("could not set database version: %s",
+				sqlite3_errmsg(vxdb));
 
 	/* check if there are users */
 	rc = vxdb_prepare(&dbr, "SELECT uid FROM user LIMIT 1");
