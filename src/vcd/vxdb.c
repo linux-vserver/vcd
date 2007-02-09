@@ -52,7 +52,8 @@ void vxdb_create_table(struct _vxdb_table *table)
 				table->columns[i+1] ? ", " : ");");
 
 	for (i = 0; table->unique[i]; i++)
-		stralloc_catf(sa, "CREATE UNIQUE INDEX 'u_%s' ON '%s' (%s);",
+		stralloc_catf(sa, "CREATE UNIQUE INDEX 'u_%s_%s' ON '%s' (%s);",
+				table->name,
 				table->unique[i],
 				table->name,
 				table->unique[i]);
@@ -77,8 +78,8 @@ void vxdb_create_index(const char *table, const char *columns)
 	log_info("creating unique index for (%s) in table '%s'",
 			columns, table);
 
-	int rc = vxdb_exec("CREATE UNIQUE INDEX 'u_%s' ON '%s' (%s)",
-				columns, table, columns);
+	int rc = vxdb_exec("CREATE UNIQUE INDEX 'u_%s_%s' ON '%s' (%s)",
+				table, columns, table, columns);
 
 	if (rc != SQLITE_OK)
 		log_error_and_die("could not create unique index "
@@ -96,8 +97,9 @@ void vxdb_sanity_check_unique(struct _vxdb_table *table)
 	for (i = 0; table->unique[i]; i++) {
 		rc = vxdb_prepare(&dbr,
 				"SELECT name FROM sqlite_master "
-				"WHERE name = '%s' AND tbl_name '%s' AND type = 'index'",
-				table->unique[i], table->name);
+				"WHERE name = 'u_%s_%s' AND "
+				"tbl_name = '%s' AND type = 'index'",
+				table->name, table->unique[i], table->name);
 
 		if (rc != SQLITE_OK || vxdb_step(dbr) != SQLITE_ROW) {
 			log_warn("unique index for (%s) missing in table '%s'",
