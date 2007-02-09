@@ -165,10 +165,11 @@ int main(int argc, char **argv)
 		log_options.log_fd = open_append(logfile);
 	}
 
-	if (debug) {
+	if (!background)
 		log_options.log_dest |= LOGD_STDERR;
+
+	if (debug)
 		log_options.log_mask = ((1 << (LOGP_TRACE + 1)) - 1);
-	}
 
 	log_init(&log_options);
 
