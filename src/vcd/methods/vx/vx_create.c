@@ -289,21 +289,24 @@ xmlrpc_value *find_free_xid(xmlrpc_env *env)
 	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
 			int cnt = vxdb_column_int(dbr, 0);
-			int max = vxdb_column_int(dbr, 1);
 
-			if (max < 2)
+			if (cnt < 1)
 				xid = 2;
 
-			else if (max < 65535)
-				xid = max + 1;
+			else {
+				int max = vxdb_column_int(dbr, 1);
 
-			else if (cnt < 65535) {
-				int i;
+				if (max < 65535)
+					xid = max + 1;
 
-				for (i = 2; i < 65535; i++) {
-					if (!vxdb_getname(i)) {
-						xid = i;
-						break;
+				else if (cnt < 65535) {
+					int i;
+
+					for (i = 2; i < 65535; i++) {
+						if (!vxdb_getname(i)) {
+							xid = i;
+							break;
+						}
 					}
 				}
 			}
