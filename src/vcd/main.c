@@ -81,7 +81,7 @@ void sigsegv_handler(int sig, siginfo_t *info, void *ucontext)
 	log_error("you probably found a bug in vcd!");
 	log_error("please report it to hollow@gentoo.org");
 
-	exit(EXIT_FAILURE);
+	kill(getpid(), info->si_signo);
 }
 
 int main(int argc, char **argv)
