@@ -125,6 +125,7 @@ MPROTO(m_helper_shutdown);
 MPROTO(m_helper_startup);
 
 /* vcd */
+MPROTO(m_vcd_login);
 MPROTO(m_vcd_user_caps_add);
 MPROTO(m_vcd_user_caps_get);
 MPROTO(m_vcd_user_caps_remove);

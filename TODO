@@ -11,8 +11,6 @@ NEEDED FEATURES:
 - vcc and vce list commands
 - method to list templates (vx.templates) and vcc command for it
 - vcd internal stats (uptime, queries performed, requests served, ...)
-- method to just authenticate to vcd (vx.login), basically you submit user + pw and get back 1 or 0,
-  if you are or aren't authorized to work with vcd
 
 WANTED FEATURES:
 - add vx.limits and vx.netload methods to get more info
