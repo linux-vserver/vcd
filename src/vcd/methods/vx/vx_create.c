@@ -447,8 +447,6 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 			"INSERT INTO mount (xid, src, dst, type, opts) "
 			"VALUES (%d, '%s', '%s', '%s', '%s');",
 			xid, msrc, mdst, mtype, mopts);
-
-		cfg_free(cfg_mount);
 	}
 
 	/* get bcaps */
@@ -513,8 +511,6 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	stralloc_cats(sa, "COMMIT TRANSACTION;");
 
 	char *sql = stralloc_finalize(sa);
-
-	cfg_free(tcfg);
 
 	if (vxdb_exec(sql) != VXDB_OK) {
 		method_set_vxdb_fault(env);
