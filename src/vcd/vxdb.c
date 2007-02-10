@@ -369,10 +369,10 @@ int vxdb_exec(const char *fmt, ...)
 
 	rc = sqlite3_exec(vxdb, sql, NULL, NULL, NULL);
 
-	mem_free(sql);
-
 	if (rc != VXDB_OK)
 		log_warn("vxdb_exec(%s): %s", sql, vxdb_errmsg(vxdb));
+
+	mem_free(sql);
 
 	return rc;
 }
