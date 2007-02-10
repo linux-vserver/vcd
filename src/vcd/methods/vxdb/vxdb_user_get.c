@@ -43,7 +43,8 @@ xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (user) {
 		if (!validate_username(user))
-			method_return_fault(env, MEINVAL);
+			method_return_faultf(env, MEINVAL,
+					"invalid username value: %s", user);
 
 		rc = vxdb_prepare(&dbr,
 				"SELECT name,uid,admin FROM user WHERE name = '%s'",

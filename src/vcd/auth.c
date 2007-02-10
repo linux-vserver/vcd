@@ -17,6 +17,7 @@
 
 #include "auth.h"
 #include "lists.h"
+#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/mem.h>
@@ -154,6 +155,9 @@ int auth_getuid(const char *user)
 
 	int uid, rc;
 	vxdb_result *dbr;
+
+	if (!validate_username(user))
+		return 0;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT uid FROM user WHERE name = '%s'",

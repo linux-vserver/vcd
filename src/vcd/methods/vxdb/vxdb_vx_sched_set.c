@@ -47,10 +47,17 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"tokensmax", &tokensmax);
 	method_return_if_fault(env);
 
+	if (!validate_cpuid(cpuid))
+		method_return_faultf(env, MEINVAL,
+				"cpuid out of range: %d", cpuid);
+
 	if (!validate_token_bucket(fillrate, interval,
 	                           fillrate2, interval2,
 	                           tokensmin, tokensmax))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid bucket specification: %d,%d,%d,%d,%d,%d",
+				fillrate, interval, fillrate2,
+				interval2, tokensmin, tokensmax);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

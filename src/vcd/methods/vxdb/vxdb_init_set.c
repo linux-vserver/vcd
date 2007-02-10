@@ -55,10 +55,17 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!reboot)
 		reboot = "/sbin/reboot";
 
-	if (!str_path_isabs(init) ||
-	    !str_path_isabs(halt) ||
-	    !str_path_isabs(reboot))
-		method_return_fault(env, MEINVAL);
+	if (!str_path_isabs(init))
+		method_return_faultf(env, MEINVAL,
+				"invalid init value: %s", init);
+
+	if (!str_path_isabs(halt))
+		method_return_faultf(env, MEINVAL,
+				"invalid halt value: %s", halt);
+
+	if (!str_path_isabs(reboot))
+		method_return_faultf(env, MEINVAL,
+				"invalid reboot value: %s", reboot);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

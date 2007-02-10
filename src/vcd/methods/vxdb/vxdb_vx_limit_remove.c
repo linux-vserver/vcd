@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *limit;
+	char *name, *type;
 	xid_t xid;
 	int rc;
 
@@ -37,21 +37,22 @@ xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 		"{s:s,s:s,*}",
 		"name", &name,
-		"limit", &limit);
+		"type", &type);
 	method_return_if_fault(env);
 
-	method_empty_params(1, &limit);
+	method_empty_params(1, &type);
 
-	if (limit && !validate_rlimit(limit))
-		method_return_fault(env, MEINVAL);
+	if (type && !validate_rlimit(type))
+		method_return_faultf(env, MEINVAL,
+				"invalid type value: %s", type);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (limit)
+	if (type)
 		rc = vxdb_exec(
 				"DELETE FROM vx_limit WHERE xid = %d AND type = '%s'",
-				xid, limit);
+				xid, type);
 
 	else
 		rc = vxdb_exec(

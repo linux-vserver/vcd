@@ -43,8 +43,13 @@ xmlrpc_value *m_vxdb_nx_addr_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	method_empty_params(1, &netmask);
 
-	if (!validate_addr(addr) || (netmask && !validate_addr(netmask)))
-		method_return_fault(env, MEINVAL);
+	if (!validate_addr(addr))
+		method_return_faultf(env, MEINVAL,
+				"invalid addr value: %s", addr);
+	
+	if (netmask && !validate_addr(netmask))
+		method_return_faultf(env, MEINVAL,
+				"invalid netmask value: %s", netmask);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

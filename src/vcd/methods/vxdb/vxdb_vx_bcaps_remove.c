@@ -43,7 +43,8 @@ xmlrpc_value *m_vxdb_vx_bcaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_empty_params(1, &bcap);
 
 	if (bcap && !validate_bcap(bcap))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid bcap value: %s", bcap);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

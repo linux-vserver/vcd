@@ -40,9 +40,6 @@ xmlrpc_value *m_vxdb_owner_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"name", &name);
 	method_return_if_fault(env);
 
-	if (!validate_name(name))
-		method_return_fault(env, MEINVAL);
-
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
@@ -59,8 +56,8 @@ xmlrpc_value *m_vxdb_owner_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	response = xmlrpc_array_new(env);
 
 	vxdb_foreach_step(rc, dbr)
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-			"s", vxdb_column_text(dbr, 0)));
+		xmlrpc_array_append_item(env, response,
+				xmlrpc_build_value(env, "s", vxdb_column_text(dbr, 0)));
 
 	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);

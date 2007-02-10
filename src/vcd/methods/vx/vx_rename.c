@@ -43,7 +43,8 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	if (!validate_name(newname))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid newname value: %s", newname);
 
 	if (vxdb_getxid(newname))
 		method_return_fault(env, MEEXIST);

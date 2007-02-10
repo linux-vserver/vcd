@@ -41,7 +41,8 @@ xmlrpc_value *m_vxdb_nx_broadcast_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	if (!validate_addr(broadcast))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid broadcast value: %s", broadcast);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

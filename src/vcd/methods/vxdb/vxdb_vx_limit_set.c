@@ -46,8 +46,13 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"max", &maxp);
 	method_return_if_fault(env);
 
-	if (!str_isdigit(softp) || !str_isdigit(maxp))
-		method_return_fault(env, MEINVAL);
+	if (!str_isdigit(softp))
+		method_return_faultf(env, MEINVAL,
+				"soft value is not a number: %s", softp);
+
+	if (!str_isdigit(maxp))
+		method_return_faultf(env, MEINVAL,
+				"max value is not a number: %s", maxp);
 
 	uint64_t soft = CRLIM_KEEP;
 	uint64_t max  = CRLIM_KEEP;
@@ -55,8 +60,14 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	sscanf(softp, "%" SCNu64, &soft);
 	sscanf(maxp,  "%" SCNu64, &max);
 
-	if (!validate_rlimit(type) || !validate_rlimits(soft, max))
-		method_return_fault(env, MEINVAL);
+	if (!validate_rlimit(type))
+		method_return_faultf(env, MEINVAL,
+				"invalid type value: %s", type);
+
+	if (!validate_rlimits(soft, max))
+		method_return_faultf(env, MEINVAL,
+				"invalid limit specification: %" PRIu64 ",%" PRIu64,
+				soft, max);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

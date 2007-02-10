@@ -31,7 +31,6 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *user, *pass, *whirlpool_pass;
 	int uid, admin, rc;
-	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -46,30 +45,17 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_empty_params(1, &pass);
 
 	if (!validate_username(user))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid username value: %s", user);
 
 	uid = auth_getuid(user);
 
 	if (uid == 0) {
 		if (!validate_password(pass))
-			method_return_fault(env, MEINVAL);
+			method_return_faultf(env, MEINVAL, "%s",
+					"invalid password value");
 
-		rc = vxdb_prepare(&dbr, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
-
-		if (rc != VXDB_OK)
-			method_return_vxdb_fault(env);
-
-		rc = vxdb_step(dbr);
-
-		if (rc == VXDB_ROW)
-			uid = vxdb_column_int(dbr, 0);
-		else if (rc != VXDB_DONE)
-			method_set_vxdb_fault(env);
-
-		uid++;
-
-		vxdb_finalize(dbr);
-		method_return_if_fault(env);
+		uid = auth_getnextuid();
 
 		if (str_cmpn(pass, "WHIRLPOOLENC//", 14) == 0)
 			whirlpool_pass = str_dup(pass+14);
@@ -94,6 +80,10 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_vxdb_fault(env);
 
 		if (pass) {
+			if (!validate_password(pass))
+				method_return_faultf(env, MEINVAL, "%s",
+						"invalid password value");
+
 			if (str_cmpn(pass, "WHIRLPOOLENC//", 14) == 0)
 				whirlpool_pass = str_dup(pass+14);
 			else

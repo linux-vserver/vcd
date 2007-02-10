@@ -40,7 +40,8 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_empty_params(1, &dst);
 
 	if (dst && !validate_path(dst))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid dst value: %s", dst);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

@@ -28,7 +28,7 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params, *response = NULL;
-	char *name, *limit;
+	char *name, *type;
 	xid_t xid;
 	vxdb_result *dbr;
 	int rc;
@@ -39,22 +39,23 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
 			"name", &name,
-			"limit", &limit);
+			"type", &type);
 	method_return_if_fault(env);
 
-	method_empty_params(1, &limit);
+	method_empty_params(1, &type);
 
-	if (limit && !validate_rlimit(limit))
-		method_return_fault(env, MEINVAL);
+	if (type && !validate_rlimit(type))
+		method_return_faultf(env, MEINVAL,
+				"invalid type value: %s", type);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (limit)
+	if (type)
 		rc = vxdb_prepare(&dbr,
 				"SELECT type,soft,max FROM vx_limit "
 				"WHERE xid = %d AND type = '%s'",
-				xid, limit);
+				xid, type);
 
 	else
 		rc = vxdb_prepare(&dbr,
@@ -70,9 +71,9 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s,s:s}",
-				"limit", vxdb_column_text(dbr, 0),
-				"soft",  vxdb_column_text(dbr, 1),
-				"max",   vxdb_column_text(dbr, 2)));
+				"type", vxdb_column_text(dbr, 0),
+				"soft", vxdb_column_text(dbr, 1),
+				"max",  vxdb_column_text(dbr, 2)));
 
 	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);

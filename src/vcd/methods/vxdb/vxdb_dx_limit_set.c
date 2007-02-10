@@ -47,8 +47,13 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"reserved", &reserved);
 	method_return_if_fault(env);
 
-	if (!str_isdigit(spacep) || !str_isdigit(inodesp))
-		method_return_fault(env, MEINVAL);
+	if (!str_isdigit(spacep))
+		method_return_faultf(env, MEINVAL,
+				"space value is not a number: %s", spacep);
+
+	if (!str_isdigit(inodesp))
+		method_return_faultf(env, MEINVAL,
+				"inodes value is not a number: %s", inodesp);
 
 	uint32_t space  = CDLIM_KEEP;
 	uint32_t inodes = CDLIM_KEEP;
@@ -56,8 +61,14 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	sscanf(spacep,  "%" SCNu32, &space);
 	sscanf(inodesp, "%" SCNu32, &inodes);
 
-	if (!validate_path(path) || !validate_dlimits(space, inodes, reserved))
-		method_return_fault(env, MEINVAL);
+	if (!validate_path(path))
+		method_return_faultf(env, MEINVAL,
+				"invalid path value: %s", path);
+	
+	if (!validate_dlimits(space, inodes, reserved))
+		method_return_faultf(env, MEINVAL,
+				"invalid limit specification: %" PRIu32 ",%" PRIu32 ",%d",
+				space, inodes, reserved);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

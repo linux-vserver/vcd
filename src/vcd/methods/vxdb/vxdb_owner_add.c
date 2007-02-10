@@ -40,13 +40,14 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"username", &user);
 	method_return_if_fault(env);
 
-	if (!validate_name(name) || !validate_username(user))
-		method_return_fault(env, MEINVAL);
+	uid = auth_getuid(user);
+
+	if (uid < 1)
+		method_return_faultf(env, MENOUSER,
+				"user does not exist: %s", user);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
-
-	uid = auth_getuid(user);
 
 	rc = vxdb_exec(
 			"INSERT OR REPLACE INTO xid_uid_map (xid, uid) VALUES (%d, %d)",

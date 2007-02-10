@@ -1,7 +1,6 @@
 VCD
 
 BUGS:
-- better error messages (esp. on MEINVAL), check error handling in general
 
 NEEDED FEATURES:
 - disk limits implementation, important feature for hosting/reselling/etc. solutions

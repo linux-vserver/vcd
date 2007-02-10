@@ -43,7 +43,8 @@ xmlrpc_value *m_vxdb_vx_ccaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_empty_params(1, &ccap);
 
 	if (ccap && !validate_ccap(ccap))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid ccap value: %s", ccap);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

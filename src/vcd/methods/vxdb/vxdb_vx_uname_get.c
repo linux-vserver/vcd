@@ -44,7 +44,8 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_empty_params(2, &name, &uname);
 
 	if (uname && !validate_uname(uname))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid uname value: %s", uname);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

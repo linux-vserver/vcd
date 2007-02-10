@@ -42,14 +42,12 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	method_empty_params(1, &user);
 
-	if (!validate_name(name) || (user && !validate_username(user)))
-		method_return_fault(env, MEINVAL);
-
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
 	if (user && (uid = auth_getuid(user)) == 0)
-		method_return_fault(env, MENOUSER);
+		method_return_faultf(env, MENOUSER,
+				"user does not exist: %s", user);
 
 	if (uid)
 		rc = vxdb_exec(

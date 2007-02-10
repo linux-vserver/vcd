@@ -42,7 +42,8 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	/* TODO: -2 ?? */
+	/* -2 is used to get all configured cpus, we can't use -1 here,
+	 * since it has special meaning in helper.startup */
 	if (cpuid == -2)
 		rc = vxdb_exec("DELETE FROM vx_sched WHERE xid = %d", xid);
 

@@ -45,7 +45,8 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_empty_params(1, &user);
 
 	if (user && !validate_username(user))
-		method_return_fault(env, MEINVAL);
+		method_return_faultf(env, MEINVAL,
+				"invalid username value: %s", user);
 
 	if (auth_isadmin(curuser)) {
 		if (user)
@@ -54,7 +55,8 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	else {
 		if (user && !str_equal(curuser, user))
-			method_return_fault(env, MEINVAL);
+			method_return_faultf(env, MEPERM,
+					"cannot list foreign user: %s", user);
 
 		uid = auth_getuid(curuser);
 	}
