@@ -49,20 +49,20 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_exec("DELETE FROM restart WHERE xid = %d", xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
-	if (sqlite3_changes(vxdb) < 1)
+	if (vxdb_changes(vxdb) < 1)
 		return xmlrpc_nil_new(env);
 
 	vxdb_result *dbr;
 	rc = vxdb_prepare(&dbr, "SELECT timeout FROM init WHERE xid = %d", xid);
 
-	if (rc == SQLITE_OK) {
-		if (vxdb_step(dbr) == SQLITE_ROW)
-			timeout = sqlite3_column_int(dbr, 0);
+	if (rc == VXDB_OK) {
+		if (vxdb_step(dbr) == VXDB_ROW)
+			timeout = vxdb_column_int(dbr, 0);
 
-		sqlite3_finalize(dbr);
+		vxdb_finalize(dbr);
 	}
 
 	timeout = timeout < 1 ? 15 : timeout;

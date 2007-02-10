@@ -50,7 +50,7 @@ xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"INSERT OR REPLACE INTO vx_bcaps (xid, bcap) VALUES (%d, '%s')",
 			xid, bcap);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

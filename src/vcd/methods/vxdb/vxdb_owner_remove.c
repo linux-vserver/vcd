@@ -61,7 +61,7 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"DELETE FROM xid_uid_map WHERE xid = %d",
 				xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

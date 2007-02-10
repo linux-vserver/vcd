@@ -83,7 +83,7 @@ char *method_strerror(int id);
 
 #define method_set_vxdb_fault(ENV) do { \
 	xmlrpc_env_set_fault_formatted(ENV, MEVXDB, "%s: error in vxdb: %s", \
-			__FUNCTION__, sqlite3_errmsg(vxdb)); \
+			__FUNCTION__, vxdb_errmsg(vxdb)); \
 } while (0)
 
 #define method_set_faultf(ENV, ID, FMT, ...) do { \

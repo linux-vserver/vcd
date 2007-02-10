@@ -15,33 +15,46 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <inttypes.h>
+
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/scanf.h>
+#include <lucid/str.h>
 
 xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *path;
-	int space, inodes, reserved, rc;
+	char *name, *path, *spacep, *inodesp;
+	int reserved, rc;
 	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_DLIM, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,s:i,s:i,s:i,*}",
+			"{s:s,s:s,s:s,s:s,s:i,*}",
 			"name", &name,
 			"path", &path,
-			"space", &space,
-			"inodes", &inodes,
+			"space", &spacep,
+			"inodes", &inodesp,
 			"reserved", &reserved);
 	method_return_if_fault(env);
+
+	if (!str_isdigit(spacep) || !str_isdigit(inodesp))
+		method_return_fault(env, MEINVAL);
+
+	uint32_t space  = CDLIM_KEEP;
+	uint32_t inodes = CDLIM_KEEP;
+
+	sscanf(spacep,  "%" SCNu32, &space);
+	sscanf(inodesp, "%" SCNu32, &inodes);
 
 	if (!validate_path(path) || !validate_dlimits(space, inodes, reserved))
 		method_return_fault(env, MEINVAL);
@@ -50,11 +63,12 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-			"INSERT OR REPLACE INTO dx_limit (xid, path, space, inodes, reserved) "
-			"VALUES (%d, '%s', %d, %d, %d)",
+			"INSERT OR REPLACE INTO dx_limit "
+			"(xid, path, space, inodes, reserved) "
+			"VALUES (%d, '%s', '%" PRIu32 "', '%" PRIu32 "', %d)",
 			xid, path, space, inodes, reserved);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

@@ -56,19 +56,19 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 		rc = vxdb_prepare(&dbr, "SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
 
-		if (rc != SQLITE_OK)
+		if (rc != VXDB_OK)
 			method_return_vxdb_fault(env);
 
 		rc = vxdb_step(dbr);
 
-		if (rc == SQLITE_ROW)
-			uid = sqlite3_column_int(dbr, 0);
-		else if (rc != SQLITE_DONE)
+		if (rc == VXDB_ROW)
+			uid = vxdb_column_int(dbr, 0);
+		else if (rc != VXDB_DONE)
 			method_set_vxdb_fault(env);
 
 		uid++;
 
-		sqlite3_finalize(dbr);
+		vxdb_finalize(dbr);
 		method_return_if_fault(env);
 
 		if (str_cmpn(pass, "WHIRLPOOLENC//", 14) == 0)
@@ -81,7 +81,7 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"VALUES (%d, '%s', '%s', %d)",
 				uid, user, whirlpool_pass, admin);
 
-		if (rc != SQLITE_OK)
+		if (rc != VXDB_OK)
 			method_return_vxdb_fault(env);
 	}
 
@@ -90,7 +90,7 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"UPDATE user SET admin = %d WHERE uid = %d",
 				admin, uid);
 
-		if (rc != SQLITE_OK)
+		if (rc != VXDB_OK)
 			method_return_vxdb_fault(env);
 
 		if (pass) {
@@ -103,7 +103,7 @@ xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 					"UPDATE user SET password = '%s' WHERE uid = %d",
 					whirlpool_pass, uid);
 
-			if (rc != SQLITE_OK)
+			if (rc != VXDB_OK)
 				method_return_vxdb_fault(env);
 		}
 	}

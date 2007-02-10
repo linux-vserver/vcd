@@ -61,23 +61,23 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"WHERE xid = %d",
 				xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	response = xmlrpc_array_new(env);
 
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i,s:i,s:i}",
-				"path",     sqlite3_column_text(dbr, 0),
-				"space",    sqlite3_column_int(dbr, 1),
-				"inodes",   sqlite3_column_int(dbr, 2),
-				"reserved", sqlite3_column_int(dbr, 3)));
+				"{s:s,s:s,s:s,s:i}",
+				"path",    vxdb_column_text(dbr, 0),
+				"space",   vxdb_column_text(dbr, 1),
+				"inodes",  vxdb_column_text(dbr, 2),
+				"reserved", vxdb_column_int(dbr, 3)));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return response;
 }

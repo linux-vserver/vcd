@@ -57,7 +57,7 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"WHERE xid = %d ORDER BY dst ASC",
 				xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	response = xmlrpc_array_new(env);
@@ -65,15 +65,15 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s,s:s,s:s}",
-				"src",  sqlite3_column_text(dbr, 0),
-				"dst",  sqlite3_column_text(dbr, 1),
-				"type", sqlite3_column_text(dbr, 2),
-				"opts", sqlite3_column_text(dbr, 3)));
+				"src",  vxdb_column_text(dbr, 0),
+				"dst",  vxdb_column_text(dbr, 1),
+				"type", vxdb_column_text(dbr, 2),
+				"opts", vxdb_column_text(dbr, 3)));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return response;
 }

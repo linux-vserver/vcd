@@ -52,7 +52,7 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"INSERT OR REPLACE INTO xid_uid_map (xid, uid) VALUES (%d, %d)",
 			xid, uid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

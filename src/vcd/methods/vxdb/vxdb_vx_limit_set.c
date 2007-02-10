@@ -15,20 +15,23 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <inttypes.h>
+
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/scanf.h>
+#include <lucid/str.h>
 
 xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *limit;
-	int soft, max;
+	char *name, *type, *softp, *maxp;
 	xid_t xid;
 	int rc;
 
@@ -36,14 +39,23 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,s:i,s:i,*}",
+			"{s:s,s:s,s:s,s:s,*}",
 			"name", &name,
-			"limit", &limit, /* TODO: s/limit/type/ */
-			"soft", &soft,
-			"max", &max);
+			"type", &type,
+			"soft", &softp,
+			"max", &maxp);
 	method_return_if_fault(env);
 
-	if (!validate_rlimit(limit) || !validate_rlimits(soft, max))
+	if (!str_isdigit(softp) || !str_isdigit(maxp))
+		method_return_fault(env, MEINVAL);
+
+	uint64_t soft = CRLIM_KEEP;
+	uint64_t max  = CRLIM_KEEP;
+
+	sscanf(softp, "%" SCNu64, &soft);
+	sscanf(maxp,  "%" SCNu64, &max);
+
+	if (!validate_rlimit(type) || !validate_rlimits(soft, max))
 		method_return_fault(env, MEINVAL);
 
 	if (!(xid = vxdb_getxid(name)))
@@ -51,10 +63,10 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_exec(
 			"INSERT OR REPLACE INTO vx_limit (xid, type, soft, max) "
-			"VALUES (%d, '%s', %d, %d)",
-			xid, limit, soft, max);
+			"VALUES (%d, '%s', '%" PRIu64 "', '%" PRIu64 "')",
+			xid, type, soft, max);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

@@ -56,13 +56,14 @@ xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-			"INSERT OR REPLACE INTO vx_sched (xid, fillrate, interval, fillrate2, "
+			"INSERT OR REPLACE INTO vx_sched "
+			"(xid, fillrate, interval, fillrate2, "
 			"interval2, tokensmin, tokensmax, cpuid) "
 			"VALUES (%d, %d, %d, %d, %d, %d, %d, %d)",
 			xid, fillrate, interval, fillrate2, interval2,
 			tokensmin, tokensmax, cpuid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

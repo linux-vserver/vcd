@@ -50,7 +50,7 @@ xmlrpc_value *m_vxdb_vx_ccaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"INSERT OR REPLACE INTO vx_ccaps (xid, ccap) VALUES (%d, '%s')",
 			xid, ccap);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

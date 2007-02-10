@@ -43,7 +43,7 @@ xmlrpc_value *m_helper_restart(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_exec("INSERT OR REPLACE INTO restart (xid) VALUES (%d)", xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

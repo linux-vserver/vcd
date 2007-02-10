@@ -68,7 +68,7 @@ xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"VALUES (%d, '%s', '%s', '%s', %d)",
 			xid, init, halt, reboot, timeout);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

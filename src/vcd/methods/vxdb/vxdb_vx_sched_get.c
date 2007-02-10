@@ -44,20 +44,23 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	/* TODO: -2 ?? */
+	/* -2 is used to get all configured cpus, we can't use -1 here,
+	 * since it has special meaning in helper.startup */
 	if (cpuid == -2)
 		rc = vxdb_prepare(&dbr,
-				"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
+				"SELECT cpuid, fillrate, interval, fillrate2, "
+				"interval2, tokensmin, tokensmax "
 				"FROM vx_sched WHERE xid = %d",
 				xid);
 
 	else
 		rc = vxdb_prepare(&dbr,
-				"SELECT cpuid,fillrate,interval,fillrate2,interval2,tokensmin,tokensmax "
+				"SELECT cpuid, fillrate, interval, fillrate2, "
+				"interval2, tokensmin, tokensmax "
 				"FROM vx_sched WHERE xid = %d AND cpuid = %d",
 				xid, cpuid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	response = xmlrpc_array_new(env);
@@ -65,18 +68,18 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:i,s:i,s:i,s:i,s:i,s:i,s:i}",
-				"cpuid",     sqlite3_column_int(dbr, 0),
-				"fillrate",  sqlite3_column_int(dbr, 1),
-				"interval",  sqlite3_column_int(dbr, 2),
-				"fillrate2", sqlite3_column_int(dbr, 3),
-				"interval2", sqlite3_column_int(dbr, 4),
-				"tokensmin", sqlite3_column_int(dbr, 5),
-				"tokensmax", sqlite3_column_int(dbr, 6)));
+				"cpuid",     vxdb_column_int(dbr, 0),
+				"fillrate",  vxdb_column_int(dbr, 1),
+				"interval",  vxdb_column_int(dbr, 2),
+				"fillrate2", vxdb_column_int(dbr, 3),
+				"interval2", vxdb_column_int(dbr, 4),
+				"tokensmin", vxdb_column_int(dbr, 5),
+				"tokensmax", vxdb_column_int(dbr, 6)));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return response;
 }

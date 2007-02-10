@@ -64,7 +64,7 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"VALUES (%d, '%s', '%s', '%s', '%s')",
 			xid, src, dst, type, opts);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

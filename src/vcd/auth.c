@@ -43,12 +43,12 @@ int auth_isvalid(const char *user, const char *pass)
 
 	mem_free(whirlpool_pass);
 
-	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
 		rc = 1;
 	else
 		rc = 0;
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return rc;
 }
@@ -64,12 +64,12 @@ int auth_isadmin(const char *user)
 			"SELECT uid FROM user WHERE name = '%s' AND admin = 1",
 			user);
 
-	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
 		rc = 1;
 	else
 		rc = 0;
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return rc;
 }
@@ -93,12 +93,12 @@ int auth_hascapability(const char *user, uint64_t cap)
 			"SELECT uid FROM user_caps WHERE uid = %d and cap = '%s'",
 			uid, buf);
 
-	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
 		rc = 1;
 	else
 		rc = 0;
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return rc;
 }
@@ -138,12 +138,12 @@ int auth_isowner(const char *user, const char *name)
 			"SELECT uid FROM xid_uid_map WHERE uid = %d AND xid = %d",
 			uid, xid);
 
-	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
 		rc = 1;
 	else
 		rc = 0;
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return rc;
 }
@@ -159,12 +159,12 @@ int auth_getuid(const char *user)
 			"SELECT uid FROM user WHERE name = '%s'",
 			user);
 
-	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
-		uid = sqlite3_column_int(dbr, 0);
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
+		uid = vxdb_column_int(dbr, 0);
 	else
 		uid = 0;
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return uid;
 }
@@ -179,12 +179,12 @@ int auth_getnextuid(void)
 	rc = vxdb_prepare(&dbr,
 			"SELECT uid FROM user ORDER BY uid DESC LIMIT 1");
 
-	if (rc == SQLITE_OK && vxdb_step(dbr) == SQLITE_ROW)
-		uid = sqlite3_column_int(dbr, 0);
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
+		uid = vxdb_column_int(dbr, 0);
 	else
 		uid = 0;
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return uid + 1;
 }

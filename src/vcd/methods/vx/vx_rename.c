@@ -55,7 +55,7 @@ xmlrpc_value *m_vx_rename(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"UPDATE xid_name_map SET name = '%s' WHERE xid = %d;",
 			newname, xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	vx_uname_t unameb;

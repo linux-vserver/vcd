@@ -63,15 +63,15 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	/* 1.1) setup system capabilities */
 	rc = vxdb_prepare(&dbr, "SELECT bcap FROM vx_bcaps WHERE xid = %d", xid);
 
-	if (rc == SQLITE_OK)
+	if (rc == VXDB_OK)
 		vxdb_foreach_step(rc, dbr)
 			bcaps.flags |= flist64_getval(bcaps_list,
-					sqlite3_column_text(dbr, 0));
+					vxdb_column_text(dbr, 0));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	method_return_if_fault(env);
 
 	bcaps.flags = ~(bcaps.flags);
@@ -84,15 +84,15 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	/* 1.2) setup context capabilities */
 	rc = vxdb_prepare(&dbr, "SELECT ccap FROM vx_ccaps WHERE xid = %d", xid);
 
-	if (rc == SQLITE_OK)
+	if (rc == VXDB_OK)
 		vxdb_foreach_step(rc, dbr)
 			ccaps.flags |= flist64_getval(ccaps_list,
-					sqlite3_column_text(dbr, 0));
+					vxdb_column_text(dbr, 0));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	method_return_if_fault(env);
 
 	log_debug("ccaps(%d): %#.16llx, %#.16llx", xid, ccaps.flags, ccaps.mask);
@@ -103,15 +103,15 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	/* 1.3) setup context flags */
 	rc = vxdb_prepare(&dbr, "SELECT flag FROM vx_flags WHERE xid = %d", xid);
 
-	if (rc == SQLITE_OK)
+	if (rc == VXDB_OK)
 		vxdb_foreach_step(rc, dbr)
 			cflags.flags |= flist64_getval(cflags_list,
-					sqlite3_column_text(dbr, 0));
+					vxdb_column_text(dbr, 0));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	method_return_if_fault(env);
 
 	cflags.mask = cflags.flags;
@@ -123,21 +123,6 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 		method_return_sys_fault(env, "vx_set_flags");
 
 	return NULL;
-}
-
-static
-uint64_t str_to_rlim(const char *str)
-{
-	if (str_cmp(str, "inf") == 0)
-		return CRLIM_INFINITY;
-
-	uint64_t lim;
-
-	/* if the argument is invalid we keep defaults */
-	if (sscanf(str, "%" SCNu64, &lim) < 1)
-		return CRLIM_KEEP;
-
-	return lim;
 }
 
 static
@@ -158,9 +143,9 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 			"SELECT type,soft,max FROM vx_limit WHERE xid = %d",
 			xid);
 
-	if (rc == SQLITE_OK) {
+	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
-			type = sqlite3_column_text(dbr, 0);
+			type = vxdb_column_text(dbr, 0);
 
 			if (!(buf32 = flist32_getval(rlimit_list, type)))
 				continue;
@@ -170,8 +155,8 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 				continue;
 
 			limit.id        = v2i32(buf32);
-			limit.softlimit = str_to_rlim(sqlite3_column_text(dbr, 1));
-			limit.maximum   = str_to_rlim(sqlite3_column_text(dbr, 2));
+			limit.softlimit = vxdb_column_uint64(dbr, 1);
+			limit.maximum   = vxdb_column_uint64(dbr, 2);
 
 			if (limit.maximum < limit.softlimit)
 				limit.maximum = limit.softlimit;
@@ -186,10 +171,10 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 		}
 	}
 
-	if (!env->fault_occurred && rc != SQLITE_DONE)
+	if (!env->fault_occurred && rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	return NULL;
 }
 
@@ -210,12 +195,12 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 			"FROM vx_sched WHERE xid = %d ORDER BY cpuid ASC",
 			xid);
 
-	if (rc == SQLITE_OK) {
+	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
 			sched.mask |= VXSM_FILL_RATE|VXSM_INTERVAL;
 			sched.mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX;
 
-			cpuid = sqlite3_column_int(dbr, 0);
+			cpuid = vxdb_column_int(dbr, 0);
 
 			if (cpuid > numcpus)
 				continue;
@@ -225,12 +210,12 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 				sched.mask  |= VXSM_CPU_ID;
 			}
 
-			sched.fill_rate[0] = sqlite3_column_int(dbr, 1);
-			sched.interval[0]  = sqlite3_column_int(dbr, 2);
-			sched.fill_rate[1] = sqlite3_column_int(dbr, 3);
-			sched.interval[1]  = sqlite3_column_int(dbr, 4);
-			sched.tokens_min   = sqlite3_column_int(dbr, 5);
-			sched.tokens_max   = sqlite3_column_int(dbr, 6);
+			sched.fill_rate[0] = vxdb_column_int32(dbr, 1);
+			sched.fill_rate[1] = vxdb_column_int32(dbr, 2);
+			sched.interval[0]  = vxdb_column_int32(dbr, 3);
+			sched.interval[1]  = vxdb_column_int32(dbr, 4);
+			sched.tokens_min   = vxdb_column_int32(dbr, 5);
+			sched.tokens_max   = vxdb_column_int32(dbr, 6);
 
 			if (sched.fill_rate[1] > 0 && sched.interval[1] > 0)
 				sched.mask |= VXSM_IDLE_TIME|VXSM_FILL_RATE2|VXSM_INTERVAL2;
@@ -249,10 +234,10 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 		}
 	}
 
-	if (!env->fault_occurred && rc != SQLITE_DONE)
+	if (!env->fault_occurred && rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	return NULL;
 }
 
@@ -270,17 +255,17 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 			"SELECT uname,value FROM vx_uname WHERE xid = %d",
 			xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	vxdb_foreach_step(rc, dbr) {
-		if (!(id = flist32_getval(uname_list, sqlite3_column_text(dbr, 0))))
+		if (!(id = flist32_getval(uname_list, vxdb_column_text(dbr, 0))))
 			continue;
 
 		uname.id = v2i32(id);
 
 		mem_set(uname.value, 0, 65);
-		mem_cpy(uname.value, sqlite3_column_text(dbr, 1), 64);
+		mem_cpy(uname.value, vxdb_column_text(dbr, 1), 64);
 
 		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
 
@@ -290,10 +275,10 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 		}
 	}
 
-	if (!env->fault_occurred && rc != SQLITE_DONE)
+	if (!env->fault_occurred && rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	method_return_if_fault(env);
 
 	if (!str_isempty(name)) {
@@ -345,10 +330,10 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env)
 static
 xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int mtabfd)
 {
-	const char *src  = sqlite3_column_text(dbr, 0);
-	const char *dst  = sqlite3_column_text(dbr, 1);
-	const char *type = sqlite3_column_text(dbr, 2);
-	const char *opts = sqlite3_column_text(dbr, 3);
+	const char *src  = vxdb_column_text(dbr, 0);
+	const char *dst  = vxdb_column_text(dbr, 1);
+	const char *type = vxdb_column_text(dbr, 2);
+	const char *opts = vxdb_column_text(dbr, 3);
 
 	if (str_isempty(type))
 		type = "auto";
@@ -422,7 +407,7 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 			"SELECT src,dst,type,opts FROM mount WHERE xid = %d AND dst = '/'",
 			xid);
 
-	if (rc == SQLITE_OK) {
+	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
 			do_mount(env, vdir, dbr, mtabfd);
 
@@ -431,10 +416,10 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 		}
 	}
 
-	if (!env->fault_occurred && rc != SQLITE_DONE)
+	if (!env->fault_occurred && rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	if (env->fault_occurred) {
 		close(mtabfd);
@@ -446,7 +431,7 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 			"SELECT src,dst,type,opts FROM mount WHERE xid = %d",
 			xid);
 
-	if (rc == SQLITE_OK) {
+	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
 			do_mount(env, vdir, dbr, mtabfd);
 
@@ -455,10 +440,10 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 		}
 	}
 
-	if (!env->fault_occurred && rc != SQLITE_DONE)
+	if (!env->fault_occurred && rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	close(mtabfd);
 
 	return NULL;
@@ -493,14 +478,14 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_prepare(&dbr, "SELECT init FROM init WHERE xid = %d", xid);
 
-	if (rc == SQLITE_OK)
+	if (rc == VXDB_OK)
 		vxdb_foreach_step(rc, dbr)
-			init = str_dup(sqlite3_column_text(dbr, 0));
+			init = str_dup(vxdb_column_text(dbr, 0));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	method_return_if_fault(env);
 
 	context_caps_and_flags(env);

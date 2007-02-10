@@ -72,19 +72,19 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		rc = vxdb_prepare(&dbr,
 				"SELECT name FROM xid_name_map ORDER BY name ASC");
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	response = xmlrpc_array_new(env);
 
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"s", sqlite3_column_text(dbr, 0)));
+				"s", vxdb_column_text(dbr, 0)));
 	
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return response;
 }

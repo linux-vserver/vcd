@@ -286,10 +286,10 @@ xmlrpc_value *find_free_xid(xmlrpc_env *env)
 	int rc = vxdb_prepare(&dbr,
 			"SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
 
-	if (rc == SQLITE_OK) {
+	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
-			int cnt = sqlite3_column_int(dbr, 0);
-			int max = sqlite3_column_int(dbr, 1);
+			int cnt = vxdb_column_int(dbr, 0);
+			int max = vxdb_column_int(dbr, 1);
 
 			if (max < 2)
 				xid = 2;
@@ -310,14 +310,14 @@ xmlrpc_value *find_free_xid(xmlrpc_env *env)
 		}
 	}
 
-	if (!env->fault_occurred && rc != SQLITE_DONE)
+	if (!env->fault_occurred && rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
 	if (xid == 0)
 			method_set_faultf(env, MEVXDB,
 					"no free context id available: %s", name);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	return NULL;
 }
 
@@ -466,7 +466,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 
 	char *sql = stralloc_finalize(sa);
 
-	if (vxdb_exec(sql) != SQLITE_OK) {
+	if (vxdb_exec(sql) != VXDB_OK) {
 		method_set_vxdb_fault(env);
 		runlink(vdir);
 	}

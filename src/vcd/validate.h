@@ -41,12 +41,12 @@ int validate_cflag(const char *cflag);
 int validate_pflag(const char *pflag);
 
 int validate_rlimit(const char *rlimit);
-int validate_rlimits(int soft, int max);
+int validate_rlimits(uint64_t soft, uint64_t max);
 
 int validate_cpuid(int cpuid);
-int validate_token_bucket(int32_t fillrate, int32_t interval,
-                          int32_t fillrate2, int32_t interval2,
-                          int32_t tokensmin, int32_t tokensmax);
+int validate_token_bucket(int fillrate, int interval,
+                          int fillrate2, int interval2,
+                          int tokensmin, int tokensmax);
 
 int validate_uname(const char *uname);
 int validate_uname_value(const char *value);

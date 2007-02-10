@@ -50,7 +50,7 @@ xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
 			uid, cap);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

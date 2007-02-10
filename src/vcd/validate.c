@@ -46,7 +46,9 @@ int validate_path(const char *path)
 int validate_dlimits(uint32_t inodes, uint32_t space, int reserved)
 {
 	LOG_TRACEME
-	return (reserved > 0 && reserved < 100);
+	return reserved > 0 && reserved < 100 &&
+			inodes != CDLIM_KEEP && inodes != CDLIM_INFINITY &&
+			space  != CDLIM_KEEP && space  != CDLIM_INFINITY;
 }
 
 int validate_addr(const char *addr)
@@ -97,10 +99,11 @@ int validate_rlimit(const char *rlimit)
 	return !(str_isempty(rlimit) || flist32_getval(rlimit_list, rlimit) == 0);
 }
 
-int validate_rlimits(int soft, int max)
+int validate_rlimits(uint64_t soft, uint64_t max)
 {
 	LOG_TRACEME
-	return (soft >= 0 && max >= 0 && max >= soft);
+	return soft != CRLIM_KEEP && soft != CRLIM_INFINITY &&
+			max != CRLIM_KEEP && max != CRLIM_INFINITY;
 }
 
 int validate_cpuid(int cpuid)
@@ -109,9 +112,8 @@ int validate_cpuid(int cpuid)
 	return (cpuid >= 0 && cpuid < sysconf(_SC_NPROCESSORS_ONLN));
 }
 
-int validate_token_bucket(int32_t fillrate, int32_t interval,
-                          int32_t fillrate2, int32_t interval2,
-                          int32_t tokensmin, int32_t tokensmax)
+int validate_token_bucket(int fillrate, int interval, int fillrate2,
+		int interval2, int tokensmin, int tokensmax)
 {
 	LOG_TRACEME
 	return !(

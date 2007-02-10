@@ -58,7 +58,7 @@ xmlrpc_value *m_vxdb_vx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"DELETE FROM vx_limit WHERE xid = %d",
 				xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

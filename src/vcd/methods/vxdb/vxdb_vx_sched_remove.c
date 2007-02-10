@@ -51,7 +51,7 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
 				xid, cpuid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);

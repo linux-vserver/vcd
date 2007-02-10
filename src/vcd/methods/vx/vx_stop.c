@@ -56,18 +56,18 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	rc = vxdb_prepare(&dbr,
 			"SELECT halt,timeout FROM init WHERE xid = %d", xid);
 
-	if (rc == SQLITE_OK) {
+	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
-			halt = str_dup(sqlite3_column_text(dbr, 0));
-			timeout = sqlite3_column_int(dbr, 1);
+			halt = str_dup(vxdb_column_text(dbr, 0));
+			timeout = vxdb_column_int(dbr, 1);
 			timeout = timeout < 1 ? 15 : timeout;
 		}
 	}
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 	method_return_if_fault(env);
 
 	params = xmlrpc_build_value(env,

@@ -62,22 +62,22 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"WHERE xid = %d",
 				xid);
 
-	if (rc != SQLITE_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	response = xmlrpc_array_new(env);
 
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i,s:i}",
-				"limit", sqlite3_column_text(dbr, 0),
-				"soft",  sqlite3_column_int(dbr, 1),
-				"max",   sqlite3_column_int(dbr, 2)));
+				"{s:s,s:s,s:s}",
+				"limit", vxdb_column_text(dbr, 0),
+				"soft",  vxdb_column_text(dbr, 1),
+				"max",   vxdb_column_text(dbr, 2)));
 
-	if (rc != SQLITE_DONE)
+	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 
-	sqlite3_finalize(dbr);
+	vxdb_finalize(dbr);
 
 	return response;
 }
