@@ -24,7 +24,7 @@
 #include <lucid/str.h>
 #include <lucid/whirlpool.h>
 
-xmlrpc_value *m_vxdb_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vcd_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 

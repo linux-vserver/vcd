@@ -124,6 +124,14 @@ MPROTO(m_helper_restart);
 MPROTO(m_helper_shutdown);
 MPROTO(m_helper_startup);
 
+/* vcd */
+MPROTO(m_vcd_user_caps_add);
+MPROTO(m_vcd_user_caps_get);
+MPROTO(m_vcd_user_caps_remove);
+MPROTO(m_vcd_user_get);
+MPROTO(m_vcd_user_remove);
+MPROTO(m_vcd_user_set);
+
 /* vx */
 MPROTO(m_vx_create);
 MPROTO(m_vx_exec);
@@ -157,12 +165,6 @@ MPROTO(m_vxdb_owner_add);
 MPROTO(m_vxdb_owner_get);
 MPROTO(m_vxdb_owner_remove);
 MPROTO(m_vxdb_remove);
-MPROTO(m_vxdb_user_caps_add);
-MPROTO(m_vxdb_user_caps_get);
-MPROTO(m_vxdb_user_caps_remove);
-MPROTO(m_vxdb_user_get);
-MPROTO(m_vxdb_user_remove);
-MPROTO(m_vxdb_user_set);
 MPROTO(m_vxdb_vdir_get);
 MPROTO(m_vxdb_vx_bcaps_add);
 MPROTO(m_vxdb_vx_bcaps_get);

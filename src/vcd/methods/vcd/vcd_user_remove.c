@@ -16,21 +16,19 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
 
-xmlrpc_value *m_vxdb_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vcd_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params, *response = NULL;
+	xmlrpc_value *params;
 	char *user;
 	int uid, rc;
-	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -40,28 +38,19 @@ xmlrpc_value *m_vxdb_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"username", &user);
 	method_return_if_fault(env);
 
-	method_empty_params(1, &user);
-
-	if (!(uid = auth_getuid(user)))
+	if ((uid = auth_getuid(user)) == 0)
 		method_return_fault(env, MENOUSER);
 
-	rc = vxdb_prepare(&dbr,
-			"SELECT cap FROM user_caps WHERE uid = %d",
-			uid);
+	rc = vxdb_exec(
+			"BEGIN TRANSACTION;"
+			"DELETE FROM xid_uid_map WHERE uid = %1$d;"
+			"DELETE FROM user_caps WHERE uid = %1$d;"
+			"DELETE FROM user WHERE uid = %1$d;"
+			"COMMIT TRANSACTION;",
+		uid);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
-	response = xmlrpc_array_new(env);
-
-	vxdb_foreach_step(rc, dbr)
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"s", vxdb_column_text(dbr, 0)));
-
-	if (rc != VXDB_DONE)
-		method_set_vxdb_fault(env);
-
-	vxdb_finalize(dbr);
-
-	return response;
+	return xmlrpc_nil_new(env);
 }

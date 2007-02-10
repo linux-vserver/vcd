@@ -22,7 +22,7 @@
 
 #include <lucid/log.h>
 
-xmlrpc_value *m_vxdb_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vcd_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 

@@ -22,6 +22,13 @@ M_HELPER = helper/helper_netup.c \
            helper/helper_shutdown.c \
            helper/helper_startup.c
 
+M_VCD = vcd/vcd_user_caps_add.c \
+        vcd/vcd_user_caps_get.c \
+        vcd/vcd_user_caps_remove.c \
+        vcd/vcd_user_get.c \
+        vcd/vcd_user_remove.c \
+        vcd/vcd_user_set.c
+
 M_VX = vx/vx_create.c \
        vx/vx_exec.c \
        vx/vx_kill.c \
@@ -52,12 +59,6 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_owner_add.c \
          vxdb/vxdb_owner_get.c \
          vxdb/vxdb_owner_remove.c \
-         vxdb/vxdb_user_caps_add.c \
-         vxdb/vxdb_user_caps_get.c \
-         vxdb/vxdb_user_caps_remove.c \
-         vxdb/vxdb_user_get.c \
-         vxdb/vxdb_user_remove.c \
-         vxdb/vxdb_user_set.c \
          vxdb/vxdb_vdir_get.c \
          vxdb/vxdb_vx_bcaps_add.c \
          vxdb/vxdb_vx_bcaps_get.c \
@@ -82,5 +83,6 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
 noinst_LIBRARIES = libmethods.a
 
 libmethods_a_SOURCES = $(M_HELPER) \
+                       $(M_VCD) \
                        $(M_VX) \
                        $(M_VXDB)

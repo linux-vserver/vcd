@@ -22,13 +22,14 @@
 
 #include <lucid/log.h>
 
-xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vcd_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params;
+	xmlrpc_value *params, *response = NULL;
 	char *user;
-	int uid, rc;
+	vxdb_result *dbr;
+	int rc;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -38,19 +39,38 @@ xmlrpc_value *m_vxdb_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"username", &user);
 	method_return_if_fault(env);
 
-	if ((uid = auth_getuid(user)) == 0)
-		method_return_fault(env, MENOUSER);
+	method_empty_params(1, &user);
 
-	rc = vxdb_exec(
-			"BEGIN TRANSACTION;"
-			"DELETE FROM xid_uid_map WHERE uid = %1$d;"
-			"DELETE FROM user_caps WHERE uid = %1$d;"
-			"DELETE FROM user WHERE uid = %1$d;"
-			"COMMIT TRANSACTION;",
-		uid);
+	if (user) {
+		if (!validate_username(user))
+			method_return_faultf(env, MEINVAL,
+					"invalid username value: %s", user);
+
+		rc = vxdb_prepare(&dbr,
+				"SELECT name,uid,admin FROM user WHERE name = '%s'",
+				user);
+	}
+
+	else
+		rc = vxdb_prepare(&dbr,
+				"SELECT name,uid,admin FROM user ORDER BY name ASC");
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
-	return xmlrpc_nil_new(env);
+	response = xmlrpc_array_new(env);
+
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:i,s:i}",
+				"username", vxdb_column_text(dbr, 0),
+				"uid",      vxdb_column_int(dbr, 1),
+				"admin",    vxdb_column_int(dbr, 2)));
+
+	if (rc != VXDB_DONE)
+		method_set_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
+
+	return response;
 }

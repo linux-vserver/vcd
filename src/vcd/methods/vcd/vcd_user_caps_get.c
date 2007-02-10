@@ -16,43 +16,52 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
+#include "lists.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
 
-xmlrpc_value *m_vxdb_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vcd_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params;
-	char *user, *cap;
-	int uid;
-	int rc;
+	xmlrpc_value *params, *response = NULL;
+	char *user;
+	int uid, rc;
+	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,*}",
-			"username", &user,
-			"cap", &cap);
+			"{s:s,*}",
+			"username", &user);
 	method_return_if_fault(env);
 
-	if (!validate_vcd_cap(cap))
-		method_return_faultf(env, MEINVAL,
-				"invalid cap value: %s", cap);
+	method_empty_params(1, &user);
 
 	if (!(uid = auth_getuid(user)))
 		method_return_fault(env, MENOUSER);
 
-	rc = vxdb_exec(
-			"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
-			uid, cap);
+	rc = vxdb_prepare(&dbr,
+			"SELECT cap FROM user_caps WHERE uid = %d",
+			uid);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
-	return xmlrpc_nil_new(env);
+	response = xmlrpc_array_new(env);
+
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"s", vxdb_column_text(dbr, 0)));
+
+	if (rc != VXDB_DONE)
+		method_set_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
+
+	return response;
 }

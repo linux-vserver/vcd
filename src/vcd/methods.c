@@ -63,6 +63,14 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("helper.shutdown", m_helper_shutdown);
 	MREGISTER("helper.startup",  m_helper_startup);
 
+	/* vcd */
+	MREGISTER("vcd.user.caps.add",    m_vcd_user_caps_add);
+	MREGISTER("vcd.user.caps.get",    m_vcd_user_caps_get);
+	MREGISTER("vcd.user.caps.remove", m_vcd_user_caps_remove);
+	MREGISTER("vcd.user.get",         m_vcd_user_get);
+	MREGISTER("vcd.user.remove",      m_vcd_user_remove);
+	MREGISTER("vcd.user.set",         m_vcd_user_set);
+
 	/* vx */
 	MREGISTER("vx.create",  m_vx_create);
 	MREGISTER("vx.exec",    m_vx_exec);
@@ -95,12 +103,6 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vxdb.owner.add",           m_vxdb_owner_add);
 	MREGISTER("vxdb.owner.get",           m_vxdb_owner_get);
 	MREGISTER("vxdb.owner.remove",        m_vxdb_owner_remove);
-	MREGISTER("vxdb.user.caps.add",       m_vxdb_user_caps_add);
-	MREGISTER("vxdb.user.caps.get",       m_vxdb_user_caps_get);
-	MREGISTER("vxdb.user.caps.remove",    m_vxdb_user_caps_remove);
-	MREGISTER("vxdb.user.get",            m_vxdb_user_get);
-	MREGISTER("vxdb.user.remove",         m_vxdb_user_remove);
-	MREGISTER("vxdb.user.set",            m_vxdb_user_set);
 	MREGISTER("vxdb.vdir.get",            m_vxdb_vdir_get);
 	MREGISTER("vxdb.vx.bcaps.add",        m_vxdb_vx_bcaps_add);
 	MREGISTER("vxdb.vx.bcaps.get",        m_vxdb_vx_bcaps_get);

@@ -22,55 +22,37 @@
 
 #include <lucid/log.h>
 
-xmlrpc_value *m_vxdb_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vcd_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params, *response = NULL;
-	char *user;
-	vxdb_result *dbr;
+	xmlrpc_value *params;
+	char *user, *cap;
+	int uid;
 	int rc;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,*}",
-			"username", &user);
+			"{s:s,s:s,*}",
+			"username", &user,
+			"cap", &cap);
 	method_return_if_fault(env);
 
-	method_empty_params(1, &user);
+	if (!validate_vcd_cap(cap))
+		method_return_faultf(env, MEINVAL,
+				"invalid cap value: %s", cap);
 
-	if (user) {
-		if (!validate_username(user))
-			method_return_faultf(env, MEINVAL,
-					"invalid username value: %s", user);
+	if (!(uid = auth_getuid(user)))
+		method_return_fault(env, MENOUSER);
 
-		rc = vxdb_prepare(&dbr,
-				"SELECT name,uid,admin FROM user WHERE name = '%s'",
-				user);
-	}
-
-	else
-		rc = vxdb_prepare(&dbr,
-				"SELECT name,uid,admin FROM user ORDER BY name ASC");
+	rc = vxdb_exec(
+			"INSERT OR REPLACE INTO user_caps (uid, cap) VALUES (%d, '%s')",
+			uid, cap);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
-	response = xmlrpc_array_new(env);
-
-	vxdb_foreach_step(rc, dbr)
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i,s:i}",
-				"username", vxdb_column_text(dbr, 0),
-				"uid",      vxdb_column_int(dbr, 1),
-				"admin",    vxdb_column_int(dbr, 2)));
-
-	if (rc != VXDB_DONE)
-		method_set_vxdb_fault(env);
-
-	vxdb_finalize(dbr);
-
-	return response;
+	return xmlrpc_nil_new(env);
 }
