@@ -25,6 +25,7 @@
 #include "lists.h"
 #include "methods.h"
 #include "syscall-compat.h"
+#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/chroot.h>
@@ -47,6 +48,13 @@
 #define DEFAULT_FLAGS "{ VIRT_MEM, VIRT_UPTIME, VIRT_CPU, " \
                       "VIRT_LOAD, HIDE_NETIF }"
 
+static cfg_opt_t MOUNT_OPTS[] = {
+	CFG_STR("src", NULL, CFGF_NONE),
+	CFG_STR("type", NULL, CFGF_NONE),
+	CFG_STR("opts", NULL, CFGF_NONE),
+	CFG_END()
+};
+
 static cfg_opt_t BUILD_OPTS[] = {
 	CFG_STR("description", NULL, CFGF_NONE),
 
@@ -54,6 +62,8 @@ static cfg_opt_t BUILD_OPTS[] = {
 	CFG_STR("halt",    "/sbin/halt",   CFGF_NONE),
 	CFG_STR("reboot",  "/sbin/reboot", CFGF_NONE),
 	CFG_INT("timeout", 15,             CFGF_NONE),
+
+	CFG_SEC("mount", MOUNT_OPTS, CFGF_MULTI | CFGF_TITLE | CFGF_NONE),
 
 	CFG_STR_LIST("vx_bcaps", DEFAULT_BCAPS, CFGF_NONE),
 	CFG_STR_LIST("vx_ccaps", DEFAULT_CCAPS, CFGF_NONE),
@@ -230,7 +240,7 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 	if (xid > 0) {
 		const char *oldvdir = vxdb_getvdir(name);
 
-		if (str_isempty(oldvdir) || !str_path_isabs(oldvdir))
+		if (!validate_path(oldvdir))
 			method_return_faultf(env, MECONF,
 					"invalid old vdir: %s", oldvdir);
 
@@ -385,15 +395,15 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	const char *reboot = cfg_getstr(tcfg, "reboot");
 	int timeout        = cfg_getint(tcfg, "timeout");
 
-	if (str_isempty(init) || !str_path_isabs(init))
+	if (!validate_path(init))
 		method_return_faultf(env, MECONF,
 				"invalid template configuration for init: %s", init);
 
-	if (str_isempty(halt) || !str_path_isabs(halt))
+	if (!validate_path(halt))
 		method_return_faultf(env, MECONF,
 				"invalid template configuration for halt: %s", halt);
 
-	if (str_isempty(reboot) || !str_path_isabs(reboot))
+	if (!validate_path(reboot))
 		method_return_faultf(env, MECONF,
 				"invalid template configuration for reboot: %s", reboot);
 
@@ -405,6 +415,41 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 			xid, init, halt, reboot, timeout);
 
 	int i;
+
+	/* get mounts */
+	int mount_size = cfg_size(tcfg, "mount");
+
+	for(i = 0; i < mount_size; i++) {
+		cfg_t *cfg_mount = cfg_getnsec(tcfg, "mount", i);
+
+		const char *mdst  = cfg_title(cfg_mount);
+		const char *msrc  = cfg_getstr(cfg_mount, "src");
+		const char *mtype = cfg_getstr(cfg_mount, "type");
+		const char *mopts = cfg_getstr(cfg_mount, "opts");
+
+		if (!validate_path(mdst))
+			method_return_faultf(env, MECONF,
+				"invalid template configuration for mount destination: %s", mdst);
+
+		if (!validate_path(msrc) && msrc != "none")
+			method_return_faultf(env, MECONF,
+				"invalid template configuration for mount source: %s", msrc);
+
+		if (str_isempty(mtype) || !str_isalnum(mtype))
+			method_return_faultf(env, MECONF,
+				"invalid template configuration for mount type: %s", mtype);
+
+		if (str_isempty(mopts) || !str_isascii(mopts))
+			method_return_faultf(env, MECONF,
+				"invalid template configuration for mount options: %s", mopts);
+
+		stralloc_catf(sa,
+			"INSERT INTO mount (xid, src, dst, type, opts) "
+			"VALUES (%d, '%s', '%s', '%s', '%s');",
+			xid, msrc, mdst, mtype, mopts);
+
+		cfg_free(cfg_mount);
+	}
 
 	/* get bcaps */
 	int vx_bcaps_size = cfg_size(tcfg, "vx_bcaps");
@@ -468,6 +513,8 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	stralloc_cats(sa, "COMMIT TRANSACTION;");
 
 	char *sql = stralloc_finalize(sa);
+
+	cfg_free(tcfg);
 
 	if (vxdb_exec(sql) != VXDB_OK) {
 		method_set_vxdb_fault(env);

@@ -94,6 +94,8 @@ void read_config(char *file, int ignore_noent)
 	port = cfg_getint(cfg, "port");
 	user = cfg_getstr(cfg, "user");
 	pass = cfg_getstr(cfg, "pass");
+
+	cfg_free(cfg);
 }
 
 static
