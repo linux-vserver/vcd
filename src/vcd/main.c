@@ -73,15 +73,27 @@ void usage(int rc)
 }
 
 static
-void sigsegv_handler(int sig, siginfo_t *info, void *ucontext)
+void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
-	log_error("caught SIGSEGV for virtual address %p (%d,%d)",
-			info->si_addr, info->si_errno, info->si_code);
+	switch (sig) {
+	case SIGHUP:
+	case SIGINT:
+	case SIGTERM:
+	case SIGQUIT:
+		log_info("caught SIGHUP/SIGINT/SIGTERM/SIGQUIT - shutting down");
+		exit(EXIT_SUCCESS);
+		break;
 
-	log_error("you probably found a bug in vcd!");
-	log_error("please report it to hollow@gentoo.org");
+	case SIGSEGV:
+		log_error("caught SIGSEGV for virtual address %p (%d,%d)",
+				info->si_addr, info->si_errno, info->si_code);
+		log_error("you probably found a bug in vcd!");
+		log_error("please report it to %s", PACKAGE_BUGREPORT);
+		break;
+	}
 
-	kill(getpid(), info->si_signo);
+	/* raise signal again (SA_RESETHAND restored the default handler) */
+	raise(sig);
 }
 
 int main(int argc, char **argv)
@@ -92,12 +104,16 @@ int main(int argc, char **argv)
 	/* install SIGSEGV handler */
 	struct sigaction sa;
 
-	sa.sa_sigaction = sigsegv_handler;
-	sa.sa_flags = SA_RESETHAND|SA_SIGINFO;
+	sa.sa_sigaction = signal_handler;
+	sa.sa_flags = SA_RESETHAND|SA_NODEFER|SA_SIGINFO;
 
 	sigfillset(&sa.sa_mask);
 
-	if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+	if (sigaction(SIGHUP, &sa, NULL) == -1 ||
+			sigaction(SIGINT, &sa, NULL) == -1 ||
+			sigaction(SIGQUIT, &sa, NULL) == -1 ||
+			sigaction(SIGSEGV, &sa, NULL) == -1 ||
+			sigaction(SIGTERM, &sa, NULL) == -1) {
 		dprintf(STDERR_FILENO, "sigaction: %s", strerror(errno));
 		exit(EXIT_FAILURE);
 	}
