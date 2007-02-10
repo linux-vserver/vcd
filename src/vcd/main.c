@@ -48,11 +48,11 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("pidfile", NULL, CFGF_NONE),
 
 	CFG_STR_CB("datadir",     LOCALSTATEDIR "/vcd",   CFGF_NONE,
-			&cfg_validate_path),
+			&cfg_validate_dir),
 	CFG_STR_CB("templatedir", VBASEDIR "/templates/", CFGF_NONE,
-			&cfg_validate_path),
+			&cfg_validate_dir),
 	CFG_STR_CB("vbasedir",    VBASEDIR,               CFGF_NONE,
-			&cfg_validate_path),
+			&cfg_validate_dir),
 
 	CFG_END()
 };
@@ -75,11 +75,11 @@ void usage(int rc)
 static
 void sigsegv_handler(int sig, siginfo_t *info, void *ucontext)
 {
-	log_error("Received SIGSEGV for virtual address %p (%d,%d)",
+	log_error("caught SIGSEGV for virtual address %p (%d,%d)",
 			info->si_addr, info->si_errno, info->si_code);
 
-	log_error("You probably found a bug in vcd!");
-	log_error("Please report it to hollow@gentoo.org");
+	log_error("you probably found a bug in vcd!");
+	log_error("please report it to hollow@gentoo.org");
 
 	exit(EXIT_FAILURE);
 }
@@ -133,11 +133,12 @@ int main(int argc, char **argv)
 
 	switch (cfg_parse(cfg, cfg_file)) {
 	case CFG_FILE_ERROR:
-		dprintf(STDERR_FILENO, "cfg_parse: %s\n", strerror(errno));
+		dprintf(STDERR_FILENO, "cfg_parse(%s): %s\n",
+				cfg_file, strerror(errno));
 		exit(EXIT_FAILURE);
 
 	case CFG_PARSE_ERROR:
-		dprintf(STDERR_FILENO, "cfg_parse: Parse error\n");
+		dprintf(STDERR_FILENO, "cfg_parse(%s): parse error\n", cfg_file);
 		exit(EXIT_FAILURE);
 
 	default:
@@ -178,7 +179,7 @@ int main(int argc, char **argv)
 
 	/* fork to background */
 	if (background) {
-		log_info("Running in background mode ...");
+		log_info("running in background mode");
 
 		pid_t pid = fork();
 
@@ -198,10 +199,10 @@ int main(int argc, char **argv)
 	}
 
 	else if (debug)
-		log_info("Running in debugging mode ...");
+		log_info("running in debugging mode");
 
 	else
-		log_info("Running in foreground mode ...");
+		log_info("running in foreground mode");
 
 	/* daemonize */
 	close(STDIN_FILENO);
@@ -251,10 +252,10 @@ int main(int argc, char **argv)
 		.socket_handle      = fd,
 	};
 
-	log_info("Accepting incomming connections on %s:%d", host, port);
+	log_info("accepting incomming connections on %s:%d", host, port);
 
 	xmlrpc_server_abyss(&env, &serverparm, XMLRPC_APSIZE(socket_handle));
 
 	/* never get here */
-	log_error_and_die("Unexpected death of Abyss server");
+	log_error_and_die("unexpected death of Abyss server");
 }

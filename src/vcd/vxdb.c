@@ -207,7 +207,7 @@ void vxdb_sanity_check(void)
 					"database is not empty, but has no version either");
 
 		else
-			log_info("database is empty, creating new one from scratch ..");
+			log_info("database is empty, creating new one from scratch");
 	}
 
 	/* check if manual upgrade is required */
@@ -224,7 +224,7 @@ void vxdb_sanity_check(void)
 
 	/* notify if minor changes will be made */
 	else if (vxdb_vminor < VXDB_VERSION_MINOR)
-		log_info("updating minor changes to the database automatically ..");
+		log_info("updating minor changes to the database automatically");
 
 	/* check database schema */
 	for (i = 0; _vxdb_tables[i].name; i++)
@@ -291,7 +291,7 @@ void vxdb_init(void)
 	mem_free(vxdbfile);
 
 	if (rc != SQLITE_OK) {
-		log_error("sqlite3_open: %s", sqlite3_errmsg(vxdb));
+		log_error("sqlite3_open(%s): %s", vxdbfile, sqlite3_errmsg(vxdb));
 		sqlite3_close(vxdb);
 		exit(EXIT_FAILURE);
 	}

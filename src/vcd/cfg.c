@@ -15,12 +15,14 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <errno.h>
 #include <sys/stat.h>
 
 #include "cfg.h"
 
 #include <lucid/addr.h>
 #include <lucid/log.h>
+#include <lucid/misc.h>
 #include <lucid/scanf.h>
 #include <lucid/str.h>
 
@@ -36,7 +38,7 @@ int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
 	LOG_TRACEME
 
 	if (addr_from_str(value, NULL, NULL) < 1) {
-		cfg_error(cfg, "Invalid address for %s = '%s'", opt->name, value);
+		cfg_error(cfg, "%s(%s) is not a valid address", opt->name, value);
 		return -1;
 	}
 
@@ -52,12 +54,12 @@ int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
 	int port;
 
 	if (sscanf(value, "%d", &port) < 1) {
-		cfg_error(cfg, "Not a number for %s = '%s'", opt->name, value);
+		cfg_error(cfg, "%s(%s) is not a number", opt->name, value);
 		return -1;
 	}
 
 	if (port < 1 || port > 65536) {
-		cfg_error(cfg, "Port out of range for %s = '%s'", opt->name, value);
+		cfg_error(cfg, "%s(%d) out of range (1-65536)", opt->name, port);
 		return -1;
 	}
 
@@ -73,12 +75,12 @@ int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
 	int timeout;
 
 	if (sscanf(value, "%d", &timeout) < 1) {
-		cfg_error(cfg, "Not a number for %s = '%s'", opt->name, value);
+		cfg_error(cfg, "%s(%s) is not a number", opt->name, value);
 		return -1;
 	}
 
 	if (timeout < 1 || timeout > 3600) {
-		cfg_error(cfg, "Timeout out of range for %s = '%s'", opt->name, value);
+		cfg_error(cfg, "%s(%d) out of range (1-3600)", opt->name, timeout);
 		return -1;
 	}
 
@@ -86,7 +88,7 @@ int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
 	return 0;
 }
 
-int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
+int cfg_validate_dir(cfg_t *cfg, cfg_opt_t *opt,
                       const char *value, void *result)
 {
 	LOG_TRACEME
@@ -94,14 +96,26 @@ int cfg_validate_path(cfg_t *cfg, cfg_opt_t *opt,
 	struct stat sb;
 
 	if (!str_path_isabs(value)) {
-		cfg_error(cfg, "Invalid absolute path for %s = '%s'", opt->name, value);
+		cfg_error(cfg, "%s is not a valid, absolute path", opt->name);
 		return -1;
 	}
 
 	if (lstat(value, &sb) == -1) {
-		cfg_error(cfg, "File does not exist for %s = '%s'", opt->name, value);
-		return -1;
+		if (errno == ENOENT) {
+			log_warn("%s(%s) does not exist, creating it",
+					opt->name, value);
+			
+			if (mkdirp(value, 0755) == -1)
+				log_perror_and_die("mkdirp(%s)", value);
+		}
+
+		else
+			log_perror_and_die("lstat(%s)", value);
 	}
+
+	else if (!S_ISDIR(sb.st_mode))
+		log_error_and_die("%s(%s) exists, but is not a directory",
+				opt->name, value);
 
 	*(const char **) result = (const char *) value;
 	return 0;
