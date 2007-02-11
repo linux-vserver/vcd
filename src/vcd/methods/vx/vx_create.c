@@ -63,7 +63,7 @@ static cfg_opt_t BUILD_OPTS[] = {
 	CFG_STR("reboot",  "/sbin/reboot", CFGF_NONE),
 	CFG_INT("timeout", 15,             CFGF_NONE),
 
-	CFG_SEC("mount", MOUNT_OPTS, CFGF_MULTI | CFGF_TITLE | CFGF_NONE),
+	CFG_SEC("mount", MOUNT_OPTS, CFGF_MULTI|CFGF_TITLE|CFGF_NONE),
 
 	CFG_STR_LIST("vx_bcaps", DEFAULT_BCAPS, CFGF_NONE),
 	CFG_STR_LIST("vx_ccaps", DEFAULT_CCAPS, CFGF_NONE),
@@ -419,7 +419,19 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	/* get mounts */
 	int mount_size = cfg_size(tcfg, "mount");
 
-	for(i = 0; i < mount_size; i++) {
+	if (mount_size < 1) {
+		stralloc_catf(sa,
+				"INSERT INTO mount (xid, src, dst, type, opts) "
+				"VALUES (%d, 'none', '/proc', 'proc', 'defaults');",
+				xid);
+
+		stralloc_catf(sa,
+				"INSERT INTO mount (xid, src, dst, type, opts) "
+				"VALUES (%d, 'none', '/dev/pts', 'devpts', 'defaults');",
+				xid);
+	}
+
+	else for (i = 0; i < mount_size; i++) {
 		cfg_t *cfg_mount = cfg_getnsec(tcfg, "mount", i);
 
 		const char *mdst  = cfg_title(cfg_mount);
