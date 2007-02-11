@@ -24,6 +24,7 @@
 #include <xmlrpc-c/client.h>
 
 #include <lucid/log.h>
+#include <lucid/misc.h>
 #include <lucid/printf.h>
 #include <lucid/scanf.h>
 #include <lucid/str.h>
