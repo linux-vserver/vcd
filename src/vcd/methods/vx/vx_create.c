@@ -431,7 +431,7 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 			method_return_faultf(env, MECONF,
 				"invalid template configuration for mount destination: %s", mdst);
 
-		if (!validate_path(msrc) && msrc != "none")
+		if (!validate_path(msrc) && !str_equal(msrc, "none"))
 			method_return_faultf(env, MECONF,
 				"invalid template configuration for mount source: %s", msrc);
 
