@@ -574,10 +574,15 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"name", &name);
 	method_return_if_fault(env);
 
+	int curfd = open_read(".");
+
 	/* get template dir */
 	const char *tbasedir = cfg_getstr(cfg, "templatedir");
 
-	DIR *tfd = opendir(tbasedir);
+	if (chdir(tbasedir) == -1)
+		method_return_sys_faultf(env, "chdir(%s)", tbasedir);
+
+	DIR *tfd = opendir(".");
 
 	if (tfd == NULL)
 		method_return_sys_faultf(env, "opendir(%s)", tbasedir);
@@ -591,7 +596,7 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				(!str_isempty(name) && !str_equal(name, dent->d_name)))
 			continue;
 
-		if (dent->d_type == DT_DIR) {
+		if (isdir(dent->d_name)) {
 			const char *description = template_description(tbasedir,
 					dent->d_name);
 
@@ -603,11 +608,10 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	}
 
 	closedir(tfd);
+	fchdir(curfd);
+	close(curfd);
 
-	if (xmlrpc_array_size(env, response) < 1)
-		return xmlrpc_nil_new(env);
-	else
-		return response;
+	return response;
 }
 
 /* vx.create(string name, string template, bool force, bool copy[, string vdir]) */
