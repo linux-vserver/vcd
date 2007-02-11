@@ -29,6 +29,7 @@ vcc_SOURCES = cmd.c \
               create.c \
               exec.c \
               kill.c \
+              list.c \
               load.c \
               login.c \
               main.c \

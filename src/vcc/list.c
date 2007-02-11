@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,25 +15,34 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <lucid/printf.h>
+
 #include "cmd.h"
 
-char *uri  = NULL;
-char *user = "admin";
-char *pass = NULL;
-char *name = NULL;
+void cmd_list(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_value *response, *result;
+	char *name;
+	int len, i;
 
-cmd_t CMDS[] = {
-	{ "create",  cmd_create },
-	{ "exec",    cmd_exec },
-	{ "kill",    cmd_kill },
-	{ "list",    cmd_list },
-	{ "load",    cmd_load },
-	{ "login",   cmd_login },
-	{ "reboot",  cmd_reboot },
-	{ "remove",  cmd_remove },
-	{ "rename",  cmd_rename },
-	{ "start",   cmd_start },
-	{ "status",  cmd_status },
-	{ "stop",    cmd_stop },
-	{ NULL,      NULL }
-};
+	response = xmlrpc_client_call(env, uri, "vxdb.list",
+		SIGNATURE(""));
+	return_if_fault(env);
+
+	len = xmlrpc_array_size(env, response);
+	return_if_fault(env);
+	
+	for (i = 0; i < len; i++) {
+		xmlrpc_array_read_item(env, response, i, &result);
+		return_if_fault(env);
+		
+		xmlrpc_decompose_value(env, result, "s", &name);
+		return_if_fault(env);
+		
+		xmlrpc_DECREF(result);
+		
+		printf("%s\n", name);
+	}
+	
+	xmlrpc_DECREF(response);
+}

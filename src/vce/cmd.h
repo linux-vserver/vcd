@@ -50,6 +50,7 @@ void cmd_dx_limit_remove    (xmlrpc_env *env, int argc, char **argv);
 void cmd_dx_limit_set       (xmlrpc_env *env, int argc, char **argv);
 void cmd_init_get           (xmlrpc_env *env, int argc, char **argv);
 void cmd_init_set           (xmlrpc_env *env, int argc, char **argv);
+void cmd_list               (xmlrpc_env *env, int argc, char **argv);
 void cmd_mount_get          (xmlrpc_env *env, int argc, char **argv);
 void cmd_mount_remove       (xmlrpc_env *env, int argc, char **argv);
 void cmd_mount_set          (xmlrpc_env *env, int argc, char **argv);

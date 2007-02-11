@@ -28,6 +28,7 @@ cmd_t CMDS[] = {
 	{ "dx.limit.set",        cmd_dx_limit_set },
 	{ "init.get",            cmd_init_get },
 	{ "init.set",            cmd_init_set },
+	{ "list",                cmd_list },
 	{ "mount.get",           cmd_mount_get },
 	{ "mount.remove",        cmd_mount_remove },
 	{ "mount.set",           cmd_mount_set },
