@@ -45,17 +45,18 @@ void do_vlogin(int argc, char **argv);
 
 void usage(int rc);
 
-void cmd_create (xmlrpc_env *env, int argc, char **argv);
-void cmd_exec   (xmlrpc_env *env, int argc, char **argv);
-void cmd_kill   (xmlrpc_env *env, int argc, char **argv);
-void cmd_list   (xmlrpc_env *env, int argc, char **argv);
-void cmd_load   (xmlrpc_env *env, int argc, char **argv);
-void cmd_login  (xmlrpc_env *env, int argc, char **argv);
-void cmd_reboot (xmlrpc_env *env, int argc, char **argv);
-void cmd_remove (xmlrpc_env *env, int argc, char **argv);
-void cmd_rename (xmlrpc_env *env, int argc, char **argv);
-void cmd_start  (xmlrpc_env *env, int argc, char **argv);
-void cmd_status (xmlrpc_env *env, int argc, char **argv);
-void cmd_stop   (xmlrpc_env *env, int argc, char **argv);
+void cmd_create   (xmlrpc_env *env, int argc, char **argv);
+void cmd_exec     (xmlrpc_env *env, int argc, char **argv);
+void cmd_kill     (xmlrpc_env *env, int argc, char **argv);
+void cmd_list     (xmlrpc_env *env, int argc, char **argv);
+void cmd_load     (xmlrpc_env *env, int argc, char **argv);
+void cmd_login    (xmlrpc_env *env, int argc, char **argv);
+void cmd_reboot   (xmlrpc_env *env, int argc, char **argv);
+void cmd_remove   (xmlrpc_env *env, int argc, char **argv);
+void cmd_rename   (xmlrpc_env *env, int argc, char **argv);
+void cmd_start    (xmlrpc_env *env, int argc, char **argv);
+void cmd_status   (xmlrpc_env *env, int argc, char **argv);
+void cmd_stop     (xmlrpc_env *env, int argc, char **argv);
+void cmd_templates(xmlrpc_env *env, int argc, char **argv);
 
 #endif

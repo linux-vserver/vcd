@@ -39,6 +39,7 @@ vcc_SOURCES = cmd.c \
               start.c \
               status.c \
               stop.c \
+              templates.c \
               vlogin.c
 
 vcc_LDADD = $(LUCID_LIBS) \

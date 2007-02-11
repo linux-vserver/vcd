@@ -23,17 +23,18 @@ char *pass = NULL;
 char *name = NULL;
 
 cmd_t CMDS[] = {
-	{ "create",  cmd_create },
-	{ "exec",    cmd_exec },
-	{ "kill",    cmd_kill },
-	{ "list",    cmd_list },
-	{ "load",    cmd_load },
-	{ "login",   cmd_login },
-	{ "reboot",  cmd_reboot },
-	{ "remove",  cmd_remove },
-	{ "rename",  cmd_rename },
-	{ "start",   cmd_start },
-	{ "status",  cmd_status },
-	{ "stop",    cmd_stop },
-	{ NULL,      NULL }
+	{ "create",    cmd_create },
+	{ "exec",      cmd_exec },
+	{ "kill",      cmd_kill },
+	{ "list",      cmd_list },
+	{ "load",      cmd_load },
+	{ "login",     cmd_login },
+	{ "reboot",    cmd_reboot },
+	{ "remove",    cmd_remove },
+	{ "rename",    cmd_rename },
+	{ "start",     cmd_start },
+	{ "status",    cmd_status },
+	{ "stop",      cmd_stop },
+	{ "templates", cmd_templates },
+	{ NULL,        NULL }
 };

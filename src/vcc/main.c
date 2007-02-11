@@ -60,6 +60,7 @@ void usage(int rc)
 	       "   start   <name>\n"
 	       "   status  <name>\n"
 	       "   stop    <name>\n"
+	       "   templates\n"
 	       "\n"
 	       "Available options:\n"
 	       "   -c <path>     configuration file (default: %s/vcc.conf)\n"
@@ -177,7 +178,7 @@ int main(int argc, char **argv)
 	
 	cmd  = argv[optind++];
 
-	if (str_equal(cmd, "list"))
+	if (str_equal(cmd, "list") || str_equal(cmd, "templates"))
 		name = NULL;
 	else if (argc < optind + 2)
 		usage(EXIT_FAILURE);
