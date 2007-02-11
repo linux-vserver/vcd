@@ -341,7 +341,6 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	LOG_TRACEME
 
 	char *tconf = NULL;
-
 	asprintf(&tconf, "%s.conf", tdir);
 
 	if (str_isempty(tconf) || !isfile(tconf))
@@ -351,14 +350,17 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 
 	switch (cfg_parse(tcfg, tconf)) {
 	case CFG_FILE_ERROR:
+		mem_free(tconf);
 		method_return_faultf(env, MECONF,
 				"could not read template configuration: %s", template);
 
 	case CFG_PARSE_ERROR:
+		mem_free(tconf);
 		method_return_faultf(env, MECONF,
 				"syntax error in template configuration: %s", template);
 
 	default:
+		mem_free(tconf);
 		break;
 	}
 
@@ -560,6 +562,7 @@ const char *template_description(const char *tbasedir, const char *name)
 	return str_isempty(description) ? "(none)" : description;
 }
 
+/* vx.templates([string name]) */
 xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

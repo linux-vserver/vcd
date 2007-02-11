@@ -60,7 +60,7 @@ void usage(int rc)
 	       "   start   <name>\n"
 	       "   status  <name>\n"
 	       "   stop    <name>\n"
-	       "   templates\n"
+	       "   templates [<name>]\n"
 	       "\n"
 	       "Available options:\n"
 	       "   -c <path>     configuration file (default: %s/vcc.conf)\n"
