@@ -22,10 +22,12 @@
 #include <getopt.h>
 #include <signal.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <syslog.h>
 
 #include "cfg.h"
 #include "methods.h"
+#include "stats.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
@@ -39,25 +41,18 @@
 #include <xmlrpc-c/server.h>
 #include <xmlrpc-c/server_abyss.h>
 
-static cfg_opt_t CFG_OPTS[] = {
-	CFG_STR_CB("host",    "127.0.0.1", CFGF_NONE, &cfg_validate_host),
-	CFG_INT_CB("port",    13386,       CFGF_NONE, &cfg_validate_port),
-	CFG_INT_CB("timeout", 30,          CFGF_NONE, &cfg_validate_timeout),
-
-	CFG_STR("logfile", NULL, CFGF_NONE),
-	CFG_STR("pidfile", NULL, CFGF_NONE),
-
-	CFG_STR_CB("datadir",     LOCALSTATEDIR "/vcd",   CFGF_NONE,
-			&cfg_validate_dir),
-	CFG_STR_CB("templatedir", VBASEDIR "/templates/", CFGF_NONE,
-			&cfg_validate_dir),
-	CFG_STR_CB("vbasedir",    VBASEDIR,               CFGF_NONE,
-			&cfg_validate_dir),
-
-	CFG_END()
+static log_options_t log_options = {
+	.log_ident    = NULL,
+	.log_dest     = LOGD_SYSLOG,
+	.log_opts     = LOGO_PRIO|LOGO_TIME|LOGO_IDENT|LOGO_PID,
+	.log_facility = LOG_DAEMON,
 };
 
-cfg_t *cfg;
+static char *cfg_file = SYSCONFDIR "/vcd.conf";
+static int sfd = -1;
+static xmlrpc_env *env = NULL;
+
+struct _vcd_stats *vcd_stats = NULL;
 
 static inline
 void usage(int rc)
@@ -72,11 +67,125 @@ void usage(int rc)
 	exit(rc);
 }
 
+static inline
+void init_stats(void)
+{
+	LOG_TRACEME
+
+	if (vcd_stats)
+		mem_free(vcd_stats);
+
+	vcd_stats = mem_alloc(sizeof(struct _vcd_stats));
+
+	vcd_stats->uptime       = time(NULL);
+	vcd_stats->requests     = 0;
+	vcd_stats->failedlogins = 0;
+	vcd_stats->vxdbqueries  = 0;
+}
+
+static inline
+void init_listen_socket(void)
+{
+	LOG_TRACEME
+
+	int port = cfg_getint(cfg, "port");
+	const char *host = cfg_getstr(cfg, "host");
+
+	if ((sfd = tcp_listen(host, port, 20)) == -1)
+		log_perror_and_die("tcp_listen(%s,%hu)", host, port);
+
+	log_info("accepting incomming connections on %s:%d", host, port);
+}
+
+static
+void shutdown_listen_socket(void)
+{
+	LOG_TRACEME
+	close(sfd);
+}
+
+static inline
+void init_server(void)
+{
+	LOG_TRACEME
+
+	registry = xmlrpc_registry_new(env);
+	method_registry_init(env);
+
+	atexit(method_registry_atexit);
+
+	int timeout = cfg_getint(cfg, "timeout");
+
+	xmlrpc_server_abyss_parms serverparm = {
+		.config_file_name   = NULL,
+		.registryP          = registry,
+		.log_file_name      = NULL,
+		.keepalive_timeout  = 0,
+		.keepalive_max_conn = 0,
+		.timeout            = timeout,
+		.dont_advertise     = 1,
+		.socket_bound       = 1,
+		.socket_handle      = sfd,
+	};
+
+	xmlrpc_server_abyss(env, &serverparm, XMLRPC_APSIZE(socket_handle));
+
+	log_error_and_die("unexpected death of server");
+}
+
+static inline
+void reload(void)
+{
+	LOG_TRACEME
+
+	/* reload config files first */
+	cfg_atexit();
+	cfg_load(cfg_file);
+
+	/* now reopen log files */
+	log_close();
+
+	const char *logfile = cfg_getstr(cfg, "logfile");
+
+	log_options.log_dest &= ~LOGD_FILE;
+
+	if (!str_isempty(logfile)) {
+		log_options.log_dest |= LOGD_FILE;
+		log_options.log_fd = open_append(logfile);
+	}
+
+	log_init(&log_options);
+
+	/* shutdown listen socket */
+	shutdown_listen_socket();
+
+	/* wait for pending connections */
+	int status;
+	while (waitpid(-1, &status, 0) > 0);
+
+	/* reinitialize internal stats */
+	init_stats();
+
+	/* reload vxdb */
+	vxdb_atexit();
+	vxdb_init();
+
+	/* reopen listen socket */
+	init_listen_socket();
+
+	/* start xmlrpc server again */
+	init_server();
+}
+
 static
 void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
 	switch (sig) {
 	case SIGHUP:
+		log_info("caught SIGHUP - reloading config files");
+		reload();
+		break;
+
 	case SIGINT:
 	case SIGTERM:
 	case SIGQUIT:
@@ -89,23 +198,23 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
 				info->si_addr, info->si_errno, info->si_code);
 		log_error("you probably found a bug in vcd!");
 		log_error("please report it to %s", PACKAGE_BUGREPORT);
+		exit(EXIT_FAILURE);
 		break;
 	}
-
-	/* raise signal again (SA_RESETHAND restored the default handler) */
-	raise(sig);
 }
 
 int main(int argc, char **argv)
 {
-	char *cfg_file = SYSCONFDIR "/vcd.conf";
 	int c, background = 0, debug = 0;
 
-	/* install SIGSEGV handler */
+	/* free all memory on exit */
+	atexit(mem_freeall);
+
+	/* install signal handler */
 	struct sigaction sa;
 
 	sa.sa_sigaction = signal_handler;
-	sa.sa_flags = SA_RESETHAND|SA_NODEFER|SA_SIGINFO;
+	sa.sa_flags = SA_NODEFER|SA_SIGINFO;
 
 	sigfillset(&sa.sa_mask);
 
@@ -145,36 +254,10 @@ int main(int argc, char **argv)
 		usage(EXIT_FAILURE);
 
 	/* load configuration */
-	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
-
-	switch (cfg_parse(cfg, cfg_file)) {
-	case CFG_FILE_ERROR:
-		dprintf(STDERR_FILENO, "cfg_parse(%s): %s\n",
-				cfg_file, strerror(errno));
-		exit(EXIT_FAILURE);
-
-	case CFG_PARSE_ERROR:
-		dprintf(STDERR_FILENO, "cfg_parse(%s): parse error\n", cfg_file);
-		exit(EXIT_FAILURE);
-
-	default:
-		break;
-	}
-
-	/* free configuration on exit */
+	cfg_load(cfg_file);
 	atexit(cfg_atexit);
 
-	/* free all memory on exit */
-	atexit(mem_freeall);
-
 	/* start logging & debugging */
-	log_options_t log_options = {
-		.log_ident    = argv[0],
-		.log_dest     = LOGD_SYSLOG,
-		.log_opts     = LOGO_PRIO|LOGO_TIME|LOGO_IDENT|LOGO_PID,
-		.log_facility = LOG_DAEMON,
-	};
-
 	const char *logfile = cfg_getstr(cfg, "logfile");
 
 	if (!str_isempty(logfile)) {
@@ -189,8 +272,6 @@ int main(int argc, char **argv)
 		log_options.log_mask = ((1 << (LOGP_TRACE + 1)) - 1);
 
 	log_init(&log_options);
-
-	/* close log multiplexer on exit */
 	atexit(log_close);
 
 	/* fork to background */
@@ -235,43 +316,23 @@ int main(int argc, char **argv)
 		close(fd);
 	}
 
+	/* initialize internal stats */
+	init_stats();
+
 	/* open connection to vxdb */
 	vxdb_init();
 	atexit(vxdb_atexit);
 
 	/* setup listen socket */
-	int port = cfg_getint(cfg, "port");
-	const char *host = cfg_getstr(cfg, "host");
-
-	if ((fd = tcp_listen(host, port, 20)) == -1)
-		log_perror_and_die("tcp_listen(%s,%hu)", host, port);
+	init_listen_socket();
+	atexit(shutdown_listen_socket);
 
 	/* setup xmlrpc server */
-	xmlrpc_env env;
-	xmlrpc_env_init(&env);
+	xmlrpc_env _env; env = &_env;
 
-	registry = xmlrpc_registry_new(&env);
-	method_registry_init(&env);
-	atexit(method_registry_atexit);
-
-	int timeout = cfg_getint(cfg, "timeout");
-
-	xmlrpc_server_abyss_parms serverparm = {
-		.config_file_name   = NULL,
-		.registryP          = registry,
-		.log_file_name      = NULL,
-		.keepalive_timeout  = 0,
-		.keepalive_max_conn = 0,
-		.timeout            = timeout,
-		.dont_advertise     = 0, /* TODO: what's this? */
-		.socket_bound       = 1,
-		.socket_handle      = fd,
-	};
-
-	log_info("accepting incomming connections on %s:%d", host, port);
-
-	xmlrpc_server_abyss(&env, &serverparm, XMLRPC_APSIZE(socket_handle));
+	xmlrpc_env_init(env);
+	init_server();
 
 	/* never get here */
-	log_error_and_die("unexpected death of Abyss server");
+	return EXIT_FAILURE;
 }

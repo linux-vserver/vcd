@@ -20,6 +20,7 @@
 
 #include "auth.h"
 #include "cfg.h"
+#include "stats.h"
 #include "validate.h"
 #include "vxdb.h"
 #include "vxdb-tables.h"
@@ -291,6 +292,7 @@ static
 void vxdb_trace(void *data, const char *sql)
 {
 	log_debug("[vxdb] %s", sql);
+	vcd_stats->vxdbqueries++;
 }
 
 void vxdb_init(void)

@@ -15,6 +15,9 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 #include <errno.h>
 #include <sys/stat.h>
 
@@ -23,8 +26,50 @@
 #include <lucid/addr.h>
 #include <lucid/log.h>
 #include <lucid/misc.h>
+#include <lucid/printf.h>
 #include <lucid/scanf.h>
 #include <lucid/str.h>
+
+static cfg_opt_t CFG_OPTS[] = {
+	CFG_STR_CB("host",    "127.0.0.1", CFGF_NONE, &cfg_validate_host),
+	CFG_INT_CB("port",    13386,       CFGF_NONE, &cfg_validate_port),
+	CFG_INT_CB("timeout", 30,          CFGF_NONE, &cfg_validate_timeout),
+
+	CFG_STR("logfile", NULL, CFGF_NONE),
+	CFG_STR("pidfile", NULL, CFGF_NONE),
+
+	CFG_STR_CB("datadir",     LOCALSTATEDIR "/vcd",   CFGF_NONE,
+			&cfg_validate_dir),
+	CFG_STR_CB("templatedir", VBASEDIR "/templates/", CFGF_NONE,
+			&cfg_validate_dir),
+	CFG_STR_CB("vbasedir",    VBASEDIR,               CFGF_NONE,
+			&cfg_validate_dir),
+
+	CFG_END()
+};
+
+cfg_t *cfg;
+
+void cfg_load(const char *cfg_file)
+{
+	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
+
+	switch (cfg_parse(cfg, cfg_file)) {
+	case CFG_FILE_ERROR:
+		log_perror("cfg_parse(%s)", cfg_file);
+		dprintf(STDERR_FILENO, "cfg_parse(%s): %s\n",
+				cfg_file, strerror(errno));
+		exit(EXIT_FAILURE);
+
+	case CFG_PARSE_ERROR:
+		log_error("cfg_parse(%s): parse error", cfg_file);
+		dprintf(STDERR_FILENO, "cfg_parse(%s): parse error\n", cfg_file);
+		exit(EXIT_FAILURE);
+
+	default:
+		break;
+	}
+}
 
 void cfg_atexit(void)
 {

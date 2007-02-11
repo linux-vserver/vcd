@@ -23,6 +23,7 @@ M_HELPER = helper/helper_netup.c \
            helper/helper_startup.c
 
 M_VCD = vcd/vcd_login.c \
+        vcd/vcd_status.c \
         vcd/vcd_user_caps_add.c \
         vcd/vcd_user_caps_get.c \
         vcd/vcd_user_caps_remove.c \

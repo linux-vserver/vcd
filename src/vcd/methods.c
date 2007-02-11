@@ -21,6 +21,7 @@
 #include "auth.h"
 #include "cfg.h"
 #include "methods.h"
+#include "stats.h"
 #include "validate.h"
 
 #include <lucid/log.h>
@@ -53,9 +54,21 @@ static int lockfd = -1;
 	xmlrpc_registry_add_method(env, registry, NULL, NAME, &FUNC, NULL); \
 } while (0)
 
+xmlrpc_value *method_default(xmlrpc_env *env, const char *host,
+		const char *name, xmlrpc_value *p, void *s)
+{
+	vcd_stats->requests++;
+	vcd_stats->nosuchmethod++;
+	method_return_faultf(env, XMLRPC_NO_SUCH_METHOD_ERROR,
+			"method does not exist: %s", name);
+}
+
 int method_registry_init(xmlrpc_env *env)
 {
 	LOG_TRACEME
+
+	/* default method */
+	xmlrpc_registry_set_default_method(env, registry, &method_default, NULL);
 
 	/* helper */
 	MREGISTER("helper.netup",    m_helper_netup);
@@ -190,6 +203,8 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 	xmlrpc_value *params = NULL;
 
 	if (!c) {
+		vcd_stats->requests++;
+
 		xmlrpc_decompose_value(env, p,
 			"({s:s,s:s,*}V)",
 			"username", &user,
@@ -197,8 +212,10 @@ xmlrpc_value *method_init(xmlrpc_env *env, xmlrpc_value *p, void *c,
 			&params);
 		method_return_if_fault(env);
 
-		if (!auth_isvalid(user, pass))
+		if (!auth_isvalid(user, pass)) {
+			vcd_stats->failedlogins++;
 			method_set_fault(env, MEAUTH);
+		}
 
 		else if (!auth_capable(user, caps))
 			method_set_fault(env, MEPERM);

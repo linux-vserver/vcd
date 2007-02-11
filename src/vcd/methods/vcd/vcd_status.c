@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -15,23 +15,23 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCD_CFG_H
-#define _VCD_CFG_H
+#include "methods.h"
+#include "stats.h"
 
-#include <confuse.h>
+#include <lucid/log.h>
 
-extern cfg_t *cfg;
+/* vcd.status() */
+xmlrpc_value *m_vcd_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
+{
+	LOG_TRACEME
 
-void cfg_load(const char *cfg_file);
-void cfg_atexit(void);
+	method_init(env, p, c, 0, 0);
+	method_return_if_fault(env);
 
-int cfg_validate_host(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result);
-int cfg_validate_port(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result);
-int cfg_validate_timeout(cfg_t *cfg, cfg_opt_t *opt,
-                         const char *value, void *result);
-int cfg_validate_dir(cfg_t *cfg, cfg_opt_t *opt,
-                      const char *value, void *result);
-
-#endif
+	return xmlrpc_build_value(env, "{s:i,s:i,s:i,s:i,s:i}",
+			"uptime", vcd_stats->uptime,
+			"requests", vcd_stats->requests,
+			"nosuchmethod", vcd_stats->nosuchmethod,
+			"failedlogins", vcd_stats->failedlogins,
+			"vxdbqueries", vcd_stats->vxdbqueries);
+}
