@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <ftw.h>
+#include <dirent.h>
 #include <confuse.h>
 
 #include "auth.h"
@@ -530,6 +531,72 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 	}
 
 	return NULL;
+}
+
+static
+const char *template_description(const char *tbasedir, const char *name)
+{
+	char *tconf = NULL;
+	asprintf(&tconf, "%s/%s.conf", tbasedir, name);
+
+	if (str_isempty(tconf) || !isfile(tconf))
+		return "(none)";
+
+	cfg_t *tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
+
+	switch (cfg_parse(tcfg, tconf)) {
+	case CFG_FILE_ERROR:
+	case CFG_PARSE_ERROR:
+		mem_free(tconf);
+		return "(parse error in configuration)";
+
+	default:
+		mem_free(tconf);
+		break;
+	}
+
+	const char *description = cfg_getstr(tcfg, "description");
+
+	return str_isempty(description) ? "(none)" : description;
+}
+
+xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
+{
+	LOG_TRACEME
+
+	method_init(env, p, c, VCD_CAP_CREATE, 0);
+	method_return_if_fault(env);
+
+	/* get template dir */
+	const char *tbasedir = cfg_getstr(cfg, "templatedir");
+
+	DIR *tfd = opendir(tbasedir);
+
+	if (tfd == NULL)
+		method_return_sys_faultf(env, "opendir(%s)", tbasedir);
+
+	struct dirent *dent;
+	xmlrpc_value *response = xmlrpc_array_new(env);
+
+	/* list all templates */
+	while ((dent = readdir(tfd))) {
+		if (str_equal(dent->d_name, ".") || str_equal(dent->d_name, ".."))
+			continue;
+
+		if (dent->d_type == DT_DIR) {
+			const char *description = template_description(tbasedir,
+					dent->d_name);
+
+			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+					"{s:s,s:s}",
+					"name", dent->d_name,
+					"description", description));
+		}
+	}
+
+	closedir(tfd);
+
+	return response;
 }
 
 /* vx.create(string name, string template, bool force, bool copy[, string vdir]) */

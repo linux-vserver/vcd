@@ -101,7 +101,7 @@ char *method_strerror(int id);
 } while (0)
 
 #define method_return_sys_faultf(ENV, MSG, ...) do { \
-	method_set_sys_fault(ENV, MSG, __VA_ARGS__); \
+	method_set_sys_faultf(ENV, MSG, __VA_ARGS__); \
 	return NULL; \
 } while (0)
 
@@ -144,6 +144,7 @@ MPROTO(m_vx_rename);
 MPROTO(m_vx_start);
 MPROTO(m_vx_status);
 MPROTO(m_vx_stop);
+MPROTO(m_vx_templates);
 
 /* vxdb */
 MPROTO(m_vxdb_dx_limit_get);
