@@ -260,6 +260,8 @@ int main(int argc, char **argv)
 	/* start logging & debugging */
 	const char *logfile = cfg_getstr(cfg, "logfile");
 
+	log_options.ident = argv[0];
+
 	if (!str_isempty(logfile)) {
 		log_options.log_dest |= LOGD_FILE;
 		log_options.log_fd = open_append(logfile);
