@@ -51,6 +51,7 @@ void usage(int rc)
 	       "   create  <name> <template> [<force> [copy [<vdir>]]]\n"
 	       "   exec    <name> <program> <args>*\n"
 	       "   kill    <name>\n"
+	       "   list    [<username>]\n"
 	       "   load    <name>\n"
 	       "   login   <name>\n"
 	       "   reboot  <name>\n"

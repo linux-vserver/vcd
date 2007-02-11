@@ -46,6 +46,8 @@ void usage(int rc)
 	printf("Usage: vce <opts>* <command>\n"
 	       "\n"
 	       "Available commands:\n"
+		   "   list                [<username>]\n"
+		   "\n"
 	       "   dx.limit.get        <name> [<path>]\n"
 	       "   dx.limit.remove     <name> [<path>]\n"
 	       "   dx.limit.set        <name> <path> <space> <inodes> <reserved>\n"
