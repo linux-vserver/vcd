@@ -43,7 +43,8 @@ void cmd_templates(xmlrpc_env *env, int argc, char **argv)
 		return_if_fault(env);
 		
 		xmlrpc_decompose_value(env, result, "{s:s,s:s}",
-				&name, &description);
+				"name", &name,
+				"description", &description);
 		return_if_fault(env);
 		
 		xmlrpc_DECREF(result);
