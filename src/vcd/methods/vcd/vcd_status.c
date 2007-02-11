@@ -25,7 +25,7 @@ xmlrpc_value *m_vcd_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	method_init(env, p, c, 0, 0);
+	method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
 
 	return xmlrpc_build_value(env, "{s:i,s:i,s:i,s:i,s:i}",
