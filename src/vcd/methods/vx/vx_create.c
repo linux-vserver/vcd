@@ -564,7 +564,14 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	method_init(env, p, c, VCD_CAP_CREATE, 0);
+	xmlrpc_value *params;
+
+	params = method_init(env, p, c, VCD_CAP_CREATE, 0);
+	method_return_if_fault(env);
+
+	xmlrpc_decompose_value(env, params,
+			"{s:s,*}",
+			"name", &name);
 	method_return_if_fault(env);
 
 	/* get template dir */
@@ -580,7 +587,8 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	/* list all templates */
 	while ((dent = readdir(tfd))) {
-		if (str_equal(dent->d_name, ".") || str_equal(dent->d_name, ".."))
+		if (str_equal(dent->d_name, ".") || str_equal(dent->d_name, "..") ||
+				(!str_isempty(name) && !str_equal(name, dent->d_name)))
 			continue;
 
 		if (dent->d_type == DT_DIR) {
@@ -596,7 +604,10 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	closedir(tfd);
 
-	return response;
+	if (xmlrpc_array_size(env, response) < 1)
+		return xmlrpc_nil_new(env);
+	else
+		return response;
 }
 
 /* vx.create(string name, string template, bool force, bool copy[, string vdir]) */

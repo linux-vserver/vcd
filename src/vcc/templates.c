@@ -22,16 +22,17 @@
 void cmd_templates(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *username, *name, *description;
+	char *name, *description;
 	int len, i;
 
 	if (argc < 1)
-		username = "";
+		name = "";
 	else
-		username = argv[0];
+		name = argv[0];
 
 	response = xmlrpc_client_call(env, uri, "vx.templates",
-		SIGNATURE(""));
+		SIGNATURE("{s:s}"),
+		"name", name);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
