@@ -355,6 +355,12 @@ int vxdb_step(vxdb_result *dbr)
 	return rc;
 }
 
+int vxdb_finalize(vxdb_result *dbr)
+{
+	LOG_TRACEME
+	return sqlite3_finalize(dbr);
+}
+
 int vxdb_exec(const char *fmt, ...)
 {
 	LOG_TRACEME

@@ -27,7 +27,6 @@ extern sqlite3 *vxdb;
 
 /* sqlite api aliases */
 #define vxdb_errmsg   sqlite3_errmsg
-#define vxdb_finalize sqlite3_finalize
 #define vxdb_changes  sqlite3_changes
 
 /* sqlite return code aliases */
@@ -41,6 +40,7 @@ void vxdb_atexit(void);
 
 int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...);
 int vxdb_step(vxdb_result *dbr);
+int vxdb_finalize(vxdb_result *dbr);
 
 #define vxdb_foreach_step(RC, DBR) \
 	for (RC = vxdb_step(DBR); RC == VXDB_ROW; RC = vxdb_step(DBR))
