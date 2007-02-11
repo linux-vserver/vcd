@@ -50,6 +50,7 @@ static log_options_t log_options = {
 
 static char *cfg_file = SYSCONFDIR "/vcd.conf";
 static int sfd = -1;
+static int masterpid = -1;
 static xmlrpc_env *env = NULL;
 
 struct _vcd_stats *vcd_stats = NULL;
@@ -182,8 +183,15 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
 	switch (sig) {
 	case SIGHUP:
-		log_info("caught SIGHUP - reloading config files");
-		reload();
+		if (getpid() != masterpid)
+			log_info("caught SIGHUP for child process - ignoring");
+
+		else {
+			log_info("caught SIGHUP for master process - "
+					"reloading config files");
+			reload();
+		}
+
 		break;
 
 	case SIGINT:
@@ -313,8 +321,10 @@ int main(int argc, char **argv)
 	int fd;
 	const char *pidfile = cfg_getstr(cfg, "pidfile");
 
+	masterpid = getpid();
+
 	if (pidfile && (fd = open_trunc(pidfile)) != -1) {
-		dprintf(fd, "%d\n", getpid());
+		dprintf(fd, "%d\n", masterpid);
 		close(fd);
 	}
 
