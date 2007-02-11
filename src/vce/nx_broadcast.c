@@ -26,15 +26,15 @@ void cmd_nx_broadcast_get(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response;
 	char *broadcast;
-	
+
 	response = xmlrpc_client_call(env, uri, "vxdb.nx.broadcast.get",
 		SIGNATURE("{s:s}"),
 		"name", name);
 	return_if_fault(env);
-	
+
 	xmlrpc_decompose_value(env, response, "s", &broadcast);
 	xmlrpc_DECREF(response);
-	
+
 	if (!str_isempty(broadcast))
 		printf("%s\n", broadcast);
 }
@@ -49,12 +49,12 @@ void cmd_nx_broadcast_remove(xmlrpc_env *env, int argc, char **argv)
 void cmd_nx_broadcast_set(xmlrpc_env *env, int argc, char **argv)
 {
 	char *broadcast;
-	
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
-	
+
 	broadcast = argv[0];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.nx.broadcast.set",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,

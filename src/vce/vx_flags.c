@@ -24,12 +24,12 @@
 void cmd_vx_flags_add(xmlrpc_env *env, int argc, char **argv)
 {
 	char *flag;
-	
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
-	
+
 	flag = argv[0];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.flags.add",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,
@@ -41,15 +41,15 @@ void cmd_vx_flags_get(xmlrpc_env *env, int argc, char **argv)
 	char *flag;
 	xmlrpc_value *response, *result;
 	int len, i;
-	
+
 	response = xmlrpc_client_call(env, uri, "vxdb.vx.flags.get",
 		SIGNATURE("{s:s}"),
 		"name", name);
 	return_if_fault(env);
-	
+
 	len = xmlrpc_array_size(env, response);
 	return_if_fault(env);
-	
+
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
@@ -61,19 +61,19 @@ void cmd_vx_flags_get(xmlrpc_env *env, int argc, char **argv)
 		
 		printf("%s\n", flag);
 	}
-	
+
 	xmlrpc_DECREF(response);
 }
 
 void cmd_vx_flags_remove(xmlrpc_env *env, int argc, char **argv)
 {
 	char *flag;
-	
+
 	if (argc < 1)
 		flag = "";
 	else
 		flag = argv[0];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.flags.remove",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,

@@ -421,7 +421,7 @@ int vxdb_column_int(vxdb_result *dbr, int col)
 	int result = 0;
 
 	sscanf(text, "%d", &result);
-	
+
 	return result;
 }
 
@@ -431,7 +431,7 @@ int32_t vxdb_column_int32(vxdb_result *dbr, int col)
 	int32_t result = 0;
 
 	sscanf(text, "%" SCNi32, &result);
-	
+
 	return result;
 }
 
@@ -441,7 +441,7 @@ uint32_t vxdb_column_uint32(vxdb_result *dbr, int col)
 	uint32_t result = 0;
 
 	sscanf(text, "%" SCNu32, &result);
-	
+
 	return result;
 }
 
@@ -451,7 +451,7 @@ int64_t vxdb_column_int64(vxdb_result *dbr, int col)
 	int64_t result = 0;
 
 	sscanf(text, "%" SCNi64, &result);
-	
+
 	return result;
 }
 

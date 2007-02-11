@@ -19,11 +19,11 @@ make_idx_html() {
 	<body>
 	<center>
 	<h1>Choose a resolution:</h1>"
-	
+
 	for res in ${RESOLUTIONS}; do
 		echo "<a href=\"${res}.html\">${res}</a><br>"
 	done
-	
+
 	echo "</body></html>"
 }
 
@@ -35,31 +35,31 @@ make_res_html() {
 	<body>
 	<center>
 	<h1>VServer Statistics for '${2}' - Resolution: ${1}</h1>"
-	
+
 	for db in ${DB_LIM}; do
 		echo "<img src=\"${1}-${db}.png\" alt=\"${db}\"><br>"
 	done
-	
+
 	for db in ${DB_NET}; do
 		echo "<img src=\"${1}-${db}P.png\" alt=\"${db}P\"><br>"
 		echo "<img src=\"${1}-${db}B.png\" alt=\"${db}B\"><br>"
 	done
-	
+
 	echo "<img src=\"${1}-LOADAVG.png\" alt=\"LOADAVG\"><br>"
 	echo "<img src=\"${1}-THREADS.png\" alt=\"THREADS\"><br>"
-	
+
 	echo "</body></html>"
 }
 
 for dir in "${DATADIR}"/*; do
 	[[ ! -d ${dir} ]] && continue
-	
+
 	name=$(basename ${dir})
-	
+
 	mkdir -p ./${name} || exit 1
-	
+
 	make_idx_html > ./${name}/index.html
-	
+
 	for res in ${RESOLUTIONS}; do
 		make_res_html ${res} ${name} > ./${name}/${res}.html
 		

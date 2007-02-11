@@ -106,24 +106,23 @@ static
 void read_config(char *file, int ignore_noent)
 {
 	cfg_t *cfg;
-	
+
 	cfg = cfg_init(CFG_OPTS, CFGF_NOCASE);
-	
+
+	if (ignore_noent && !isfile(file))
+		file = "/dev/null";
+
 	switch (cfg_parse(cfg, file)) {
 	case CFG_FILE_ERROR:
-		if (ignore_noent)
-			break;
-		else
-			log_perror_and_die("cfg_parse");
-	
+		log_perror_and_die("cfg_parse");
+
 	case CFG_PARSE_ERROR:
-		dprintf(STDERR_FILENO, "cfg_parse: Parse error\n");
-		exit(EXIT_FAILURE);
-	
+		log_error_and_die("cfg_parse: Parse error\n");
+
 	default:
 		break;
 	}
-	
+
 	host = cfg_getstr(cfg, "host");
 	port = cfg_getint(cfg, "port");
 	user = cfg_getstr(cfg, "user");
@@ -134,32 +133,32 @@ static
 void read_password(void)
 {
 	struct termios tty, oldtty;
-	
+
 	if (pass)
 		return;
-	
+
 	write(STDOUT_FILENO, "password: ", 10);
-	
+
 	/* save original terminal settings */
 	if (tcgetattr(STDIN_FILENO, &oldtty) == -1)
 		log_perror_and_die("tcgetattr");
-	
+
 	tty = oldtty;
-	
+
 	tty.c_lflag &= ~(ICANON|ECHO|ECHOE|ECHOK|ECHONL);
 	tty.c_cc[VMIN]  = 1;
 	tty.c_cc[VTIME] = 0;
-	
+
 	/* apply new terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &tty) == -1)
 		log_perror_and_die("tcsetattr");
-	
+
 	str_readline(STDIN_FILENO, &pass);
-	
+
 	/* apply old terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &oldtty) == -1)
 		log_perror_and_die("tcsetattr");
-	
+
 	write(STDOUT_FILENO, "\n", 1);
 }
 
@@ -168,17 +167,17 @@ int main(int argc, char **argv)
 	char c, *cmd;
 	int i;
 	xmlrpc_env env;
-	
+
 	log_options_t log_options = {
 		.log_ident = argv[0],
 		.log_dest  = LOGD_STDERR,
 		.log_opts  = LOGO_PRIO|LOGO_IDENT,
 	};
-	
+
 	log_init(&log_options);
-	
+
 	read_config(SYSCONFDIR "/vce.conf", 1);
-	
+
 	/* parse command line */
 	while ((c = getopt(argc, argv, "c:h:p:u:")) != -1) {
 		switch (c) {
@@ -203,15 +202,15 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
-	
+
 	if (argc < optind + 1)
 		usage(EXIT_FAILURE);
-	
+
 	cmd  = argv[optind++];
-	
+
 	if (str_equal(cmd, "list"))
 		name = NULL;
-	else if (argc < optind + 2)
+	else if (argc < optind + 1)
 		usage(EXIT_FAILURE);
 	else
 		name = argv[optind++];
@@ -219,30 +218,30 @@ int main(int argc, char **argv)
 	for (i = 0; CMDS[i].name; i++)
 		if (str_equal(cmd, CMDS[i].name))
 			goto init;
-	
+
 	log_error_and_die("invalid command: %s", cmd);
-	
+
 init:
 	xmlrpc_env_init(&env);
-	
+
 	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, argv[0], PACKAGE_VERSION, NULL, 0);
-	
+
 	if (env.fault_occurred)
 		log_error_and_die("failed to start xmlrpc client: %s", env.fault_string);
-	
+
 	asprintf(&uri, "http://%s:%d/RPC2", host, port);
-	
+
 	read_password();
-	
+
 	for (i = 0; CMDS[i].name; i++)
 		if (str_equal(cmd, CMDS[i].name))
 			CMDS[i].func(&env, argc - optind, argv + optind);
-	
+
 	if (env.fault_occurred)
 		log_error_and_die("%s: %s (%d)", cmd, env.fault_string, env.fault_code);
-	
+
 	xmlrpc_env_clean(&env);
 	xmlrpc_client_cleanup();
-	
+
 	return EXIT_SUCCESS;
 }

@@ -46,20 +46,20 @@ static
 void terminal_raw(void)
 {
 	struct termios buf;
-	
+
 	/* save original terminal settings */
 	if (tcgetattr(STDIN_FILENO, &t.termo) == -1)
 		log_perror_and_die("tcgetattr");
-	
+
 	buf = t.termo;
-	
+
 	/* convert terminal settings to raw mode */
 	cfmakeraw(&buf);
-	
+
 	/* apply raw terminal settings */
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &buf) == -1)
 		log_perror_and_die("tcsetattr");
-	
+
 	t.state = TS_RAW;
 }
 
@@ -69,10 +69,10 @@ void terminal_reset(void)
 {
 	if (t.state != TS_RAW)
 		return;
-	
+
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &t.termo) == -1)
 		log_perror_and_die("tcsetattr");
-	
+
 	t.state = TS_RESET;
 }
 
@@ -81,13 +81,13 @@ static
 void terminal_kill(int sig)
 {
 	pid_t pgrp = -1;
-	
+
 	/* try to get process group leader */
 	if (ioctl(t.fd, TIOCGPGRP, &pgrp) >= 0 &&
 	    pgrp != -1 &&
 	    kill(-pgrp, sig) != -1)
 		return;
-	
+
 	/* fallback using terminal pid */
 	kill(-t.pid, sig);
 }
@@ -99,10 +99,10 @@ void terminal_redraw(void)
 	/* get winsize from stdin */
 	if (ioctl(0, TIOCGWINSZ, &t.ws) == -1)
 		return;
-	
+
 	/* set winsize in terminal */
 	ioctl(t.fd, TIOCSWINSZ, &t.ws);
-	
+
 	/* set winsize change signal to terminal */
 	terminal_kill(SIGWINCH);
 }
@@ -113,11 +113,11 @@ void terminal_copy(int src, int dst)
 {
 	char buf[64];
 	int len;
-	
+
 	/* read terminal activity */
 	if ((len = read(src, buf, sizeof(buf))) == -1)
 		log_perror_and_die("read");
-	
+
 	/* write terminal activity */
 	if (write(dst, buf, len) == -1)
 		log_perror_and_die("write");
@@ -130,13 +130,13 @@ void terminal_end(void)
 	char buf[64];
 	ssize_t len;
 	long options;
-	
+
 	if ((options = fcntl(t.fd, F_GETFL, 0)) == -1)
 		log_perror_and_die("fcntl");
-	
+
 	if (fcntl(t.fd, F_SETFL, options | O_NONBLOCK) == -1)
 		log_perror_and_die("fcntl");
-	
+
 	while (1) {
 		len = read(t.fd, buf, sizeof(buf));
 		
@@ -146,7 +146,7 @@ void terminal_end(void)
 		if (write(STDOUT_FILENO, buf, len) == -1)
 			log_perror_and_die("write");
 	}
-	
+
 	/* in case atexit hasn't been setup yet */
 	terminal_reset();
 }
@@ -156,7 +156,7 @@ static
 void signal_handler(int sig)
 {
 	int status;
-	
+
 	switch(sig) {
 		/* catch interrupt */
 		case SIGINT:
@@ -185,26 +185,26 @@ void do_vlogin(int argc, char **argv)
 	int n, slave;
 	pid_t pid;
 	fd_set rfds;
-	
+
 	if (argc < 1)
 		log_error_and_die("vlogin: invalid command");
-	
+
 	/* set terminal to raw mode */
 	terminal_raw();
-	
+
 	/* reset terminal to its original mode */
 	atexit(terminal_reset);
-	
+
 	/* fork new pseudo terminal */
 	if (openpty(&t.fd, &slave, NULL, NULL, NULL) == -1)
 		log_perror_and_die("openpty");
-	
+
 	/* setup SIGCHLD here, so we're sure to get the signal */
 	signal(SIGCHLD, signal_handler);
-	
+
 	if ((pid = fork()) == -1)
 		log_perror_and_die("fork");
-	
+
 	if (pid == 0) {
 		/* we don't need the master side of the terminal */
 		close(t.fd);
@@ -227,17 +227,17 @@ void do_vlogin(int argc, char **argv)
 		if (execvp(argv[0], argv) == -1)
 			log_perror_and_die("execvp");
 	}
-	
+
 	/* setup SIGINT and SIGWINCH here, as they can cause loops in the child */
 	signal(SIGWINCH, signal_handler);
 	signal(SIGINT, signal_handler);
-	
+
 	/* save terminals pid */
 	t.pid = pid;
-	
+
 	/* we want a redraw */
 	terminal_redraw();
-	
+
 	/* main loop */
 	while (1) {
 		/* init file descriptors for select */
@@ -258,6 +258,6 @@ void do_vlogin(int argc, char **argv)
 		if (FD_ISSET(t.fd, &rfds))
 			terminal_copy(t.fd, STDOUT_FILENO);
 	}
-	
+
 	/* never get here, signal handler exits */
 }

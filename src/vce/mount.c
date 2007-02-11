@@ -26,21 +26,21 @@ void cmd_mount_get(xmlrpc_env *env, int argc, char **argv)
 	char *src, *dst, *type, *opts;
 	xmlrpc_value *response, *result;
 	int len, i;
-	
+
 	if (argc < 1)
 		dst = "";
 	else
 		dst = argv[0];
-	
+
 	response = xmlrpc_client_call(env, uri, "vxdb.mount.get",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,
 		"dst", dst);
 	return_if_fault(env);
-	
+
 	len = xmlrpc_array_size(env, response);
 	return_if_fault(env);
-	
+
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
@@ -57,19 +57,19 @@ void cmd_mount_get(xmlrpc_env *env, int argc, char **argv)
 		
 		printf("%s %s %s %s\n", src, dst, type, opts);
 	}
-	
+
 	xmlrpc_DECREF(response);
 }
 
 void cmd_mount_remove(xmlrpc_env *env, int argc, char **argv)
 {
 	char *dst;
-	
+
 	if (argc < 1)
 		dst = "";
 	else
 		dst = argv[0];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.mount.remove",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,
@@ -79,15 +79,15 @@ void cmd_mount_remove(xmlrpc_env *env, int argc, char **argv)
 void cmd_mount_set(xmlrpc_env *env, int argc, char **argv)
 {
 	char *src, *dst, *type, *opts;
-	
+
 	if (argc < 4)
 		usage(EXIT_FAILURE);
-	
+
 	src  = argv[0];
 	dst  = argv[1];
 	type = argv[2];
 	opts = argv[3];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.mount.set",
 		SIGNATURE("{s:s,s:s,s:s,s:s,s:s}"),
 		"name", name,

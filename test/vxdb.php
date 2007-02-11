@@ -11,7 +11,7 @@ function do_request($request)
 {
 	global $HOST;
 	global $PORT;
-	
+
 	$url = "http://" . $HOST . ":" . $PORT . "/RPC2";
 	$header = array(
 		"Content-Type: text/xml; charset=UTF-8",
@@ -33,7 +33,7 @@ function do_request($request)
 		$GLOBALS["error"] = curl_error($ch);
 		$data  = NULL;
 	}
-	
+
 	curl_close($ch);
 	return $data;
 }
@@ -42,9 +42,9 @@ function call($method, $params)
 {
 	global $ADMINUSER;
 	global $ADMINPASS;
-	
+
 	printf("%s .. ", $method);
-	
+
 	$request = xmlrpc_encode_request($method,
 		array(
 			array("username"=>$ADMINUSER,"password"=>$ADMINPASS),
@@ -54,14 +54,14 @@ function call($method, $params)
 			"encoding" => "UTF-8",
 			"verbosity" => "newlines_only"
 		));
-	
+
 	$response = do_request($request);
-	
+
 	if (!$response) {
 		printf("ERR: " . $GLOBALS["error"] . "\n");
 		die();
 	}
-	
+
 	else {
 		$data = xmlrpc_decode_request($response, $method);
 		

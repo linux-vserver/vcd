@@ -26,21 +26,21 @@ void cmd_vx_uname_get(xmlrpc_env *env, int argc, char **argv)
 	char *uname, *value;
 	xmlrpc_value *response, *result;
 	int len, i;
-	
+
 	if (argc < 1)
 		uname = "";
 	else
 		uname = argv[0];
-	
+
 	response = xmlrpc_client_call(env, uri, "vxdb.vx.uname.get",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,
 		"uname", uname);
 	return_if_fault(env);
-	
+
 	len = xmlrpc_array_size(env, response);
 	return_if_fault(env);
-	
+
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
@@ -55,19 +55,19 @@ void cmd_vx_uname_get(xmlrpc_env *env, int argc, char **argv)
 		
 		printf("%s=%s\n", uname, value);
 	}
-	
+
 	xmlrpc_DECREF(response);
 }
 
 void cmd_vx_uname_remove(xmlrpc_env *env, int argc, char **argv)
 {
 	char *uname;
-	
+
 	if (argc < 1)
 		uname = "";
 	else
 		uname = argv[0];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.uname.remove",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,
@@ -77,13 +77,13 @@ void cmd_vx_uname_remove(xmlrpc_env *env, int argc, char **argv)
 void cmd_vx_uname_set(xmlrpc_env *env, int argc, char **argv)
 {
 	char *uname, *value;
-	
+
 	if (argc < 2)
 		usage(EXIT_FAILURE);
-	
+
 	uname = argv[0];
 	value = argv[1];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.uname.set",
 		SIGNATURE("{s:s,s:s,s:s}"),
 		"name", name,

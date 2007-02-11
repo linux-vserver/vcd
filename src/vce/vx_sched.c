@@ -28,21 +28,21 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 	int tokensmin, tokensmax;
 	xmlrpc_value *response, *result;
 	int i, len;
-	
+
 	if (argc < 1)
 		cpuid = -2;
 	else
 		sscanf(argv[0], "%d", &cpuid);
-	
+
 	response = xmlrpc_client_call(env, uri, "vxdb.vx.sched.get",
 		SIGNATURE("{s:s,s:i}"),
 		"name", name,
 		"cpuid", cpuid);
 	return_if_fault(env);
-	
+
 	len = xmlrpc_array_size(env, response);
 	return_if_fault(env);
-	
+
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
@@ -70,12 +70,12 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 void cmd_vx_sched_remove(xmlrpc_env *env, int argc, char **argv)
 {
 	int cpuid;
-	
+
 	if (argc < 1)
 		cpuid = -2;
 	else
 		sscanf(argv[0], "%d", &cpuid);
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.sched.remove",
 		SIGNATURE("{s:s,s:i}"),
 		"name", name,
@@ -86,20 +86,20 @@ void cmd_vx_sched_set(xmlrpc_env *env, int argc, char **argv)
 {
 	int cpuid = -1, interval, fillrate, interval2, fillrate2;
 	int tokensmin, tokensmax, i = 0;
-	
+
 	if (argc < 6)
 		usage(EXIT_FAILURE);
-	
+
 	if (argc > 6)
 		sscanf(argv[i++], "%d", &cpuid);
-	
+
 	sscanf(argv[i++], "%d", &interval);
 	sscanf(argv[i++], "%d", &fillrate);
 	sscanf(argv[i++], "%d", &interval2);
 	sscanf(argv[i++], "%d", &fillrate2);
 	sscanf(argv[i++], "%d", &tokensmin);
 	sscanf(argv[i++], "%d", &tokensmax);
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.sched.set",
 		SIGNATURE("{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i}"),
 		"name", name,

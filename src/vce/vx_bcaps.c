@@ -24,12 +24,12 @@
 void cmd_vx_bcaps_add(xmlrpc_env *env, int argc, char **argv)
 {
 	char *bcap;
-	
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
-	
+
 	bcap = argv[0];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.bcaps.add",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,
@@ -41,15 +41,15 @@ void cmd_vx_bcaps_get(xmlrpc_env *env, int argc, char **argv)
 	char *bcap;
 	xmlrpc_value *response, *result;
 	int len, i;
-	
+
 	response = xmlrpc_client_call(env, uri, "vxdb.vx.bcaps.get",
 		SIGNATURE("{s:s}"),
 		"name", name);
 	return_if_fault(env);
-	
+
 	len = xmlrpc_array_size(env, response);
 	return_if_fault(env);
-	
+
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
@@ -61,19 +61,19 @@ void cmd_vx_bcaps_get(xmlrpc_env *env, int argc, char **argv)
 		
 		printf("%s\n", bcap);
 	}
-	
+
 	xmlrpc_DECREF(response);
 }
 
 void cmd_vx_bcaps_remove(xmlrpc_env *env, int argc, char **argv)
 {
 	char *bcap;
-	
+
 	if (argc < 1)
 		bcap = "";
 	else
 		bcap = argv[0];
-	
+
 	xmlrpc_client_call(env, uri, "vxdb.vx.bcaps.remove",
 		SIGNATURE("{s:s,s:s}"),
 		"name", name,

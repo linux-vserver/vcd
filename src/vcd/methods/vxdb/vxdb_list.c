@@ -82,7 +82,7 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"s", vxdb_column_text(dbr, 0)));
-	
+
 	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
 

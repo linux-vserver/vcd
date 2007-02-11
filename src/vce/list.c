@@ -37,7 +37,7 @@ void cmd_list(xmlrpc_env *env, int argc, char **argv)
 
 	len = xmlrpc_array_size(env, response);
 	return_if_fault(env);
-	
+
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
@@ -49,6 +49,6 @@ void cmd_list(xmlrpc_env *env, int argc, char **argv)
 		
 		printf("%s\n", name);
 	}
-	
+
 	xmlrpc_DECREF(response);
 }

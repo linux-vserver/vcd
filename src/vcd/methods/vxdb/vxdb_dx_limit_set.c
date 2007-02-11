@@ -64,7 +64,7 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!validate_path(path))
 		method_return_faultf(env, MEINVAL,
 				"invalid path value: %s", path);
-	
+
 	if (!validate_dlimits(space, inodes, reserved))
 		method_return_faultf(env, MEINVAL,
 				"invalid limit specification: %" PRIu32 ",%" PRIu32 ",%d",

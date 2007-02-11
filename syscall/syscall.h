@@ -80,7 +80,7 @@
 
 /*	The Arm calling convention uses stack args after four arguments
 	but the Linux kernel gets up to seven arguments in registers.
-	
+
 	scnr:	imm
 	args:	a1(r0), a2(r1), a3(r2), a4(r3), a5(r4), a6(r5),
 	sret:	r0(r0)
@@ -133,7 +133,7 @@
 /*	The C calling convention on FR-V uses the gr8-gr13 registers
 	for the first six arguments, the remainder is spilled onto the
 	stack. the linux kernel syscall interface does so too.
-	
+
 	scnr:	id(gr7)
 	args:	a1(gr8), a2(gr9), a3(gr10), a4(gr11), a5(gr12), a6(gr13)
 	sret:	r0(gr8)
@@ -222,7 +222,7 @@
 /*	The x86 calling convention uses stack args for all arguments,
 	but the Linux kernel passes the first six arguments in the
 	following registers: ebx, ecx, edx, esi, edi, ebp.
-	
+
 	scnr:	id(eax)
 	args:	a1(ebx), a2(ecx), a3(edx), a4(esi), a5(edi), a6(ebp) 
 	sret:	r0(eax)
@@ -386,7 +386,7 @@
 
 /*	The powerpc calling convention uses r3-r10 to pass the first
 	eight arguments, the remainder is spilled onto the stack.
-	
+
 	scnr:	id(r0)
 	args:	a1(r3), a2(r4), a3(r5), a4(r6), a5(r7), a6(r8)
 	sret:	r0(r3)
@@ -421,7 +421,7 @@
 /*	The s390x calling convention passes the first five arguments
 	in r2-r6, the remainder is spilled onto the stack. However
 	the Linux kernel passes the first six arguments in r2-r7.
-	
+
 	scnr:	imm, id(r1)
 	args:	a1(r2), a2(r3), a3(r4), a4(r5), a5(r6), a6(r7)
 	sret:	r0(r2)
@@ -602,7 +602,7 @@
 
 /*	The x86_64 calling convention uses rdi, rsi, rdx, rcx, r8, r9
 	but the Linux kernel interface uses rdi, rsi, rdx, r10, r8, r9.
-	
+
 	scnr:	id(rax)
 	args:	a1(rdi), a2(rsi), a3(rdx), a4(r10), a5(r8), a6(r9)
 	sret:	r0(rax)
@@ -626,7 +626,7 @@
 #error unknown kernel arch
 #endif
 
-	
+
 	/* implementation defaults */
 
 
