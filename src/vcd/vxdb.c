@@ -299,20 +299,18 @@ void vxdb_init(void)
 {
 	LOG_TRACEME
 
-	int rc;
-
 	if (vxdb)
-		return;
+		vxdb_atexit();
 
 	char *datadir  = cfg_getstr(cfg, "datadir");
 	char *vxdbfile = str_path_concat(datadir, "vxdb");
 
-	rc = sqlite3_open(vxdbfile, &vxdb);
+	int rc = sqlite3_open(vxdbfile, &vxdb);
 
 	mem_free(vxdbfile);
 
 	if (rc != VXDB_OK) {
-		log_error("sqlite3_open(%s): %s", vxdbfile, vxdb_errmsg(vxdb));
+		log_error("vxdb_init(%s): %s", vxdbfile, vxdb_errmsg(vxdb));
 		sqlite3_close(vxdb);
 		exit(EXIT_FAILURE);
 	}
@@ -326,7 +324,15 @@ void vxdb_init(void)
 void vxdb_atexit(void)
 {
 	LOG_TRACEME
-	sqlite3_close(vxdb);
+
+	if (!vxdb)
+		return;
+
+	if (sqlite3_close(vxdb) == VXDB_BUSY) {
+		log_alert("unfinished statements on vxdb shutdown");
+		log_alert("this is a bug - your database will be corrupted");
+		log_alert("please report to %s", PACKAGE_BUGREPORT);
+	}
 }
 
 int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)
