@@ -103,10 +103,16 @@ void vxdb_sanity_check_unique(struct _vxdb_table *table)
 				table->name, table->unique[i], table->name);
 
 		if (rc != VXDB_OK || vxdb_step(dbr) != VXDB_ROW) {
+			vxdb_finalize(dbr);
+
 			log_warn("unique index for (%s) missing in table '%s'",
 					table->unique[i], table->name);
+
 			vxdb_create_index(table->name, table->unique[i]);
 		}
+
+		else
+			vxdb_finalize(dbr);
 	}
 }
 
@@ -120,11 +126,15 @@ void vxdb_sanity_check_table(struct _vxdb_table *table)
 			"WHERE name = '%s' AND type = 'table'",
 			table->name);
 
-	if (rc != VXDB_OK || vxdb_step(dbr) != VXDB_ROW)
+	if (rc != VXDB_OK || vxdb_step(dbr) != VXDB_ROW) {
+		vxdb_finalize(dbr);
 		vxdb_create_table(table);
+	}
 
-	else
+	else {
+		vxdb_finalize(dbr);
 		vxdb_sanity_check_unique(table);
+	}
 }
 
 static
@@ -209,6 +219,8 @@ void vxdb_sanity_check(void)
 
 		else
 			log_info("database is empty, creating new one from scratch");
+
+		vxdb_finalize(dbr);
 	}
 
 	/* check if manual upgrade is required */
@@ -242,31 +254,37 @@ void vxdb_sanity_check(void)
 	rc = vxdb_prepare(&dbr, "SELECT uid FROM user LIMIT 1");
 
 	if (rc != VXDB_OK || vxdb_step(dbr) != VXDB_ROW) {
+		vxdb_finalize(dbr);
 		log_warn("no user exists in the database");
 		vxdb_create_user("admin");
 	}
 
-	vxdb_finalize(dbr);
+	else
+		vxdb_finalize(dbr);
 
 	/* check if there is an admin user */
 	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE admin = 1 LIMIT 1");
 
 	if (rc != VXDB_OK || vxdb_step(dbr) != VXDB_ROW) {
+		vxdb_finalize(dbr);
 		log_warn("no admin user exists in the database");
 		vxdb_create_user("admin");
 	}
 
-	vxdb_finalize(dbr);
+	else
+		vxdb_finalize(dbr);
 
 	/* check if there is a vshelper user */
 	rc = vxdb_prepare(&dbr, "SELECT uid FROM user WHERE name = 'vshelper'");
 
 	if (rc != VXDB_OK || vxdb_step(dbr) != VXDB_ROW) {
+		vxdb_finalize(dbr);
 		log_warn("no vshelper user exists in the database");
 		vxdb_create_user("vshelper");
 	}
 
-	vxdb_finalize(dbr);
+	else
+		vxdb_finalize(dbr);
 }
 
 static
