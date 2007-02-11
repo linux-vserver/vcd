@@ -171,14 +171,20 @@ int main(int argc, char **argv)
 		}
 	}
 	
-	if (argc < optind + 2)
+	if (argc < optind + 1)
 		usage(EXIT_FAILURE);
 	
 	cmd  = argv[optind++];
-	name = argv[optind++];
+
+	if (str_equal(cmd, "list"))
+		name = NULL;
+	else if (argc < optind + 2)
+		usage(EXIT_FAILURE);
+	else
+		name = argv[optind++];
 
 	int i;
-	
+
 	for (i = 0; CMDS[i].name; i++)
 		if (str_equal(cmd, CMDS[i].name))
 			goto init;
