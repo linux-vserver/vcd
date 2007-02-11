@@ -88,5 +88,8 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	vxdb_finalize(dbr);
 
-	return response;
+	if (xmlrpc_array_size(env, response) < 1)
+		method_return_faultf(env, MENOVPS, "%s", "no virtual servers found");
+	else
+		return response;
 }
