@@ -252,7 +252,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 	vx_uname_t uname;
 
 	rc = vxdb_prepare(&dbr,
-			"SELECT uname,value FROM vx_uname WHERE xid = %d",
+			"SELECT type,value FROM vx_uname WHERE xid = %d",
 			xid);
 
 	if (rc != VXDB_OK)
@@ -328,7 +328,8 @@ xmlrpc_value *namespace_setup(xmlrpc_env *env)
 }
 
 static
-xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int mtabfd)
+xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir,
+		vxdb_result *dbr, int mtabfd)
 {
 	const char *src  = vxdb_column_text(dbr, 0);
 	const char *dst  = vxdb_column_text(dbr, 1);
@@ -373,10 +374,12 @@ xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir, vxdb_result *dbr, int 
 
 		if (WIFSIGNALED(status))
 			method_return_faultf(env, MEEXEC,
-					"command '/bin/mount -n -t %s -o %s %s %s' caught signal: %s",
+					"command '/bin/mount -n -t %s -o %s %s %s' "
+					"caught signal: %s",
 					type, opts, src, dst, strsignal(WTERMSIG(status)));
 
-		dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
+		if (mtabfd != -1)
+			dprintf(mtabfd, "%s %s %s %s 0 0\n", src, dst, type, opts);
 	}
 
 	return NULL;
@@ -393,38 +396,28 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 
 	log_debug("vdir(%d): %s", xid, vdir);
 
-	if (chroot_secure_chdir(vdir, "/etc") == -1)
-		method_return_sys_fault(env, "chroot_secure_chdir");
-
-	/* make sure mtab does not exist to prevent symlink attacks */
-	unlink("mtab");
-
-	if ((mtabfd = open_trunc("mtab")) == -1)
-		method_return_sys_fault(env, "open_trunc");
-
 	/* mount root entry */
 	rc = vxdb_prepare(&dbr,
 			"SELECT src,dst,type,opts FROM mount WHERE xid = %d AND dst = '/'",
 			xid);
 
-	if (rc == VXDB_OK) {
-		vxdb_foreach_step(rc, dbr) {
-			do_mount(env, vdir, dbr, mtabfd);
-
-			if (env->fault_occurred)
-				break;
-		}
-	}
-
-	if (!env->fault_occurred && rc != VXDB_DONE)
-		method_set_vxdb_fault(env);
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
+		do_mount(env, vdir, dbr, -1);
 
 	vxdb_finalize(dbr);
+	method_return_if_fault(env);
 
-	if (env->fault_occurred) {
-		close(mtabfd);
-		return NULL;
-	}
+	if (chroot_secure_chdir(vdir, "/etc") == -1)
+		method_return_sys_fault(env, "chroot_secure_chdir(/etc)");
+
+	/* make sure mtab does not exist to prevent symlink attacks */
+	unlink("mtab");
+
+	if ((mtabfd = open_trunc("mtab")) == -1)
+		method_return_sys_fault(env, "open_trunc(/etc/mtab)");
+
+	/* write root entry to mtab */
+	dprintf(mtabfd, "/dev/root / ufs defaults 0 0\n");
 
 	/* mount non-root entries */
 	rc = vxdb_prepare(&dbr,

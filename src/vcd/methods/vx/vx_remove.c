@@ -75,7 +75,7 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (runlink(vdir) == -1)
 		method_return_sys_fault(env, "runlink");
 
-	if (isdir(vdir))
+	if (isdir(vdir) && !ismount(vdir))
 		method_return_faultf(env, MEEXIST,
 				"vdir still exists after runlink: %s", vdir);
 
