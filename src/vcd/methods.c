@@ -81,6 +81,7 @@ int method_registry_init(xmlrpc_env *env)
 
 	/* vcd */
 	MREGISTER("vcd.login",            m_vcd_login);
+	MREGISTER("vcd.status",           m_vcd_status);
 	MREGISTER("vcd.user.caps.add",    m_vcd_user_caps_add);
 	MREGISTER("vcd.user.caps.get",    m_vcd_user_caps_get);
 	MREGISTER("vcd.user.caps.remove", m_vcd_user_caps_remove);
