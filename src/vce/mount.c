@@ -80,13 +80,21 @@ void cmd_mount_set(xmlrpc_env *env, int argc, char **argv)
 {
 	char *src, *dst, *type, *opts;
 
-	if (argc < 4)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
 
 	src  = argv[0];
 	dst  = argv[1];
-	type = argv[2];
-	opts = argv[3];
+
+	if (argc > 2)
+		type = argv[2];
+	else
+		type = "";
+
+	if (argc > 3)
+		opts = argv[3];
+	else
+		opts = "";
 
 	xmlrpc_client_call(env, uri, "vxdb.mount.set",
 		SIGNATURE("{s:s,s:s,s:s,s:s,s:s}"),

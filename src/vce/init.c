@@ -54,14 +54,25 @@ void cmd_init_set(xmlrpc_env *env, int argc, char **argv)
 	char *init, *halt, *reboot;
 	int timeout;
 
-	if (argc < 4)
-		usage(EXIT_FAILURE);
+	if (argc > 0)
+		init = argv[0];
+	else
+		init = "";
 
-	init   = argv[0];
-	halt   = argv[1];
-	reboot = argv[2];
+	if (argc > 1)
+		halt = argv[1];
+	else
+		halt = "";
 
-	sscanf(argv[3], "%d", &timeout);
+	if (argc > 2)
+		reboot = argv[2];
+	else
+		reboot = "";
+
+	if (argc > 3)
+		sscanf(argv[3], "%d", &timeout);
+	else
+		timeout = 0;
 
 	xmlrpc_client_call(env, uri, "vxdb.init.set",
 		SIGNATURE("{s:s,s:s,s:s,s:s,s:i}"),
