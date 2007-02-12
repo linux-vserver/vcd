@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_vx_uname_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *uname;
+	char *name, *type;
 	xid_t xid;
 	int rc;
 
@@ -37,22 +37,22 @@ xmlrpc_value *m_vxdb_vx_uname_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
 			"name", &name,
-			"uname", &uname);
+			"type", &type);
 	method_return_if_fault(env);
 
-	method_empty_params(1, &uname);
+	method_empty_params(1, &type);
 
-	if (uname && !validate_uname(uname))
+	if (type && !validate_uname(type))
 		method_return_faultf(env, MEINVAL,
-				"invalid uname value: %s", uname);
+				"invalid type value: %s", type);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (uname)
+	if (type)
 		rc = vxdb_exec(
-				"DELETE FROM vx_uname WHERE xid = %d AND uname = '%s'",
-				xid, uname);
+				"DELETE FROM vx_uname WHERE xid = %d AND type = '%s'",
+				xid, type);
 
 	else
 		rc = vxdb_exec(

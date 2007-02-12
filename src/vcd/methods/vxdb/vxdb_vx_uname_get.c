@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params, *response = NULL;
-	char *name, *uname;
+	char *name, *type;
 	xid_t xid;
 	vxdb_result *dbr;
 	int rc;
@@ -38,26 +38,27 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
 			"name", &name,
-			"uname", &uname);
+			"type", &type);
 	method_return_if_fault(env);
 
-	method_empty_params(2, &name, &uname);
+	method_empty_params(1, &type);
 
-	if (uname && !validate_uname(uname))
+	if (type && !validate_uname(type))
 		method_return_faultf(env, MEINVAL,
-				"invalid uname value: %s", uname);
+				"invalid type value: %s", type);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (uname)
+	if (type)
 		rc = vxdb_prepare(&dbr,
-				"SELECT uname,value FROM vx_uname WHERE xid = %d AND uname = '%s'",
-				xid, uname);
+				"SELECT type,value FROM vx_uname "
+				"WHERE xid = %d AND type = '%s'",
+				xid, type);
 
 	else
 		rc = vxdb_prepare(&dbr,
-				"SELECT uname,value FROM vx_uname WHERE xid = %d",
+				"SELECT type,value FROM vx_uname WHERE xid = %d",
 				xid);
 
 	if (rc != VXDB_OK)
@@ -68,7 +69,7 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s}",
-				"uname", vxdb_column_text(dbr, 0),
+				"type", vxdb_column_text(dbr, 0),
 				"value", vxdb_column_text(dbr, 1)));
 
 	if (rc != VXDB_DONE)

@@ -27,7 +27,7 @@ xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *uname, *value;
+	char *name, *type, *value;
 	xid_t xid;
 	int rc;
 
@@ -37,13 +37,13 @@ xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,s:s,*}",
 			"name", &name,
-			"uname", &uname,
+			"type", &type,
 			"value", &value);
 	method_return_if_fault(env);
 
-	if (!validate_uname(uname))
+	if (!validate_uname(type))
 		method_return_faultf(env, MEINVAL,
-				"invalid uname value: %s", uname);
+				"invalid type value: %s", type);
 
 	if (!validate_uname_value(value))
 		method_return_faultf(env, MEINVAL,
@@ -53,9 +53,9 @@ xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MENOVPS);
 
 	rc = vxdb_exec(
-			"INSERT OR REPLACE INTO vx_uname (xid, uname, value) "
+			"INSERT OR REPLACE INTO vx_uname (xid, type, value) "
 			"VALUES (%d, '%s', '%s')",
-			xid, uname, value);
+			xid, type, value);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
