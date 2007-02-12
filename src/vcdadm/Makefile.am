@@ -15,9 +15,25 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = vcc \
-          vcd \
-          vcdadm \
-          vce \
-          vshelper \
-          vxpasswd
+if ENABLE_SERVER
+
+EXTRA_DIST = vcdadm.conf
+
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
+
+noinst_HEADERS = cmd.h
+
+sbin_PROGRAMS = vcdadm
+
+vcdadm_SOURCES = cmd.c \
+                 main.c \
+                 status.c
+
+vcdadm_LDADD = $(LUCID_LIBS) \
+               $(CONFUSE_LIBS) \
+               $(XMLRPC_C_CLIENT_LIBS)
+
+install-data-local:
+	$(install_sh) -m 600 $(srcdir)/vcdadm.conf $(DESTDIR)$(sysconfdir)/vcdadm.conf
+
+endif

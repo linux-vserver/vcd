@@ -189,6 +189,7 @@ AC_CONFIG_FILES([Makefile
                  src/vcc/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
+                 src/vcdadm/Makefile
                  src/vce/Makefile
                  src/vshelper/Makefile
                  src/vxpasswd/Makefile
