@@ -93,6 +93,7 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vx.reboot",    m_vx_reboot);
 	MREGISTER("vx.remove",    m_vx_remove);
 	MREGISTER("vx.rename",    m_vx_rename);
+	MREGISTER("vx.restart",   m_vx_restart);
 	MREGISTER("vx.start",     m_vx_start);
 	MREGISTER("vx.status",    m_vx_status);
 	MREGISTER("vx.stop",      m_vx_stop);
@@ -190,7 +191,7 @@ void method_check_flags(xmlrpc_env *env, xmlrpc_value *params, void *c,
 		else if (user && (flags & M_OWNER) && !auth_isowner(user, name))
 			method_set_fault(env, MENOVPS);
 
-		else if (c && (flags & M_LOCK))
+		else if (!c && (flags & M_LOCK))
 			method_lock(env, name);
 	}
 }

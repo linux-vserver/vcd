@@ -141,6 +141,7 @@ MPROTO(m_vx_load);
 MPROTO(m_vx_reboot);
 MPROTO(m_vx_remove);
 MPROTO(m_vx_rename);
+MPROTO(m_vx_restart);
 MPROTO(m_vx_start);
 MPROTO(m_vx_status);
 MPROTO(m_vx_stop);

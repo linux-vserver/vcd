@@ -38,6 +38,7 @@ M_VX = vx/vx_create.c \
        vx/vx_reboot.c \
        vx/vx_remove.c \
        vx/vx_rename.c \
+       vx/vx_restart.c \
        vx/vx_start.c \
        vx/vx_status.c \
        vx/vx_stop.c
