@@ -500,7 +500,7 @@ char *vxdb_getname(xid_t xid)
 		return NULL;
 
 	rc = vxdb_prepare(&dbr,
-			"SELECT name FROM xid_name_map WHERE xid = '%d'", xid);
+			"SELECT name FROM xid_name_map WHERE xid = %d", xid);
 
 	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
 		name = str_dup(vxdb_column_text(dbr, 0));
@@ -521,7 +521,7 @@ char *vxdb_getvdir(const char *name)
 	xid_t xid;
 
 	if ((xid = vxdb_getxid(name))) {
-		rc = vxdb_prepare(&dbr, "SELECT vdir FROM vdir WHERE xid = '%d'", xid);
+		rc = vxdb_prepare(&dbr, "SELECT vdir FROM vdir WHERE xid = %d", xid);
 
 		if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
 			vdir = str_dup(vxdb_column_text(dbr, 0));
