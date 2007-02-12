@@ -33,7 +33,7 @@ xmlrpc_value *m_vcd_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"SELECT uptime, requests, flogins, nomethod FROM vcd "
 			"ORDER BY uptime DESC LIMIT 1");
 
-	if (rc == VXDB_OK)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
 	rc = vxdb_step(dbr);
