@@ -42,15 +42,8 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xid_t xid;
 	pid_t pid;
 	int status;
-
-	nx_flags_t ncf = {
-		.flags = NXF_PERSISTENT|NXF_STATE_ADMIN|NXF_SC_HELPER,
-	};
-
-	vx_flags_t vcf = {
-		.flags = VXF_PERSISTENT|VXF_STATE_ADMIN|VXF_SC_HELPER|
-				VXF_INFO_INIT|VXF_REBOOT_KILL,
-	};
+	nx_flags_t ncf;
+	vx_flags_t vcf;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
@@ -63,6 +56,17 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
+	/* remove persistent in case previous helper failed */
+	ncf.flags = vcf.flags = 0;
+	ncf.mask  = vcf.mask  = NXF_PERSISTENT;
+
+	if (nx_flags_set(xid, &ncf) == -1)
+		method_return_sys_faultf(env, "nx_flags_set(%d)", xid);
+
+	if (vx_flags_set(xid, &vcf) == -1)
+		method_return_sys_faultf(env, "vx_flags_set(%d)", xid);
+
+	/* now check if context is still running */
 	if (vx_info(xid, NULL) == 0)
 		method_return_fault(env, MERUNNING);
 
@@ -84,11 +88,18 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		dup2(pfds[1], STDOUT_FILENO);
 		dup2(pfds[1], STDERR_FILENO);
 
+		ncf.flags = ncf.mask = NXF_PERSISTENT|NXF_STATE_ADMIN|NXF_SC_HELPER;
+		vcf.flags = vcf.mask = VXF_PERSISTENT|VXF_STATE_ADMIN|VXF_SC_HELPER|
+				VXF_INFO_INIT|VXF_REBOOT_KILL;
+
 		if (nx_create(xid, &ncf) == -1)
-			log_perror_and_die("nx_create");
+			printf("vx_create(%d): %s", xid, strerror(errno));
 
 		if (vx_create(xid, &vcf) == -1)
-			log_perror_and_die("vx_create");
+			printf("nx_create(%d): %s", xid, strerror(errno));
+
+		close(STDOUT_FILENO);
+		close(STDERR_FILENO);
 
 		exit(EXIT_SUCCESS);
 
@@ -105,7 +116,7 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 		else if (WIFEXITED(status) && WEXITSTATUS(status) != EXIT_SUCCESS)
 			method_set_faultf(env, MESYS,
-					"startup failed:\n%s", buf);
+					"startup failed: %s", buf);
 	}
 
 	return xmlrpc_nil_new(env);
