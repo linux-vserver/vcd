@@ -622,9 +622,16 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
+	char *user;
 	xmlrpc_value *params;
 
-	params = method_init(env, p, c, VCD_CAP_CREATE, M_LOCK);
+	method_init(env, p, c, VCD_CAP_CREATE, M_LOCK);
+	method_return_if_fault(env);
+
+	xmlrpc_decompose_value(env, p,
+			"({s:s,*}V)",
+			"username", &user,
+			&params);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
@@ -655,8 +662,25 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"template does not exist: %s", template);
 
+	/* get old xid if rebuild */
+	if ((xid = vxdb_getxid(name))) {
+		if (auth_isowner(user, name)) {
+			if (!force)
+				method_return_fault(env, MEEXIST);
+			else if (vx_info(xid, NULL) == 0)
+				method_return_fault(env, MERUNNING);
+		}
+
+		else
+			method_return_fault(env, MENOVPS);
+	}
+
+	/* only admins can build new ones */
+	else if (!auth_isadmin(user))
+		method_return_fault(env, MEPERM);
+
 	/* check vdir */
-	if (str_isempty(vdir))
+	if (str_isempty(vdir) || !auth_isowner(user, name))
 		vdir = vxdb_getvdir(name);
 
 	if (!str_path_isabs(vdir))
@@ -670,14 +694,6 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!force && ispath(vdir))
 		method_return_faultf(env, MEEXIST,
 				"vdir already exists: %s", vdir);
-
-	/* get old xid if rebuild */
-	if ((xid = vxdb_getxid(name))) {
-		if (!force)
-			method_return_fault(env, MEEXIST);
-		else if (vx_info(xid, NULL) == 0)
-			method_return_fault(env, MERUNNING);
-	}
 
 	build_root_filesystem(env);
 	method_return_if_fault(env);
