@@ -167,12 +167,12 @@ void reload(void)
 	/* shutdown listen socket */
 	shutdown_listen_socket();
 
-	/* reinitialize internal stats */
-	init_stats();
-
 	/* reload vxdb */
 	vxdb_atexit();
 	vxdb_init();
+
+	/* reinitialize internal stats */
+	init_stats();
 
 	/* reopen listen socket */
 	init_listen_socket();
@@ -342,12 +342,12 @@ int main(int argc, char **argv)
 		close(fd);
 	}
 
-	/* initialize internal stats */
-	init_stats();
-
 	/* open connection to vxdb */
 	vxdb_init();
 	atexit(vxdb_atexit);
+
+	/* initialize internal stats */
+	init_stats();
 
 	/* setup listen socket */
 	init_listen_socket();
