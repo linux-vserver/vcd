@@ -27,7 +27,6 @@
 
 #include "cfg.h"
 #include "methods.h"
-#include "stats.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
@@ -53,8 +52,6 @@ static int sfd = -1;
 static int masterpid = -1;
 static xmlrpc_env *env = NULL;
 
-struct _vcd_stats *vcd_stats = NULL;
-
 static inline
 void usage(int rc)
 {
@@ -73,15 +70,13 @@ void init_stats(void)
 {
 	LOG_TRACEME
 
-	if (vcd_stats)
-		mem_free(vcd_stats);
+	int rc = vxdb_exec("INSERT OR REPLACE INTO vcd "
+			"(uptime, requests, flogins, nomethod, vxdbqueries) "
+			"VALUES (%d, 0, 0, 0, 0)", time(NULL));
 
-	vcd_stats = mem_alloc(sizeof(struct _vcd_stats));
-
-	vcd_stats->uptime       = time(NULL);
-	vcd_stats->requests     = 0;
-	vcd_stats->failedlogins = 0;
-	vcd_stats->vxdbqueries  = 0;
+	if (rc != VXDB_OK)
+		log_error("cannot initialize internal statistics: %s",
+				vxdb_errmsg(vxdb));
 }
 
 static inline
@@ -191,6 +186,7 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
 	switch (sig) {
 	case SIGHUP:
+		/* FIXME: do we really want to exit here? */
 		if (getpid() != masterpid) {
 			log_info("caught SIGHUP for child process - exiting");
 			exit(EXIT_FAILURE);

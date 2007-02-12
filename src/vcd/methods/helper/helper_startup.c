@@ -405,7 +405,8 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 	if (chroot_secure_chdir(vdir, "/etc") == -1)
 		method_return_sys_fault(env, "chroot_secure_chdir(/etc)");
 
-	/* make sure mtab does not exist to prevent symlink attacks */
+	/* make sure mtab does not exist to prevent symlink attacks
+	 * FIXME: what if another process created a new one meanwhile? */
 	unlink("mtab");
 
 	if ((mtabfd = open_trunc("mtab")) == -1)

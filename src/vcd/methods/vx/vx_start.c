@@ -58,7 +58,8 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	/* remove persistent in case previous helper failed */
 	ncf.flags = vcf.flags = 0;
-	ncf.mask  = vcf.mask  = NXF_PERSISTENT;
+	ncf.mask  = NXF_PERSISTENT;
+	vcf.mask  = VXF_PERSISTENT;
 
 	/* don't fail here, context may not exist */
 	nx_flags_set(xid, &ncf);

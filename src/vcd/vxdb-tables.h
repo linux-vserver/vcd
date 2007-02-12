@@ -72,6 +72,10 @@ VXDB_UNIQUE_NEW(user, "uid", "name")
 VXDB_COLUMNS_NEW(user_caps, "uid", "cap")
 VXDB_UNIQUE_NEW(user_caps, "uid,cap")
 
+VXDB_COLUMNS_NEW(vcd, "uptime", "requests", "flogins",
+		"nomethod", "vxdbqueries")
+VXDB_UNIQUE_NEW(vcd, "uptime")
+
 VXDB_COLUMNS_NEW(vdir, "xid", "vdir")
 VXDB_UNIQUE_NEW(vdir, "xid", "vdir")
 
@@ -112,6 +116,7 @@ VXDB_TABLE_NEW(nx_broadcast)
 VXDB_TABLE_NEW(restart)
 VXDB_TABLE_NEW(user)
 VXDB_TABLE_NEW(user_caps)
+VXDB_TABLE_NEW(vcd)
 VXDB_TABLE_NEW(vdir)
 VXDB_TABLE_NEW(vx_bcaps)
 VXDB_TABLE_NEW(vx_ccaps)

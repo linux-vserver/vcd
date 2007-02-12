@@ -17,7 +17,7 @@
 
 #include "auth.h"
 #include "methods.h"
-#include "stats.h"
+#include "vxdb.h"
 
 #include <lucid/log.h>
 
@@ -29,10 +29,29 @@ xmlrpc_value *m_vcd_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
 
-	return xmlrpc_build_value(env, "{s:i,s:i,s:i,s:i,s:i}",
-			"uptime", vcd_stats->uptime,
-			"requests", vcd_stats->requests,
-			"nosuchmethod", vcd_stats->nosuchmethod,
-			"failedlogins", vcd_stats->failedlogins,
-			"vxdbqueries", vcd_stats->vxdbqueries);
+	int rc = vxdb_prepare(&dbr,
+			"SELECT uptime, requests, flogins, nomethod FROM vcd "
+			"ORDER BY uptime DESC LIMIT 1");
+
+	if (rc == VXDB_OK)
+		method_return_vxdb_fault(env);
+
+	rc = vxdb_step(dbr);
+
+	xmlrpc_value *response = NULL;
+
+	if (rc == VXDB_ROW)
+		response = xmlrpc_build_value(env, "{s:i,s:i,s:i,s:i}",
+				"uptime", time(NULL) - vxdb_column_int(dbr, 0),
+				"requests", vxdb_column_int(dbr, 1),
+				"nomethod", vxdb_column_int(dbr, 2),
+				"flogins", vxdb_column_int(dbr, 3));
+	else if (rc == VXDB_DONE)
+		response = xmlrpc_nil_new(env);
+	else
+		method_set_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
+
+	return response;
 }
