@@ -102,7 +102,19 @@ static
 void shutdown_listen_socket(void)
 {
 	LOG_TRACEME
+
+	if (getpid() != masterpid)
+		return;
+
+	/* close listen socket, so no new connections arrive */
 	close(sfd);
+
+	/* now wait for pending connections */
+	int status;
+
+	log_info("waiting for pending connections");
+
+	while (waitpid(-1, &status, 0) > 0);
 }
 
 static inline
@@ -160,10 +172,6 @@ void reload(void)
 	/* shutdown listen socket */
 	shutdown_listen_socket();
 
-	/* wait for pending connections */
-	int status;
-	while (waitpid(-1, &status, 0) > 0);
-
 	/* reinitialize internal stats */
 	init_stats();
 
@@ -183,8 +191,10 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
 {
 	switch (sig) {
 	case SIGHUP:
-		if (getpid() != masterpid)
-			log_info("caught SIGHUP for child process - ignoring");
+		if (getpid() != masterpid) {
+			log_info("caught SIGHUP for child process - exiting");
+			exit(EXIT_FAILURE);
+		}
 
 		else {
 			log_info("caught SIGHUP for master process - "
@@ -197,8 +207,16 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
 	case SIGINT:
 	case SIGTERM:
 	case SIGQUIT:
-		log_info("caught SIGHUP/SIGINT/SIGTERM/SIGQUIT - shutting down");
-		exit(EXIT_SUCCESS);
+		if (getpid() != masterpid)
+			log_info("caught SIGINT/SIGTERM/SIGQUIT for child process - "
+					"ignoring");
+
+		else {
+			log_info("caught SIGINT/SIGTERM/SIGQUIT for master process - "
+					"shutting down");
+			exit(EXIT_SUCCESS);
+		}
+
 		break;
 
 	case SIGSEGV:

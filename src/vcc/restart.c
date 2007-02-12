@@ -17,7 +17,7 @@
 
 #include "cmd.h"
 
-void cmd_reboot(xmlrpc_env *env, int argc, char **argv)
+void cmd_restart(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_client_call(env, uri, "vx.restart",
 		SIGNATURE("{s:s}"),
