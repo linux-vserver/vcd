@@ -33,6 +33,7 @@
 
 
 sqlite3 *vxdb = NULL;
+vxdb_result *dbr = NULL;
 
 static
 void vxdb_create_table(struct _vxdb_table *table)
@@ -329,10 +330,20 @@ void vxdb_atexit(void)
 		return;
 
 	if (sqlite3_close(vxdb) == VXDB_BUSY) {
-		log_alert("unfinished statements on vxdb shutdown");
-		log_alert("this is a bug - your database will be corrupted");
-		log_alert("please report to %s", PACKAGE_BUGREPORT);
+		/* try to finalize last known statement on exit during vxdb query */
+		log_warn("unfinished statements on vxdb shutdown - "
+				"trying to finalize");
+
+		vxdb_finalize(dbr);
+
+		if (sqlite3_close(vxdb) == VXDB_BUSY) {
+			log_alert("unable to finalize unfinished statements");
+			log_alert("this is a bug - your database will be corrupted");
+			log_alert("please report to %s", PACKAGE_BUGREPORT);
+		}
 	}
+
+	vxdb = NULL;
 }
 
 int vxdb_prepare(vxdb_result **dbr, const char *fmt, ...)

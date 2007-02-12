@@ -25,7 +25,6 @@ xmlrpc_value *m_vxdb_mount_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params, *response = NULL;
 	char *name, *dst;
 	xid_t xid;
-	vxdb_result *dbr;
 	int rc;
 
 	params = method_init(env, p, c, VCD_CAP_MOUNT, M_OWNER);

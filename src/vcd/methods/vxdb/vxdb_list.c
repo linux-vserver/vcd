@@ -28,7 +28,6 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params, *response = NULL;
-	vxdb_result *dbr;
 	char *curuser, *user;
 	int uid = 0, rc;
 

@@ -29,7 +29,6 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name;
 	int cpuid;
 	xid_t xid;
-	vxdb_result *dbr;
 	int rc;
 
 	params = method_init(env, p, c, VCD_CAP_SCHED, M_OWNER);

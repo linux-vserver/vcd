@@ -30,7 +30,6 @@ int auth_isvalid(const char *user, const char *pass)
 	LOG_TRACEME
 
 	int rc;
-	vxdb_result *dbr;
 	char *whirlpool_pass;
 
 	if (mem_cmp(pass, "WHIRLPOOLENC//", 14) == 0)
@@ -59,7 +58,6 @@ int auth_isadmin(const char *user)
 	LOG_TRACEME
 
 	int rc;
-	vxdb_result *dbr;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT uid FROM user WHERE name = '%s' AND admin = 1",
@@ -80,7 +78,6 @@ int auth_hascapability(const char *user, uint64_t cap)
 {
 	LOG_TRACEME
 
-	vxdb_result *dbr;
 	const char *buf;
 	int uid, rc;
 
@@ -124,7 +121,6 @@ int auth_isowner(const char *user, const char *name)
 
 	int uid, rc;
 	xid_t xid;
-	vxdb_result *dbr;
 
 	if ((uid = auth_getuid(user)) == 0)
 		return 0;
@@ -154,7 +150,6 @@ int auth_getuid(const char *user)
 	LOG_TRACEME
 
 	int uid, rc;
-	vxdb_result *dbr;
 
 	if (!validate_username(user))
 		return 0;
@@ -178,7 +173,6 @@ int auth_getnextuid(void)
 	LOG_TRACEME
 
 	int uid, rc;
-	vxdb_result *dbr;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT uid FROM user ORDER BY uid DESC LIMIT 1");

@@ -24,6 +24,7 @@
 typedef sqlite3_stmt vxdb_result;
 
 extern sqlite3 *vxdb;
+extern vxdb_result *dbr;
 
 /* sqlite api aliases */
 #define vxdb_errmsg   sqlite3_errmsg

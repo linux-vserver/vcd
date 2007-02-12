@@ -54,7 +54,6 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	LOG_TRACEME
 
 	int rc;
-	vxdb_result *dbr;
 	vx_flags_t bcaps, ccaps, cflags;
 
 	bcaps.flags = ccaps.flags = cflags.flags = 0;
@@ -130,7 +129,6 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 {
 	LOG_TRACEME
 
-	vxdb_result *dbr;
 	int rc;
 	const char *type;
 	uint32_t buf32;
@@ -184,7 +182,6 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 	LOG_TRACEME
 
 	int rc, cpuid, numcpus;
-	vxdb_result *dbr;
 	vx_sched_t sched;
 
 	numcpus = sysconf(_SC_NPROCESSORS_ONLN);
@@ -247,7 +244,6 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 	LOG_TRACEME
 
 	int rc;
-	vxdb_result *dbr;
 	uint32_t id;
 	vx_uname_t uname;
 
@@ -391,7 +387,6 @@ xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
 {
 	LOG_TRACEME
 
-	vxdb_result *dbr;
 	int rc, mtabfd;
 
 	log_debug("vdir(%d): %s", xid, vdir);
@@ -449,7 +444,6 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	const char *vdir, *init = "/sbin/init";
-	vxdb_result *dbr;
 	int rc;
 
 	params = method_init(env, p, c, VCD_CAP_HELPER, 0);

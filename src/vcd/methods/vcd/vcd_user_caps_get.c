@@ -30,7 +30,6 @@ xmlrpc_value *m_vcd_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params, *response = NULL;
 	char *user;
 	int uid, rc;
-	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);

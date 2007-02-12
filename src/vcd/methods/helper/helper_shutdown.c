@@ -55,7 +55,6 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vxdb_changes(vxdb) < 1)
 		return xmlrpc_nil_new(env);
 
-	vxdb_result *dbr;
 	rc = vxdb_prepare(&dbr, "SELECT timeout FROM init WHERE xid = %d", xid);
 
 	if (rc == VXDB_OK) {

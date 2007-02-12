@@ -220,10 +220,10 @@ void signal_handler(int sig, siginfo_t *info, void *ucontext)
 		break;
 
 	case SIGSEGV:
-		log_error("caught SIGSEGV for virtual address %p (%d,%d)",
+		log_alert("caught SIGSEGV for virtual address %p (%d,%d)",
 				info->si_addr, info->si_errno, info->si_code);
-		log_error("you probably found a bug in vcd!");
-		log_error("please report it to %s", PACKAGE_BUGREPORT);
+		log_alert("you probably found a bug in vcd!");
+		log_alert("please report to %s", PACKAGE_BUGREPORT);
 		exit(EXIT_FAILURE);
 		break;
 	}

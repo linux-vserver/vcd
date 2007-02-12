@@ -174,7 +174,8 @@ int handle_file(const char *fpath, const struct stat *sb,
 		}
 
 		if (symlinkat(buf, vdirfd, fpath) == -1) {
-			method_set_sys_faultf(global_env, "symlinkat(%s, %s)", buf, fpath);
+			method_set_sys_faultf(global_env, "symlinkat(%s, %s)",
+					buf, fpath);
 			return FTW_STOP;
 		}
 
@@ -289,7 +290,6 @@ xmlrpc_value *find_free_xid(xmlrpc_env *env)
 {
 	LOG_TRACEME
 
-	vxdb_result *dbr;
 
 	if (xid != 0)
 		return NULL;
@@ -444,19 +444,23 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 
 		if (!validate_path(mdst))
 			method_return_faultf(env, MECONF,
-				"invalid template configuration for mount destination: %s", mdst);
+				"invalid template configuration for mount destination: %s",
+				mdst);
 
 		if (!validate_path(msrc) && !str_equal(msrc, "none"))
 			method_return_faultf(env, MECONF,
-				"invalid template configuration for mount source: %s", msrc);
+				"invalid template configuration for mount source: %s",
+				msrc);
 
 		if (str_isempty(mtype) || !str_isalnum(mtype))
 			method_return_faultf(env, MECONF,
-				"invalid template configuration for mount type: %s", mtype);
+				"invalid template configuration for mount type: %s",
+				mtype);
 
 		if (str_isempty(mopts) || !str_isascii(mopts))
 			method_return_faultf(env, MECONF,
-				"invalid template configuration for mount options: %s", mopts);
+				"invalid template configuration for mount options: %s",
+				mopts);
 
 		stralloc_catf(sa,
 			"INSERT INTO mount (xid, src, dst, type, opts) "
@@ -617,7 +621,8 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	return response;
 }
 
-/* vx.create(string name, string template, bool force, bool copy[, string vdir]) */
+/* vx.create(string name, string template, bool force, bool copy[,
+ *           string vdir]) */
 xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

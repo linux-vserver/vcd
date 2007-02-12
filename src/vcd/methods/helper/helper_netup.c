@@ -35,7 +35,6 @@ xmlrpc_value *network_interfaces(xmlrpc_env *env, xid_t xid)
 	LOG_TRACEME
 
 	int rc;
-	vxdb_result *dbr;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT addr,netmask FROM nx_addr WHERE xid = %d",
@@ -82,7 +81,6 @@ xmlrpc_value *network_broadcast(xmlrpc_env *env, xid_t xid)
 	LOG_TRACEME
 
 	int rc;
-	vxdb_result *dbr;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT broadcast FROM nx_broadcast WHERE xid = %d",

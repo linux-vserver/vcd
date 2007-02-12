@@ -31,7 +31,6 @@ xmlrpc_value *m_vx_reboot(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name, *reboot = "/sbin/reboot";
 	xid_t xid;
 	int rc;
-	vxdb_result *dbr;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
