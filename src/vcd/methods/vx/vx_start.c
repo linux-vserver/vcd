@@ -60,11 +60,9 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	ncf.flags = vcf.flags = 0;
 	ncf.mask  = vcf.mask  = NXF_PERSISTENT;
 
-	if (nx_flags_set(xid, &ncf) == -1)
-		method_return_sys_faultf(env, "nx_flags_set(%d)", xid);
-
-	if (vx_flags_set(xid, &vcf) == -1)
-		method_return_sys_faultf(env, "vx_flags_set(%d)", xid);
+	/* don't fail here, context may not exist */
+	nx_flags_set(xid, &ncf);
+	vx_flags_set(xid, &vcf);
 
 	/* now check if context is still running */
 	if (vx_info(xid, NULL) == 0)
