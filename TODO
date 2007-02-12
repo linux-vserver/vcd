@@ -5,7 +5,6 @@ BUGS:
 NEEDED FEATURES:
 - disk limits implementation, important feature for hosting/reselling/etc. solutions
 - onboot settings, to start VServers on VCD startup
-- fix/cleanup mount (esp. wrt. vdir being a top-level mount point)
 - debian/ dir, RPM .spec file, init scripts, distrib make targets, pathprog probably
 
 WANTED FEATURES:

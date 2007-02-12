@@ -36,6 +36,7 @@ vcc_SOURCES = cmd.c \
               reboot.c \
               remove.c \
               rename.c \
+              restart.c \
               start.c \
               status.c \
               stop.c \

@@ -17,25 +17,9 @@
 
 #include "cmd.h"
 
-char *uri  = NULL;
-char *user = "admin";
-char *pass = NULL;
-char *name = NULL;
-
-cmd_t CMDS[] = {
-	{ "create",    cmd_create },
-	{ "exec",      cmd_exec },
-	{ "kill",      cmd_kill },
-	{ "list",      cmd_list },
-	{ "load",      cmd_load },
-	{ "login",     cmd_login },
-	{ "reboot",    cmd_reboot },
-	{ "remove",    cmd_remove },
-	{ "rename",    cmd_rename },
-	{ "restart",   cmd_restart },
-	{ "start",     cmd_start },
-	{ "status",    cmd_status },
-	{ "stop",      cmd_stop },
-	{ "templates", cmd_templates },
-	{ NULL,        NULL }
-};
+void cmd_reboot(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_client_call(env, uri, "vx.restart",
+		SIGNATURE("{s:s}"),
+		"name", name);
+}

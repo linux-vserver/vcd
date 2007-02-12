@@ -54,6 +54,7 @@ void cmd_login    (xmlrpc_env *env, int argc, char **argv);
 void cmd_reboot   (xmlrpc_env *env, int argc, char **argv);
 void cmd_remove   (xmlrpc_env *env, int argc, char **argv);
 void cmd_rename   (xmlrpc_env *env, int argc, char **argv);
+void cmd_restart  (xmlrpc_env *env, int argc, char **argv);
 void cmd_start    (xmlrpc_env *env, int argc, char **argv);
 void cmd_status   (xmlrpc_env *env, int argc, char **argv);
 void cmd_stop     (xmlrpc_env *env, int argc, char **argv);
