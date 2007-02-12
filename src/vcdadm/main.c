@@ -167,11 +167,17 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (argc < optind + 2)
+	if (argc < optind + 1)
 		usage(EXIT_FAILURE);
 
 	cmd  = argv[optind++];
-	name = argv[optind++];
+
+	if (str_equal(cmd, "status"))
+		name = NULL;
+	else if (argc < optind + 1)
+		usage(EXIT_FAILURE);
+	else
+		name = argv[optind++];
 
 	for (i = 0; CMDS[i].name; i++)
 		if (str_equal(cmd, CMDS[i].name))
