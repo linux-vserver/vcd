@@ -171,9 +171,10 @@ int main(int argc, char **argv)
 		usage(EXIT_FAILURE);
 
 	cmd  = argv[optind++];
-	name = "";
 
-	if (argc > optind + 1)
+	if (argc < optind + 1)
+		name = "";
+	else
 		name = argv[optind++];
 
 	for (i = 0; CMDS[i].name; i++)
