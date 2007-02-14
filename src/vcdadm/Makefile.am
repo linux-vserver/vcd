@@ -27,7 +27,9 @@ sbin_PROGRAMS = vcdadm
 
 vcdadm_SOURCES = cmd.c \
                  main.c \
-                 status.c
+                 status.c \
+                 user.c \
+                 user_caps.c
 
 vcdadm_LDADD = $(LUCID_LIBS) \
                $(CONFUSE_LIBS) \

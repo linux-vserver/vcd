@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,6 +23,12 @@ char *pass = NULL;
 char *name = NULL;
 
 cmd_t CMDS[] = {
-	{ "status",    cmd_status },
-	{ NULL,        NULL }
+	{ "status",           cmd_status },
+	{ "user.set",         cmd_user_set },
+	{ "user.get",         cmd_user_get },
+	{ "user.remove",      cmd_user_remove },
+	{ "user.caps.add",    cmd_user_caps_add },
+	{ "user.caps.get",    cmd_user_caps_get },
+	{ "user.caps.remove", cmd_user_caps_remove },
+	{ NULL,               NULL }
 };

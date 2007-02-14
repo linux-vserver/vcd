@@ -43,6 +43,12 @@ extern char *name;
 
 void usage(int rc);
 
-void cmd_status(xmlrpc_env *env, int argc, char **argv);
+void cmd_status          (xmlrpc_env *env, int argc, char **argv);
+void cmd_user_set        (xmlrpc_env *env, int argc, char **argv);
+void cmd_user_get        (xmlrpc_env *env, int argc, char **argv);
+void cmd_user_remove     (xmlrpc_env *env, int argc, char **argv);
+void cmd_user_caps_add   (xmlrpc_env *env, int argc, char **argv);
+void cmd_user_caps_get   (xmlrpc_env *env, int argc, char **argv);
+void cmd_user_caps_remove(xmlrpc_env *env, int argc, char **argv);
 
 #endif

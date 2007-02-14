@@ -63,7 +63,7 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 
 	xmlrpc_DECREF(result);
 
-	printf("uptime:   %s\n", pretty_uptime(uptime));
+	printf("uptime: %s\n", pretty_uptime(uptime));
 	printf("requests: %d\n", requests);
 	printf("nomethod: %d\n", nomethod);
 	printf("flogins:  %d\n", flogins);

@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -171,12 +171,9 @@ int main(int argc, char **argv)
 		usage(EXIT_FAILURE);
 
 	cmd  = argv[optind++];
+	name = "";
 
-	if (str_equal(cmd, "status"))
-		name = NULL;
-	else if (argc < optind + 1)
-		usage(EXIT_FAILURE);
-	else
+	if (argc > optind + 1)
 		name = argv[optind++];
 
 	for (i = 0; CMDS[i].name; i++)
