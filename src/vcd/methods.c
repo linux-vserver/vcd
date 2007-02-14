@@ -36,10 +36,12 @@ m_err_t method_error_codes[] = {
 	{ MEINVAL,   "Invalid request" },
 	{ MEVXDB,    "Error in vxdb" },
 	{ MECONF,    "Invalid configuration" },
+	{ MENOUSER,  "No such user"
 	{ MESTOPPED, "Not running" },
 	{ MERUNNING, "Already running" },
 	{ MEEXIST,   "Conflict/Already exists" },
 	{ MENOVPS,   "Not found" },
+	{ MEBUSY,    "Operation still in progress" },
 	{ MESYS,     "System call failed" },
 	{ MEEXEC,    "Command execution failed" },
 	{ 0,         NULL },
@@ -280,5 +282,5 @@ char *method_strerror(int id)
 		if (method_error_codes[i].id == id)
 			return method_error_codes[i].msg;
 
-	return NULL;
+	return "Unknown error";
 }
