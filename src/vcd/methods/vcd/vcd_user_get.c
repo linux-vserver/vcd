@@ -52,7 +52,7 @@ xmlrpc_value *m_vcd_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	else
 		rc = vxdb_prepare(&dbr,
-				"SELECT name,uid,admin FROM user ORDER BY name ASC");
+				"SELECT name,uid,admin FROM user ORDER BY uid ASC");
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
