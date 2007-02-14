@@ -49,7 +49,7 @@ void cmd_user_get(xmlrpc_env *env, int argc, char **argv)
 		
 		xmlrpc_DECREF(result);
 		
-		printf("%s (uid=%d,admin=%d)", username, uid, admin ? 1 : 0);
+		printf("%s (uid=%d,admin=%d)\n", username, uid, admin ? 1 : 0);
 	}
 
 	xmlrpc_DECREF(response);
@@ -78,7 +78,7 @@ void cmd_user_set(xmlrpc_env *env, int argc, char **argv)
 		password = "";
 
 	xmlrpc_client_call(env, uri, "vcd.user.set",
-		SIGNATURE("{s:s,s:i,s:s}"),
+		SIGNATURE("{s:s,s:b,s:s}"),
 		"username", name,
 		"admin", admin,
 		"password", password);

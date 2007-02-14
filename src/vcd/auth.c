@@ -32,7 +32,10 @@ int auth_isvalid(const char *user, const char *pass)
 	int rc;
 	char *whirlpool_pass;
 
-	if (mem_cmp(pass, "WHIRLPOOLENC//", 14) == 0)
+	if (!validate_username(user) || str_isempty(pass))
+		return 0;
+
+	if (str_cmpn(pass, "WHIRLPOOLENC//", 14) == 0)
 		whirlpool_pass = str_dup(pass+14);
 	else
 		whirlpool_pass = whirlpool_digest(pass);
@@ -58,6 +61,9 @@ int auth_isadmin(const char *user)
 	LOG_TRACEME
 
 	int rc;
+
+	if (!validate_username(user))
+		return 0;
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT uid FROM user WHERE name = '%s' AND admin = 1",

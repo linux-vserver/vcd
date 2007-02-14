@@ -39,8 +39,6 @@ xmlrpc_value *m_vcd_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"username", &user);
 	method_return_if_fault(env);
 
-	method_empty_params(1, &user);
-
 	if (!(uid = auth_getuid(user)))
 		method_return_fault(env, MENOUSER);
 
