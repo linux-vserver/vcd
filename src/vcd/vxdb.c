@@ -480,7 +480,6 @@ xid_t vxdb_getxid(const char *name)
 
 	int rc;
 	xid_t xid;
-	vxdb_result *dbr;
 
 	if (!validate_name(name))
 		return 0;
@@ -503,7 +502,6 @@ char *vxdb_getname(xid_t xid)
 
 	int rc;
 	char *name;
-	vxdb_result *dbr;
 
 	if (!validate_xid(xid))
 		return NULL;
@@ -526,7 +524,6 @@ char *vxdb_getvdir(const char *name)
 
 	int rc;
 	char *vbasedir, *vdir = NULL;
-	vxdb_result *dbr;
 	xid_t xid;
 
 	if ((xid = vxdb_getxid(name))) {

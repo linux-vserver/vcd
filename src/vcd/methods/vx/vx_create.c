@@ -16,6 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
+#include <limits.h>
 #include <fcntl.h>
 #include <ftw.h>
 #include <dirent.h>
@@ -90,17 +91,9 @@ static
 int handle_file(const char *fpath, const struct stat *sb,
 		int typeflag, struct FTW *ftwbuf)
 {
-	char *ffile, *buf;
+	char *buf, vpath[PATH_MAX];
 	int do_chown = 0, do_chmod = 0, do_chxid = 0;
-
-	ffile = str_path_concat(vdir, fpath);
-
-	ix_attr_t attr = {
-		.filename = ffile,
-		.xid      = xid,
-		.flags    = IATTR_TAG,
-		.mask     = IATTR_TAG,
-	};
+	ix_attr_t attr;
 
 	/* skip vdir */
 	if (ftwbuf->level < 1)
@@ -117,7 +110,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 	case FTW_D:
 		/* create new directory */
 		if (mkdirat(vdirfd, fpath, sb->st_mode) == -1) {
-			method_set_sys_faultf(global_env, "mkdirat(%s)", ffile);
+			method_set_sys_faultf(global_env, "mkdirat(%s)", fpath);
 			return FTW_STOP;
 		}
 
@@ -197,22 +190,29 @@ int handle_file(const char *fpath, const struct stat *sb,
 	}
 
 	if (do_chmod && fchmodat(vdirfd, fpath, sb->st_mode, 0) == -1) {
-		method_set_sys_faultf(global_env, "fchmodat(%s)", ffile);
+		method_set_sys_faultf(global_env, "fchmodat(%s)", fpath);
 		return FTW_STOP;
 	}
 
 	if (do_chown && fchownat(vdirfd, fpath, sb->st_uid,
 			sb->st_gid, AT_SYMLINK_NOFOLLOW) == -1) {
-		method_set_sys_faultf(global_env, "fchownat(%s)", ffile);
+		method_set_sys_faultf(global_env, "fchownat(%s)", fpath);
 		return FTW_STOP;
 	}
 
-	if (do_chxid && ix_attr_set(&attr) == -1) {
-		method_set_sys_faultf(global_env, "ix_attr_set(%s)", ffile);
-		return FTW_STOP;
-	}
+	if (do_chxid) {
+		snprintf(vpath, PATH_MAX, "%s/%s", vdir, fpath);
 
-	mem_free(ffile);
+		attr.filename = vpath;
+		attr.xid      = xid;
+		attr.flags    = IATTR_TAG;
+		attr.mask     = IATTR_TAG;
+
+		if (ix_attr_set(&attr) == -1) {
+			method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
+			return FTW_STOP;
+		}
+	}
 
 	return FTW_CONTINUE;
 }
