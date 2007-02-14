@@ -93,8 +93,11 @@ void read_config(char *file, int ignore_noent)
 
 	host = cfg_getstr(cfg, "host");
 	port = cfg_getint(cfg, "port");
-	user = cfg_getstr(cfg, "user");
-	pass = cfg_getstr(cfg, "pass");
+
+	if (!user) {
+		user = cfg_getstr(cfg, "user");
+		pass = cfg_getstr(cfg, "pass");
+	}
 }
 
 static
@@ -163,6 +166,7 @@ int main(int argc, char **argv)
 		
 		case 'u':
 			user = optarg;
+			pass = NULL;
 			break;
 		
 		default:
