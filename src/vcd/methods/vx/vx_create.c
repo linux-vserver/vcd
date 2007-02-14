@@ -91,7 +91,7 @@ static
 int handle_file(const char *fpath, const struct stat *sb,
 		int typeflag, struct FTW *ftwbuf)
 {
-	char *buf, vpath[PATH_MAX];
+	char *buf;
 	int do_chown = 0, do_chmod = 0, do_chxid = 0;
 	ix_attr_t attr;
 
@@ -201,11 +201,18 @@ int handle_file(const char *fpath, const struct stat *sb,
 	}
 
 	if (do_chxid) {
-		int len = str_len(vdir);
-		
-		str_cpyn(vpath, vdir, PATH_MAX);
-		vpath[len++] = '/';
-		str_cpyn(vpath + len, fpath, PATH_MAX - len);
+		/* we can rely upon vdir and fpath being valid, so we
+		 * don't use str_path_concat to get rid of mem_alloc, but we
+		 * don't use snprintf either, since it has too much overhead
+		 * therefore: ugly, but fast str_cpyn :) */
+		int vdirlen  = str_len(vdir);
+		int fpathlen = str_len(fpath);
+		int len = vdirlen + fpathlen + 2;
+		char vpath[len];
+
+		str_cpy(vpath, vdir);
+		vpath[vdirlen++] = '/';
+		str_cpy(vpath + vdirlen, fpath);
 
 		attr.filename = vpath;
 		attr.xid      = xid;
