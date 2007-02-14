@@ -37,7 +37,7 @@ static int   port = 13386;
 static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("host", "localhost", CFGF_NONE),
 	CFG_INT("port", 13386,       CFGF_NONE),
-	CFG_STR("user", "admin",     CFGF_NONE),
+	CFG_STR("user", NULL,        CFGF_NONE),
 	CFG_STR("pass", NULL,        CFGF_NONE),
 	CFG_END()
 };
@@ -126,11 +126,8 @@ void read_config(char *file, int ignore_noent)
 
 	host = cfg_getstr(cfg, "host");
 	port = cfg_getint(cfg, "port");
-
-	if (!user) {
-		user = cfg_getstr(cfg, "user");
-		pass = cfg_getstr(cfg, "pass");
-	}
+	user = cfg_getstr(cfg, "user");
+	pass = cfg_getstr(cfg, "pass");
 }
 
 static
@@ -207,6 +204,9 @@ int main(int argc, char **argv)
 			break;
 		}
 	}
+
+	if (str_isempty(user))
+		log_error_and_die("no user for login given");
 
 	if (argc < optind + 1)
 		usage(EXIT_FAILURE);
