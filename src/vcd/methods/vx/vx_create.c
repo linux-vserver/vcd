@@ -90,14 +90,16 @@ static
 int handle_file(const char *fpath, const struct stat *sb,
 		int typeflag, struct FTW *ftwbuf)
 {
-	char *buf;
-	int do_chown = 0, do_chmod = 0;
+	char *ffile, *buf;
+	int do_chown = 0, do_chmod = 0, do_chxid = 0;
+
+	ffile = str_path_concat(vdir, fpath);
 
 	ix_attr_t attr = {
-		.filename = fpath,
-		.xid      = 0,
-		.flags    = IATTR_IUNLINK|IATTR_IMMUTABLE,
-		.mask     = IATTR_IUNLINK|IATTR_IMMUTABLE,
+		.filename = ffile,
+		.xid      = xid,
+		.flags    = IATTR_TAG,
+		.mask     = IATTR_TAG,
 	};
 
 	/* skip vdir */
@@ -115,11 +117,11 @@ int handle_file(const char *fpath, const struct stat *sb,
 	case FTW_D:
 		/* create new directory */
 		if (mkdirat(vdirfd, fpath, sb->st_mode) == -1) {
-			method_set_sys_faultf(global_env, "mkdirat(%s)", fpath);
+			method_set_sys_faultf(global_env, "mkdirat(%s)", ffile);
 			return FTW_STOP;
 		}
 
-		do_chown = 1;
+		do_chown = do_chxid = 1;
 		break;
 
 	case FTW_F:
@@ -128,7 +130,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 			int srcfd = open(fpath, O_RDONLY|O_NONBLOCK|O_NOFOLLOW);
 
 			if (srcfd == -1) {
-				method_set_sys_faultf(global_env, "open_read(%s)", fpath);
+				method_set_sys_faultf(global_env, "open(%s)", fpath);
 				return FTW_STOP;
 			}
 
@@ -141,18 +143,24 @@ int handle_file(const char *fpath, const struct stat *sb,
 			}
 
 			if (copy_file(srcfd, dstfd) == -1) {
-				method_set_sys_faultf(global_env, "copy_fileat(%s)", fpath);
+				method_set_sys_faultf(global_env, "copy_file(%s)", fpath);
 				return FTW_STOP;
 			}
 
 			close(dstfd);
 			close(srcfd);
 
-			do_chown = do_chmod = 1;
+			do_chown = do_chmod = do_chxid = 1;
 		}
 
 		/* link file */
 		else {
+			/* set needed file attributes for linking */
+			attr.filename = fpath;
+			attr.xid      = 0;
+			attr.flags    = IATTR_IUNLINK|IATTR_IMMUTABLE;
+			attr.mask     = IATTR_IUNLINK|IATTR_IMMUTABLE;
+
 			if (ix_attr_set(&attr) == -1) {
 				method_set_sys_faultf(global_env, "ix_attr_set(%s)", fpath);
 				return FTW_STOP;
@@ -174,14 +182,13 @@ int handle_file(const char *fpath, const struct stat *sb,
 		}
 
 		if (symlinkat(buf, vdirfd, fpath) == -1) {
-			method_set_sys_faultf(global_env, "symlinkat(%s, %s)",
-					buf, fpath);
+			method_set_sys_faultf(global_env, "symlinkat(%s, %s)", buf, fpath);
 			return FTW_STOP;
 		}
 
 		mem_free(buf);
 
-		do_chown = 1;
+		do_chown = do_chxid = 1;
 		break;
 
 	default:
@@ -190,26 +197,33 @@ int handle_file(const char *fpath, const struct stat *sb,
 	}
 
 	if (do_chmod && fchmodat(vdirfd, fpath, sb->st_mode, 0) == -1) {
-		method_set_sys_faultf(global_env, "fchmodat(%s)", fpath);
+		method_set_sys_faultf(global_env, "fchmodat(%s)", ffile);
 		return FTW_STOP;
 	}
 
 	if (do_chown && fchownat(vdirfd, fpath, sb->st_uid,
 			sb->st_gid, AT_SYMLINK_NOFOLLOW) == -1) {
-		method_set_sys_faultf(global_env, "fchownat(%s)", fpath);
+		method_set_sys_faultf(global_env, "fchownat(%s)", ffile);
 		return FTW_STOP;
 	}
+
+	if (do_chxid && ix_attr_set(&attr) == -1) {
+		method_set_sys_faultf(global_env, "ix_attr_set(%s)", ffile);
+		return FTW_STOP;
+	}
+
+	mem_free(ffile);
 
 	return FTW_CONTINUE;
 }
 
 static
-xmlrpc_value *link_unified_root(xmlrpc_env *env)
+xmlrpc_value *make_vserver_filesystem(xmlrpc_env *env)
 {
 	if (chroot_secure_chdir(vdir, "/") == -1)
 		method_return_sys_fault(env, "chroot_secure_chdir");
 
-	/* handle_file uses this to make sure we are in vdir */
+	/* handle_file uses this to make sure we are in the vdir */
 	vdirfd = open_read(".");
 
 	struct stat vdirsb, tdirsb;
@@ -226,7 +240,7 @@ xmlrpc_value *link_unified_root(xmlrpc_env *env)
 		copy = 1;
 
 	global_env = env;
-	nftw(".", handle_file, 50, FTW_ACTIONRETVAL|FTW_PHYS);
+	nftw(".", handle_file, 50, FTW_MOUNT|FTW_PHYS|FTW_ACTIONRETVAL);
 	global_env = NULL;
 
 	close(vdirfd);
@@ -244,7 +258,7 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 
 		if (!validate_path(oldvdir))
 			method_return_faultf(env, MECONF,
-					"invalid old vdir: %s", oldvdir);
+					"invalid old vdir path: %s", oldvdir);
 
 		runlink(oldvdir);
 	}
@@ -252,12 +266,16 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 	/* try to runlink vdir first */
 	runlink(vdir);
 
+	/* find a free xid */
+	find_free_xid(env);
+	method_return_if_fault(env);
+
 	/* create new vdir */
 	if (mkdirp(vdir, 0755) == -1)
 		method_return_sys_fault(env, "mkdirp");
 
-	/* now link the template to the new vdir */
-	link_unified_root(env);
+	/* now link/copy the template to the new vdir */
+	make_vserver_filesystem(env);
 
 	/* runlink on failure */
 	if (env->fault_occurred) {
@@ -280,7 +298,7 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 			mknod("dev/tty",     0666 | S_IFCHR, makedev(5,0)) == -1 ||
 			mknod("dev/ptmx",    0666 | S_IFCHR, makedev(5,2)) == -1)
 		method_return_faultf(env, MESYS,
-				"could not sanitize /dev: %s", strerror(errno));
+				"could not properly sanitize /dev: %s", strerror(errno));
 
 	return NULL;
 }
@@ -289,7 +307,6 @@ static
 xmlrpc_value *find_free_xid(xmlrpc_env *env)
 {
 	LOG_TRACEME
-
 
 	if (xid != 0)
 		return NULL;
@@ -328,8 +345,8 @@ xmlrpc_value *find_free_xid(xmlrpc_env *env)
 		method_set_vxdb_fault(env);
 
 	if (xid == 0)
-			method_set_faultf(env, MEVXDB,
-					"no free context id available: %s", name);
+		method_set_faultf(env, MEVXDB,
+				"no free context id available: %s", name);
 
 	vxdb_finalize(dbr);
 	return NULL;
@@ -363,10 +380,6 @@ xmlrpc_value *create_vxdb_entries(xmlrpc_env *env)
 		mem_free(tconf);
 		break;
 	}
-
-	/* find a free xid */
-	find_free_xid(env);
-	method_return_if_fault(env);
 
 	/* assemble SQL query */
 	stralloc_t _sa, *sa = &_sa;
@@ -655,9 +668,9 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	const char *tbasedir = cfg_getstr(cfg, "templatedir");
 
-	if (!str_path_isabs(tbasedir) || !isdir(tbasedir))
+	if (!validate_path(tbasedir) || !isdir(tbasedir))
 		method_return_faultf(env, MECONF,
-				"tbasedir does not exist: %s", tbasedir);
+				"tbasedir invalid path or does not exist: %s", tbasedir);
 
 	if (!(tdir = str_path_concat(tbasedir, template)))
 		method_return_faultf(env, MEINVAL,
@@ -667,7 +680,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"template does not exist: %s", template);
 
-	/* get old xid if rebuild */
+	/* get old xid for rebuild */
 	if ((xid = vxdb_getxid(name))) {
 		if (auth_isowner(user, name)) {
 			if (!force)
@@ -688,21 +701,23 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (str_isempty(vdir) || !auth_isowner(user, name))
 		vdir = vxdb_getvdir(name);
 
-	if (!str_path_isabs(vdir))
+	if (!validate_path(vdir))
 		method_return_faultf(env, MEINVAL,
-				"invalid vdir: %s", vdir);
+				"invalid vdir path: %s", vdir);
 
 	if (str_len(vdir) > 31)
 		method_return_faultf(env, MEINVAL,
-				"vdir too long: %s", vdir);
+				"vdir path too long: %s", vdir);
 
 	if (!force && ispath(vdir))
 		method_return_faultf(env, MEEXIST,
-				"vdir already exists: %s", vdir);
+				"vdir path already exists: %s", vdir);
 
+	/* build the vserver root fs from the template */
 	build_root_filesystem(env);
 	method_return_if_fault(env);
 
+	/* create the needed vxdb entries */
 	create_vxdb_entries(env);
 	method_return_if_fault(env);
 
