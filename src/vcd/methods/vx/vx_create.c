@@ -201,7 +201,11 @@ int handle_file(const char *fpath, const struct stat *sb,
 	}
 
 	if (do_chxid) {
-		snprintf(vpath, PATH_MAX, "%s/%s", vdir, fpath);
+		int len = str_len(vdir);
+		
+		str_cpyn(vpath, vdir, PATH_MAX);
+		vpath[len++] = '/';
+		str_cpyn(vpath + len, fpath, PATH_MAX - len);
 
 		attr.filename = vpath;
 		attr.xid      = xid;
