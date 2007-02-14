@@ -44,8 +44,8 @@ xmlrpc_value *m_vcd_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		response = xmlrpc_build_value(env, "{s:i,s:i,s:i,s:i}",
 				"uptime", time(NULL) - vxdb_column_int(dbr, 0),
 				"requests", vxdb_column_int(dbr, 1),
-				"nomethod", vxdb_column_int(dbr, 2),
-				"flogins", vxdb_column_int(dbr, 3));
+				"flogins",  vxdb_column_int(dbr, 2),
+				"nomethod", vxdb_column_int(dbr, 3));
 	else if (rc == VXDB_DONE)
 		response = xmlrpc_nil_new(env);
 	else
