@@ -248,6 +248,55 @@ xmlrpc_value *make_vserver_filesystem(xmlrpc_env *env)
 }
 
 static
+xmlrpc_value *find_free_xid(xmlrpc_env *env)
+{
+	LOG_TRACEME
+
+	if (xid != 0)
+		return NULL;
+
+	int rc = vxdb_prepare(&dbr,
+			"SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
+
+	if (rc == VXDB_OK) {
+		vxdb_foreach_step(rc, dbr) {
+			int cnt = vxdb_column_int(dbr, 0);
+
+			if (cnt < 1)
+				xid = 2;
+
+			else {
+				int max = vxdb_column_int(dbr, 1);
+
+				if (max < 65535)
+					xid = max + 1;
+
+				else if (cnt < 65535) {
+					int i;
+
+					for (i = 2; i < 65535; i++) {
+						if (!vxdb_getname(i)) {
+							xid = i;
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	if (!env->fault_occurred && rc != VXDB_DONE)
+		method_set_vxdb_fault(env);
+
+	if (xid == 0)
+		method_set_faultf(env, MEVXDB,
+				"no free context id available: %s", name);
+
+	vxdb_finalize(dbr);
+	return NULL;
+}
+
+static
 xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 {
 	LOG_TRACEME
@@ -300,55 +349,6 @@ xmlrpc_value *build_root_filesystem(xmlrpc_env *env)
 		method_return_faultf(env, MESYS,
 				"could not properly sanitize /dev: %s", strerror(errno));
 
-	return NULL;
-}
-
-static
-xmlrpc_value *find_free_xid(xmlrpc_env *env)
-{
-	LOG_TRACEME
-
-	if (xid != 0)
-		return NULL;
-
-	int rc = vxdb_prepare(&dbr,
-			"SELECT COUNT(xid),MAX(xid) FROM xid_name_map");
-
-	if (rc == VXDB_OK) {
-		vxdb_foreach_step(rc, dbr) {
-			int cnt = vxdb_column_int(dbr, 0);
-
-			if (cnt < 1)
-				xid = 2;
-
-			else {
-				int max = vxdb_column_int(dbr, 1);
-
-				if (max < 65535)
-					xid = max + 1;
-
-				else if (cnt < 65535) {
-					int i;
-
-					for (i = 2; i < 65535; i++) {
-						if (!vxdb_getname(i)) {
-							xid = i;
-							break;
-						}
-					}
-				}
-			}
-		}
-	}
-
-	if (!env->fault_occurred && rc != VXDB_DONE)
-		method_set_vxdb_fault(env);
-
-	if (xid == 0)
-		method_set_faultf(env, MEVXDB,
-				"no free context id available: %s", name);
-
-	vxdb_finalize(dbr);
 	return NULL;
 }
 
