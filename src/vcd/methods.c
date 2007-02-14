@@ -36,7 +36,7 @@ m_err_t method_error_codes[] = {
 	{ MEINVAL,   "Invalid request" },
 	{ MEVXDB,    "Error in vxdb" },
 	{ MECONF,    "Invalid configuration" },
-	{ MENOUSER,  "No such user"
+	{ MENOUSER,  "No such user" },
 	{ MESTOPPED, "Not running" },
 	{ MERUNNING, "Already running" },
 	{ MEEXIST,   "Conflict/Already exists" },
