@@ -1,0 +1,309 @@
+\chapter{The Linux-VServer Project}
+
+The Linux-VServer project implements operating system-level virtualization
+based on \textit{Security Contexts} which permit the creation of many
+independent \textit{Virtual Private Servers} (VPS) that run simultaneously on a
+single physical server at full speed, efficiently sharing hardware resources.
+
+A VPS provides an almost identical operating environment as a conventional
+Linux server. All services, such as ssh, mail, web and databases, can be
+started on such a VPS, without (or in special cases with only minimal)
+modification, just like on any real server.
+
+Each virtual server has its own user account database and root password and is
+isolated from other virtual servers, except for the fact that they share the
+same hardware resources.
+
+
+\section{Rationale}
+
+Over the years, computers have become sufficiently powerful to use
+virtualization to create the illusion of many smaller virtual machines, each
+running a separate operating system instance.
+
+There are several kinds of \textit{Virtual Machines} (VMs) providing similar
+features, but differ in the degree of abstraction and the methods used for
+virtualization.
+
+Most of them accomplish what they do by emulating some real or fictional
+hardware, which in turn consume real resources from the \textit{Host} (the
+machine running the VMs). This approach, used by most system emulators, allows
+the emulator to run an arbitrary operating systems, even for a different
+hardware architecture. No modifications need to be made to the \textit{Guest}
+(the operating system running in the VM) because it isn't aware of the fact
+that it isn't running on real hardware.
+
+Some system emulators require small modifications or specialized drivers to be
+added to Host or Guest to improve performance and minimize the overhead
+required for hardware emulation. Although this significantly improves
+efficiency, there are still large amounts of resources being wasted in caches
+and mediation between Guest and Host.
+
+But suppose you do not want to run many different operating systems
+simultaneously on a single box. Most applications running on a server do not
+require hardware access or kernel level code, and could easily share a machine
+with others, if they could be separated and secured...
+
+
+\section{The Concept}
+
+At a basic level, a Linux server consists of three building blocks: hardware,
+kernel and applications. The hardware usually depends on the provider or system
+maintainer, and, while it has a big influence on the overall performance, it
+cannot be changed that easily, and will likely differ from one setup to
+another.
+
+The main purpose of the kernel is to build an abstraction layer on top of the
+hardware to allow processes (applications) to work with and operate on
+resources without knowing the details of the underlying hardware. Ideally,
+those processes would be completely hardware agnostic, by being written in an
+interpreted language and therefore not requiring any hardware-specific
+knowledge.
+
+Given that a system has enough resources to drive ten times the number of
+applications a single Linux server would usually require, why not put ten
+servers on that box, which will then share the available resources in an
+efficient manner?
+
+Most server applications (e.g. httpd) will assume that it is the only
+application providing a particular service, and usually will also assume a
+certain filesystem layout and environment. This dictates that similar or
+identical services running on the same physical server, but for example, only
+differing in their addresses, have to be coordinated. This typically requires a
+great deal of administrative work which can lead to reduced system stability
+and security.
+
+The basic concept of the Linux-VServer solution is to separate the user-space
+environment into distinct units (Virtual Private Servers) in such a way that
+each VPS looks and feels like a real server to the processes contained within.
+
+Although different Linux distributions use (sometimes heavily) patched kernels
+to provide special support for unusual hardware or extra functionality, most
+Linux distributions are not tied to a special kernel.
+
+Linux-VServer uses this fact to allow several distributions, to be run
+simultaneously on a single, shared kernel, without direct access to the
+hardware, and share the resources in a very efficient way.
+
+
+\section{Usage Scenarios}
+
+The primary goal of this project is to create virtual servers sharing the same
+machine. A virtual server operates like a normal Linux server. It runs normal
+services such as telnet, mail servers, web servers, and database servers.
+
+
+\subsection{Administrative Separation}
+
+As the hardware evolves, it is tempting to put more and more tasks on a server.
+Though Linux could reliably handle it, at some point, the system administrator
+will likely end up with too much stuff and users on one system and worrying
+about system updates. Additionally, separating different or similar services
+which otherwise would interfere with each other, either because they are poorly
+designed or because they are simply incapable of peaceful coexistence for
+whatever reason, may often be complex or even impossible.
+
+The Linux-VServer project addresses this issue. The same box is able to run
+multiple virtual servers and each one does the job it is supposed to do. If the
+administrator needs to upgrade to PHP 5 for a given project, he can update just
+one virtual server and does not affect the others.
+
+Also, the root password of a virtual servers can be given to foreign
+administrators, thus allows him to perform updates, restart services or update
+system configuration without having to know or worry about other virtual
+servers hosted on the same machine. This allows a clever provider to sell
+Virtual Private Servers, which uses less resources than other virtualization
+techniques, which in turn allows to put more units on a single machine.
+
+The list of providers doing so is relatively long, and so this is rightfully
+considered the main area of application. See the Linux-VServer project
+page\footnote{\url{http://linux-vserver.org/VServer_Hosting}} for a (possibly
+incomplete) list of companies providing Virtual Private Servers based on the
+Linux-VServer technology.
+
+
+\subsection{Enhancing Security}
+
+While it can be interesting to run several virtual servers in one box, there is
+one concept potentially more generally useful. Imagine a physical server
+running a single virtual server. The goal is to isolate the main environment
+from any service, any network. You boot in the main environment, start very few
+services and then continue in the virtual server.
+
+The service in the main environment would be:
+
+\begin{itemize}
+	\item Unreachable from the network.
+
+	\item Able to log messages from the virtual server in a secure way. The
+		virtual server would be unable to change/erase the logs. Even a cracked
+		virtual server would not be able the edit the log.
+
+	\item Able to run intrusion detection facilities, potentially spying the
+		state of the virtual server without being accessible or noticed. For
+		example, tripwire could run there and it would be impossible to
+		circumvent its operation or trick it.
+\end{itemize}
+
+Another option is to put the firewall in a virtual server, and pull in the DMZ,
+containing each service in a separate VPS. On proper configuration, this setup
+can reduce the number of required machines drastically, without impacting
+performance.
+
+
+\subsection{Resource Indepedence}
+
+Since virtual servers are only guests on the hardware they are using, they are
+not aware of the specifics: they do not contain disk configurations, kernels or
+network configurations.
+
+One key feature of a virtual server is the independence from the actual
+hardware. Most hardware issues are irrelevant for a virtual server
+installation.
+
+The main server acts as a host and takes care of all the details. The virtual
+server is just a client and ignores all the details. As such, the client can be
+moved to another physical server with very few manipulations.
+
+For example, to move the virtual server from one physical computer to another,
+it sufficient to do the following:
+
+\begin{itemize}
+	\item shutdown the running virtual server
+	\item copy it over to the other machine
+	\item copy the configuration
+	\item start the virtual server on the new machine
+\end{itemize}
+
+No adjustments to user setup, password database or hardware configuration are
+required, as long as both machine architectures are binary compatible.
+
+Thus, once a virtual server is using more resource than expected, the
+administrator can easily move it to another machine without the need to worry
+about configuration files for disk layout, network interfaces etc. A virtual
+server is just a directory on the filesystem of host system.
+
+
+\subsection{Distribution Independence}
+
+People are often talking about their preferred distribution. Should one use
+Fedora, Debian or something else? Should one give a spin to the latest and
+greatest distribution just for the sake of it?
+
+With virtual servers, the choice of a distribution is less important. When you
+select a distribution, you expect it will do the following:
+
+\begin{itemize}
+	\item Good hardware support/detection
+	\item Good package technology/updates
+	\item Good package selection
+	\item Reliable packages
+\end{itemize}
+
+The choice is important because every service running on a box will be using
+the same distribution. Most distributions out there are good and reliable.
+Still each one has its peculiarities and probably flaws. For example, one
+distribution is doing a great job on security but is not delivering the latest
+and greatest PHP. Now because you have decided to use this distribution for
+some projects, using virtual servers does not prevent you from using another
+distribution for other projects or even a second virtual server for existing
+projects.
+
+
+\subsection{Fail-over Scenarios}
+
+Pushing the limit a little further, replication technology could be used to
+keep an up-to-the-minute copy of the filesystem of a running virtual server.
+This would permit a very fast fail-over if the running server goes offline for
+whatever reason.
+
+All the known methods to accomplish this, starting with network replication via
+rsync, or drbd, via network devices, or shared disk arrays, to distributed
+filesystems, can be utilized to reduce the down-time and improve overall
+efficiency.
+
+
+\subsection{Experimenting and Upgrading}
+
+If the system administrator intends to upgrade a system to get new features or
+security updates, he probably first wants to test new packages on a development
+machine, before the production server can be updated. Under normal
+circumstances, i.e. all test have been passed, the upgrade procedure will look
+something like this:
+
+\begin{itemize}
+	\item Doing a backup of the server
+	\item Perform all the upgrades and install the new applications
+\end{itemize}
+
+Two hours later something does not work as expected and -- to make it even
+worse -- it works fine on the development machine. Every system administrator
+has experienced this scenario at least once.
+
+Another solution to this problem would be to install the new production server
+on new hardware, but this is not always possible, due to lack of hardware or
+the effort needed to clone an existing machine.
+
+Using virtual servers, all this becomes very easy:
+
+\begin{itemize}
+	\item Stop the virtual server in production
+	\item Make a copy of the virtual server
+	\item Perform the upgrades in the new virtual server
+\end{itemize}
+
+To get back to the example from above, two hours later something does not work
+as expected and there is no immediate fix for the problem.
+
+Again, using virtual servers, the (temporary) solution to this problem is very
+easy:
+
+\begin{itemize}
+	\item Stop the new virtual server and assign it a new IP address
+	\item Start both the old and new virtual server
+\end{itemize}
+
+Now the old one is still online and the issue can be tracked down on your new
+virtual server using a different IP address. After the problem has been fixed
+the new virtual server will be reassign the old IP address and serve for
+production.
+
+
+% TODO: more info needed here
+\subsection{Development and Testing}
+
+Consider a software tool or package which should be built for several versions
+of a specific distribution (Mandrake 8.2, 9.0, 9.1, 9.2, 10.0) or even for
+different distributions.
+
+This is easily solved with Linux-VServer. Given plenty of disk space, the
+different distributions can be installed and running side by side, simplifying
+the task of switching from one to another.
+
+Of course this can be accomplished by chroot() alone, but with Linux-VServer
+it's a much more realistic simulation.
+
+
+% TODO: more info needed here
+\section{History}
+
+\textbf{Jacques Gélinas} created the VServer project a number of years back.
+He still does vserver development and the community can be glad to have him.
+He's a genius, without him, Linux-VServer would not exist. Three cheers for
+Jack.
+
+But sometime during 2003 it became apparent that Jack didn't have the time to
+keep vserver development up to pace. So in November, \textbf{Herbert Pötzl}}
+officially took charge of development. He now releases the vserver kernel
+patches, announcing them on the vserver mailing list and making them available
+for the public.
+
+Additionally, \textbf{Enrico Scholz} decided to reimplement Jack's vserver
+tools in \textbf{C}.  These are now distributed as util-vserver. They are
+backward compatible to Jack's tools as far as possible, but follow the kernel
+patch development more closely.
+
+In 2005, \textbf{Benedikt Böhm} started another reimplementation of the
+userspace utilities, although with a completely different architecture in mind.
+This new implementation is known as VServer Control Daemon as you already may
+know when you read this manual \texttt{;-)}

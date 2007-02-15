@@ -1,0 +1,45 @@
+\documentclass[a4paper,10pt,oneside,draft]{scrbook}
+
+% input encoding
+\usepackage[utf8]{inputenc}
+
+% graphics support
+\usepackage[dvips]{graphicx}
+
+% math packages
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+
+% url and hyperref
+\usepackage{hyperref}
+
+% page style
+\pagestyle{plain}
+
+% no paragraph indention
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
+
+% bibliography
+\bibliographystyle{unsrt}
+
+\title{VServer Control Daemon Reference Manual}
+\author{Benedikt Böhm \texttt{<hollow@gentoo.org>}}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+
+\frontmatter
+\input{preface.tex}
+
+\mainmatter
+\input{intro/intro.tex}
+\input{intro/vserver.tex}
+
+\backmatter
+\bibliography{manual}
+
+\end{document}
