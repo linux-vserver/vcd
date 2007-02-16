@@ -232,7 +232,7 @@ xmlrpc_value *context_disk_limits(xmlrpc_env *env)
 			total_space = used_space;
 
 		if (total_inodes < used_inodes)
-            total_inodes = used_inodes;
+			total_inodes = used_inodes;
 
 		dlim.space_used   = used_space;
 		dlim.space_total  = total_space;
