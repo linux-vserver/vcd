@@ -19,85 +19,57 @@
 
 #include <lucid/printf.h>
 #include <lucid/scanf.h>
+#include <lucid/str.h>
 
 #include "cmd.h"
 
 void cmd_dx_limit_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *path;
-	int space, inodes, reserved;
-	xmlrpc_value *response, *result;
-	int len, i;
-
-	if (argc < 1)
-		path = "";
-	else
-		path = argv[0];
+	char *space, *inodes;
+	int reserved;
+	xmlrpc_value *response;
 
 	response = xmlrpc_client_call(env, uri, "vxdb.dx.limit.get",
-		SIGNATURE("{s:s,s:s}"),
-		"name", name,
-		"path", path);
+		SIGNATURE("{s:s}"),
+		"name", name);
 	return_if_fault(env);
 
-	len = xmlrpc_array_size(env, response);
+	xmlrpc_decompose_value(env, response,
+        "{s:s,s:s,s:i,*}",
+		"space", &space,
+		"inodes", &inodes,
+		"reserved", &reserved);
 	return_if_fault(env);
-
-	for (i = 0; i < len; i++) {
-		xmlrpc_array_read_item(env, response, i, &result);
-		return_if_fault(env);
-		
-		xmlrpc_decompose_value(env, result,
-			"{s:s,s:i,s:i,s:i,*}",
-			"path", &path,
-			"space", &space,
-			"inodes", &inodes,
-			"reserved", &reserved);
-		return_if_fault(env);
-		
-		xmlrpc_DECREF(result);
-		
-		printf("%s: %u %u %u\n", path, space, inodes, reserved);
-	}
 
 	xmlrpc_DECREF(response);
+
+	if (!str_isempty(space))
+		printf("disk limits: %s %s %d\n", space, inodes, reserved);
 }
 
 void cmd_dx_limit_remove(xmlrpc_env *env, int argc, char **argv)
 {
-	char *path;
-
-	if (argc < 1)
-		path = "";
-	else
-		path = argv[0];
-
 	xmlrpc_client_call(env, uri, "vxdb.dx.limit.remove",
-		SIGNATURE("{s:s,s:s}"),
-		"name", name,
-		"path", path);
+		SIGNATURE("{s:s}"),
+		"name", name);
 }
 
 void cmd_dx_limit_set(xmlrpc_env *env, int argc, char **argv)
 {
-	char *path;
-	int space, inodes, reserved;
+	char *space, *inodes;
+	int reserved;
 
-	if (argc < 4)
+	if (argc < 3)
 		usage(EXIT_FAILURE);
 
-	path = argv[0];
-
-	sscanf(argv[1], "%d", &space);
-	sscanf(argv[2], "%d", &inodes);
-	sscanf(argv[3], "%d", &reserved);
+	space = argv[0];
+	inodes = argv[1];
+	sscanf(argv[2], "%d", &reserved);
 
 	xmlrpc_client_call(env, uri, "vxdb.dx.limit.set",
-		SIGNATURE("{s:s,s:s,s:i,s:i,s:i}"),
+		SIGNATURE("{s:s,s:s,s:s,s:i}"),
 		"name", name,
-		"path", path,
 		"space", space,
 		"inodes", inodes,
 		"reserved", reserved);
 }
-

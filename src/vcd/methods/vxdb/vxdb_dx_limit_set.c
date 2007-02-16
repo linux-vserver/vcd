@@ -31,7 +31,7 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *path, *spacep, *inodesp;
+	char *name, *spacep, *inodesp;
 	int reserved, rc;
 	xid_t xid;
 
@@ -39,9 +39,8 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,s:s,s:s,s:i,*}",
+			"{s:s,s:s,s:s,s:i,*}",
 			"name", &name,
-			"path", &path,
 			"space", &spacep,
 			"inodes", &inodesp,
 			"reserved", &reserved);
@@ -61,10 +60,6 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	sscanf(spacep,  "%" SCNu32, &space);
 	sscanf(inodesp, "%" SCNu32, &inodes);
 
-	if (!validate_path(path))
-		method_return_faultf(env, MEINVAL,
-				"invalid path value: %s", path);
-
 	if (!validate_dlimits(space, inodes, reserved))
 		method_return_faultf(env, MEINVAL,
 				"invalid limit specification: %" PRIu32 ",%" PRIu32 ",%d",
@@ -75,9 +70,9 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_exec(
 			"INSERT OR REPLACE INTO dx_limit "
-			"(xid, path, space, inodes, reserved) "
-			"VALUES (%d, '%s', '%" PRIu32 "', '%" PRIu32 "', %d)",
-			xid, path, space, inodes, reserved);
+			"(xid, space, inodes, reserved) "
+			"VALUES (%d, '%" PRIu32 "', '%" PRIu32 "', %d)",
+			xid, space, inodes, reserved);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);

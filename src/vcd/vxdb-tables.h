@@ -48,8 +48,8 @@ struct _vxdb_table {
 	};
 
 /* generate table definition */
-VXDB_COLUMNS_NEW(dx_limit, "xid", "path", "space", "inodes", "reserved")
-VXDB_UNIQUE_NEW(dx_limit, "xid,path")
+VXDB_COLUMNS_NEW(dx_limit, "xid", "space", "inodes", "reserved")
+VXDB_UNIQUE_NEW(dx_limit, "xid")
 
 VXDB_COLUMNS_NEW(init, "xid", "init", "halt", "reboot", "timeout")
 VXDB_UNIQUE_NEW(init, "xid")

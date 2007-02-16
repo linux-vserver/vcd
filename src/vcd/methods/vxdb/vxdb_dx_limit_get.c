@@ -17,7 +17,6 @@
 
 #include "auth.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
@@ -27,7 +26,7 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params, *response = NULL;
-	char *name, *path;
+	char *name;
 	xid_t xid;
 	int rc;
 
@@ -35,46 +34,38 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,*}",
-			"name", &name,
-			"path", &path);
+			"{s:s,*}",
+			"name", &name);
 	method_return_if_fault(env);
-
-	method_empty_params(1, &path);
-
-	if (path && !validate_path(path))
-		method_return_faultf(env, MEINVAL,
-				"invalid path value: %s", path);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (path)
-		rc = vxdb_prepare(&dbr,
-				"SELECT path,space,inodes,reserved FROM dx_limit "
-				"WHERE xid = %d AND path = '%s'",
-				xid, path);
-
-	else
-		rc = vxdb_prepare(&dbr,
-				"SELECT path,space,inodes,reserved FROM dx_limit "
-				"WHERE xid = %d",
-				xid);
+	rc = vxdb_prepare(&dbr,
+			"SELECT space,inodes,reserved FROM dx_limit "
+			"WHERE xid = %d",
+			xid);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
-	response = xmlrpc_array_new(env);
+	rc = vxdb_step(dbr);
 
-	vxdb_foreach_step(rc, dbr)
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:s,s:s,s:i}",
-				"path",    vxdb_column_text(dbr, 0),
-				"space",   vxdb_column_text(dbr, 1),
-				"inodes",  vxdb_column_text(dbr, 2),
-				"reserved", vxdb_column_int(dbr, 3)));
+	if (rc == VXDB_ROW)
+		response = xmlrpc_build_value(env,
+				"{s:s,s:s,s:i}",
+				"space",   vxdb_column_text(dbr, 0),
+				"inodes",  vxdb_column_text(dbr, 1),
+				"reserved", vxdb_column_int(dbr, 2));
 
-	if (rc != VXDB_DONE)
+	else if (rc == VXDB_DONE)
+		response = xmlrpc_build_value(env,
+				"{s:s,s:s,s:i}",
+				"space",   "",
+				"inodes",  "",
+				"reserved", 0);
+
+	else
 		method_set_vxdb_fault(env);
 
 	vxdb_finalize(dbr);

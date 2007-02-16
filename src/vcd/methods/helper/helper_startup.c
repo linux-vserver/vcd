@@ -18,7 +18,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <inttypes.h>
+#include <ftw.h>
 #include <limits.h>
+#include <search.h>
 #include <sys/wait.h>
 
 #include "auth.h"
@@ -39,14 +41,21 @@
 
 /* startup process:
    1) setup capabilities
-   2) setup resource limits
-   3) setup scheduler
-   4) setup unames
-   5) setup filesystem namespace
+   2) setup disk limits
+   3) setup resource limits
+   4) setup scheduler
+   5) setup unames
+   6) setup filesystem namespace
 */
 
 static const char *name = NULL;
 static xid_t xid = 0;
+
+/* disk limits variables */
+static void *inotable = NULL;
+static uint32_t used_blocks = 0;
+static uint32_t used_inodes = 0;
+static xmlrpc_env *global_env = NULL;
 
 static
 xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
@@ -78,7 +87,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	log_debug("bcaps(%d): %#.16llx, %#.16llx", xid, bcaps.flags, bcaps.mask);
 
 	if (vx_bcaps_set(xid, &bcaps) == -1)
-		method_return_sys_fault(env, "vx_set_bcaps");
+		method_return_sys_fault(env, "vx_bcaps_set");
 
 	/* 1.2) setup context capabilities */
 	rc = vxdb_prepare(&dbr, "SELECT ccap FROM vx_ccaps WHERE xid = %d", xid);
@@ -97,7 +106,7 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	log_debug("ccaps(%d): %#.16llx, %#.16llx", xid, ccaps.flags, ccaps.mask);
 
 	if (vx_ccaps_set(xid, &ccaps) == -1)
-		method_return_sys_fault(env, "vx_set_ccaps");
+		method_return_sys_fault(env, "vx_ccaps_set");
 
 	/* 1.3) setup context flags */
 	rc = vxdb_prepare(&dbr, "SELECT flag FROM vx_flags WHERE xid = %d", xid);
@@ -119,7 +128,134 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 			xid, cflags.flags, cflags.mask);
 
 	if (vx_flags_set(xid, &cflags) == -1)
-		method_return_sys_fault(env, "vx_set_flags");
+		method_return_sys_fault(env, "vx_flags_set");
+
+	return NULL;
+}
+
+static
+int inocmp(const void *a, const void *b)
+{
+	if (*(const ino_t *)a < *(const ino_t *)b) return -1;
+	if (*(const ino_t *)a > *(const ino_t *)b) return  1;
+	return 0;
+}
+
+static
+void inofree(void *nodep)
+{
+	return;
+}
+
+static
+int handle_file(const char *fpath, const struct stat *sb,
+		int typeflag, struct FTW *ftwbuf)
+{
+	ix_attr_t attr;
+
+	attr.filename = fpath + ftwbuf->base;
+
+	if (ix_attr_get(&attr) == -1) {
+		method_set_sys_faultf(global_env, "ix_attr_get(%s)", fpath);
+		return FTW_STOP;
+	}
+
+	if (!(attr.flags & IATTR_TAG))
+		return FTW_CONTINUE;
+
+	if (sb->st_nlink == 1 || tfind(&sb->st_ino, &inotable, inocmp) == NULL) {
+		if (attr.xid == xid) {
+			used_blocks += sb->st_blocks;
+			used_inodes += 1;
+		}
+
+		if (tsearch(&sb->st_ino, &inotable, inocmp) == NULL) {
+			method_set_sys_faultf(global_env, "tsearch(%lu)", sb->st_ino);
+			return FTW_STOP;
+		}
+	}
+
+	return FTW_CONTINUE;
+}
+
+static
+xmlrpc_value *context_disk_limits(xmlrpc_env *env)
+{
+	LOG_TRACEME
+
+	int rc;
+	dx_limit_t dlim;
+	const char *vdir = vxdb_getvdir(name);
+
+	dlim.filename = vdir;
+
+	/* always remove the disk limit first */
+	log_debug("dx_limit_remove(%d): %s", xid, dlim.filename);
+
+	dx_limit_remove(xid, &dlim);
+
+	rc = vxdb_prepare(&dbr,
+			"SELECT space,inodes,reserved FROM dx_limit WHERE xid = %d", xid);
+
+	if (rc != VXDB_OK)
+		method_return_vxdb_fault(env);
+
+	rc = vxdb_step(dbr);
+
+	if (rc == VXDB_ROW) {
+		/* add the disk limit */
+		log_debug("dx_limit_add(%d): %s", xid, dlim.filename);
+
+		if (dx_limit_add(xid, &dlim) == -1)
+			method_return_sys_fault(env, "dx_limit_add");
+
+		/* get all the needed data for the disk limit */
+		uint32_t total_space  = vxdb_column_uint32(dbr, 0);
+		uint32_t total_inodes = vxdb_column_uint32(dbr, 1);
+		int reserved          = vxdb_column_int(dbr, 2);
+
+		used_blocks = used_inodes = 0;
+
+		if (inotable)
+			tdestroy(inotable, inofree);
+
+		inotable = NULL;
+
+		global_env = env;
+		nftw(vdir, handle_file, 50, FTW_MOUNT|FTW_PHYS|FTW_CHDIR|FTW_ACTIONRETVAL);
+		global_env = NULL;
+		method_return_if_fault(env);
+
+		uint32_t used_space = (used_blocks / 2);
+
+		if (total_space < used_space)
+			total_space = used_space;
+
+		if (total_inodes < used_inodes)
+            total_inodes = used_inodes;
+
+		dlim.space_used   = used_space;
+		dlim.space_total  = total_space;
+		dlim.inodes_used  = used_inodes;
+		dlim.inodes_total = total_inodes;
+		dlim.reserved     = reserved;
+
+		/* finally set the disk limit values */
+		log_debug("dx_limit_set(%d): %s,%" PRIu32 ",%" PRIu32
+				",%" PRIu32 ",%" PRIu32 ",%d",
+				xid, dlim.filename,
+				dlim.space_used, dlim.space_total,
+				dlim.inodes_used, dlim.inodes_total,
+				dlim.reserved);
+
+		if (dx_limit_set(xid, &dlim) == -1)
+			method_set_sys_fault(env, "dx_limit_set");
+	}
+
+	else if (rc != VXDB_DONE)
+		method_set_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
 
 	return NULL;
 }
@@ -135,7 +271,7 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 	vx_limit_t limit, limit_mask;
 
 	if (vx_limit_mask_get(&limit_mask) == -1)
-		method_return_sys_fault(env, "vx_get_limit_mask");
+		method_return_sys_fault(env, "vx_limit_mask_get");
 
 	rc = vxdb_prepare(&dbr,
 			"SELECT type,soft,max FROM vx_limit WHERE xid = %d",
@@ -163,7 +299,7 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 					xid, limit.softlimit, limit.maximum);
 
 			if (vx_limit_set(xid, &limit) == -1) {
-				method_set_sys_fault(env, "vx_set_limit");
+				method_set_sys_fault(env, "vx_limit_set");
 				break;
 			}
 		}
@@ -173,6 +309,7 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 		method_set_vxdb_fault(env);
 
 	vxdb_finalize(dbr);
+
 	return NULL;
 }
 
@@ -225,7 +362,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 					sched.tokens_min, sched.tokens_max);
 
 			if (vx_sched_set(xid, &sched) == -1) {
-				method_set_sys_fault(env, "vx_set_sched");
+				method_set_sys_fault(env, "vx_sched_set");
 				break;
 			}
 		}
@@ -266,7 +403,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
 
 		if (vx_uname_set(xid, &uname) == -1) {
-			method_set_sys_fault(env, "vx_set_uname");
+			method_set_sys_fault(env, "vx_uname_set");
 			break;
 		}
 	}
@@ -284,7 +421,7 @@ xmlrpc_value *context_uname(xmlrpc_env *env, const char *vdir)
 		log_debug("uname(%d, %d): %s", xid, uname.id, uname.value);
 
 		if (vx_uname_set(xid, &uname) == -1)
-			method_return_sys_fault(env, "vx_set_uname");
+			method_return_sys_fault(env, "vx_uname_set");
 	}
 
 	return NULL;
@@ -345,7 +482,7 @@ xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir,
 
 	switch ((pid = fork())) {
 	case -1:
-		method_return_sys_fault(env, "ns_clone");
+		method_return_sys_fault(env, "fork");
 
 	case 0:
 		if (ns_enter(xid, 0) == -1)
@@ -380,7 +517,6 @@ xmlrpc_value *do_mount(xmlrpc_env *env, const char *vdir,
 
 	return NULL;
 }
-
 
 static
 xmlrpc_value *namespace_mount(xmlrpc_env *env, const char *vdir)
@@ -477,6 +613,9 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	context_caps_and_flags(env);
+	method_return_if_fault(env);
+
+	context_disk_limits(env);
 	method_return_if_fault(env);
 
 	context_resource_limits(env);

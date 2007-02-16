@@ -71,6 +71,10 @@ char *method_strerror(int id);
 	xmlrpc_env_set_fault(ENV, ID, method_strerror(ID)); \
 } while(0)
 
+#define method_set_faultf(ENV, ID, FMT, ...) do { \
+    xmlrpc_env_set_fault_formatted(ENV, ID, FMT, __VA_ARGS__); \
+} while(0)
+
 #define method_set_sys_fault(ENV, MSG) do { \
 	xmlrpc_env_set_fault_formatted(ENV, MESYS, "%s(%d): %s: %s", \
 			__FUNCTION__, __LINE__, MSG, strerror(errno)); \
@@ -86,14 +90,15 @@ char *method_strerror(int id);
 			__FUNCTION__, vxdb_errmsg(vxdb)); \
 } while (0)
 
-#define method_set_faultf(ENV, ID, FMT, ...) do { \
-	xmlrpc_env_set_fault_formatted(ENV, ID, FMT, __VA_ARGS__); \
-} while(0)
-
 #define method_return_fault(ENV, ID) do { \
 	method_set_fault(ENV, ID); \
 	return NULL; \
 } while (0)
+
+#define method_return_faultf(ENV, ID, FMT, ...) do { \
+    method_set_faultf(ENV, ID, FMT, __VA_ARGS__); \
+    return NULL; \
+} while(0)
 
 #define method_return_sys_fault(ENV, MSG) do { \
 	method_set_sys_fault(ENV, MSG); \
@@ -109,11 +114,6 @@ char *method_strerror(int id);
 	method_set_vxdb_fault(ENV); \
 	return NULL; \
 } while (0)
-
-#define method_return_faultf(ENV, ID, FMT, ...) do { \
-	method_set_faultf(ENV, ID, FMT, __VA_ARGS__); \
-	return NULL; \
-} while(0)
 
 #define MPROTO(NAME) \
 	xmlrpc_value *NAME(xmlrpc_env *env, xmlrpc_value *p, void *c)
