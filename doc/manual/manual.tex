@@ -1,10 +1,10 @@
-\documentclass[a4paper,10pt,oneside,draft]{scrbook}
+\documentclass[a4paper,10pt,oneside]{scrbook}
 
 % input encoding
 \usepackage[utf8]{inputenc}
 
 % graphics support
-\usepackage[dvips]{graphicx}
+\usepackage{graphicx}
 
 % math packages
 \usepackage{amsmath}
@@ -12,7 +12,7 @@
 \usepackage{amssymb}
 
 % url and hyperref
-\usepackage{hyperref}
+\usepackage[plainpages=false,colorlinks=true]{hyperref}
 
 % page style
 \pagestyle{plain}
@@ -29,10 +29,11 @@
 
 \begin{document}
 
+\pagenumbering{alph}
 \maketitle
-\tableofcontents
 
 \frontmatter
+\tableofcontents
 \input{preface.tex}
 
 \mainmatter

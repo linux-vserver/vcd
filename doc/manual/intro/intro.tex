@@ -39,8 +39,8 @@ others.~\cite{singh-intro}
 \begin{quote}
 Virtualization is an abstraction layer that decouples the physical hardware
 from the operating system to deliver greater IT resource utilization and
-flexibility.\\
-\\
+flexibility.
+
 Virtualization allows multiple virtual machines, with heterogeneous operating
 systems to run in isolation, side-by-side on the same physical machine. Each
 virtual machine has its own set of virtual hardware (e.g., RAM, CPU, NIC, etc.)
@@ -171,6 +171,12 @@ Arun Parajuli
 
 \subsection{Native Virtualization}
 
+\begin{figure}[htb]
+	\center
+	\includegraphics[scale=0.75]{intro/native-virtualization}
+	\caption{Native Virtualization}
+\end{figure}
+
 Native virtualization, in which the Virtual Machine simulates complete hardware
 to allow operation of an umodified operating system for the same type of CPU to
 execute within the virtual machine container in complete isolation.
@@ -189,6 +195,12 @@ control of the virtualized resources and efficiency - where the virtual machine
 should not significantly degrade workload performance.~\cite{wp-native-virt}
 
 \subsection{Para-virtualization}
+
+\begin{figure}[htb]
+	\center
+	\includegraphics[scale=0.75]{intro/para-virtualization}
+	\caption{Para-Virtualization}
+\end{figure}
 
 However, native virtualization may incur a performance penalty.  The VM monitor
 must provide the VM with an image of an entire system, including virtual BIOS,
@@ -223,6 +235,12 @@ virtual machines on x86 hardware.
 
 
 \subsection{Operating System-Level Virtualization}
+
+\begin{figure}[htb]
+	\center
+	\includegraphics[scale=0.75]{intro/os-virtualization}
+	\caption{Operating System-Level Virtualization}
+\end{figure}
 
 \textit{Operating System-Level Virtualization} is a server virtualization
 technology which virtualizes servers on a operating system (kernel) layer. It
