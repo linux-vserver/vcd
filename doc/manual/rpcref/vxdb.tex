@@ -1,0 +1,978 @@
+\chapter{Database Manipulation Methods}
+
+The vxdb family of functions provide manipulation facilities for the
+configuration database.
+
+
+% vxdb.dx.limit.get
+\section{vxdb.dx.limit.get}
+
+This method is used to get information about configured disk limits.
+
+\begin{rpcsynopsis}{vxdb.dx.limit.get}{string name, string path}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{path}{Absolute path \emph{inside} the virtual server (this value may
+	be empty to retrieve information about all configured disk limits)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{DLIM} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{an \texttt{array} of \texttt{struct}s - one for each
+	disk limit - }{string path, uint32 space, uint32~inodes, int reserved}
+\rpcreturnparam{path}{Absolute disk limit path \emph{inside} the virtual
+	server}
+\rpcreturnparam{space}{Maximum amount of disk space for this virtual server
+	in KB}
+\rpcreturnparam{inodes}{Maximum number of inodes for this virtual server}
+\rpcreturnparam{reserved}{Disk space reserved for the super-user (root)
+	\emph{inside} the virtual server in percent}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vxdb.dx.limit.remove
+\section{vxdb.dx.limit.remove}
+
+This method is used to remove information about configured disk limits.
+
+\begin{rpcsynopsis}{vxdb.dx.limit.remove}{string name, string path}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{path}{Absolute disk limit path \emph{inside} the virtual server (this
+value may be empty to remove all configured limits)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{DLIM} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.dx.limit.set
+\section{vxdb.dx.limit.set}
+
+This method is used to set (add \& change) information about configured disk
+limits.
+
+\begin{rpcsynopsis}{vxdb.dx.limit.set}{string name, string path, uint32 space,
+	uint32 inodes, int reserved}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{path}{Absolute disk limit path \emph{inside} the virtual server}
+\rpcparam{space}{Maximum amount of disk space for this virtual server in KB}
+\rpcparam{inodes}{Maximum number of inodes for this virtual server}
+\rpcparam{reserved}{Disk space reserved for the super-user (root)
+	\emph{inside} the virtual server in percent}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{DLIM} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.init.get
+\section{vxdb.init.get}
+
+This method is used to get information about configured \texttt{init},
+\texttt{halt} and \texttt{reboot} commands.
+
+\begin{rpcsynopsis}{vxdb.init.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INIT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{\texttt{struct}}{string init, string halt,
+	string reboot}
+\rpcreturnparam{init}{Absolute path of the init command \emph{inside} the
+	virtual server (defaults to \texttt{/sbin/init} if empty)}
+\rpcreturnparam{halt}{Absolute path of the halt command \emph{inside} the
+	virtual server (defaults to \texttt{/sbin/halt} if empty)}
+\rpcreturnparam{reboot}{Absolute path of the reboot command \emph{inside} the
+	virtual server (defaults to \texttt{/sbin/reboot} if empty)}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vxdb.init.set
+\section{vxdb.init.set}
+
+This method is used to set (change) information about configured \texttt{init},
+\texttt{halt} and \texttt{reboot} commands.
+
+\begin{rpcsynopsis}{vxdb.init.set}{string name, string init, string halt,
+	string reboot}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{init}{Absolute path of the init command \emph{inside} the virtual
+	server (defaults to \texttt{/sbin/init} if empty)}
+\rpcparam{halt}{Absolute path of the halt command \emph{inside} the virtual
+	server (defaults to \texttt{/sbin/halt} if empty)}
+\rpcparam{reboot}{Absolute path of the reboot command \emph{inside} the
+	virtual server (defaults to \texttt{/sbin/reboot} if empty)}
+\end{rpcsynopsis}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.list
+\section{vxdb.list}
+
+This method is used to get a list of all currently configured and owned virtual
+servers.
+
+\begin{rpcsynopsis}{vxdb.list}{string username}
+\rpcparam{username}{Unique username (this value may be empty to return a list
+containing all virtual servers)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpcnocapability and \rpcownerchecks. The owner checks do not check the
+usual name parameter here, but do a check on all VXDB entries and returns
+the matches.
+\end{rpcaccess}
+
+
+\rpcreturnsimple{an \texttt{array} of \texttt{string}s - one for each virtual
+	server - }
+
+\rpcnoerrors
+
+
+% vxdb.mount.get
+\section{vxdb.mount.get}
+
+This method is used to get information about configured mount points.
+
+\begin{rpcsynopsis}{vxdb.mount.get}{string name, string dst}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{dst}{Absolute destination path for the mount point inside the
+	virtual server (this value may be empty to return a list of all
+	configured mount points)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{MOUNT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{an \texttt{array} of \texttt{struct}s - one for each
+	mount point - }{string src, string dst, string type, string opts}
+\rpcreturnparam{src}{Absolute source path \emph{inside} the virtual server or
+	arbitrary identifier (defaults to \texttt{none} if empty)}
+\rpcreturnparam{dst}{Absolute destination path for the mount point inside the
+	virtual server (this value may be empty to return a list of all configured
+	mount points)}
+\rpcreturnparam{type}{Filesystem type for the specified source path
+	(defaults to \texttt{auto}} if empty)
+\rpcreturnparam{opts}{Mount options for the specified filesystem
+	(defaults to \texttt{defaults} if empty)}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vxdb.mount.remove
+\section{vxdb.mount.remove}
+
+This method is used to remove information about configured mount points.
+
+\begin{rpcsynopsis}{vxdb.mount.remove}{string name, string dst}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{dst}{Absolute destination path for the mount point inside the
+	virtual server (this value may be empty to remove all configured mount
+	points)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{MOUNT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.mount.set
+\section{vxdb.mount.set}
+
+This method is used to set (add \& change) information about configured mount
+points.
+
+\begin{rpcsynopsis}{vxdb.mount.set}{string name, string src, string dst,
+	string type, string opts}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{src}{Absolute source path \emph{inside} the virtual server or
+	arbitrary identifier (defaults to \texttt{none} if empty)}
+\rpcparam{dst}{Absolute destination path for the mount point inside the
+	virtual server}
+\rpcparam{type}{Filesystem type for the specified source path (defaults to
+	\texttt{auto} if empty)}
+\rpcparam{opts}{Mount options for the specified filesystem (defaults to
+	\texttt{defaults} if empty)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{MOUNT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.name.get
+\section{vxdb.name.get}
+
+This method is used to lookup the name of a virtual server by its corresponding
+Context ID.
+
+\begin{rpcsynopsis}{vxdb.name.get}{int xid}
+\rpcparam{xid}{Context ID to lookup}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INFO} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{a \texttt{string} containing the virtual server name}
+
+\rpcnoerrors
+
+
+% vxdb.nx.addr.get
+\section{vxdb.nx.addr.get}
+
+This method is used to get information about configured network addresses.
+
+\begin{rpcsynopsis}{vxdb.nx.addr.get}{string name, string addr}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{addr}{Network address in dot-decimal form (this value may be empty
+	to return a list of all configured network adresses)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{NET} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{an \texttt{array} of \texttt{struct}s - one for each
+	network address -}{string addr, string netmask}
+\rpcreturnparam{addr}{Network address in dot-decimal form}
+\rpcreturnparam{netmask}{Network mask in dot-decimal form (defaults to
+	\texttt{255.255.255.0} if empty)}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vxdb.nx.addr.remove
+\section{vxdb.nx.addr.remove}
+
+This method is used to remove information about configured network addresses.
+
+\begin{rpcsynopsis}{vxdb.nx.addr.remove}{string name, string addr}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{addr}{Network address in dot-decimal form (this value may be empty to
+remove all configured network adresses)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{NET} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.nx.addr.set
+\section{vxdb.nx.addr.set}
+
+This method is used to set (add \& change) information about configured network
+addresses.
+
+\begin{rpcsynopsis}{vxdb.nx.addr.set}{string name, string addr, string netmask}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{addr}{Network address in dot-decimal form}
+\rpcparam{netmask}{Network mask in dot-decimal form (defaults to
+	\texttt{255.255.255.0} if empty)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{NET} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.nx.broadcast.get
+\section{vxdb.nx.broadcast.get}
+
+This method is used to get information about the configured broadcast address.
+
+\begin{rpcsynopsis}{vxdb.nx.broadcast.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{NET} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{a \texttt{string} containing the broadcast address}
+
+\rpcnoerrors
+
+
+% vxdb.nx.broadcast.remove
+\section{vxdb.nx.broadcast.remove}
+
+This method is used to remove information about the configured broadcast
+address.
+
+\begin{rpcsynopsis}{vxdb.nx.broadcast.remove}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{NET} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.broadcast.set
+\section{vxdb.nx.broadcast.set}
+
+This method is used to set (change) information about the configured broadcast
+address.
+
+\begin{rpcsynopsis}{vxdb.nx.broadcast.set}{string name, string broadcast}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{broadcast}{Broadcast address in dot-decimal form}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{NET} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.owner.add
+\section{vxdb.owner.add}
+
+This method is used to add users to the list of configured owners in the
+internal user database.
+
+\begin{rpcsynopsis}{vxdb.owner.add}{string name, string username}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{username}{Unique username}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.owner.get
+\section{vxdb.owner.get}
+
+This method is used to get information about configured owners in the internal
+user database.
+
+\begin{rpcsynopsis}{vxdb.owner.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{an \texttt{array} of \texttt{string}s - one for each owner - }
+
+\rpcnoerrors
+
+
+% vxdb.owner.remove
+\section{vxdb.owner.remove}
+
+This method is used to remove information about configured owners from the
+internal user database.
+
+\begin{rpcsynopsis}{vxdb.owner.remove}{string name, string username}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{username}{Unique username (this value may be empty to remove all
+	configured owners)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.user.caps.add
+\section{vxdb.user.caps.add}
+
+This method is used to add add capabilities to the internal user database.
+
+\begin{rpcsynopsis}{vxdb.user.caps.add}{string username, string cap}
+\rpcparam{username}{Unique username}
+\rpcparam{cap}{Capability to add}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and\rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.user.caps.get
+\section{vxdb.user.caps.get}
+
+This method is used to get information about configured capabilities in the
+internal user database.
+
+\begin{rpcsynopsis}{vxdb.user.caps.get}{string username}
+\rpcparam{username}{Unique username}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{an \texttt{array} of \texttt{string}s - on for each
+	capability - }
+
+\rpcnoerrors
+
+
+% vxdb.user.caps.remove
+\section{vxdb.user.caps.remove}
+
+This method is used to remove information about configured capabilities from
+the internal user database.
+
+\begin{rpcsynopsis}{vxdb.user.caps.remove}{string username, string cap}
+\rpcparam{username}{Unique username}
+\rpcparam{cap}{Capability to remove}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.user.get
+\section{vxdb.user.get}
+
+This method is used to get information about configured users in the internal
+user database.
+
+\begin{rpcsynopsis}{vxdb.user.get}{string username}
+\rpcparam{username}{Unique username}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{\texttt{struct}}{string password, bool admin}
+\rpcreturnparam{password}{Password hash for the specified user}
+\rpcreturnparam{admin}{Set the administrator flag for the specified user}
+\end{rpcreturncomplex}
+
+
+% vxdb.user.remove
+\section{vxdb.user.remove}
+
+This method is used to remove information about configured users from the
+internal user database.
+
+\begin{rpcsynopsis}{vxdb.user.remove}{string username}
+\rpcparam{username}{Unique username}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.user.set
+\section{vxdb.user.set}
+
+This method is used to set (add \& change) information about configured users
+in the internal user database.
+
+\begin{rpcsynopsis}{vxdb.user.set}{string username, string password,
+	bool admin}
+\rpcparam{username}{Unique username}
+\rpcparam{password}{Password for the specified user (if user already exists
+	this value may be empty to not change the password)}
+\rpcparam{admin}{Set the administrator flag for the specified user}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vdir.get
+\section{vxdb.vdir.get}
+
+This method is used to get the absolute root filesystem path of a virtual
+server.
+
+\begin{rpcsynopsis}{vxdb.vdir.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INFO} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{a \texttt{string} containing the absolute root filesystem
+	path}
+
+\rpcnoerrors
+
+
+% vxdb.vx.bcaps.add
+\section{vxdb.vx.bcaps.add}
+
+This method is used to add information about configured system capabilities.
+
+\begin{rpcsynopsis}{vxdb.vx.bcaps.add}{string name, string bcap}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{bcap}{System capability to add}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{BCAP} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.bcaps.get
+\section{vxdb.vx.bcaps.get}
+
+This method is used to get information about configured system capabilities.
+
+\begin{rpcsynopsis}{vxdb.vx.bcaps.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{BCAP} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{an \texttt{array} of \texttt{string}s - one for each system
+	capability}
+
+\rpcnoerrors
+
+
+% vxdb.vx.bcaps.remove
+\section{vxdb.vx.bcaps.remove}
+
+This method is used to remove information about configured system capabilities.
+
+\begin{rpcsynopsis}{vxdb.vx.bcaps.remove}{string name, string bcap}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{bcap}{System capability to remove}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{BCAP} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.ccaps.add
+\section{vxdb.vx.ccaps.add}
+
+This method is used to add information about configured context capabilities.
+
+\begin{rpcsynopsis}{vxdb.vx.ccaps.add}{string name, string ccap}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{ccap}{Context capability to add}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CCAP} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.ccaps.get
+\section{vxdb.vx.ccaps.get}
+
+This method is used to get information about configured context capabilities.
+
+\begin{rpcsynopsis}{vxdb.vx.ccaps.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CCAP} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{an \texttt{array} of \texttt{string}s - one for each context
+	capability}
+
+\rpcnoerrors
+
+
+% vxdb.vx.ccaps.remove
+\section{vxdb.vx.ccaps.remove}
+
+This method is used to remove information about configured context
+capabilities.
+
+\begin{rpcsynopsis}{vxdb.vx.ccaps.remove}{string name, string ccap}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{ccap}{Context capability to remove}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CCAP} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.flags.add
+\section{vxdb.vx.flags.add}
+
+This method is used to add information about configured context flags.
+
+\begin{rpcsynopsis}{vxdb.vx.flags.add}{string name, string flag}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{flag}{Context flag to add}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CFLAG} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.flags.get
+\section{vxdb.vx.flags.get}
+
+This method is used to get information about configured context flags.
+
+\begin{rpcsynopsis}{vxdb.vx.flags.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CFLAG} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{an \texttt{array} of \texttt{string}s - one for each context
+	flag}
+
+\rpcnoerrors
+
+
+% vxdb.vx.flags.remove
+\section{vxdb.vx.flags.remove}
+
+This method is used to remove information about configured context flags.
+
+\begin{rpcsynopsis}{vxdb.vx.flags.remove}{string name, string flag}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{flag}{Context flag to remove}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CFLAG} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.limit.get
+\section{vxdb.vx.limit.get}
+
+This method is used to get information about configured resource limits.
+
+\begin{rpcsynopsis}{vxdb.vx.limit.get}{string name, string limit}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{limit}{Limit type to get (this value may be empty to retrieve all
+	configured resource limits)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{RLIM} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{an \texttt{array} of \texttt{struct}s - one for each
+	resource limit -}{string limit, uint64 soft, uint64 max}
+\rpcreturnparam{limit}{Limit type to add or change}
+\rpcreturnparam{soft}{Softl imit for the specified type}
+\rpcreturnparam{max}{Hard limit for the specified type}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vxdb.vx.limit.remove
+\section{vxdb.vx.limit.remove}
+
+This method is used to remove information about configured resource limits.
+
+\begin{rpcsynopsis}{vxdb.vx.limit.remove}{string name, string limit}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{limit}{Limit type to remove (this value may be empty to remove all
+	configured resource limits)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{RLIM} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.limit.set
+\section{vxdb.vx.limit.set}
+
+This method is used to set (add \& change) information about configured
+resource limits.
+
+\begin{rpcsynopsis}{vxdb.vx.limit.set}{string name, string limit, uint64 soft,
+	uint64 max}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{limit}{Limit type to add or change}
+\rpcparam{soft}{Softl imit for the specified type}
+\rpcparam{max}{Hard limit for the specified type}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{RLIM} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.sched.get
+\section{vxdb.vx.sched.get}
+
+This method is used to get information about configured CPU scheduler buckets.
+
+\begin{rpcsynopsis}{vxdb.vx.sched.get}{string name, int cpuid}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{cpuid}{CPU ID as listed in \texttt{/proc/cpuinfo}}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{SCHED} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{an \texttt{array} of \texttt{struct}s - one for each
+	CPU ID}{int cpuid, int interval, int fillrate, int interval2,
+	int fillrate2, int tokensmin, int tokensmax}
+\rpcreturnparam{cpuid}{CPU ID as listed in \texttt{/proc/cpuinfo}}
+\rpcreturnparam{interval}{Interval between fills in jiffies}
+\rpcreturnparam{fillrate}{Tokens to fill each interval}
+\rpcreturnparam{interval2}{Interval between fills in jiffies (IDLE time
+	setting)}
+\rpcreturnparam{fillrate2}{Tokens to fill each interval (IDLE time setting)}
+\rpcreturnparam{tokensmin}{Minimum number of tokens to schedule processes}
+\rpcreturnparam{tokensmax}{Maximum number of tokens in the bucket}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vxdb.vx.sched.remove
+\section{vxdb.vx.sched.remove}
+
+This method is used to remove information about configured CPU scheduler
+buckets.
+
+\begin{rpcsynopsis}{vxdb.vx.sched.remove}{string name, int cpuid}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{cpuid}{CPU ID as listed in \texttt{/proc/cpuinfo}}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{SCHED} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.sched.set
+\section{vxdb.vx.sched.set}
+
+This method is used to set (add \& change) information about configured CPU
+scheduler buckets.
+
+\begin{rpcsynopsis}{vxdb.vx.sched.set}{string name, int cpuid, int interval,
+	int fillrate, int interval2, int fillrate2, int tokensmin, int tokensmax}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{cpuid}{CPU ID as listed in \texttt{/proc/cpuinfo}}
+\rpcparam{interval}{Interval between fills in jiffies}
+\rpcparam{fillrate}{Tokens to fill each interval}
+\rpcparam{interval2}{Interval between fills in jiffies (IDLE time setting)}
+\rpcparam{fillrate2}{Tokens to fill each interval (IDLE time setting)}
+\rpcparam{tokensmin}{Minimum number of tokens to schedule processes}
+\rpcparam{tokensmax}{Maximum number of tokens in the bucket}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{SCHED} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.uname.get
+\section{vxdb.vx.uname.get}
+
+This method is used to get information about configured virtual system
+information.
+
+\begin{rpcsynopsis}{vxdb.vx.uname.get}{string name, string uname}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{uname}{System information type (this value may be empty to retrieve
+	information about all configured system information types)}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{UNAME} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{an \texttt{array} of \texttt{struct}s - one for each
+	system information type}{string uname, string value}
+\rpcreturnparam{uname}{System information type}
+\rpcreturnparam{value}{System information value}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vxdb.vx.uname.remove
+\section{vxdb.vx.uname.remove}
+
+This method is used to remove information about configured virtual system
+information.
+
+\begin{rpcsynopsis}{vxdb.vx.uname.remove}{string name, string uname}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{uname}{System information type}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{UNAME} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.vx.uname.set
+\section{vxdb.vx.uname.set}
+
+This method is used to set (add \& change) information about configured virtual
+system information.
+
+\begin{rpcsynopsis}{vxdb.vx.uname.set}{string name, string uname, string value}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{uname}{System information type}
+\rpcparam{value}{System information value to set}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{UNAME} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vxdb.xid.get
+\section{vxdb.xid.get}
+
+This method is used to lookup the Context ID of a virtual server by its name.
+
+\begin{rpcsynopsis}{vxdb.xid.get}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INFO} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{an \texttt{int} containing the Context ID of the specified
+	virtual server}
+
+\rpcnoerrors

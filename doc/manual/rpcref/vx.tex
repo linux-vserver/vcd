@@ -1,0 +1,220 @@
+\chapter{General Maintenance Methods}
+
+The vx family of functions provide general maintenance facilities for virtual
+servers.
+
+
+% vx.create
+\section{vx.create}
+
+This method is used to create a new virtual server using a template cache.
+
+\begin{rpcsynopsis}{vx.create}{string name, string template,
+	bool force, bool copy, string vdir}
+\rpcparam{name}{Unique name to use for the new virtual server}
+\rpcparam{template}{Name of the template cache to use for the new virtual
+	server}
+\rpcparam{rebuild}{If the virtual server already exists and this is set to
+	true a recursive unlink is performed before the template extraction
+	takes place}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CREATE} and \rpcownerchecks. % FIXME: talk about this in intro
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\begin{rpcerrors}
+\rpcerror{MEINVAL}{An empty template cache name was supplied, or the supplied
+	value contained invalid characters}
+\rpcerror{MEEXIST}{The virtual server already exists and the rebuild parameter
+	was not set to true}
+\rpcerror{MERUNNING}{The virtual server already exists, the rebuild parameter
+	was set to true, but the existing virtual server is still running}
+\end{rpcerrors}
+
+
+% vx.exec
+\section{vx.exec}
+
+This method is used to execute a simple command inside a virtual server. This
+method does not support redirection, pipes and other shell stuff, the command
+line is executed with a plain \texttt{execvp}.
+
+\begin{rpcsynopsis}{vx.exec}{string name, string command}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{command}{Simple command line to execute}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{EXEC} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{a combined string of \texttt{STDOUT} and \texttt{STDERR}}
+
+\begin{rpcerrors}
+\rpcerror{MESTOPPED}{The specified virtual server is currently not running,
+	therefore the command cannot be executed}
+\end{rpcerrors}
+
+
+% vx.kill
+\section{vx.kill}
+
+This method is used to send signals to processes inside a virtual server.
+
+\begin{rpcsynopsis}{vx.kill}{string name, int pid, int sig}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{pid}{Process ID to send signal to, there are two special cases:\\
+	0 = send signal to all processes\\
+	1 = send signal to the real pid of a faked init}
+\rpcparam{sig}{Signal Number, see the \texttt{signal(7)} man page for more
+	information}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INIT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\begin{rpcerrors}
+\rpcerror{MESTOPPED}{The specified virtual server is currently not running,
+	therefore no signals can be sent}
+\end{rpcerrors}
+
+
+% vx.reboot
+\section{vx.reboot}
+
+This method is used as a wrapper to vx.exec using the configured
+\texttt{reboot} command.
+
+\begin{rpcsynopsis}{vx.reboot}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INIT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{the return value of \texttt{vx.exec}}
+
+\begin{rpcerrors}
+\rpcerror{MESTOPPED}{The specified virtual server is currently not running,
+	therefore it cannot be stopped}
+\end{rpcerrors}
+
+
+% vx.remove
+\section{vx.remove}
+
+This method is used to remove a virtual server from the configuration database
+and filesystem.
+
+\begin{rpcsynopsis}{vx.remove}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CREATE} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\begin{rpcerrors}
+\rpcerror{MERUNNING}{The specified virtual server is currently running,
+	therefore it cannot be removed}
+\rpcerror{MEEXIST}{The root filesystem fo the virtual server still exists after
+	removal and no mount point exists for it. Manual check is needed.}
+\end{rpcerrors}
+
+
+% vx.rename
+\section{vx.rename}
+
+This method is used to rename a virtual server in the configuration database and
+filesystem.
+
+\begin{rpcsynopsis}{vx.rename}{string name, string newname}
+\rpcparam{name}{Unique virtual server name}
+\rpcparam{newname}{New unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{CREATE} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\begin{rpcerrors}
+\rpcerror{MERUNNING}{The specified virtual server is currently running,
+	therefore it cannot be renamed}
+\rpcerror{MEEXIST}{The specified new virtual server name currently exists and
+	cannot be used}
+\end{rpcerrors}
+
+
+% vx.start
+\section{vx.start}
+
+This method is used to start a virtual server.
+
+\begin{rpcsynopsis}{vx.start}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INIT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\begin{rpcerrors}
+\rpcerror{MERUNNING}{The specified virtual server is currently running,
+	therefore it cannot be started again}
+\end{rpcerrors}
+
+
+% vx.status
+\section{vx.status}
+
+This method is used to obtain status information about a virtual server.
+
+\begin{rpcsynopsis}{vx.status}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INIT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{\texttt{struct}}{bool running}
+\rpcreturnparam{running}{This value is set to true if the specified virtual
+	server is currently running, false otherwise}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
+% vx.stop
+\section{vx.stop}
+
+This method is used as a wrapper to vx.exec using the configured \texttt{halt}
+command.
+
+\begin{rpcsynopsis}{vx.stop}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INIT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{the return value of \texttt{vx.exec}}
+
+\begin{rpcerrors}
+\rpcerror{MESTOPPED}{The specified virtual server is currently not running,
+	therefore it cannot be stopped}
+\end{rpcerrors}

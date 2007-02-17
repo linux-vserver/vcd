@@ -5,6 +5,7 @@
 
 % graphics support
 \usepackage{graphicx}
+\usepackage{float}
 
 % math packages
 \usepackage{amsmath}
@@ -37,8 +38,19 @@
 \input{preface.tex}
 
 \mainmatter
+
+\part{Introduction}
 \input{intro/intro.tex}
 \input{intro/vserver.tex}
+\input{intro/vcd.tex}
+
+\part{XML-RPC Method Reference}
+\input{rpcref/commands.tex}
+\input{rpcref/intro.tex}
+\input{rpcref/helper.tex}
+\input{rpcref/vcd.tex}
+\input{rpcref/vx.tex}
+\input{rpcref/vxdb.tex}
 
 \backmatter
 \bibliography{manual}

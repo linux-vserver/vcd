@@ -1,0 +1,78 @@
+% LaTeX commands used in the method reference
+
+% synopsis
+\newenvironment{rpcsynopsis}[2]{
+	\subsection*{Synopsis}
+
+	\begin{quote}
+	\texttt{#1(#2)}
+	\end{quote}
+
+	\begin{labeling}{00.00.0000}
+}{
+	\end{labeling}
+}
+
+\newcommand{\rpcparam}[2]{\item [{\texttt{#1}}] #2}
+
+% access restrictions
+\newenvironment{rpcaccess}[0]{
+	\subsection*{Access Restrictions}
+}{}
+
+\newcommand{\rpccapability}[1]{This method requires the \texttt{#1} capability}
+\newcommand{\rpcnocapability}[0]{This method requires no capabilities}
+\newcommand{\rpcownerchecks}[0]{needs to pass owner checks}
+\newcommand{\rpcnoownerchecks}[0]{does not need to pass owner checks}
+
+% return value
+\newcommand{\rpcreturnnil}[0]{
+	\subsection*{Return Value}
+
+	On success \texttt{NIL} is returned, on error a fault notification is
+	returned.
+}
+
+\newcommand{\rpcreturnsimple}[1]{
+	\subsection*{Return Value}
+
+	On success #1 is returned, on error a fault notification is returned.
+}
+
+
+\newenvironment{rpcreturncomplex}[2]{
+	\subsection*{Return Value}
+
+	On success #1 with the following signature is returned, on error a fault
+	notification is returned.
+
+	\begin{quote}
+	\texttt{\{#2\}}
+	\end{quote}
+
+	\begin{labeling}{00.00.0000}
+}{
+	\end{labeling}
+}
+
+\newcommand{\rpcreturnparam}[2]{\item [{\texttt{#1}}] #2}
+
+% errors
+\newcommand{\rpcnoerrors}[0]{
+	\subsection*{Return Value}
+
+	This method does not return any errors beside the generic method errors.
+}
+
+\newenvironment{rpcerrors}[0]{
+	\subsection*{Errors}
+
+	Beside the generic method errors, this method may return the following
+	specific errors:
+
+	\begin{labeling}{00.00.0000}
+}{
+	\end{labeling}
+}
+
+\newcommand{\rpcerror}[2]{\item [{\texttt{#1}}] #2}

@@ -60,7 +60,7 @@ A rather complete list of virtualization frameworks can be found on Amit Singhs
 page \textit{An Introduction to Virtualization}.~\cite{singh-intro}
 
 
-\subsection{Simulation}
+\section{Simulation}
 
 A \textit{computer simulation} is an attempt to model a real-life situation on
 a computer so that it can be studied to see how the system works. By changing
@@ -78,7 +78,7 @@ simulated peripheral circuits such as timers, interrupts, serial port, general
 I/O port, etc to mimic the behavior of microcontroller.~\cite{wp-iss}
 
 
-\subsection{Emulation}
+\section{Emulation}
 
 A \textit{Software Emulator} allows computer programs to run on a platform
 (computer architecture and/or operating system) other than the one for which
@@ -109,7 +109,7 @@ emulated software may run much more slowly than it would have on the original
 hardware.
 
 
-\subsection{Simulation vs. Emulation}
+\section{Simulation vs. Emulation}
 
 There is a lot of confusion between emulators and simulators, in fact, the
 distinction between those two is not always easy to tell. Ed
@@ -169,17 +169,17 @@ Arun Parajuli
 \end{verbatim}
 
 
-\subsection{Native Virtualization}
-
-\begin{figure}[htb]
-	\center
-	\includegraphics[scale=0.75]{intro/native-virtualization}
-	\caption{Native Virtualization}
-\end{figure}
+\section{Native Virtualization}
 
 Native virtualization, in which the Virtual Machine simulates complete hardware
 to allow operation of an umodified operating system for the same type of CPU to
 execute within the virtual machine container in complete isolation.
+
+\begin{figure}[H]
+	\center
+	\includegraphics[scale=0.75]{intro/native-virtualization}
+	\caption{Native Virtualization}
+\end{figure}
 
 Native virtualization leverages hardware-assisted capabilities available in the
 latest processors from Intel (Intel VT) and Advanced Micro Devices (AMD-V) to
@@ -194,13 +194,7 @@ physical machine; resource control - the virtual machine must be in complete
 control of the virtualized resources and efficiency - where the virtual machine
 should not significantly degrade workload performance.~\cite{wp-native-virt}
 
-\subsection{Para-virtualization}
-
-\begin{figure}[htb]
-	\center
-	\includegraphics[scale=0.75]{intro/para-virtualization}
-	\caption{Para-Virtualization}
-\end{figure}
+\section{Para-virtualization}
 
 However, native virtualization may incur a performance penalty.  The VM monitor
 must provide the VM with an image of an entire system, including virtual BIOS,
@@ -208,6 +202,12 @@ virtual memory space, and virtual devices. The VM monitor also must create and
 maintain data structures for the virtual components, such as a shadow memory
 page table. These data structures must be updated for every corresponding
 access by the VMs.
+
+\begin{figure}[H]
+	\center
+	\includegraphics[scale=0.75]{intro/para-virtualization}
+	\caption{Para-Virtualization}
+\end{figure}
 
 Therefore, para-virtualization exposes a virtual architecture that is slightly
 different than the physical architecture. The differences in the architecture
@@ -234,13 +234,7 @@ these projects use paravirtualization techniques to support high performance
 virtual machines on x86 hardware.
 
 
-\subsection{Operating System-Level Virtualization}
-
-\begin{figure}[htb]
-	\center
-	\includegraphics[scale=0.75]{intro/os-virtualization}
-	\caption{Operating System-Level Virtualization}
-\end{figure}
+\section{Operating System-Level Virtualization}
 
 \textit{Operating System-Level Virtualization} is a server virtualization
 technology which virtualizes servers on a operating system (kernel) layer. It
@@ -248,6 +242,12 @@ can be thought of as partitioning a single physical server into multiple small
 computational partitions. Each such partition looks and feels like a real
 server, from the point of view of its owner. On Unix systems, this technology
 can be thought of as an advanced extension of the standard chroot mechanism.
+
+\begin{figure}[H]
+	\center
+	\includegraphics[scale=0.75]{intro/os-virtualization}
+	\caption{Operating System-Level Virtualization}
+\end{figure}
 
 Many terms for the computational partitions exist and mostly depend on the
 implementation: virtual environments (VE), virtual private servers (VPS),
