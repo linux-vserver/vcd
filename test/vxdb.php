@@ -64,15 +64,15 @@ function call($method, $params)
 
 	else {
 		$data = xmlrpc_decode_request($response, $method);
-		
+
 		if (xmlrpc_is_fault($data)) {
 			printf("ERR: " . $data["faultString"] . "\n");
 			die();
 		}
-		
+
 		else {
 			printf("OK\n");
-			
+
 			if ($data != NULL)
 				var_dump($data);
 		}

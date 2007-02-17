@@ -44,15 +44,15 @@ void cmd_nx_addr_get(xmlrpc_env *env, int argc, char **argv)
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
-		
+
 		xmlrpc_decompose_value(env, result,
 			"{s:s,s:s,*}",
 			"addr", &addr,
 			"netmask", &netmask);
 		return_if_fault(env);
-		
+
 		xmlrpc_DECREF(result);
-		
+
 		printf("%s/%s\n", addr, netmask);
 	}
 
@@ -93,12 +93,12 @@ void cmd_nx_addr_set(xmlrpc_env *env, int argc, char **argv)
 	if (xmlrpc_array_size(env, response) > 0) {
 		xmlrpc_array_read_item(env, response, 0, &result);
 		return_if_fault(env);
-		
+
 		xmlrpc_decompose_value(env, result,
 			"{s:s,*}",
 			"netmask", &netmask);
 		return_if_fault(env);
-		
+
 		xmlrpc_DECREF(result);
 		xmlrpc_DECREF(response);
 	}

@@ -78,7 +78,7 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	response = xmlrpc_build_value(env, "{s:i,s:i,s:i}",
 				"running", running,
-				"nproc", nproc, 
+				"nproc", nproc,
 				"uptime", uptime);
 
 	return response;

@@ -224,7 +224,7 @@
 	following registers: ebx, ecx, edx, esi, edi, ebp.
 
 	scnr:	id(eax)
-	args:	a1(ebx), a2(ecx), a3(edx), a4(esi), a5(edi), a6(ebp) 
+	args:	a1(ebx), a2(ecx), a3(edx), a4(esi), a5(edi), a6(ebp)
 	sret:	r0(eax)
 	serr:	(sret >= (unsigned)-EMAXERRNO)
 	call:	int 0x80
@@ -348,8 +348,8 @@
 #elif	defined(__mips__)
 
 /*	The ABIO32 calling convention uses a0-a3  to pass the first
-	four arguments, the rest is passed on the userspace stack.  
-	The 5th arg starts at 16($sp). The new mips calling abi uses 
+	four arguments, the rest is passed on the userspace stack.
+	The 5th arg starts at 16($sp). The new mips calling abi uses
 	registers a0-a5, restart requires a reload of v0 (#syscall)
 
 	ABIN32 and ABI64 pass 6 args in a0-a3, t0-t1.

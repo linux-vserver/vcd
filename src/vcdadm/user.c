@@ -39,16 +39,16 @@ void cmd_user_get(xmlrpc_env *env, int argc, char **argv)
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
-		
+
 		xmlrpc_decompose_value(env, result,
 			"{s:s,s:i,s:i,*}",
 			"username", &username,
 			"uid", &uid,
 			"admin", &admin);
 		return_if_fault(env);
-		
+
 		xmlrpc_DECREF(result);
-		
+
 		printf("%s (uid=%d,admin=%d)\n", username, uid, admin ? 1 : 0);
 	}
 

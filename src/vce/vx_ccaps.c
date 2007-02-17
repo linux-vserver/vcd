@@ -53,12 +53,12 @@ void cmd_vx_ccaps_get(xmlrpc_env *env, int argc, char **argv)
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
-		
+
 		xmlrpc_decompose_value(env, result, "s", &ccap);
 		return_if_fault(env);
-		
+
 		xmlrpc_DECREF(result);
-		
+
 		printf("%s\n", ccap);
 	}
 

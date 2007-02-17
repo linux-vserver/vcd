@@ -149,7 +149,7 @@ int cfg_validate_dir(cfg_t *cfg, cfg_opt_t *opt,
 		if (errno == ENOENT) {
 			log_warn("%s(%s) does not exist, creating it",
 					opt->name, value);
-			
+
 			if (mkdirp(value, 0755) == -1)
 				log_perror_and_die("mkdirp(%s)", value);
 		}

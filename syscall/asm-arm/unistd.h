@@ -498,7 +498,7 @@ type name(type1 arg1, type2 arg2, type3 arg3, type4 arg4) {		\
   __res = __res_r0;							\
   __syscall_return(type,__res);						\
 }
-  
+
 
 #define _syscall5(type,name,type1,arg1,type2,arg2,type3,arg3,type4,arg4,type5,arg5)	\
 type name(type1 arg1, type2 arg2, type3 arg3, type4 arg4, type5 arg5) {	\

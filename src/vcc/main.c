@@ -152,20 +152,20 @@ int main(int argc, char **argv)
 		case 'c':
 			read_config(optarg, 0);
 			break;
-		
+
 		case 'h':
 			host = optarg;
 			break;
-		
+
 		case 'p':
 			sscanf(optarg, "%d", &port);
 			break;
-		
+
 		case 'u':
 			user = optarg;
 			pass = NULL;
 			break;
-		
+
 		default:
 			usage(EXIT_FAILURE);
 			break;

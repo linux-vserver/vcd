@@ -80,7 +80,7 @@ xmlrpc_value *m_vx_load(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	response = xmlrpc_build_value(env, "{s:s,s:s,s:s}",
 				"1m", loadavg1m,
-				"5m", loadavg5m, 
+				"5m", loadavg5m,
 				"15m", loadavg15m);
 
 	return response;

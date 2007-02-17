@@ -2,12 +2,12 @@
 #define _ASM_X86_64_UNISTD_H_
 
 #ifndef __SYSCALL
-#define __SYSCALL(a,b) 
+#define __SYSCALL(a,b)
 #endif
 
 /*
  * This file contains the system call numbers.
- * 
+ *
  * Note: holes are not allowed.
  */
 
@@ -134,7 +134,7 @@ __SYSCALL(__NR_getsockopt, sys_getsockopt)
 #define __NR_clone                              56
 __SYSCALL(__NR_clone, stub_clone)
 #define __NR_fork                               57
-__SYSCALL(__NR_fork, stub_fork) 
+__SYSCALL(__NR_fork, stub_fork)
 #define __NR_vfork                              58
 __SYSCALL(__NR_vfork, stub_vfork)
 #define __NR_execve                             59
@@ -356,7 +356,7 @@ __SYSCALL(__NR__sysctl, sys_sysctl)
 #define __NR_prctl                             157
 __SYSCALL(__NR_prctl, sys_prctl)
 #define __NR_arch_prctl                        158
-__SYSCALL(__NR_arch_prctl,	sys_arch_prctl) 
+__SYSCALL(__NR_arch_prctl,	sys_arch_prctl)
 
 #define __NR_adjtimex                          159
 __SYSCALL(__NR_adjtimex, sys_adjtimex)
@@ -421,7 +421,7 @@ __SYSCALL(__NR_getpmsg, sys_ni_syscall)
 #define __NR_putpmsg                           182	/* reserved for LiS/STREAMS */
 __SYSCALL(__NR_putpmsg, sys_ni_syscall)
 
-#define __NR_afs_syscall                       183	/* reserved for AFS */ 
+#define __NR_afs_syscall                       183	/* reserved for AFS */
 __SYSCALL(__NR_afs_syscall, sys_ni_syscall)
 
 #define __NR_tuxcall      		184 /* reserved for tux */
@@ -446,21 +446,21 @@ __SYSCALL(__NR_getxattr, sys_getxattr)
 #define __NR_lgetxattr		192
 __SYSCALL(__NR_lgetxattr, sys_lgetxattr)
 #define __NR_fgetxattr		193
-__SYSCALL(__NR_fgetxattr, sys_fgetxattr) 
+__SYSCALL(__NR_fgetxattr, sys_fgetxattr)
 #define __NR_listxattr		194
-__SYSCALL(__NR_listxattr, sys_listxattr) 
+__SYSCALL(__NR_listxattr, sys_listxattr)
 #define __NR_llistxattr		195
-__SYSCALL(__NR_llistxattr, sys_llistxattr) 
+__SYSCALL(__NR_llistxattr, sys_llistxattr)
 #define __NR_flistxattr		196
-__SYSCALL(__NR_flistxattr, sys_flistxattr) 
+__SYSCALL(__NR_flistxattr, sys_flistxattr)
 #define __NR_removexattr	197
-__SYSCALL(__NR_removexattr, sys_removexattr) 
+__SYSCALL(__NR_removexattr, sys_removexattr)
 #define __NR_lremovexattr	198
-__SYSCALL(__NR_lremovexattr, sys_lremovexattr) 
+__SYSCALL(__NR_lremovexattr, sys_lremovexattr)
 #define __NR_fremovexattr	199
-__SYSCALL(__NR_fremovexattr, sys_fremovexattr) 
+__SYSCALL(__NR_fremovexattr, sys_fremovexattr)
 #define __NR_tkill	200
-__SYSCALL(__NR_tkill, sys_tkill) 
+__SYSCALL(__NR_tkill, sys_tkill)
 #define __NR_time      201
 __SYSCALL(__NR_time, sys_time)
 #define __NR_futex     202
@@ -630,7 +630,7 @@ __SYSCALL(__NR_move_pages, sys_move_pages)
 
 /* user-visible error numbers are in the range -1 - -MAX_ERRNO */
 
-#define __syscall_clobber "r11","rcx","memory" 
+#define __syscall_clobber "r11","rcx","memory"
 
 #define __syscall_return(type, res) \
 do { \
@@ -716,7 +716,7 @@ __asm__ volatile ("movq %5,%%r10 ;" __syscall \
 	: "0" (__NR_##name),"D" ((long)(arg1)),"S" ((long)(arg2)), \
 	  "d" ((long)(arg3)),"g" ((long)(arg4)) : __syscall_clobber,"r10" ); \
 __syscall_return(type,__res); \
-} 
+}
 
 #define _syscall5(type,name,type1,arg1,type2,arg2,type3,arg3,type4,arg4, \
 	  type5,arg5) \

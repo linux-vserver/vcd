@@ -46,16 +46,16 @@ void cmd_vx_limit_get(xmlrpc_env *env, int argc, char **argv)
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
-		
+
 		xmlrpc_decompose_value(env, result,
 			"{s:s,s:i,s:i,*}",
 			"type", &type,
 			"soft", &soft,
 			"max", &max);
 		return_if_fault(env);
-		
+
 		xmlrpc_DECREF(result);
-		
+
 		printf("%s: %d %d\n", type, soft, max);
 	}
 

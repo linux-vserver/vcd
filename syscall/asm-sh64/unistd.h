@@ -344,7 +344,7 @@
 #define __NR_inotify_add_watch	319
 #define __NR_inotify_rm_watch	320
 
-#ifdef __KERNEL__ 
+#ifdef __KERNEL__
 
 #define NR_syscalls 321
 #include <linux/err.h>

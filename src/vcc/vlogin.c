@@ -139,10 +139,10 @@ void terminal_end(void)
 
 	while (1) {
 		len = read(t.fd, buf, sizeof(buf));
-		
+
 		if (len == 0 || len == -1)
 			break;
-		
+
 		if (write(STDOUT_FILENO, buf, len) == -1)
 			log_perror_and_die("write");
 	}
@@ -162,19 +162,19 @@ void signal_handler(int sig)
 		case SIGINT:
 			terminal_kill(sig);
 			break;
-		
+
 		/* terminal died */
 		case SIGCHLD:
 			terminal_end();
 			wait(&status);
 			exit(WEXITSTATUS(sig));
 			break;
-		
+
 		/* window size has changed */
 		case SIGWINCH:
 			terminal_redraw();
 			break;
-		
+
 		default:
 			exit(0);
 	}
@@ -208,21 +208,21 @@ void do_vlogin(int argc, char **argv)
 	if (pid == 0) {
 		/* we don't need the master side of the terminal */
 		close(t.fd);
-		
+
 		/* login_tty() stupid dietlibc doesn't have it */
 		if (setsid() == -1)
 			log_perror_and_die("setsid");
-		
+
 		if (ioctl(slave, TIOCSCTTY, NULL) == -1)
 			log_perror_and_die("ioctl");
-		
+
 		dup2(slave, 0);
 		dup2(slave, 1);
 		dup2(slave, 2);
-		
+
 		if (slave > 2)
 			close(slave);
-		
+
 		/* run command */
 		if (execvp(argv[0], argv) == -1)
 			log_perror_and_die("execvp");
@@ -245,16 +245,16 @@ void do_vlogin(int argc, char **argv)
 		FD_SET(STDIN_FILENO, &rfds);
 		FD_SET(t.fd, &rfds);
 		n = t.fd;
-		
+
 		/* wait for something to happen */
 		while (select(n + 1, &rfds, NULL, NULL, NULL) == -1) {
 			if (errno == EINTR || errno == EAGAIN) continue;
 			log_perror_and_die("select");
 		}
-		
+
 		if (FD_ISSET(STDIN_FILENO, &rfds))
 			terminal_copy(STDIN_FILENO, t.fd);
-		
+
 		if (FD_ISSET(t.fd, &rfds))
 			terminal_copy(t.fd, STDOUT_FILENO);
 	}

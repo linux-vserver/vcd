@@ -164,7 +164,7 @@
 #define __NR_osf_fstatfs	161
 
 #define __NR_osf_asynch_daemon	163	/* not implemented */
-#define __NR_osf_getfh		164	/* not implemented */	
+#define __NR_osf_getfh		164	/* not implemented */
 #define __NR_osf_getdomainname	165
 #define __NR_setdomainname	166
 
@@ -332,7 +332,7 @@
 #define __NR_lremovexattr		392
 #define __NR_fremovexattr		393
 #define __NR_futex			394
-#define __NR_sched_setaffinity		395     
+#define __NR_sched_setaffinity		395
 #define __NR_sched_getaffinity		396
 #define __NR_tuxcall			397
 #define __NR_io_setup			398
@@ -505,7 +505,7 @@ type name (type1 arg1, type2 arg2, type3 arg3, type4 arg4)		 \
 		_sc_ret = _sc_0, _sc_err = _sc_19;			\
 	}								\
 	_syscall_return(type);						\
-} 
+}
 
 #define _syscall5(type,name,type1,arg1,type2,arg2,type3,arg3,type4,arg4, \
 	  type5,arg5)							 \

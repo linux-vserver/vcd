@@ -62,7 +62,7 @@ for dir in "${DATADIR}"/*; do
 
 	for res in ${RESOLUTIONS}; do
 		make_res_html ${res} ${name} > ./${name}/${res}.html
-		
+
 		for db in ${DB_LIM}; do
 			rrdtool graph \
 				--end now \
@@ -75,7 +75,7 @@ for dir in "${DATADIR}"/*; do
 			LINE1:cur#FF6600:"${db#*_} (Current)\n" \
 			LINE1:min#00FF00:"${db#*_} (Minimum)\n"
 		done
-		
+
 		for db in ${DB_NET}; do
 			rrdtool graph \
 				--end now \
@@ -87,7 +87,7 @@ for dir in "${DATADIR}"/*; do
 			LINE1:recvp#00FF00:"${db#*_} (Received)\n" \
 			LINE1:sendp#FF6600:"${db#*_} (Sent)\n" \
 			LINE1:failp#FF0000:"${db#*_} (Failed)\n"
-			
+
 			rrdtool graph \
 				--end now \
 				--start end-${res} \
@@ -99,14 +99,14 @@ for dir in "${DATADIR}"/*; do
 			LINE1:sendb#FF6600:"${db#*_} (Sent)\n" \
 			LINE1:failb#FF0000:"${db#*_} (Failed)\n"
 		done
-		
+
 		rrdtool graph \
 			--end now \
 			--start end-${res} \
 		./${name}/${res}-LOADAVG.png \
 		DEF:load=${dir}/sys_LOADAVG.rrd:1MIN:AVERAGE \
 		LINE1:load#000000:"Load Average\n"
-		
+
 		rrdtool graph \
 			--end now \
 			--start end-${res} \

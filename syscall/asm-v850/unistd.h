@@ -364,7 +364,7 @@ type name (atype a, btype b, ctype c, dtype d, etype e, ftype f)	      \
   __SYSCALL6_TRAP(__syscall, __ret, __a, __b, __c, __d, __e, __f);	      \
   __syscall_return (type, __ret);					      \
 }
-		
+
 
 #define __ARCH_WANT_IPC_PARSE_VERSION
 #define __ARCH_WANT_OLD_READDIR

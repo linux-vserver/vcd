@@ -73,7 +73,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	else {
 		int pfds[2];
-		
+
 		if (pipe(pfds) == -1)
 			method_return_sys_fault(env, "pipe");
 

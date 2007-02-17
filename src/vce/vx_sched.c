@@ -46,7 +46,7 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 	for (i = 0; i < len; i++) {
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
-		
+
 		xmlrpc_decompose_value(env, result,
 			"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,*}",
 			"cpuid", &cpuid,
@@ -57,13 +57,13 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 			"tokensmin", &tokensmin,
 			"tokensmax", &tokensmax);
 		return_if_fault(env);
-		
+
 		xmlrpc_DECREF(result);
-		
+
 		printf("%d: %d %d %d %d %d %d\n", cpuid, interval, fillrate, interval2,
 			fillrate2, tokensmin, tokensmax);
 	}
-		
+
 	xmlrpc_DECREF(response);
 }
 
