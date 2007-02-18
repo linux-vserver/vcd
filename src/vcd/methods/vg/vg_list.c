@@ -17,40 +17,38 @@
 
 #include "auth.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
 
-xmlrpc_value *m_vcd_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vg_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *params;
-	char *user;
-	int uid, rc;
+	xmlrpc_value *response = NULL;
+	int rc;
 
-	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
+	method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
-	xmlrpc_decompose_value(env, params,
-			"{s:s,*}",
-			"username", &user);
-	method_return_if_fault(env);
-
-	if ((uid = auth_getuid(user)) == 0)
-		method_return_fault(env, MENOUSER);
-
-	rc = vxdb_exec(
-			"BEGIN TRANSACTION;"
-			"DELETE FROM xid_uid_map WHERE uid = %d;"
-			"DELETE FROM user_caps WHERE uid = %d;"
-			"DELETE FROM user WHERE uid = %d;"
-			"COMMIT TRANSACTION;",
-		uid, uid, uid);
+	rc = vxdb_prepare(&dbr,
+			"SELECT name,gid FROM groups ORDER BY gid ASC");
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
 
-	return xmlrpc_nil_new(env);
+	response = xmlrpc_array_new(env);
+
+	vxdb_foreach_step(rc, dbr)
+		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+				"{s:s,s:i}",
+				"groupname", vxdb_column_text(dbr, 0),
+				"gid",       vxdb_column_int(dbr, 1)));
+
+	if (rc != VXDB_DONE)
+		method_set_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
+
+	return response;
 }

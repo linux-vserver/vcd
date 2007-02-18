@@ -44,21 +44,15 @@ static cfg_opt_t CFG_OPTS[] = {
 
 void usage(int rc)
 {
-	printf("Usage: vcdadm <opts>* <command>\n"
+	printf("Usage: vgc <opts>* <command>\n"
 	       "\n"
 	       "Available commands:\n"
-	       "   status\n"
-	       "\n"
-	       "   user.set          <username> <admin> [<password>]\n"
-	       "   user.get          <username>\n"
-	       "   user.remove       <username>\n"
-	       "\n"
-	       "   user.caps.add     <username> <cap>\n"
-	       "   user.caps.get     <username>\n"
-	       "   user.caps.remove  <username>\n"
+	       "   list\n"
+	       "   add <group>\n"
+	       "   del <group>\n"
 	       "\n"
 	       "Available options:\n"
-	       "   -c <path>     configuration file (default: %s/vcdadm.conf)\n"
+	       "   -c <path>     configuration file (default: %s/vgc.conf)\n"
 	       "   -h <host>     server hostname (default: localhost)\n"
 	       "   -p <port>     server port     (default: 13386)\n"
 	       "   -u <user>     server username (default: admin)\n",
@@ -140,7 +134,7 @@ int main(int argc, char **argv)
 
 	log_init(&log_options);
 
-	read_config(SYSCONFDIR "/vcdadm.conf", 1);
+	read_config(SYSCONFDIR "/vgc.conf", 1);
 
 	/* parse command line */
 	while ((c = getopt(argc, argv, "c:h:p:u:")) != -1) {

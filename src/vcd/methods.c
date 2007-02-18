@@ -91,6 +91,11 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vcd.user.remove",      m_vcd_user_remove);
 	MREGISTER("vcd.user.set",         m_vcd_user_set);
 
+	/* vg */
+	MREGISTER("vg.add",  m_vg_add);
+	MREGISTER("vg.del",  m_vg_del);
+	MREGISTER("vg.list", m_vg_list);
+
 	/* vx */
 	MREGISTER("vx.create",    m_vx_create);
 	MREGISTER("vx.exec",      m_vx_exec);

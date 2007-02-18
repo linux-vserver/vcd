@@ -15,8 +15,8 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-#ifndef _VCC_CMD_H
-#define _VCC_CMD_H
+#ifndef _VCE_CMD_H
+#define _VCE_CMD_H
 
 #include <xmlrpc-c/base.h>
 #include <xmlrpc-c/client.h>
@@ -40,8 +40,6 @@ extern char *uri;
 extern char *user;
 extern char *pass;
 extern char *name;
-
-void do_vlogin(int argc, char **argv);
 
 void usage(int rc);
 

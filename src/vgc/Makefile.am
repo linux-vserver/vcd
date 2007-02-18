@@ -1,4 +1,4 @@
-## Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+## Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -15,10 +15,25 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = vcc \
-          vcd \
-          vcdadm \
-          vce \
-          vgc \
-          vshelper \
-          vxpasswd
+if ENABLE_SERVER
+
+EXTRA_DIST = vgc.conf
+
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
+
+noinst_HEADERS = cmd.h
+
+sbin_PROGRAMS = vgc
+
+vgc_SOURCES = cmd.c \
+              group.c \
+              main.c
+
+vgc_LDADD = $(LUCID_LIBS) \
+            $(CONFUSE_LIBS) \
+            $(XMLRPC_C_CLIENT_LIBS)
+
+install-data-local:
+	$(install_sh) -m 600 $(srcdir)/vgc.conf $(DESTDIR)$(sysconfdir)/vgc.conf
+
+endif

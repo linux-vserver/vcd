@@ -185,7 +185,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 
 	case 0:
 		if (ns_enter(xid, 0) == -1)
-			log_perror("vx_enter_namespace(%d)", xid);
+			log_perror("ns_enter(%d)", xid);
 
 		else if (chroot_secure_chdir(vdir, "/") == -1)
 			log_perror("chroot_secure_chdir(%s)", vdir);
@@ -221,7 +221,7 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 		sleep(1);
 
 		if (vx_stat(xid, &stat) == -1)
-			log_perror("vx_info(%d)", xid);
+			log_perror("vx_stat(%d)", xid);
 
 		else if (stat.tasks > 1) {
 			if (nx_flags_set(xid, &nflags) == -1)

@@ -22,35 +22,49 @@
 
 #include <lucid/log.h>
 
-xmlrpc_value *m_vcd_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vg_del(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *user;
-	int uid, rc;
+	char *group;
+	int gid, rc;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
 			"{s:s,*}",
-			"username", &user);
+			"groupname", &group);
 	method_return_if_fault(env);
 
-	if ((uid = auth_getuid(user)) == 0)
-		method_return_fault(env, MENOUSER);
+	if (!validate_groupname(group))
+		method_return_faultf(env, MEINVAL,
+				"invalid groupname value: %s", group);
 
-	rc = vxdb_exec(
+	rc = vxdb_prepare(&dbr,
+		"SELECT gid FROM groups WHERE name = '%s'", group);
+
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
+		gid = vxdb_column_int(dbr, 0);
+	else
+		gid = 0;
+
+	vxdb_finalize(dbr);
+
+	log_alert("gid is %d", gid);
+
+	if (gid != 0) {
+		rc = vxdb_exec(
 			"BEGIN TRANSACTION;"
-			"DELETE FROM xid_uid_map WHERE uid = %d;"
-			"DELETE FROM user_caps WHERE uid = %d;"
-			"DELETE FROM user WHERE uid = %d;"
+			"DELETE FROM xid_gid_map WHERE gid = %d;"
+			"DELETE FROM groups WHERE gid = %d;"
 			"COMMIT TRANSACTION;",
-		uid, uid, uid);
+	        gid, gid);
 
-	if (rc != VXDB_OK)
-		method_return_vxdb_fault(env);
+		if (rc != VXDB_OK)
+			method_return_vxdb_fault(env);
+	}
 
 	return xmlrpc_nil_new(env);
 }

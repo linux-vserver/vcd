@@ -69,6 +69,12 @@ int validate_password(const char *password)
 	return !(str_isempty(password) || str_len(password) < 8);
 }
 
+int validate_groupname(const char *groupname)
+{
+	LOG_TRACEME
+	return !(str_isempty(groupname) || !str_isalnum(groupname));
+}
+
 int validate_vcd_cap(const char *cap)
 {
 	LOG_TRACEME

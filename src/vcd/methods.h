@@ -134,6 +134,11 @@ MPROTO(m_vcd_user_get);
 MPROTO(m_vcd_user_remove);
 MPROTO(m_vcd_user_set);
 
+/* vg */
+MPROTO(m_vg_add);
+MPROTO(m_vg_del);
+MPROTO(m_vg_list);
+
 /* vx */
 MPROTO(m_vx_create);
 MPROTO(m_vx_exec);

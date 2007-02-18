@@ -31,6 +31,10 @@ M_VCD = vcd/vcd_login.c \
         vcd/vcd_user_remove.c \
         vcd/vcd_user_set.c
 
+M_VG = vg/vg_add.c \
+       vg/vg_del.c \
+       vg/vg_list.c
+
 M_VX = vx/vx_create.c \
        vx/vx_exec.c \
        vx/vx_kill.c \
@@ -87,5 +91,6 @@ noinst_LIBRARIES = libmethods.a
 
 libmethods_a_SOURCES = $(M_HELPER) \
                        $(M_VCD) \
+                       $(M_VG) \
                        $(M_VX) \
                        $(M_VXDB)

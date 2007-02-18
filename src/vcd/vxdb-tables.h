@@ -51,6 +51,9 @@ struct _vxdb_table {
 VXDB_COLUMNS_NEW(dx_limit, "xid", "space", "inodes", "reserved")
 VXDB_UNIQUE_NEW(dx_limit, "xid")
 
+VXDB_COLUMNS_NEW(groups, "gid", "name")
+VXDB_UNIQUE_NEW(groups, "gid", "name")
+
 VXDB_COLUMNS_NEW(init, "xid", "init", "halt", "reboot", "timeout")
 VXDB_UNIQUE_NEW(init, "xid")
 
@@ -100,6 +103,9 @@ VXDB_UNIQUE_NEW(vx_sched, "xid,cpuid")
 VXDB_COLUMNS_NEW(vx_uname, "xid", "type", "value")
 VXDB_UNIQUE_NEW(vx_uname, "xid,type")
 
+VXDB_COLUMNS_NEW(xid_gid_map, "xid", "gid")
+VXDB_UNIQUE_NONE(xid_gid_map)
+
 VXDB_COLUMNS_NEW(xid_name_map, "xid", "name")
 VXDB_UNIQUE_NEW(xid_name_map, "xid", "name")
 
@@ -108,8 +114,9 @@ VXDB_UNIQUE_NONE(xid_uid_map)
 
 /* generate database definition */
 VXDB_DATABASE_START
-VXDB_TABLE_NEW(init)
 VXDB_TABLE_NEW(dx_limit)
+VXDB_TABLE_NEW(groups)
+VXDB_TABLE_NEW(init)
 VXDB_TABLE_NEW(mount)
 VXDB_TABLE_NEW(nx_addr)
 VXDB_TABLE_NEW(nx_broadcast)
@@ -124,6 +131,7 @@ VXDB_TABLE_NEW(vx_flags)
 VXDB_TABLE_NEW(vx_limit)
 VXDB_TABLE_NEW(vx_sched)
 VXDB_TABLE_NEW(vx_uname)
+VXDB_TABLE_NEW(xid_gid_map)
 VXDB_TABLE_NEW(xid_name_map)
 VXDB_TABLE_NEW(xid_uid_map)
 VXDB_DATABASE_END
