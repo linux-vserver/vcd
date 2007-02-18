@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,15 +47,7 @@ xmlrpc_value *m_vg_del(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"reserved groupname: %s", group);
 
-	rc = vxdb_prepare(&dbr,
-		"SELECT gid FROM groups WHERE name = '%s'", group);
-
-	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
-		gid = vxdb_column_int(dbr, 0);
-	else
-		gid = 0;
-
-	vxdb_finalize(dbr);
+	gid = vxdb_getgid(group);
 
 	if (gid != 0) {
 		rc = vxdb_exec(

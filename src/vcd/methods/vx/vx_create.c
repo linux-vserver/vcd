@@ -715,7 +715,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MEPERM);
 
 	/* check vdir */
-	if (str_isempty(vdir) || !auth_isadmin(user, name))
+	if (str_isempty(vdir) || !auth_isadmin(user))
 		vdir = vxdb_getvdir(name);
 
 	if (!validate_path(vdir))
