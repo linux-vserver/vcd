@@ -672,6 +672,11 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"vdir", &vdir);
 	method_return_if_fault(env);
 
+	/* validate name */
+	if (!validate_name(name))
+		method_return_faultf(env, MEINVAL,
+			"invalid name value: %s", name);
+
 	/* get template dir */
 	if (str_isempty(template) || !str_isgraph(template))
 		method_return_faultf(env, MEINVAL,
@@ -696,12 +701,13 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		if (auth_isowner(user, name)) {
 			if (!force)
 				method_return_fault(env, MEEXIST);
+
 			else if (vx_info(xid, NULL) == 0)
 				method_return_fault(env, MERUNNING);
 		}
 
 		else
-			method_return_fault(env, MENOVPS);
+			method_return_fault(env, MEPERM);
 	}
 
 	/* only admins can build new ones */
@@ -709,7 +715,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_fault(env, MEPERM);
 
 	/* check vdir */
-	if (str_isempty(vdir) || !auth_isowner(user, name))
+	if (str_isempty(vdir) || !auth_isadmin(user, name))
 		vdir = vxdb_getvdir(name);
 
 	if (!validate_path(vdir))
