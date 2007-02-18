@@ -25,7 +25,12 @@
 % bibliography
 \bibliographystyle{unsrt}
 
-\title{VServer Control Daemon Reference Manual}
+% nicer table of contents
+\usepackage[titles]{tocloft}
+\setlength{\cftsecnumwidth}{3em}
+\renewcommand{\cftsecaftersnum}{.}
+
+\title{VServer Control Daemon\\Reference Manual}
 \author{Benedikt Böhm \texttt{<hollow@gentoo.org>}}
 
 \begin{document}
@@ -34,15 +39,26 @@
 \maketitle
 
 \frontmatter
+\setcounter{tocdepth}{1}
 \tableofcontents
 \input{preface.tex}
 
 \mainmatter
-
 \part{Introduction}
 \input{intro/intro.tex}
 \input{intro/vserver.tex}
 \input{intro/vcd.tex}
+
+\part{Installation}
+
+\part{Configuration and Maintenance}
+
+\part{Command Reference}
+\input{cmdref/vcc.tex}
+\input{cmdref/vcd.tex}
+\input{cmdref/vcdadm.tex}
+\input{cmdref/vce.tex}
+\input{cmdref/vshelper.tex}
 
 \part{XML-RPC Method Reference}
 \input{rpcref/commands.tex}
