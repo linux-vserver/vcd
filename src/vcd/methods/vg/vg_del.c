@@ -21,6 +21,7 @@
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/str.h>
 
 xmlrpc_value *m_vg_del(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
@@ -42,6 +43,10 @@ xmlrpc_value *m_vg_del(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"invalid groupname value: %s", group);
 
+	if (str_equal(group, "default"))
+		method_return_faultf(env, MEINVAL,
+				"reserved groupname: %s", group);
+
 	rc = vxdb_prepare(&dbr,
 		"SELECT gid FROM groups WHERE name = '%s'", group);
 
@@ -51,8 +56,6 @@ xmlrpc_value *m_vg_del(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		gid = 0;
 
 	vxdb_finalize(dbr);
-
-	log_alert("gid is %d", gid);
 
 	if (gid != 0) {
 		rc = vxdb_exec(

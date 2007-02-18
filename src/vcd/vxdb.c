@@ -47,7 +47,7 @@ void vxdb_create_table(struct _vxdb_table *table)
 			"CREATE TABLE '%s' (",
 			table->name);
 
-	int i;
+	int i, rc;
 
 	for (i = 0; table->columns[i]; i++)
 		stralloc_catf(sa, "%s%s", table->columns[i],
@@ -65,13 +65,26 @@ void vxdb_create_table(struct _vxdb_table *table)
 	char *sql = stralloc_finalize(sa);
 	stralloc_free(sa);
 
-	int rc = vxdb_exec(sql);
+	rc = vxdb_exec(sql);
 
 	if (rc != VXDB_OK)
 		log_error_and_die("could not create table '%s': %s",
 				table->name, vxdb_errmsg(vxdb));
 
 	mem_free(sql);
+
+	/* add onboot group on groups table creation only */
+	if (str_equal(table->name, "groups")) {
+		rc = vxdb_exec(
+				"BEGIN EXCLUSIVE TRANSACTION;"
+				"INSERT INTO '%s' (gid, name) VALUES (1, 'onboot');"
+				"COMMIT TRANSACTION;",
+				table->name);
+
+		if (rc != VXDB_OK)
+			log_error_and_die("could not insert data on creation of table '%s': %s",
+					table->name, vxdb_errmsg(vxdb));
+	}
 }
 
 static

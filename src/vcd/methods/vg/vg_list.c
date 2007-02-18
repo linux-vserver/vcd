@@ -39,6 +39,12 @@ xmlrpc_value *m_vg_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	response = xmlrpc_array_new(env);
 
+	/* add virtual default group */
+	xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
+			"{s:s,s:i}",
+			"groupname", "default",
+			"gid",       0));
+
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:i}",
