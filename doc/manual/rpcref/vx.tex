@@ -7,6 +7,7 @@ servers.
 % vx.create
 \section{vx.create}
 
+% FIXME: add cross-ref to template explanation
 This method is used to create a new virtual server using a template cache.
 
 \begin{rpcsynopsis}{vx.create}{string name, string template,
@@ -20,11 +21,15 @@ This method is used to create a new virtual server using a template cache.
 \end{rpcsynopsis}
 
 \begin{rpcaccess}
-\rpccapability{CREATE} and \rpcownerchecks. % FIXME: talk about this in intro
+\rpccapability{CREATE} and \rpcownerchecks. The administrator passes owner
+check even if the specified virtual server does not exist, in order to be able
+to create new ones. This differs slightly from the normal owner check
+behaviour.
 \end{rpcaccess}
 
 \rpcreturnnil
 
+% FIXME: update errors
 \begin{rpcerrors}
 \rpcerror{MEINVAL}{An empty template cache name was supplied, or the supplied
 	value contained invalid characters}
@@ -85,9 +90,34 @@ This method is used to send signals to processes inside a virtual server.
 \end{rpcerrors}
 
 
+% vx.load
+\section{vx.load}
+
+This method is used to receive the current load average, i.e. the number of
+jobs in the run queue (state R) or waiting for disk I/O (state D) averaged over
+1, 5, and 15 minutes.
+
+\begin{rpcsynopsis}{vx.load}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INFO} and \rpcownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{a \texttt{struct}}{string 1m, string 5m, string 15m}
+\rpcreturnparam{1m}{Load average in the last minute}
+\rpcreturnparam{5m}{Load average in the last 5 minutes}
+\rpcreturnparam{15m}{Load average in the last 15 minutes}
+\end{rpcreturncomplex}
+
+\rpcnoerrors
+
+
 % vx.reboot
 \section{vx.reboot}
 
+% FIXME: add cross-ref to reboot explanation
 This method is used as a wrapper to vx.exec using the configured
 \texttt{reboot} command.
 
@@ -134,8 +164,9 @@ and filesystem.
 % vx.rename
 \section{vx.rename}
 
-This method is used to rename a virtual server in the configuration database and
-filesystem.
+This method is used to rename a virtual server in the configuration database.
+This does not involve filesystem changes, in particular, the virtual servers
+root filesystem is not moved or renamed.
 
 \begin{rpcsynopsis}{vx.rename}{string name, string newname}
 \rpcparam{name}{Unique virtual server name}
@@ -149,10 +180,35 @@ filesystem.
 \rpcreturnnil
 
 \begin{rpcerrors}
+% FIXME: MERUNNING only needed in vx.move?
 \rpcerror{MERUNNING}{The specified virtual server is currently running,
 	therefore it cannot be renamed}
 \rpcerror{MEEXIST}{The specified new virtual server name currently exists and
 	cannot be used}
+\end{rpcerrors}
+
+
+% vx.restart
+\section{vx.restart}
+
+This method is used to restart virtual servers. It has the same effect as
+\texttt{vx.reboot} except that it waits for the virtual server to stop and
+startup again, which cannot be acomplished by the former. Technically, this is
+a combination of \texttt{vx.stop} and \texttt{vx.start} only.
+
+\begin{rpcsynopsis}{vx.restart}{string name}
+\rpcparam{name}{Unique virtual server name}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{INIT} and \rpcownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\begin{rpcerrors}
+\rpcerror{MESTOPPED}{The specified virtual server is currently not running,
+	therefore it cannot be stopped}
 \end{rpcerrors}
 
 
@@ -190,9 +246,13 @@ This method is used to obtain status information about a virtual server.
 \rpccapability{INIT} and \rpcownerchecks.
 \end{rpcaccess}
 
-\begin{rpcreturncomplex}{\texttt{struct}}{bool running}
+\begin{rpcreturncomplex}{\texttt{struct}}{bool running, int nproc, int uptime}
 \rpcreturnparam{running}{This value is set to true if the specified virtual
 	server is currently running, false otherwise}
+\rpcreturnparam{nproc}{This value is set to the number of processes inside the
+	specified virtual server, if it is running, 0 otherwise}
+\rpcreturnparam{uptime}{This value is set to the uptime in seconds of the
+	specified virtual server, if it is running, 0 otherwise}
 \end{rpcreturncomplex}
 
 \rpcnoerrors

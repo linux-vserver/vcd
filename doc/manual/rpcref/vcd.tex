@@ -1,2 +1,162 @@
 \chapter{Daemon Administration Methods}
 
+
+% vcd.login
+\section{vcd.login}
+
+This method is used to authenticate against the user database. Internally it is
+a no-op method, since every method call must be authenticated. This is only
+usefull for GUIs or web panels, to let users login without actually doing
+something.
+
+\rpcsynopsisempty{vcd.login}
+
+\begin{rpcaccess}
+\rpcnocapability and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vcd.status
+\section{vcd.status}
+
+This method is used to retreive internal daemon statistics. The daemon stores a
+lot of runtime information in VXDB that can be used by system administrators or
+user to check the daemon or account healthiness respectively.
+
+\rpcsynopsisempty{vcd.status}
+
+\begin{rpcaccess}
+\rpccapability{INFO} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+
+% vcd.user.caps.add
+\section{vcd.user.caps.add}
+
+This method is used to add capabilities to the internal user database.
+
+\begin{rpcsynopsis}{vcd.user.caps.add}{string username, string cap}
+\rpcparam{username}{Unique username}
+\rpcparam{cap}{Capability to add}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vcd.user.caps.get
+\section{vcd.user.caps.get}
+
+This method is used to get information about configured capabilities in the
+internal user database.
+
+\begin{rpcsynopsis}{vcd.user.caps.get}{string username}
+\rpcparam{username}{Unique username}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnsimple{an \texttt{array} of \texttt{string}s - on for each
+	capability - }
+
+\rpcnoerrors
+
+
+% vcd.user.caps.remove
+\section{vcd.user.caps.remove}
+
+This method is used to remove information about configured capabilities from
+the internal user database.
+
+\begin{rpcsynopsis}{vcd.user.caps.remove}{string username, string cap}
+\rpcparam{username}{Unique username}
+\rpcparam{cap}{Capability to remove}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vcd.user.get
+\section{vcd.user.get}
+
+This method is used to get information about configured users in the internal
+user database.
+
+\begin{rpcsynopsis}{vcd.user.get}{string username}
+\rpcparam{username}{Unique username}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\begin{rpcreturncomplex}{\texttt{struct}}{string password, bool admin}
+\rpcreturnparam{password}{Password hash for the specified user}
+\rpcreturnparam{admin}{Set the administrator flag for the specified user}
+\end{rpcreturncomplex}
+
+
+% vcd.user.remove
+\section{vcd.user.remove}
+
+This method is used to remove information about configured users from the
+internal user database.
+
+\begin{rpcsynopsis}{vcd.user.remove}{string username}
+\rpcparam{username}{Unique username}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% vcd.user.set
+\section{vcd.user.set}
+
+This method is used to set (add \& change) information about configured users
+in the internal user database.
+
+\begin{rpcsynopsis}{vcd.user.set}{string username, string password,
+	bool admin}
+\rpcparam{username}{Unique username}
+\rpcparam{password}{Password for the specified user (if user already exists
+	this value may be empty to not change the password)}
+\rpcparam{admin}{Set the administrator flag for the specified user}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{AUTH} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+

@@ -4,10 +4,77 @@
 % helper.netup
 \section{helper.netup}
 
-This method is used to initially set all necessary network configuration
-during startup.
+This method is used to setup necessary network configuration during startup of
+virtual servers. It is called by \texttt{vshelper} once the kernel has created
+the network context. This method is not supposed to be called by a user or
+administrator.
 
 \begin{rpcsynopsis}{helper.netup}{int xid}
+\rpcparam{xid}{Unique context ID}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{HELPER} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% helper.restart
+\section{helper.restart}
+
+This method is used to remember reboot requests from vitrtual servers. It is
+called by \texttt{vshelper} once virtual servers have issued a reboot system
+call. After the request has been stored in VXDB the kernel terminates all
+processes belonging to the virtual server, and calls \texttt{helper.shutdown}
+afterwards.  This method is not supposed to be called by a user or
+administrator.
+
+\begin{rpcsynopsis}{helper.restart}{int xid}
+\rpcparam{xid}{Unique context ID}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{HELPER} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+% helper.shutdown
+\section{helper.shutdown}
+
+This method is used to cleanup state data after virtual server shutdown. If a
+reboot request has been recorded in VXDB by \texttt{helper.restart} the virtual
+server is started again. This method is not supposed to be called by a user or
+administrator.
+
+\begin{rpcsynopsis}{helper.shutdown}{int xid}
+\rpcparam{xid}{Unique context ID}
+\end{rpcsynopsis}
+
+\begin{rpcaccess}
+\rpccapability{HELPER} and \rpcnoownerchecks.
+\end{rpcaccess}
+
+\rpcreturnnil
+
+\rpcnoerrors
+
+
+
+% helper.startup
+\section{helper.startup}
+
+This method is used to setup necessary configuration during startup. This
+includes all configuration except network configuration, which is handled in
+\texttt{helper.netup}. % FIXME: cross-ref to explanation of startup procedure
+
+\begin{rpcsynopsis}{helper.startup}{int xid}
 \rpcparam{xid}{Unique context ID}
 \end{rpcsynopsis}
 
