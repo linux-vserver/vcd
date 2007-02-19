@@ -11,3 +11,5 @@ WANTED FEATURES:
 - vx.move method to also move the VServer around on the disk
 - sysctl support
 - cpuset support
+- owner notifications?
+- contact handles?

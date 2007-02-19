@@ -31,15 +31,16 @@ typedef struct {
 
 #define MEAUTH    100
 #define MEPERM    101
-#define MEINVAL   102
-#define MEVXDB    200
-#define MECONF    201
-#define MENOUSER  202
+#define MENOUSER  102
+#define MEINVAL   200
+#define MEEXIST   201
+#define MENOVPS   202
+#define MENOVG    203
 #define MESTOPPED 300
 #define MERUNNING 301
-#define MEEXIST   400
-#define MENOVPS   401
-#define MEBUSY    402
+#define MEBUSY    302
+#define MEVXDB    400
+#define MECONF    401
 #define MESYS     500
 #define MEEXEC    1000 /* this should always be the last error code */
 
