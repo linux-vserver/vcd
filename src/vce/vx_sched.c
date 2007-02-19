@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -84,15 +84,13 @@ void cmd_vx_sched_remove(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_vx_sched_set(xmlrpc_env *env, int argc, char **argv)
 {
-	int cpuid = -1, interval, fillrate, interval2, fillrate2;
+	int cpuid, interval, fillrate, interval2, fillrate2;
 	int tokensmin, tokensmax, i = 0;
 
-	if (argc < 6)
+	if (argc < 7)
 		usage(EXIT_FAILURE);
 
-	if (argc > 6)
-		sscanf(argv[i++], "%d", &cpuid);
-
+	sscanf(argv[i++], "%d", &cpuid);
 	sscanf(argv[i++], "%d", &interval);
 	sscanf(argv[i++], "%d", &fillrate);
 	sscanf(argv[i++], "%d", &interval2);

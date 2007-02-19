@@ -22,17 +22,12 @@
 void cmd_list(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *username, *name;
+	char *username;
 	int len, i;
-
-	if (argc < 1)
-		username = "";
-	else
-		username = argv[0];
 
 	response = xmlrpc_client_call(env, uri, "vxdb.list",
 		SIGNATURE("{s:s}"),
-		"username", username);
+		"username", name);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -42,12 +37,12 @@ void cmd_list(xmlrpc_env *env, int argc, char **argv)
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
 
-		xmlrpc_decompose_value(env, result, "s", &name);
+		xmlrpc_decompose_value(env, result, "s", &username);
 		return_if_fault(env);
 
 		xmlrpc_DECREF(result);
 
-		printf("%s\n", name);
+		printf("%s\n", username);
 	}
 
 	xmlrpc_DECREF(response);

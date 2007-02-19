@@ -1,4 +1,4 @@
-## Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+## Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
 ##
 ## This program is free software; you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -32,8 +32,11 @@ M_VCD = vcd/vcd_login.c \
         vcd/vcd_user_set.c
 
 M_VG = vg/vg_add.c \
-       vg/vg_del.c \
-       vg/vg_list.c
+       vg/vg_list.c \
+       vg/vg_remove.c \
+       vg/vg_vx_add.c \
+       vg/vg_vx_list.c \
+       vg/vg_vx_remove.c
 
 M_VX = vx/vx_create.c \
        vx/vx_exec.c \

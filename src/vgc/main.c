@@ -1,4 +1,5 @@
 // Copyright 2007 Benedikt Böhm <hollow@gentoo.org>
+//           2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -48,8 +49,12 @@ void usage(int rc)
 	       "\n"
 	       "Available commands:\n"
 	       "   list\n"
-	       "   add <group>\n"
-	       "   del <group>\n"
+	       "   add       <group>\n"
+	       "   remove    <group>\n"
+	       "\n"
+	       "   vx.list   <group>\n"
+	       "   vx.add    <group> <vserver>\n"
+	       "   vx.remove <group> <vserver>\n"
 	       "\n"
 	       "Available options:\n"
 	       "   -c <path>     configuration file (default: %s/vgc.conf)\n"

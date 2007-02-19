@@ -1,4 +1,4 @@
-// Copyright 2007 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -23,8 +23,11 @@ char *pass = NULL;
 char *name = NULL;
 
 cmd_t CMDS[] = {
-	{ "add",  cmd_groupadd },
-	{ "del",  cmd_groupdel },
-	{ "list", cmd_grouplist },
-	{ NULL,       NULL }
+	{ "add",       cmd_groupadd },
+	{ "list",      cmd_grouplist },
+	{ "remove",    cmd_groupremove },
+	{ "vx.add",    cmd_vserveradd },
+	{ "vx.list",   cmd_vserverlist },
+	{ "vx.remove", cmd_vserverremove },
+	{ NULL,        NULL }
 };

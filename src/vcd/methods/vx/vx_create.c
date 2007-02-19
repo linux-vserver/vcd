@@ -1,4 +1,5 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
+//           2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by

@@ -1,4 +1,4 @@
-// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,38 +21,49 @@
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/str.h>
 
-xmlrpc_value *m_vxdb_vx_bcaps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *bcap;
-	xid_t xid;
-	int rc;
+	char *group;
+	int gid, rc;
 
-	params = method_init(env, p, c, VCD_CAP_BCAP, M_OWNER|M_LOCK);
+	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:s,*}",
-			"name", &name,
-			"bcap", &bcap);
+			"{s:s,*}",
+			"groupname", &group);
 	method_return_if_fault(env);
 
-	if (!validate_bcap(bcap))
+	if (!validate_groupname(group))
 		method_return_faultf(env, MEINVAL,
-				"invalid bcap value: %s", bcap);
+				"invalid groupname value: %s", group);
 
-	if (!(xid = vxdb_getxid(name)))
-		method_return_fault(env, MENOVPS);
+	if (str_equal(group, "default"))
+		method_return_faultf(env, MEINVAL,
+				"reserved groupname: %s", group);
 
-	rc = vxdb_exec(
-			"INSERT OR REPLACE INTO vx_bcaps (xid, bcap) VALUES (%d, '%s')",
-			xid, bcap);
+	gid = vxdb_getgid(group);
 
-	if (rc != VXDB_OK)
-		method_return_vxdb_fault(env);
+	if (gid != 0) {
+		rc = vxdb_exec(
+			"BEGIN TRANSACTION;"
+			"DELETE FROM xid_gid_map WHERE gid = %d;"
+			"DELETE FROM groups WHERE gid = %d;"
+			"COMMIT TRANSACTION;",
+	        gid, gid);
+
+		if (rc != VXDB_OK)
+			method_return_vxdb_fault(env);
+	}
+
+	else
+		method_return_faultf(env, MEINVAL,
+				"group doesn't exist: %s", group);
 
 	return xmlrpc_nil_new(env);
 }

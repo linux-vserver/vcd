@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -45,7 +45,8 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	/* -2 is used to get all configured cpus, we can't use -1 here,
 	 * since it has special meaning in helper.startup */
 	if (cpuid == -2)
-		rc = vxdb_exec("DELETE FROM vx_sched WHERE xid = %d", xid);
+		rc = vxdb_exec("DELETE FROM vx_sched WHERE xid = %d",
+				xid);
 
 	else
 		rc = vxdb_exec(

@@ -18,7 +18,6 @@
 #include <stdlib.h>
 
 #include <lucid/printf.h>
-#include <lucid/scanf.h>
 
 #include "cmd.h"
 
@@ -60,9 +59,9 @@ void cmd_groupadd(xmlrpc_env *env, int argc, char **argv)
 		"groupname", name);
 }
 
-void cmd_groupdel(xmlrpc_env *env, int argc, char **argv)
+void cmd_groupremove(xmlrpc_env *env, int argc, char **argv)
 {
-	xmlrpc_client_call(env, uri, "vg.del",
+	xmlrpc_client_call(env, uri, "vg.remove",
 		SIGNATURE("{s:s}"),
 		"groupname", name);
 }

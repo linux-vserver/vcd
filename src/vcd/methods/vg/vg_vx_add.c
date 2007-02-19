@@ -23,43 +23,51 @@
 #include <lucid/log.h>
 #include <lucid/str.h>
 
-xmlrpc_value *m_vg_del(xmlrpc_env *env, xmlrpc_value *p, void *c)
+xmlrpc_value *m_vg_vx_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *group;
-	int gid, rc;
+	char *group, *vserver;
+	int rc, gid, xid;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,*}",
-			"groupname", &group);
+			"{s:s,s:s,*}",
+			"groupname", &group,
+			"vsname", &vserver);
 	method_return_if_fault(env);
 
 	if (!validate_groupname(group))
 		method_return_faultf(env, MEINVAL,
 				"invalid groupname value: %s", group);
 
-	if (str_equal(group, "default"))
+	if (!validate_name(vserver))
 		method_return_faultf(env, MEINVAL,
-				"reserved groupname: %s", group);
+				"invalid vsname value: %s", vserver);
+
+	if (str_equal(group, "default"))
+		return xmlrpc_nil_new(env);
 
 	gid = vxdb_getgid(group);
 
-	if (gid != 0) {
+	xid = vxdb_getxid(vserver);
+
+	if (gid != 0 && xid != 0) {
 		rc = vxdb_exec(
-			"BEGIN TRANSACTION;"
-			"DELETE FROM xid_gid_map WHERE gid = %d;"
-			"DELETE FROM groups WHERE gid = %d;"
-			"COMMIT TRANSACTION;",
-	        gid, gid);
+				"INSERT INTO xid_gid_map (xid, gid) "
+				"VALUES (%d, %d)",
+				xid, gid);
 
 		if (rc != VXDB_OK)
 			method_return_vxdb_fault(env);
 	}
+
+	else
+		method_return_faultf(env, MEINVAL,
+				"group or vserver don't exist: %s / %s", group, vserver);
 
 	return xmlrpc_nil_new(env);
 }

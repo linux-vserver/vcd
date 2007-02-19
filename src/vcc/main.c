@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -47,18 +47,18 @@ void usage(int rc)
 	printf("Usage: vcc <opts>* <command>\n"
 	       "\n"
 	       "Available commands:\n"
-	       "   create  <name> <template> [<force> [<copy> [<vdir>]]]\n"
-	       "   exec    <name> <command> <args>*\n"
-	       "   kill    <name> <pid> <sig>\n"
-	       "   list    [<username>]\n"
-	       "   load    <name>\n"
-	       "   login   <name>\n"
-	       "   reboot  <name>\n"
-	       "   remove  <name>\n"
-	       "   rename  <name> <newname>\n"
-	       "   start   <name>\n"
-	       "   status  <name>\n"
-	       "   stop    <name>\n"
+	       "   create    <name> <template> [<force> [<copy> [<vdir>]]]\n"
+	       "   exec      <name> <command> <args>*\n"
+	       "   kill      <name> <pid> <sig>\n"
+	       "   list      [<username>]\n"
+	       "   load      <name>\n"
+	       "   login     <name>\n"
+	       "   reboot    <name>\n"
+	       "   remove    <name>\n"
+	       "   rename    <name> <newname>\n"
+	       "   start     <name>\n"
+	       "   status    <name>\n"
+	       "   stop      <name>\n"
 	       "   templates [<name>]\n"
 	       "\n"
 	       "Available options:\n"
@@ -180,10 +180,8 @@ int main(int argc, char **argv)
 
 	cmd  = argv[optind++];
 
-	if (str_equal(cmd, "list") || str_equal(cmd, "templates"))
-		name = NULL;
-	else if (argc < optind + 1)
-		usage(EXIT_FAILURE);
+	if (argc < optind + 1)
+		name = "";
 	else
 		name = argv[optind++];
 

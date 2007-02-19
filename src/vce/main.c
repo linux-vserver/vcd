@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ void usage(int rc)
 	       "\n"
 	       "   vx.sched.get        <name> [<cpuid>]\n"
 	       "   vx.sched.remove     <name> [<cpuid>]\n"
-	       "   vx.sched.set        <name> [<cpuid>] <bucket>\n"
+	       "   vx.sched.set        <name> <cpuid> <bucket>\n"
 	       "\n"
 	       "   <bucket> = <int> <fill> <int2> <fill2> <min> <max>\n"
 	       "\n"
@@ -213,10 +213,8 @@ int main(int argc, char **argv)
 
 	cmd  = argv[optind++];
 
-	if (str_equal(cmd, "list"))
-		name = NULL;
-	else if (argc < optind + 1)
-		usage(EXIT_FAILURE);
+	if (argc < optind + 1)
+		name = "";
 	else
 		name = argv[optind++];
 

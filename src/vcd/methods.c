@@ -1,4 +1,4 @@
-// Copyright 2006 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -92,9 +92,12 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vcd.user.set",         m_vcd_user_set);
 
 	/* vg */
-	MREGISTER("vg.add",  m_vg_add);
-	MREGISTER("vg.del",  m_vg_del);
-	MREGISTER("vg.list", m_vg_list);
+	MREGISTER("vg.add",       m_vg_add);
+	MREGISTER("vg.list",      m_vg_list);
+	MREGISTER("vg.remove",    m_vg_remove);
+	MREGISTER("vg.vx.add",    m_vg_vx_add);
+	MREGISTER("vg.vx.list",   m_vg_vx_list);
+	MREGISTER("vg.vx.remove", m_vg_vx_remove);
 
 	/* vx */
 	MREGISTER("vx.create",    m_vx_create);

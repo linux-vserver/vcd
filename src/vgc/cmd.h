@@ -1,4 +1,4 @@
-// Copyright 2007 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -43,8 +43,11 @@ extern char *name;
 
 void usage(int rc);
 
-void cmd_groupadd (xmlrpc_env *env, int argc, char **argv);
-void cmd_groupdel (xmlrpc_env *env, int argc, char **argv);
-void cmd_grouplist(xmlrpc_env *env, int argc, char **argv);
+void cmd_groupadd     (xmlrpc_env *env, int argc, char **argv);
+void cmd_grouplist    (xmlrpc_env *env, int argc, char **argv);
+void cmd_groupremove  (xmlrpc_env *env, int argc, char **argv);
+void cmd_vserveradd   (xmlrpc_env *env, int argc, char **argv);
+void cmd_vserverlist  (xmlrpc_env *env, int argc, char **argv);
+void cmd_vserverremove(xmlrpc_env *env, int argc, char **argv);
 
 #endif

@@ -1,4 +1,4 @@
-// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -21,21 +21,15 @@
 
 #include "cmd.h"
 
-void cmd_vx_uname_get(xmlrpc_env *env, int argc, char **argv)
+void cmd_vserverlist(xmlrpc_env *env, int argc, char **argv)
 {
-	char *type, *value;
 	xmlrpc_value *response, *result;
-	int len, i;
+	char *vsname;
+	int len, i, xid;
 
-	if (argc < 1)
-		type = "";
-	else
-		type = argv[0];
-
-	response = xmlrpc_client_call(env, uri, "vxdb.vx.uname.get",
-		SIGNATURE("{s:s,s:s}"),
-		"name", name,
-		"type", type);
+	response = xmlrpc_client_call(env, uri, "vg.vx.list",
+		SIGNATURE("{s:s}"),
+		"groupname", name);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -46,47 +40,45 @@ void cmd_vx_uname_get(xmlrpc_env *env, int argc, char **argv)
 		return_if_fault(env);
 
 		xmlrpc_decompose_value(env, result,
-			"{s:s,s:s,*}",
-			"type", &type,
-			"value", &value);
+			"{s:s,s:i,*}",
+			"vsname", &vsname,
+			"xid", &xid);
 		return_if_fault(env);
 
 		xmlrpc_DECREF(result);
 
-		printf("%s=%s\n", type, value);
+		printf("%s (xid=%d)\n", vsname, xid);
 	}
 
 	xmlrpc_DECREF(response);
 }
 
-void cmd_vx_uname_remove(xmlrpc_env *env, int argc, char **argv)
+void cmd_vserveradd(xmlrpc_env *env, int argc, char **argv)
 {
-	char *type;
+	char *vsname;
 
 	if (argc < 1)
-		type = "";
-	else
-		type = argv[0];
-
-	xmlrpc_client_call(env, uri, "vxdb.vx.uname.remove",
-		SIGNATURE("{s:s,s:s}"),
-		"name", name,
-		"type", type);
-}
-
-void cmd_vx_uname_set(xmlrpc_env *env, int argc, char **argv)
-{
-	char *type, *value;
-
-	if (argc < 2)
 		usage(EXIT_FAILURE);
 
-	type = argv[0];
-	value = argv[1];
+	vsname = argv[0];
 
-	xmlrpc_client_call(env, uri, "vxdb.vx.uname.set",
-		SIGNATURE("{s:s,s:s,s:s}"),
-		"name", name,
-		"type", type,
-		"value", value);
+	xmlrpc_client_call(env, uri, "vg.vx.add",
+		SIGNATURE("{s:s,s:s}"),
+		"groupname", name,
+		"vsname",  vsname);
+}
+
+void cmd_vserverremove(xmlrpc_env *env, int argc, char **argv)
+{
+	char *vsname;
+
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	vsname = argv[0];
+
+	xmlrpc_client_call(env, uri, "vg.vx.remove",
+		SIGNATURE("{s:s,s:s}"),
+		"groupname", name,
+		"vsname",  vsname);
 }
