@@ -673,11 +673,6 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"vdir", &vdir);
 	method_return_if_fault(env);
 
-	/* validate name */
-	if (!validate_name(name))
-		method_return_faultf(env, MEINVAL,
-			"invalid name value: %s", name);
-
 	/* get template dir */
 	if (str_isempty(template) || !str_isgraph(template))
 		method_return_faultf(env, MEINVAL,
@@ -707,8 +702,10 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				method_return_fault(env, MERUNNING);
 		}
 
+		/* we don't return MEPERM here, since an attacker could
+		 * find out existing vservers by trail&error */
 		else
-			method_return_fault(env, MEPERM);
+			method_return_fault(env, MENOVPS);
 	}
 
 	/* only admins can build new ones */
