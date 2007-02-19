@@ -39,7 +39,7 @@ void cmd_vserverlist(xmlrpc_env *env, int argc, char **argv)
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
 
-		xmlrpc_decompose_value(env, result, "s", &vsname)
+		xmlrpc_decompose_value(env, result, "s", &vsname);
 		return_if_fault(env);
 
 		xmlrpc_DECREF(result);
