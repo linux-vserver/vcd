@@ -28,7 +28,8 @@ sbin_PROGRAMS = vgc
 vgc_SOURCES = cmd.c \
               group.c \
               main.c \
-              vserver.c
+              vserver.c \
+              wrapper.c
 
 vgc_LDADD = $(LUCID_LIBS) \
             $(CONFUSE_LIBS) \

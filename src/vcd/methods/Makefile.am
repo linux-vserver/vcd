@@ -36,7 +36,9 @@ M_VG = vg/vg_add.c \
        vg/vg_remove.c \
        vg/vg_vx_add.c \
        vg/vg_vx_list.c \
-       vg/vg_vx_remove.c
+       vg/vg_vx_remove.c \
+       vg/vg_vx_start.c \
+       vg/vg_vx_stop.c
 
 M_VX = vx/vx_create.c \
        vx/vx_exec.c \

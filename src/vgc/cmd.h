@@ -49,5 +49,7 @@ void cmd_groupremove  (xmlrpc_env *env, int argc, char **argv);
 void cmd_vserveradd   (xmlrpc_env *env, int argc, char **argv);
 void cmd_vserverlist  (xmlrpc_env *env, int argc, char **argv);
 void cmd_vserverremove(xmlrpc_env *env, int argc, char **argv);
+void cmd_wrapperstart (xmlrpc_env *env, int argc, char **argv);
+void cmd_wrapperstop  (xmlrpc_env *env, int argc, char **argv);
 
 #endif

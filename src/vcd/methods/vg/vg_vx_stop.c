@@ -1,0 +1,110 @@
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+#include "auth.h"
+#include "methods.h"
+#include "validate.h"
+#include "vxdb.h"
+
+#include <lucid/list.h>
+#include <lucid/log.h>
+#include <lucid/mem.h>
+#include <lucid/str.h>
+
+/* vg.vx.stop(string groupname) */
+xmlrpc_value *m_vg_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
+{
+	LOG_TRACEME
+
+	typedef struct {
+		list_t list;
+		xid_t  xid;
+		const char *name;
+	} xn_list_t;
+
+	xmlrpc_value *params;
+	char *group;
+	int rc, gid;
+	xn_list_t _xns, *xns = &_xns, *st;
+	list_t *pos;
+
+	params = method_init(env, p, c, VCD_CAP_INIT, 0);
+	method_return_if_fault(env);
+
+	xmlrpc_decompose_value(env, params,
+			"{s:s,*}",
+			"groupname", &group);
+	method_return_if_fault(env);
+
+	if (!validate_groupname(group))
+		method_return_faultf(env, MEINVAL,
+				"invalid groupname value: %s", group);
+
+	if (str_equal(group, "all")) {
+		rc = vxdb_prepare(&dbr,
+			"SELECT xid,name FROM xid_name_map ORDER BY xid ASC");
+
+		if (rc != VXDB_OK)
+			method_return_vxdb_fault(env);
+	}
+
+	else {
+		if (!(gid = vxdb_getgid(group)))
+			method_return_fault(env, MENOVG);
+
+		rc = vxdb_prepare(&dbr,
+			"SELECT xid_name_map.xid,xid_name_map.name "
+			"FROM xid_name_map "
+			"INNER JOIN xid_gid_map "
+			"ON xid_name_map.xid = xid_gid_map.xid "
+			"WHERE xid_gid_map.gid = %d "
+			"ORDER BY xid_name_map.xid ASC",
+			gid);
+
+		if (rc != VXDB_OK)
+			method_return_vxdb_fault(env);
+	}
+
+	INIT_LIST_HEAD(&(xns->list));
+
+	vxdb_foreach_step(rc, dbr) {
+		xn_list_t *new = mem_alloc(sizeof(xn_list_t));
+		new->xid  = vxdb_column_int(dbr, 0);
+		new->name = str_dup(vxdb_column_text(dbr, 1));
+		list_add(&(new->list), &(xns->list));
+	}
+
+	if (rc != VXDB_DONE)
+		method_return_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
+
+	list_for_each(pos, &(xns->list)) {
+		st = list_entry(pos, xn_list_t, list);
+
+		if (vx_info(st->xid, NULL) == 0) {
+			/* vserver is running, let's stop it */
+			params = xmlrpc_build_value(env,
+					"{s:s}",
+					"name", st->name);
+
+			m_vx_stop(env, params, METHOD_INTERNAL);
+		}
+	}
+
+	return xmlrpc_nil_new(env);
+}

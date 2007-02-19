@@ -99,6 +99,8 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vg.vx.add",    m_vg_vx_add);
 	MREGISTER("vg.vx.list",   m_vg_vx_list);
 	MREGISTER("vg.vx.remove", m_vg_vx_remove);
+	MREGISTER("vg.vx.start",  m_vg_vx_start);
+	MREGISTER("vg.vx.stop",   m_vg_vx_stop);
 
 	/* vx */
 	MREGISTER("vx.create",    m_vx_create);

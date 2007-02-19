@@ -17,19 +17,16 @@
 
 #include "cmd.h"
 
-char *uri  = NULL;
-char *user = "admin";
-char *pass = NULL;
-char *name = NULL;
+void cmd_wrapperstart(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_client_call(env, uri, "vg.vx.start",
+		SIGNATURE("{s:s}"),
+		"groupname", name);
+}
 
-cmd_t CMDS[] = {
-	{ "add",       cmd_groupadd },
-	{ "list",      cmd_grouplist },
-	{ "remove",    cmd_groupremove },
-	{ "vx.add",    cmd_vserveradd },
-	{ "vx.list",   cmd_vserverlist },
-	{ "vx.remove", cmd_vserverremove },
-	{ "vx.start",  cmd_wrapperstart },
-	{ "vx.stop",   cmd_wrapperstop },
-	{ NULL,        NULL }
-};
+void cmd_wrapperstop(xmlrpc_env *env, int argc, char **argv)
+{
+	xmlrpc_client_call(env, uri, "vg.vx.stop",
+		SIGNATURE("{s:s}"),
+		"groupname", name);
+}
