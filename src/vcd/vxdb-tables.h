@@ -104,13 +104,13 @@ VXDB_COLUMNS_NEW(vx_uname, "xid", "type", "value")
 VXDB_UNIQUE_NEW(vx_uname, "xid,type")
 
 VXDB_COLUMNS_NEW(xid_gid_map, "xid", "gid")
-VXDB_UNIQUE_NONE(xid_gid_map)
+VXDB_UNIQUE_NEW(xid_gid_map, "xid,gid")
 
 VXDB_COLUMNS_NEW(xid_name_map, "xid", "name")
 VXDB_UNIQUE_NEW(xid_name_map, "xid", "name")
 
 VXDB_COLUMNS_NEW(xid_uid_map, "xid", "uid")
-VXDB_UNIQUE_NONE(xid_uid_map)
+VXDB_UNIQUE_NEW(xid_uid_map, "xid,uid")
 
 /* generate database definition */
 VXDB_DATABASE_START
