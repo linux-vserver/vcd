@@ -43,27 +43,22 @@ xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"invalid groupname value: %s", group);
 
-	if (str_equal(group, "default"))
+	if (str_equal(group, "all"))
 		method_return_faultf(env, MEINVAL,
-				"reserved groupname: %s", group);
+				"cannot remove from reserved group '%s'", group);
 
-	gid = vxdb_getgid(group);
+	if (!(gid = vxdb_getgid(group)))
+		method_return_fault(env, MENOVG);
 
-	if (gid != 0) {
-		rc = vxdb_exec(
-			"BEGIN TRANSACTION;"
-			"DELETE FROM xid_gid_map WHERE gid = %d;"
-			"DELETE FROM groups WHERE gid = %d;"
-			"COMMIT TRANSACTION;",
-	        gid, gid);
+	rc = vxdb_exec(
+		"BEGIN EXCLUSIVE TRANSACTION;"
+		"DELETE FROM xid_gid_map WHERE gid = %d;"
+		"DELETE FROM groups WHERE gid = %d;"
+		"COMMIT TRANSACTION;",
+		gid, gid);
 
-		if (rc != VXDB_OK)
-			method_return_vxdb_fault(env);
-	}
-
-	else
-		method_return_faultf(env, MEINVAL,
-				"group doesn't exist: %s", group);
+	if (rc != VXDB_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

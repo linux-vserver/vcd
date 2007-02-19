@@ -28,7 +28,7 @@ xmlrpc_value *m_vg_vx_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *group, *vserver;
+	char *group, *name;
 	int rc, gid, xid;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
@@ -37,37 +37,33 @@ xmlrpc_value *m_vg_vx_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
 			"groupname", &group,
-			"vsname", &vserver);
+			"name", &name);
 	method_return_if_fault(env);
 
 	if (!validate_groupname(group))
 		method_return_faultf(env, MEINVAL,
 				"invalid groupname value: %s", group);
 
-	if (!validate_name(vserver))
+	if (!validate_name(name))
 		method_return_faultf(env, MEINVAL,
-				"invalid vsname value: %s", vserver);
+				"invalid name value: %s", name);
 
-	if (str_equal(group, "default"))
+	if (str_equal(group, "all"))
 		return xmlrpc_nil_new(env);
 
-	gid = vxdb_getgid(group);
+	if (!(xid = vxdb_getxid(name)))
+		method_return_fault(env, MENOVPS);
 
-	xid = vxdb_getxid(vserver);
+	if (!(gid = vxdb_getgid(group)))
+		method_return_fault(env, MENOVG);
 
-	if (gid != 0 && xid != 0) {
-		rc = vxdb_exec(
-				"INSERT INTO xid_gid_map (xid, gid) "
-				"VALUES (%d, %d)",
-				xid, gid);
+	rc = vxdb_exec(
+			"INSERT INTO xid_gid_map (xid, gid) "
+			"VALUES (%d, %d)",
+			xid, gid);
 
-		if (rc != VXDB_OK)
-			method_return_vxdb_fault(env);
-	}
-
-	else
-		method_return_faultf(env, MEINVAL,
-				"group or vserver don't exist: %s / %s", group, vserver);
+	if (rc != VXDB_OK)
+		method_return_vxdb_fault(env);
 
 	return xmlrpc_nil_new(env);
 }

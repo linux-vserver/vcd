@@ -43,9 +43,8 @@ xmlrpc_value *m_vg_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"invalid groupname value: %s", group);
 
-	if (str_equal(group, "default"))
-		method_return_faultf(env, MEINVAL,
-				"reserved groupname: %s", group);
+	if (str_equal(group, "all"))
+		return xmlrpc_nil_new(env);
 
 	rc = vxdb_prepare(&dbr,
 		"SELECT gid FROM groups ORDER BY gid DESC LIMIT 1");

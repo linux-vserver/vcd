@@ -20,25 +20,16 @@
 #include "validate.h"
 #include "vxdb.h"
 
-#include <lucid/list.h>
 #include <lucid/log.h>
-#include <lucid/mem.h>
 #include <lucid/str.h>
 
 xmlrpc_value *m_vg_vx_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	typedef struct {
-		list_t list;
-		xid_t   xid;
-	} xid_list_t;
-
-	xmlrpc_value *params, *response = NULL;
-	char *group, *vsname;
+	xmlrpc_value *params, *response;
+	char *group;
 	int rc, gid;
-	xid_list_t _xids, *xids = &_xids, *st;
-	list_t *pos;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -52,56 +43,29 @@ xmlrpc_value *m_vg_vx_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"invalid groupname value: %s", group);
 
-	if (str_equal(group, "default")) {
-		rc = vxdb_prepare(&dbr,
-				"SELECT xid FROM xid_name_map ORDER BY xid DESC");
+	if (str_equal(group, "all"))
+		method_return_faultf(env, MEINVAL,
+				"cannot list group '%s', use vxdb.list instead", group);
 
-		if (rc != VXDB_OK)
-			method_return_vxdb_fault(env);
-	}
+	if (!(gid = vxdb_getgid(group)))
+		method_return_fault(env, MENOVG);
 
-	else {
-		gid = vxdb_getgid(group);
+	rc = vxdb_prepare(&dbr,
+			"SELECT xid_name_map.name FROM xid_name_map "
+			"INNER JOIN xid_gid_map "
+			"ON xid_name_map.xid = xid_gid_map.xid "
+			"WHERE xid_gid_map.gid = %d "
+			"ORDER BY xid ASC",
+			gid);
 
-		if (gid != 0) {
-			rc = vxdb_prepare(&dbr,
-					"SELECT xid FROM xid_gid_map WHERE gid = %d ORDER BY xid DESC",
-					gid);
-
-			if (rc != VXDB_OK)
-				method_return_vxdb_fault(env);
-		}
-
-		else
-			method_return_faultf(env, MEINVAL,
-					"group doesn't exist: %s", group);
-	}
-
-	INIT_LIST_HEAD(&(xids->list));
-
-	vxdb_foreach_step(rc, dbr) {
-		xid_list_t *new = mem_alloc(sizeof(xid_list_t));
-		new->xid = vxdb_column_int(dbr, 0);
-		list_add(&(new->list), &(xids->list));
-	}
-
-	 if (rc != VXDB_DONE)
+	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
-
-	vxdb_finalize(dbr);
 
 	response = xmlrpc_array_new(env);
 
-	list_for_each(pos, &(xids->list)) {
-		st = list_entry(pos, xid_list_t, list);
-
-		vsname = vxdb_getname(st->xid);
-
+	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i}",
-				"vsname", vsname,
-				"xid",    st->xid));
-	}
+				"s", vxdb_column_text(dbr, 0)));
 
 	return response;
 }
