@@ -25,7 +25,7 @@ void cmd_vserverlist(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
 	char *vsname;
-	int len, i, xid;
+	int len, i;
 
 	response = xmlrpc_client_call(env, uri, "vg.vx.list",
 		SIGNATURE("{s:s}"),
@@ -39,15 +39,12 @@ void cmd_vserverlist(xmlrpc_env *env, int argc, char **argv)
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
 
-		xmlrpc_decompose_value(env, result,
-			"{s:s,s:i,*}",
-			"vsname", &vsname,
-			"xid", &xid);
+		xmlrpc_decompose_value(env, result, "s", &vsname)
 		return_if_fault(env);
 
 		xmlrpc_DECREF(result);
 
-		printf("%s (xid=%d)\n", vsname, xid);
+		printf("%s\n", vsname);
 	}
 
 	xmlrpc_DECREF(response);
@@ -65,7 +62,7 @@ void cmd_vserveradd(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_client_call(env, uri, "vg.vx.add",
 		SIGNATURE("{s:s,s:s}"),
 		"groupname", name,
-		"vsname",  vsname);
+		"name",  vsname);
 }
 
 void cmd_vserverremove(xmlrpc_env *env, int argc, char **argv)
@@ -80,5 +77,5 @@ void cmd_vserverremove(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_client_call(env, uri, "vg.vx.remove",
 		SIGNATURE("{s:s,s:s}"),
 		"groupname", name,
-		"vsname",  vsname);
+		"name",  vsname);
 }
