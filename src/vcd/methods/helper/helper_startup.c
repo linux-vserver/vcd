@@ -82,8 +82,6 @@ xmlrpc_value *context_caps_and_flags(xmlrpc_env *env)
 	vxdb_finalize(dbr);
 	method_return_if_fault(env);
 
-	bcaps.flags = ~(bcaps.flags);
-
 	log_debug("bcaps(%d): %#.16llx, %#.16llx", xid, bcaps.flags, bcaps.mask);
 
 	if (vx_bcaps_set(xid, &bcaps) == -1)

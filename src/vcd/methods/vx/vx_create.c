@@ -41,15 +41,14 @@
 #include <lucid/str.h>
 #include <lucid/stralloc.h>
 
-#define DEFAULT_BCAPS "{ LINUX_IMMUTABLE, NET_BROADCAST, NET_ADMIN, NET_RAW, " \
-                      "IPC_LOCK, IPC_OWNER, SYS_MODULE, SYS_RAWIO, " \
-                      "SYS_PACCT, SYS_ADMIN, SYS_NICE, SYS_RESOURCE, " \
-                      "SYS_TIME, MKNOD, AUDIT_CONTROL }"
+#define DEFAULT_BCAPS "{ CHOWN, DAC_OVERRIDE, DAC_READ_SEARCH, FOWNER, \
+	FSETID, KILL, SETGID, SETUID, NET_BIND_SERVICE, SYS_CHROOT, \
+	SYS_PTRACE, SYS_BOOT, SYS_TTY_CONFIG, LEASE }"
 
 #define DEFAULT_CCAPS "{ SET_UTSNAME, RAW_ICMP }"
 
-#define DEFAULT_FLAGS "{ VIRT_MEM, VIRT_UPTIME, VIRT_CPU, " \
-                      "VIRT_LOAD, HIDE_NETIF }"
+#define DEFAULT_FLAGS "{ VIRT_MEM, VIRT_UPTIME, VIRT_CPU, VIRT_LOAD, \
+	HIDE_NETIF }"
 
 static cfg_opt_t MOUNT_OPTS[] = {
 	CFG_STR("src", NULL, CFGF_NONE),
