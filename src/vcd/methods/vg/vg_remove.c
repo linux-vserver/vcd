@@ -45,7 +45,7 @@ xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (str_equal(group, "all"))
 		method_return_faultf(env, MEINVAL,
-				"cannot remove from reserved group '%s'", group);
+				"cannot remove reserved group '%s'", group);
 
 	if (!(gid = vxdb_getgid(group)))
 		method_return_fault(env, MENOVG);

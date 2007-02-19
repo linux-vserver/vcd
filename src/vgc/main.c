@@ -189,10 +189,12 @@ int main(int argc, char **argv)
 init:
 	xmlrpc_env_init(&env);
 
-	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, argv[0], PACKAGE_VERSION, NULL, 0);
+	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, argv[0],
+			PACKAGE_VERSION, NULL, 0);
 
 	if (env.fault_occurred)
-		log_error_and_die("failed to start xmlrpc client: %s", env.fault_string);
+		log_error_and_die("failed to start xmlrpc client: %s",
+				env.fault_string);
 
 	asprintf(&uri, "http://%s:%d/RPC2", host, port);
 
@@ -203,7 +205,8 @@ init:
 			CMDS[i].func(&env, argc - optind, argv + optind);
 
 	if (env.fault_occurred)
-		log_error_and_die("%s: %s (%d)", cmd, env.fault_string, env.fault_code);
+		log_error_and_die("%s: %s (%d)", cmd, env.fault_string,
+				env.fault_code);
 
 	xmlrpc_env_clean(&env);
 	xmlrpc_client_cleanup();

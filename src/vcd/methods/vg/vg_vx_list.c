@@ -67,5 +67,10 @@ xmlrpc_value *m_vg_vx_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"s", vxdb_column_text(dbr, 0)));
 
+	if (rc != VXDB_DONE)
+		method_set_vxdb_fault(env);
+
+	vxdb_finalize(dbr);	
+
 	return response;
 }

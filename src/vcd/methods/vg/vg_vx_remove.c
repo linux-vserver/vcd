@@ -52,11 +52,11 @@ xmlrpc_value *m_vg_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"cannot remove from reserved group '%s'", group);
 
-	if (!(gid = vxdb_getgid(group)))
-		method_return_fault(env, MENOVG);
-
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
+
+	if (!(gid = vxdb_getgid(group)))
+		method_return_fault(env, MENOVG);
 
 	rc = vxdb_exec(
 		"DELETE FROM xid_gid_map WHERE xid = %d AND gid = %d",

@@ -703,7 +703,7 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		}
 
 		/* we don't return MEPERM here, since an attacker could
-		 * find out existing vservers by trail&error */
+		 * find out existing vservers by trial&error */
 		else
 			method_return_fault(env, MENOVPS);
 	}
