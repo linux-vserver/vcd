@@ -38,7 +38,6 @@ static int   port = 13386;
 char *uri  = NULL;
 char *user = "admin";
 char *pass = NULL;
-char *name = NULL;
 
 static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("host", "localhost", CFGF_NONE),

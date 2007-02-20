@@ -33,7 +33,6 @@ extern cmd_t CMDS[];
 extern char *uri;
 extern char *user;
 extern char *pass;
-extern char *name;
 
 void do_vlogin(int argc, char **argv);
 
