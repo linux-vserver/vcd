@@ -66,7 +66,7 @@ xmlrpc_value *method_default(xmlrpc_env *env, const char *host,
 			"WHERE uptime = (SELECT MAX(uptime) FROM vcd)");
 
 	method_return_faultf(env, XMLRPC_NO_SUCH_METHOD_ERROR,
-			"method does not exist: %s", name);
+			"method does not exist: '%s'", name);
 }
 
 int method_registry_init(xmlrpc_env *env)

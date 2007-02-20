@@ -41,11 +41,11 @@ void do_vlogin(int argc, char **argv);
 } while(0)
 
 #define client_call(M, S, ...) \
-	xmlrpc_client_call(env, uri, #M, "({s:s,s:s}" S ")", \
+	xmlrpc_client_call(env, uri, M, "({s:s,s:s}" S ")", \
 			"username", user, "password", pass, __VA_ARGS__)
 
 #define client_call0(M) \
-	xmlrpc_client_call(env, uri, #M, "({s:s,s:s}s)", \
+	xmlrpc_client_call(env, uri, M, "({s:s,s:s}s)", \
 			"username", user, "password", pass, "")
 
 #define COMMON_USAGE \
