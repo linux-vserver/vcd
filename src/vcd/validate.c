@@ -115,7 +115,7 @@ int validate_rlimits(uint64_t soft, uint64_t max)
 int validate_cpuid(int cpuid)
 {
 	LOG_TRACEME
-	return (cpuid >= 0 && cpuid < sysconf(_SC_NPROCESSORS_ONLN));
+	return (cpuid >= -1 && cpuid < sysconf(_SC_NPROCESSORS_ONLN));
 }
 
 int validate_token_bucket(int fillrate, int interval, int fillrate2,
