@@ -329,6 +329,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 
 	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
+			sched.mask |= VXSM_FORCE;
 			sched.mask |= VXSM_FILL_RATE|VXSM_INTERVAL;
 			sched.mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX;
 
@@ -348,13 +349,15 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 			sched.interval[1]  = vxdb_column_int32(dbr, 4);
 			sched.tokens_min   = vxdb_column_int32(dbr, 5);
 			sched.tokens_max   = vxdb_column_int32(dbr, 6);
+			sched.prio_bias    = 0;
 
 			if (sched.fill_rate[1] > 0 && sched.interval[1] > 0)
 				sched.mask |= VXSM_IDLE_TIME|VXSM_FILL_RATE2|VXSM_INTERVAL2;
 
 			log_debug("sched(%d, %d, %#.16llx): "
-					"%llu, %llu, %llu, %llu, %llu, %llu",
-					xid, cpuid, sched.mask,
+					"%" PRIu32 ",%" PRIu32 ",%" PRIu32
+					",%" PRIu32 ",%" PRIu32 ",%" PRIu32,
+					xid, sched.cpu_id, sched.mask,
 					sched.fill_rate[0], sched.interval[0],
 					sched.fill_rate[1], sched.interval[1],
 					sched.tokens_min, sched.tokens_max);
