@@ -28,7 +28,7 @@ xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name, *group;
+	char *group, *name;
 	int gid, rc;
 	xid_t xid;
 
@@ -61,18 +61,17 @@ xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_fault(env, MENOVPS);
 
 		rc = vxdb_exec(
-				"INSERT INTO xid_gid_map (xid, gid) "
-				"VALUES (%d, %d)",
+				"DELETE FROM xid_gid_map WHERE xid = %d AND gid = %d",
 				xid, gid);
 	}
 
 	else {
 		rc = vxdb_exec(
-			"BEGIN EXCLUSIVE TRANSACTION;"
-			"DELETE FROM xid_gid_map WHERE gid = %d;"
-			"DELETE FROM groups WHERE gid = %d;"
-			"COMMIT TRANSACTION;",
-			gid, gid);
+				"BEGIN EXCLUSIVE TRANSACTION;"
+				"DELETE FROM xid_gid_map WHERE gid = %d;"
+				"DELETE FROM groups WHERE gid = %d;"
+				"COMMIT TRANSACTION;",
+				gid, gid);
 	}
 
 	if (rc != VXDB_OK)

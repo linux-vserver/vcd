@@ -49,6 +49,10 @@ xmlrpc_value *m_vg_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_faultf(env, MEINVAL,
 					"invalid group value: %s", group);
 
+		if (str_equal(group, "all"))
+			method_return_faultf(env, MEINVAL,
+					"cannot list group '%s', use vxdb.list instead", group);
+
 		if (!(gid = vxdb_getgid(group)))
 			method_return_fault(env, MENOVG);
 

@@ -22,7 +22,6 @@
 
 #include <lucid/list.h>
 #include <lucid/log.h>
-#include <lucid/mem.h>
 #include <lucid/str.h>
 
 /* vg.vx.start(string groupname) */
@@ -62,11 +61,11 @@ xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			method_return_fault(env, MENOVG);
 
 		rc = vxdb_prepare(&dbr,
-			"SELECT xid_name_map.xid,xid_name_map.name FROM xid_name_map "
-			"INNER JOIN xid_gid_map "
-			"ON xid_name_map.xid = xid_gid_map.xid "
-			"WHERE xid_gid_map.gid = %d",
-			gid);
+				"SELECT xid_name_map.xid,xid_name_map.name FROM xid_name_map "
+				"INNER JOIN xid_gid_map "
+				"ON xid_name_map.xid = xid_gid_map.xid "
+				"WHERE xid_gid_map.gid = %d",
+				gid);
 	}
 
 	if (rc != VXDB_OK)
@@ -89,6 +88,7 @@ xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_finalize(dbr);
 
 	list_for_each_entry(pos, &(xns->list), list) {
+		/* vserver is stopped, let's start it */
 		if (vx_info(pos->xid, NULL) == -1) {
 			if (errno == ESRCH) {
 				params = xmlrpc_build_value(env, "{s:s}", "name", pos->name);

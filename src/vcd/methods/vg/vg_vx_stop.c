@@ -22,7 +22,6 @@
 
 #include <lucid/list.h>
 #include <lucid/log.h>
-#include <lucid/mem.h>
 #include <lucid/str.h>
 
 /* vg.vx.stop(string groupname) */
@@ -55,18 +54,18 @@ xmlrpc_value *m_vg_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (str_equal(group, "all"))
 		rc = vxdb_prepare(&dbr,
-			"SELECT xid,name FROM xid_name_map");
+				"SELECT xid,name FROM xid_name_map");
 
 	else {
 		if (!(gid = vxdb_getgid(group)))
 			method_return_fault(env, MENOVG);
 
 		rc = vxdb_prepare(&dbr,
-			"SELECT xid_name_map.xid,xid_name_map.name FROM xid_name_map "
-			"INNER JOIN xid_gid_map "
-			"ON xid_name_map.xid = xid_gid_map.xid "
-			"WHERE xid_gid_map.gid = %d",
-			gid);
+				"SELECT xid_name_map.xid,xid_name_map.name FROM xid_name_map "
+				"INNER JOIN xid_gid_map "
+				"ON xid_name_map.xid = xid_gid_map.xid "
+				"WHERE xid_gid_map.gid = %d",
+				gid);
 	}
 
 	if (rc != VXDB_OK)
@@ -89,6 +88,7 @@ xmlrpc_value *m_vg_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_finalize(dbr);
 
 	list_for_each_entry(pos, &(xns->list), list) {
+		/* vserver is running, let's stop it */
 		if (vx_info(pos->xid, NULL) == 0) {
 			params = xmlrpc_build_value(env, "{s:s}", "name", pos->name);
 			m_vx_stop(env, params, METHOD_INTERNAL);

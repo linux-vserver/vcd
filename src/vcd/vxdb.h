@@ -59,6 +59,6 @@ uint64_t vxdb_column_uint64(vxdb_result *dbr, int col);
 xid_t vxdb_getxid(const char *name);
 char *vxdb_getname(xid_t xid);
 char *vxdb_getvdir(const char *name);
-int   vxdb_getgid(const char *groupname);
+int   vxdb_getgid(const char *group);
 
 #endif
