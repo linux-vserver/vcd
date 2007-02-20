@@ -31,12 +31,16 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 	int i, len;
 
 	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	if (argc < 2)
 		cpuid = -2;
 	else
-		sscanf(argv[0], "%d", &cpuid);
+		sscanf(argv[1], "%d", &cpuid);
 
-	response = client_call("vxdb.vx.sched.get",
-		"{s:s,s:i}",
+	response = client_call("vxdb.vx.sched.get", "{s:s,s:i}",
 		"name", name,
 		"cpuid", cpuid);
 	return_if_fault(env);
@@ -73,12 +77,16 @@ void cmd_vx_sched_remove(xmlrpc_env *env, int argc, char **argv)
 	int cpuid;
 
 	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	if (argc < 2)
 		cpuid = -2;
 	else
-		sscanf(argv[0], "%d", &cpuid);
+		sscanf(argv[1], "%d", &cpuid);
 
-	client_call("vxdb.vx.sched.remove",
-		"{s:s,s:i}",
+	client_call("vxdb.vx.sched.remove", "{s:s,s:i}",
 		"name", name,
 		"cpuid", cpuid);
 }
@@ -88,8 +96,10 @@ void cmd_vx_sched_set(xmlrpc_env *env, int argc, char **argv)
 	int cpuid, interval, fillrate, interval2, fillrate2;
 	int tokensmin, tokensmax, i = 0;
 
-	if (argc < 7)
+	if (argc < 8)
 		usage(EXIT_FAILURE);
+
+	char *name = argv[i++];
 
 	sscanf(argv[i++], "%d", &cpuid);
 	sscanf(argv[i++], "%d", &interval);

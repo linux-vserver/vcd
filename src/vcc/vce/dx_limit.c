@@ -30,6 +30,11 @@ void cmd_dx_limit_get(xmlrpc_env *env, int argc, char **argv)
 	int reserved;
 	xmlrpc_value *response;
 
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
 	response = client_call("vxdb.dx.limit.get",
 		"{s:s}",
 		"name", name);
@@ -50,6 +55,11 @@ void cmd_dx_limit_get(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_dx_limit_remove(xmlrpc_env *env, int argc, char **argv)
 {
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
 	client_call("vxdb.dx.limit.remove",
 		"{s:s}",
 		"name", name);
@@ -57,15 +67,16 @@ void cmd_dx_limit_remove(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_dx_limit_set(xmlrpc_env *env, int argc, char **argv)
 {
-	char *space, *inodes;
+	char *name, *space, *inodes;
 	int reserved;
 
-	if (argc < 3)
+	if (argc < 4)
 		usage(EXIT_FAILURE);
 
-	space = argv[0];
-	inodes = argv[1];
-	sscanf(argv[2], "%d", &reserved);
+	name = argv[0];
+	space = argv[1];
+	inodes = argv[2];
+	sscanf(argv[3], "%d", &reserved);
 
 	client_call("vxdb.dx.limit.set",
 		"{s:s,s:s,s:s,s:i}",

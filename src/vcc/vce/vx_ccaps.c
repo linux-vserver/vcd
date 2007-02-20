@@ -24,15 +24,15 @@
 
 void cmd_vx_ccaps_add(xmlrpc_env *env, int argc, char **argv)
 {
-	char *ccap;
+	char *name, *ccap;
 
-	if (argc < 1)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
 
-	ccap = argv[0];
+	name = argv[0];
+	ccap = argv[1];
 
-	client_call("vxdb.vx.ccaps.add",
-		"{s:s,s:s}",
+	client_call("vxdb.vx.ccaps.add", "{s:s,s:s}",
 		"name", name,
 		"ccap", ccap);
 }
@@ -43,9 +43,12 @@ void cmd_vx_ccaps_get(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_value *response, *result;
 	int len, i;
 
-	response = client_call("vxdb.vx.ccaps.get",
-		"{s:s}",
-		"name", name);
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	response = client_call("vxdb.vx.ccaps.get", "{s:s}", "name", name);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -71,12 +74,16 @@ void cmd_vx_ccaps_remove(xmlrpc_env *env, int argc, char **argv)
 	char *ccap;
 
 	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	if (argc < 2)
 		ccap = "";
 	else
-		ccap = argv[0];
+		ccap = argv[1];
 
-	client_call("vxdb.vx.ccaps.remove",
-		"{s:s,s:s}",
+	client_call("vxdb.vx.ccaps.remove", "{s:s,s:s}",
 		"name", name,
 		"ccap", ccap);
 }

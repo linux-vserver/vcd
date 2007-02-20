@@ -24,15 +24,15 @@
 
 void cmd_vx_bcaps_add(xmlrpc_env *env, int argc, char **argv)
 {
-	char *bcap;
+	char *name, *bcap;
 
-	if (argc < 1)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
 
-	bcap = argv[0];
+	name = argv[0];
+	bcap = argv[1];
 
-	client_call("vxdb.vx.bcaps.add",
-		"{s:s,s:s}",
+	client_call("vxdb.vx.bcaps.add", "{s:s,s:s}",
 		"name", name,
 		"bcap", bcap);
 }
@@ -43,9 +43,12 @@ void cmd_vx_bcaps_get(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_value *response, *result;
 	int len, i;
 
-	response = client_call("vxdb.vx.bcaps.get",
-		"{s:s}",
-		"name", name);
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	response = client_call("vxdb.vx.bcaps.get", "{s:s}", "name", name);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -71,12 +74,16 @@ void cmd_vx_bcaps_remove(xmlrpc_env *env, int argc, char **argv)
 	char *bcap;
 
 	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	if (argc < 2)
 		bcap = "";
 	else
-		bcap = argv[0];
+		bcap = argv[1];
 
-	client_call("vxdb.vx.bcaps.remove",
-		"{s:s,s:s}",
+	client_call("vxdb.vx.bcaps.remove", "{s:s,s:s}",
 		"name", name,
 		"bcap", bcap);
 }

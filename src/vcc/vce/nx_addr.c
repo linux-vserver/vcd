@@ -29,12 +29,16 @@ void cmd_nx_addr_get(xmlrpc_env *env, int argc, char **argv)
 	int len, i;
 
 	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	if (argc < 2)
 		addr = "";
 	else
-		addr = argv[0];
+		addr = argv[1];
 
-	response = client_call("vxdb.nx.addr.get",
-		"{s:s,s:s}",
+	response = client_call("vxdb.nx.addr.get", "{s:s,s:s}",
 		"name", name,
 		"addr", addr);
 	return_if_fault(env);
@@ -65,12 +69,16 @@ void cmd_nx_addr_remove(xmlrpc_env *env, int argc, char **argv)
 	char *addr;
 
 	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
+	if (argc < 2)
 		addr = "";
 	else
-		addr = argv[0];
+		addr = argv[1];
 
-	client_call("vxdb.nx.addr.remove",
-		"{s:s,s:s}",
+	client_call("vxdb.nx.addr.remove", "{s:s,s:s}",
 		"name", name,
 		"addr", addr);
 }
@@ -78,15 +86,15 @@ void cmd_nx_addr_remove(xmlrpc_env *env, int argc, char **argv)
 void cmd_nx_addr_set(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *addr, *netmask = "255.255.255.255";
+	char *name, *addr, *netmask = "255.255.255.255";
 
-	if (argc < 1)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
 
-	addr = argv[0];
+	name = argv[0];
+	addr = argv[1];
 
-	response = client_call("vxdb.nx.addr.get",
-		"{s:s,s:s}",
+	response = client_call("vxdb.nx.addr.get", "{s:s,s:s}",
 		"name", name,
 		"addr", addr);
 	return_if_fault(env);
@@ -107,8 +115,7 @@ void cmd_nx_addr_set(xmlrpc_env *env, int argc, char **argv)
 	if (argc > 1)
 		netmask = argv[1];
 
-	client_call("vxdb.nx.addr.set",
-		"{s:s,s:s,s:s}",
+	client_call("vxdb.nx.addr.set", "{s:s,s:s,s:s}",
 		"name", name,
 		"addr", addr,
 		"netmask", netmask);
