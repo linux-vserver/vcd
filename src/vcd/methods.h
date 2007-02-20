@@ -139,9 +139,6 @@ MPROTO(m_vcd_user_set);
 MPROTO(m_vg_add);
 MPROTO(m_vg_list);
 MPROTO(m_vg_remove);
-MPROTO(m_vg_vx_add);
-MPROTO(m_vg_vx_list);
-MPROTO(m_vg_vx_remove);
 MPROTO(m_vg_vx_start);
 MPROTO(m_vg_vx_stop);
 

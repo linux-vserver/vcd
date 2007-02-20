@@ -558,17 +558,17 @@ char *vxdb_getvdir(const char *name)
 	return vdir;
 }
 
-int vxdb_getgid(const char *groupname)
+int vxdb_getgid(const char *group)
 {
 	LOG_TRACEME
 
 	int rc, gid;
 
-	if (!validate_groupname(groupname))
+	if (!validate_group(group))
 		return 0;
 
 	rc = vxdb_prepare(&dbr,
-		"SELECT gid FROM groups WHERE name = '%s'", groupname);
+		"SELECT gid FROM groups WHERE name = '%s'", group);
 
 	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
 		gid = vxdb_column_int(dbr, 0);

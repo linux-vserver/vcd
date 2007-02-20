@@ -28,20 +28,22 @@ xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *group;
+	char *name, *group;
 	int gid, rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,*}",
-			"groupname", &group);
+			"{s:s,s:s,*}",
+			"group", &group,
+			"name", &name);
 	method_return_if_fault(env);
 
-	if (!validate_groupname(group))
+	if (!validate_group(group))
 		method_return_faultf(env, MEINVAL,
-				"invalid groupname value: %s", group);
+				"invalid group value: %s", group);
 
 	if (str_equal(group, "all"))
 		method_return_faultf(env, MEINVAL,
@@ -50,12 +52,28 @@ xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(gid = vxdb_getgid(group)))
 		method_return_fault(env, MENOVG);
 
-	rc = vxdb_exec(
-		"BEGIN EXCLUSIVE TRANSACTION;"
-		"DELETE FROM xid_gid_map WHERE gid = %d;"
-		"DELETE FROM groups WHERE gid = %d;"
-		"COMMIT TRANSACTION;",
-		gid, gid);
+	if (!str_isempty(name)) {
+		if (!validate_name(name))
+			method_return_faultf(env, MEINVAL,
+					"invalid name value: %s", name);
+
+		if (!(xid = vxdb_getxid(name)))
+			method_return_fault(env, MENOVPS);
+
+		rc = vxdb_exec(
+				"INSERT INTO xid_gid_map (xid, gid) "
+				"VALUES (%d, %d)",
+				xid, gid);
+	}
+
+	else {
+		rc = vxdb_exec(
+			"BEGIN EXCLUSIVE TRANSACTION;"
+			"DELETE FROM xid_gid_map WHERE gid = %d;"
+			"DELETE FROM groups WHERE gid = %d;"
+			"COMMIT TRANSACTION;",
+			gid, gid);
+	}
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);

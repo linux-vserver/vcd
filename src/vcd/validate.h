@@ -33,7 +33,7 @@ int validate_addr(const char *addr);
 int validate_username(const char *username);
 int validate_password(const char *password);
 
-int validate_groupname(const char *groupname);
+int validate_group(const char *group);
 
 int validate_vcd_cap(const char *bcap);
 

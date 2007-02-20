@@ -17,22 +17,49 @@
 
 #include "auth.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/str.h>
 
 xmlrpc_value *m_vg_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	xmlrpc_value *response = NULL;
-	int rc;
+	xmlrpc_value *params, *response = NULL;
+	char *group;
+	int rc, gid;
 
-	method_init(env, p, c, VCD_CAP_AUTH, 0);
+	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
-	rc = vxdb_prepare(&dbr,
-			"SELECT name,gid FROM groups ORDER BY gid ASC");
+	xmlrpc_decompose_value(env, params,
+			"{s:s,*}",
+			"group", &group);
+	method_return_if_fault(env);
+
+	if (str_isempty(group)) {
+		rc = vxdb_prepare(&dbr,
+				"SELECT name FROM groups ORDER BY name ASC");
+	}
+
+	else {
+		if (!validate_group(group))
+			method_return_faultf(env, MEINVAL,
+					"invalid group value: %s", group);
+
+		if (!(gid = vxdb_getgid(group)))
+			method_return_fault(env, MENOVG);
+
+		rc = vxdb_prepare(&dbr,
+				"SELECT xid_name_map.name FROM xid_name_map "
+				"INNER JOIN xid_gid_map "
+				"ON xid_name_map.xid = xid_gid_map.xid "
+				"WHERE xid_gid_map.gid = %d "
+				"ORDER BY xid_name_map.name ASC",
+				gid);
+	}
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);
@@ -40,10 +67,8 @@ xmlrpc_value *m_vg_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	response = xmlrpc_array_new(env);
 
 	vxdb_foreach_step(rc, dbr)
-		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i}",
-				"groupname", vxdb_column_text(dbr, 0),
-				"gid",       vxdb_column_int(dbr, 1)));
+		xmlrpc_array_append_item(env, response,
+				xmlrpc_build_value(env, "s", vxdb_column_text(dbr, 0)));
 
 	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);

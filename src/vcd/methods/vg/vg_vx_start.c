@@ -39,52 +39,47 @@ xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *group;
 	int rc, gid;
-	xn_list_t _xns, *xns = &_xns, *st;
-	list_t *pos;
+	xn_list_t _xns, *xns = &_xns, *pos;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
 			"{s:s,*}",
-			"groupname", &group);
+			"group", &group);
 	method_return_if_fault(env);
 
-	if (!validate_groupname(group))
+	if (!validate_group(group))
 		method_return_faultf(env, MEINVAL,
-				"invalid groupname value: %s", group);
+				"invalid group value: %s", group);
 
-	if (str_equal(group, "all")) {
+	if (str_equal(group, "all"))
 		rc = vxdb_prepare(&dbr,
-			"SELECT xid,name FROM xid_name_map ORDER BY xid ASC");
-
-		if (rc != VXDB_OK)
-			method_return_vxdb_fault(env);
-	}
+				"SELECT xid,name FROM xid_name_map");
 
 	else {
 		if (!(gid = vxdb_getgid(group)))
 			method_return_fault(env, MENOVG);
 
 		rc = vxdb_prepare(&dbr,
-			"SELECT xid_name_map.xid,xid_name_map.name "
-			"FROM xid_name_map "
+			"SELECT xid_name_map.xid,xid_name_map.name FROM xid_name_map "
 			"INNER JOIN xid_gid_map "
 			"ON xid_name_map.xid = xid_gid_map.xid "
-			"WHERE xid_gid_map.gid = %d "
-			"ORDER BY xid_name_map.xid ASC",
+			"WHERE xid_gid_map.gid = %d",
 			gid);
-
-		if (rc != VXDB_OK)
-			method_return_vxdb_fault(env);
 	}
+
+	if (rc != VXDB_OK)
+		method_return_vxdb_fault(env);
 
 	INIT_LIST_HEAD(&(xns->list));
 
 	vxdb_foreach_step(rc, dbr) {
-		xn_list_t *new = mem_alloc(sizeof(xn_list_t));
+		LIST_NODE_ALLOC(xn_list_t, new);
+
 		new->xid  = vxdb_column_int(dbr, 0);
 		new->name = str_dup(vxdb_column_text(dbr, 1));
+
 		list_add(&(new->list), &(xns->list));
 	}
 
@@ -93,16 +88,10 @@ xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	vxdb_finalize(dbr);
 
-	list_for_each(pos, &(xns->list)) {
-		st = list_entry(pos, xn_list_t, list);
-
-		if (vx_info(st->xid, NULL) == -1) {
+	list_for_each_entry(pos, &(xns->list), list) {
+		if (vx_info(pos->xid, NULL) == -1) {
 			if (errno == ESRCH) {
-				/* vserver is stopped, let's start it */
-				params = xmlrpc_build_value(env,
-						"{s:s}",
-						"name", st->name);
-
+				params = xmlrpc_build_value(env, "{s:s}", "name", pos->name);
 				m_vx_start(env, params, METHOD_INTERNAL);
 			}
 

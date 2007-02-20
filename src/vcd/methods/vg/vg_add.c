@@ -28,41 +28,62 @@ xmlrpc_value *m_vg_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *group;
+	char *group, *name;
 	int gid, rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,*}",
-			"groupname", &group);
+			"{s:s,s:s,*}",
+			"group", &group,
+			"name", &name);
 	method_return_if_fault(env);
 
-	if (!validate_groupname(group))
+	if (!validate_group(group))
 		method_return_faultf(env, MEINVAL,
-				"invalid groupname value: %s", group);
+				"invalid group value: %s", group);
 
 	if (str_equal(group, "all"))
 		return xmlrpc_nil_new(env);
 
-	rc = vxdb_prepare(&dbr,
-		"SELECT gid FROM groups ORDER BY gid DESC LIMIT 1");
+	if (!(gid = vxdb_getgid(group))) {
+		rc = vxdb_prepare(&dbr,
+				"SELECT gid FROM groups ORDER BY gid DESC LIMIT 1");
 
-	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
-		gid = vxdb_column_int(dbr, 0) + 1;
-	else
-		gid = 1;
+		if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
+			gid = vxdb_column_int(dbr, 0) + 1;
+		else
+			gid = 1;
 
-	vxdb_finalize(dbr);
+		vxdb_finalize(dbr);
 
-	rc = vxdb_exec(
-			"INSERT INTO groups (gid, name) "
-			"VALUES (%d, '%s')",
-			gid, group);
+		rc = vxdb_exec(
+				"INSERT INTO groups (gid, name) "
+				"VALUES (%d, '%s')",
+				gid, group);
 
-	if (rc != VXDB_OK)
-		method_return_vxdb_fault(env);
+		if (rc != VXDB_OK)
+			method_return_vxdb_fault(env);
+	}
+
+	if (!str_isempty(name)) {
+		if (!validate_name(name))
+			method_return_faultf(env, MEINVAL,
+					"invalid name value: %s", name);
+
+		if (!(xid = vxdb_getxid(name)))
+			method_return_fault(env, MENOVPS);
+
+		rc = vxdb_exec(
+				"INSERT INTO xid_gid_map (xid, gid) "
+				"VALUES (%d, %d)",
+				xid, gid);
+
+		if (rc != VXDB_OK)
+			method_return_vxdb_fault(env);
+	}
 
 	return xmlrpc_nil_new(env);
 }
