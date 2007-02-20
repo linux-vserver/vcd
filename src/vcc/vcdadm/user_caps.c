@@ -24,28 +24,32 @@
 
 void cmd_user_caps_add(xmlrpc_env *env, int argc, char **argv)
 {
-	char *cap;
+	char *username, *cap;
 
-	if (argc < 1)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
 
-	cap = argv[0];
+	username = argv[0];
+	cap = argv[1];
 
-	client_call("vcd.user.caps.add",
-		"{s:s,s:s}",
-		"username", name,
-		"cap",      cap);
+	client_call("vcd.user.caps.add", "{s:s,s:s}",
+			"username", username,
+			"cap", cap);
 }
 
 void cmd_user_caps_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *cap;
+	char *username, *cap;
 	xmlrpc_value *response, *result;
 	int len, i;
 
-	response = client_call("vcd.user.caps.get",
-		"{s:s}",
-		"username", name);
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	username = argv[0];
+
+	response = client_call("vcd.user.caps.get", "{s:s}",
+			"username", username);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -68,15 +72,19 @@ void cmd_user_caps_get(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_user_caps_remove(xmlrpc_env *env, int argc, char **argv)
 {
-	char *cap;
+	char *username, *cap;
 
 	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	username = argv[0];
+
+	if (argc < 2)
 		cap = "";
 	else
 		cap = argv[0];
 
-	client_call("vcd.user.caps.remove",
-		"{s:s,s:s}",
-		"username", name,
-		"cap",  cap);
+	client_call("vcd.user.caps.remove", "{s:s,s:s}",
+		"username", username,
+		"cap", cap);
 }
