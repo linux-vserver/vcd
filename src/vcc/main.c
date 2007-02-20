@@ -125,7 +125,7 @@ int main(int argc, char **argv)
 	read_config(SYSCONFDIR "/vcc.conf", 1);
 
 	/* parse command line */
-	while ((c = getopt(argc, argv, "c:h:p:u:")) != -1) {
+	while ((c = getopt(argc, argv, "+c:h:p:u:")) != -1) {
 		switch (c) {
 		case 'c':
 			read_config(optarg, 0);
