@@ -22,13 +22,29 @@
 #include "vcc.h"
 #include "cmd.h"
 
-void cmd_grouplist(xmlrpc_env *env, int argc, char **argv)
+void cmd_add(xmlrpc_env *env, int argc, char **argv)
+{
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *group = argv[0];
+	char *name = "";
+
+	if (argc > 1)
+		name = argv[1];
+
+	client_call("vg.add", "{s:s,s:s}",
+			"group", group,
+			"name", name);
+}
+
+void cmd_list(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *groupname;
-	int len, i, gid;
+	char *group;
+	int len, i;
 
-	response = client_call0("vg.list");
+	response = client_call("vg.list", "{s:s}", "group", group);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -38,30 +54,29 @@ void cmd_grouplist(xmlrpc_env *env, int argc, char **argv)
 		xmlrpc_array_read_item(env, response, i, &result);
 		return_if_fault(env);
 
-		xmlrpc_decompose_value(env, result,
-			"{s:s,s:i,*}",
-			"groupname", &groupname,
-			"gid", &gid);
+		xmlrpc_decompose_value(env, result, "s", &group);
 		return_if_fault(env);
 
 		xmlrpc_DECREF(result);
 
-		printf("%s (gid=%d)\n", groupname, gid);
+		printf("%s\n", group);
 	}
 
 	xmlrpc_DECREF(response);
 }
 
-void cmd_groupadd(xmlrpc_env *env, int argc, char **argv)
+void cmd_remove(xmlrpc_env *env, int argc, char **argv)
 {
-	client_call("vg.add",
-		"{s:s}",
-		"groupname", name);
-}
+	if (argc < 1)
+		usage(EXIT_FAILURE);
 
-void cmd_groupremove(xmlrpc_env *env, int argc, char **argv)
-{
-	client_call("vg.remove",
-		"{s:s}",
-		"groupname", name);
+	char *group = argv[0];
+	char *name = "";
+
+	if (argc > 1)
+		name = argv[1];
+
+	client_call("vg.remove", "{s:s,s:s}",
+			"group", group,
+			"name", name);
 }

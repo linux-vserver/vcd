@@ -22,15 +22,12 @@
 #include "cmd.h"
 
 cmd_t CMDS[] = {
-	{ "add",       cmd_groupadd },
-	{ "list",      cmd_grouplist },
-	{ "remove",    cmd_groupremove },
-	{ "vx.add",    cmd_vserveradd },
-	{ "vx.list",   cmd_vserverlist },
-	{ "vx.remove", cmd_vserverremove },
-	{ "vx.start",  cmd_wrapperstart },
-	{ "vx.stop",   cmd_wrapperstop },
-	{ NULL,        NULL }
+	{ "add",      cmd_add },
+	{ "list",     cmd_list },
+	{ "remove",   cmd_remove },
+	{ "vx.start", cmd_vx_start },
+	{ "vx.stop",  cmd_vx_stop },
+	{ NULL,       NULL }
 };
 
 void usage(int rc)
@@ -38,13 +35,9 @@ void usage(int rc)
 	printf("Usage: vgc <opts>* <command>\n"
 			"\n"
 			"Available commands:\n"
-			"   list\n"
-			"   add       <group>\n"
-			"   remove    <group>\n"
-			"\n"
-			"   vx.list   <group>\n"
-			"   vx.add    <group> <vserver>\n"
-			"   vx.remove <group> <vserver>\n"
+			"   add       <group> [<name>]\n"
+			"   list      [<group>]\n"
+			"   remove    <group> [<name>]\n"
 			"\n"
 			"   vx.start  <group>\n"
 			"   vx.stop   <group>\n"
