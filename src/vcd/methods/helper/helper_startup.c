@@ -329,7 +329,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 
 	if (rc == VXDB_OK) {
 		vxdb_foreach_step(rc, dbr) {
-			sched.mask |= VXSM_FORCE;
+			sched.mask  = VXSM_FORCE;
 			sched.mask |= VXSM_FILL_RATE|VXSM_INTERVAL;
 			sched.mask |= VXSM_TOKENS_MIN|VXSM_TOKENS_MAX;
 
@@ -357,7 +357,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 			log_debug("sched(%d, %d, %#.16llx): "
 					"%" PRIu32 ",%" PRIu32 ",%" PRIu32
 					",%" PRIu32 ",%" PRIu32 ",%" PRIu32,
-					xid, sched.cpu_id, sched.mask,
+					xid, cpuid, sched.mask,
 					sched.fill_rate[0], sched.interval[0],
 					sched.fill_rate[1], sched.interval[1],
 					sched.tokens_min, sched.tokens_max);
