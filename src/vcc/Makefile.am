@@ -17,37 +17,41 @@
 
 if ENABLE_CLIENT
 
+SUBDIRS = vcc \
+          vcdadm \
+          vce \
+          vgc
+
 EXTRA_DIST = vcc.conf
 
-AM_CPPFLAGS = $(PATH_CPPFLAGS)
+noinst_HEADERS = vcc.h
 
-noinst_HEADERS = cmd.h
+sbin_PROGRAMS = vcc/vcc \
+                vcdadm/vcdadm \
+                vce/vce \
+                vgc/vgc
 
-sbin_PROGRAMS = vcc
+COMMON_LIBS = $(LUCID_LIBS) \
+              $(CONFUSE_LIBS) \
+              $(UTIL_LIBS) \
+              $(VSERVER_LIBS) \
+              $(XMLRPC_C_CLIENT_LIBS)
 
-vcc_SOURCES = cmd.c \
-              create.c \
-              exec.c \
-              kill.c \
-              list.c \
-              load.c \
-              login.c \
-              main.c \
-              reboot.c \
-              remove.c \
-              rename.c \
-              restart.c \
-              start.c \
-              status.c \
-              stop.c \
-              templates.c \
-              vlogin.c
+vcc_vcc_SOURCES  = main.c vlogin.c
+vcc_vcc_LDADD    = vcc/libcmd.a $(COMMON_LIBS)
+vcc_vcc_CPPFLAGS = -I$(srcdir)/vcc $(PATH_CPPFLAGS)
 
-vcc_LDADD = $(LUCID_LIBS) \
-            $(CONFUSE_LIBS) \
-            $(UTIL_LIBS) \
-            $(VSERVER_LIBS) \
-            $(XMLRPC_C_CLIENT_LIBS)
+vcdadm_vcdadm_SOURCES  = main.c
+vcdadm_vcdadm_LDADD    = vcdadm/libcmd.a $(COMMON_LIBS)
+vcdadm_vcdadm_CPPFLAGS = -I$(srcdir)/vcdadm $(PATH_CPPFLAGS)
+
+vce_vce_SOURCES  = main.c
+vce_vce_LDADD    = vce/libcmd.a $(COMMON_LIBS)
+vce_vce_CPPFLAGS = -I$(srcdir)/vce $(PATH_CPPFLAGS)
+
+vgc_vgc_SOURCES  = main.c vlogin.c
+vgc_vgc_LDADD    = vgc/libcmd.a $(COMMON_LIBS)
+vgc_vgc_CPPFLAGS = -I$(srcdir)/vgc $(PATH_CPPFLAGS)
 
 install-data-local:
 	$(install_sh) -m 600 $(srcdir)/vcc.conf $(DESTDIR)$(sysconfdir)/vcc.conf

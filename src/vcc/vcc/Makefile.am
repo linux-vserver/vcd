@@ -15,7 +15,24 @@
 ## Free Software Foundation, Inc.,
 ## 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-SUBDIRS = vcc \
-          vcd \
-          vshelper \
-          vxpasswd
+INCLUDES = -I$(top_srcdir)/src/vcc
+
+AM_CPPFLAGS = $(PATH_CPPFLAGS)
+
+noinst_LIBRARIES = libcmd.a
+
+libcmd_a_SOURCES = cmd.c \
+                   create.c \
+                   exec.c \
+                   kill.c \
+                   list.c \
+                   load.c \
+                   login.c \
+                   reboot.c \
+                   remove.c \
+                   rename.c \
+                   restart.c \
+                   start.c \
+                   status.c \
+                   stop.c \
+                   templates.c

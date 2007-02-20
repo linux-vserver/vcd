@@ -29,10 +29,16 @@
 #include <lucid/scanf.h>
 #include <lucid/str.h>
 
+#include "vcc.h"
 #include "cmd.h"
 
 static char *host = "localhost";
 static int   port = 13386;
+
+char *uri  = NULL;
+char *user = "admin";
+char *pass = NULL;
+char *name = NULL;
 
 static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("host", "localhost", CFGF_NONE),
@@ -41,34 +47,6 @@ static cfg_opt_t CFG_OPTS[] = {
 	CFG_STR("pass", NULL,        CFGF_NONE),
 	CFG_END()
 };
-
-void usage(int rc)
-{
-	printf("Usage: vcc <opts>* <command>\n"
-	       "\n"
-	       "Available commands:\n"
-	       "   create    <name> <template> [<force> [<copy> [<vdir>]]]\n"
-	       "   exec      <name> <command> <args>*\n"
-	       "   kill      <name> <pid> <sig>\n"
-	       "   list      [<username>]\n"
-	       "   load      <name>\n"
-	       "   login     <name>\n"
-	       "   reboot    <name>\n"
-	       "   remove    <name>\n"
-	       "   rename    <name> <newname>\n"
-	       "   start     <name>\n"
-	       "   status    <name>\n"
-	       "   stop      <name>\n"
-	       "   templates [<name>]\n"
-	       "\n"
-	       "Available options:\n"
-	       "   -c <path>     configuration file (default: %s/vcc.conf)\n"
-	       "   -h <host>     server hostname (default: localhost)\n"
-	       "   -p <port>     server port     (default: 13386)\n"
-	       "   -u <user>     server username (default: admin)\n",
-	       SYSCONFDIR);
-	exit(rc);
-}
 
 static
 void read_config(char *file, int ignore_noent)
@@ -136,6 +114,7 @@ int main(int argc, char **argv)
 	int i;
 	xmlrpc_env env;
 
+	/* start logging */
 	log_options_t log_options = {
 		.log_ident = argv[0],
 		.log_dest  = LOGD_STDERR,
@@ -172,26 +151,17 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (str_isempty(user))
-		log_error_and_die("no user for login given");
-
+	/* no command given */
 	if (argc < optind + 1)
 		usage(EXIT_FAILURE);
 
-	cmd  = argv[optind++];
+	cmd = argv[optind++];
 
-	if (argc < optind + 1)
-		name = "";
-	else
-		name = argv[optind++];
+	/* no username in config or command line given */
+	if (str_isempty(user))
+		log_error_and_die("no user for login given");
 
-	for (i = 0; CMDS[i].name; i++)
-		if (str_equal(cmd, CMDS[i].name))
-			goto init;
-
-	log_error_and_die("invalid command: %s", cmd);
-
-init:
+	/* init XML-RPC client */
 	xmlrpc_env_init(&env);
 
 	xmlrpc_client_init2(&env, XMLRPC_CLIENT_NO_FLAGS, argv[0],
@@ -203,11 +173,19 @@ init:
 
 	asprintf(&uri, "http://%s:%d/RPC2", host, port);
 
-	read_password();
-
+	/* try to find command */
 	for (i = 0; CMDS[i].name; i++)
 		if (str_equal(cmd, CMDS[i].name))
-			CMDS[i].func(&env, argc - optind, argv + optind);
+			goto found;
+
+	log_error_and_die("invalid command: %s", cmd);
+
+found:
+	/* read password if none in config */
+	read_password();
+
+	/* call command helper */
+	CMDS[i].func(&env, argc - optind, argv + optind);
 
 	if (env.fault_occurred)
 		log_error_and_die("%s: %s (%d)", cmd, env.fault_string,

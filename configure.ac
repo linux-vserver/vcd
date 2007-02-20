@@ -30,6 +30,7 @@ AM_MAINTAINER_MODE
 
 # Checks for programs.
 AC_PROG_CC
+AM_PROG_CC_C_O
 AC_PROG_LIBTOOL
 AC_PROG_INSTALL
 AC_PROG_LN_S
@@ -186,12 +187,13 @@ AC_CONFIG_COMMANDS_PRE([SUMMARY="$PACKAGE_STRING configured successfully:
 # Output
 AC_CONFIG_FILES([Makefile
                  doc/Makefile
+                 src/vcc/vcc/Makefile
+                 src/vcc/vcdadm/Makefile
+                 src/vcc/vce/Makefile
+                 src/vcc/vgc/Makefile
                  src/vcc/Makefile
                  src/vcd/methods/Makefile
                  src/vcd/Makefile
-                 src/vcdadm/Makefile
-                 src/vce/Makefile
-                 src/vgc/Makefile
                  src/vshelper/Makefile
                  src/vxpasswd/Makefile
                  src/Makefile
