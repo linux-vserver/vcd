@@ -27,14 +27,16 @@
 void cmd_exec(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	char *command, *output;
+	char *name, *command, *output;
 
-	if (argc < 1)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
+
+	name = argv[0];
 
 	strtok_t st;
 
-	if (!strtok_init_argv(&st, argv, argc, 0))
+	if (!strtok_init_argv(&st, argv + 1, argc - 1, 0))
 		log_perror_and_die("strtok_init_argv");
 
 	if (strtok_tostr(&st, &command, " ") == -1)

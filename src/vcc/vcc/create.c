@@ -24,22 +24,23 @@
 
 void cmd_create(xmlrpc_env *env, int argc, char **argv)
 {
-	char *template, *vdir = "";
+	char *name, *template, *vdir = "";
 	int force = 0, copy = 0;
 
-	if (argc < 1)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
 
-	template = argv[0];
-
-	if (argc > 1)
-		sscanf(argv[1], "%d", &force);
+	name     = argv[0];
+	template = argv[1];
 
 	if (argc > 2)
-		sscanf(argv[2], "%d", &copy);
+		sscanf(argv[2], "%d", &force);
 
 	if (argc > 3)
-		vdir = argv[3];
+		sscanf(argv[3], "%d", &copy);
+
+	if (argc > 4)
+		vdir = argv[4];
 
 	client_call("vx.create", "{s:s,s:s,s:b,s:b,s:s}",
 			"name", name,

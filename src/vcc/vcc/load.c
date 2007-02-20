@@ -15,6 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <stdlib.h>
 #include <lucid/printf.h>
 
 #include "vcc.h"
@@ -23,7 +24,12 @@
 void cmd_load(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	char *loadavg1m, *loadavg5m, *loadavg15m;
+	char *name, *loadavg1m, *loadavg5m, *loadavg15m;
+
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	name = argv[0];
 
 	result = client_call("vx.load", "{s:s}", "name", name);
 	return_if_fault(env);

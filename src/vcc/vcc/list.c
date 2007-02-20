@@ -23,10 +23,13 @@
 void cmd_list(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *username;
+	char *username = "";
 	int len, i;
 
-	response = client_call("vxdb.list", "{s:s}", "username", name);
+	if (argc > 0)
+		username = argv[0];
+
+	response = client_call("vxdb.list", "{s:s}", "username", username);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);

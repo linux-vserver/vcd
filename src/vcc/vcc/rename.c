@@ -22,12 +22,13 @@
 
 void cmd_rename(xmlrpc_env *env, int argc, char **argv)
 {
-	char *newname;
+	char *name, *newname;
 
-	if (argc < 1)
+	if (argc < 2)
 		usage(EXIT_FAILURE);
 
-	newname = argv[0];
+	name    = argv[0];
+	newname = argv[1];
 
 	client_call("vx.rename", "{s:s,s:s}", "name", name, "newname", newname);
 }

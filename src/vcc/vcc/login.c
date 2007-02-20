@@ -29,8 +29,13 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
 	xid_t xid;
-	char *vdir;
+	char *name, *vdir;
 	char *av[] = { "/bin/sh", NULL };
+
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	name = argv[0];
 
 	result = client_call("vxdb.xid.get", "{s:s}", "name", name);
 	return_if_fault(env);

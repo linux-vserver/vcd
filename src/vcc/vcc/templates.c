@@ -23,8 +23,11 @@
 void cmd_templates(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *tplname, *description;
+	char *name = "", *description;
 	int len, i;
+
+	if (argc > 0)
+		name = argv[0];
 
 	response = client_call("vx.templates", "{s:s}", "name", name);
 	return_if_fault(env);
@@ -37,13 +40,13 @@ void cmd_templates(xmlrpc_env *env, int argc, char **argv)
 		return_if_fault(env);
 
 		xmlrpc_decompose_value(env, result, "{s:s,s:s,*}",
-				"name", &tplname,
+				"name", &name,
 				"description", &description);
 		return_if_fault(env);
 
 		xmlrpc_DECREF(result);
 
-		printf("%s: %s\n", tplname, description);
+		printf("%s: %s\n", name, description);
 	}
 
 	xmlrpc_DECREF(response);

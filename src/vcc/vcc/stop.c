@@ -15,10 +15,17 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <stdlib.h>
+
 #include "vcc.h"
 #include "cmd.h"
 
 void cmd_stop(xmlrpc_env *env, int argc, char **argv)
 {
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
+
 	client_call("vx.stop", "{s:s}", "name", name);
 }

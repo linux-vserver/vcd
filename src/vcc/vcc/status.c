@@ -16,6 +16,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <stdlib.h>
 #include <lucid/printf.h>
 
 #include "vcc.h"
@@ -49,6 +50,11 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
 	int running, nproc, uptime;
+
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	char *name = argv[0];
 
 	result = client_call("vx.status", "{s:s}", "name", name);
 	return_if_fault(env);
