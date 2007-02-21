@@ -23,6 +23,7 @@
 #include "methods.h"
 #include "vxdb.h"
 
+#include <lucid/list.h>
 #include <lucid/log.h>
 #include <lucid/printf.h>
 #include <lucid/str.h>
@@ -37,11 +38,17 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
+	typedef struct {
+		list_t list;
+		xid_t  xid;
+	} xid_list_t;
+
 	xmlrpc_value *params;
-	char *name;
+	char *name, *depname;
 	xid_t xid;
 	pid_t pid;
-	int status;
+	int status, rc;
+	xid_list_t _xids, *xids = &_xids, *pos;
 	nx_flags_t ncf;
 	vx_flags_t vcf;
 
@@ -55,6 +62,44 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
+
+	/* resolve deps to ensure all needed vservers are started */
+	rc = vxdb_prepare(&dbr,
+			"SELECT depxid FROM deps WHERE xid = %d",
+			xid);
+
+	if (rc != VXDB_OK)
+		method_return_vxdb_fault(env);
+
+	INIT_LIST_HEAD(&(xids->list));
+
+	vxdb_foreach_step(rc, dbr) {
+		LIST_NODE_ALLOC(xid_list_t, new);
+
+		new->xid = vxdb_column_int(dbr, 0);
+
+		list_add(&(new->list), &(xids->list));
+	}
+
+	if (rc != VXDB_DONE)
+		method_return_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
+
+	list_for_each_entry(pos, &(xids->list), list) {
+		/* needed vserver is stopped, let's start it, by calling
+		   ourselves again, and we need the name for that */
+		if (vx_info(pos->xid, NULL) == -1) {
+			if (errno == ESRCH) {
+				depname = vxdb_getname(pos->xid);
+				params = xmlrpc_build_value(env, "{s:s}", "name", depname);
+				m_vx_start(env, params, METHOD_INTERNAL);
+			}
+
+			else
+				method_return_sys_fault(env, "vx_info");
+		}
+	}
 
 	/* remove persistent in case previous helper failed */
 	ncf.flags = vcf.flags = 0;

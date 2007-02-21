@@ -48,6 +48,9 @@ struct _vxdb_table {
 	};
 
 /* generate table definition */
+VXDB_COLUMNS_NEW(deps, "xid", "depxid")
+VXDB_UNIQUE_NEW(deps, "xid,depxid")
+
 VXDB_COLUMNS_NEW(dx_limit, "xid", "space", "inodes", "reserved")
 VXDB_UNIQUE_NEW(dx_limit, "xid")
 
@@ -114,6 +117,7 @@ VXDB_UNIQUE_NEW(xid_uid_map, "xid,uid")
 
 /* generate database definition */
 VXDB_DATABASE_START
+VXDB_TABLE_NEW(deps)
 VXDB_TABLE_NEW(dx_limit)
 VXDB_TABLE_NEW(groups)
 VXDB_TABLE_NEW(init)

@@ -20,6 +20,8 @@
 
 void usage(int rc);
 
+void cmd_dep_add            (xmlrpc_env *env, int argc, char **argv);
+void cmd_dep_remove         (xmlrpc_env *env, int argc, char **argv);
 void cmd_dx_limit_get       (xmlrpc_env *env, int argc, char **argv);
 void cmd_dx_limit_remove    (xmlrpc_env *env, int argc, char **argv);
 void cmd_dx_limit_set       (xmlrpc_env *env, int argc, char **argv);

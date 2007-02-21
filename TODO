@@ -3,7 +3,6 @@ VCD
 BUGS:
 
 NEEDED FEATURES:
-- onboot settings, to start VServers on VCD startup
 - debian/ dir, RPM .spec file, init scripts, distrib make targets, pathprog probably
 
 WANTED FEATURES:

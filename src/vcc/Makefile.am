@@ -49,7 +49,7 @@ vce_vce_SOURCES  = main.c
 vce_vce_LDADD    = vce/libcmd.a $(COMMON_LIBS)
 vce_vce_CPPFLAGS = -I$(srcdir)/vce $(PATH_CPPFLAGS)
 
-vgc_vgc_SOURCES  = main.c vlogin.c
+vgc_vgc_SOURCES  = main.c
 vgc_vgc_LDADD    = vgc/libcmd.a $(COMMON_LIBS)
 vgc_vgc_CPPFLAGS = -I$(srcdir)/vgc $(PATH_CPPFLAGS)
 

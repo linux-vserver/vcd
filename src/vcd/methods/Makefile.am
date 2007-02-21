@@ -49,7 +49,9 @@ M_VX = vx/vx_create.c \
        vx/vx_status.c \
        vx/vx_stop.c
 
-M_VXDB = vxdb/vxdb_dx_limit_get.c \
+M_VXDB = vxdb/vxdb_dep_add.c \
+         vxdb/vxdb_dep_remove.c \
+         vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_dx_limit_remove.c \
          vxdb/vxdb_dx_limit_set.c \
          vxdb/vxdb_init_get.c \
