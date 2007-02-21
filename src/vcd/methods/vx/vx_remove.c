@@ -50,8 +50,6 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MECONF, "invalid vdir: %s", vdir);
 
 	rc = vxdb_exec("BEGIN EXCLUSIVE TRANSACTION;"
-			"DELETE FROM deps         WHERE xid = %d;"
-			"DELETE FROM deps      WHERE depxid = %d;"
 			"DELETE FROM dx_limit     WHERE xid = %d;"
 			"DELETE FROM init         WHERE xid = %d;"
 			"DELETE FROM mount        WHERE xid = %d;"
@@ -67,10 +65,10 @@ xmlrpc_value *m_vx_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"DELETE FROM vx_uname     WHERE xid = %d;"
 			"DELETE FROM xid_gid_map  WHERE xid = %d;"
 			"DELETE FROM xid_name_map WHERE xid = %d;"
-			"DELETE FROM xid_uid_map  WHERE xid = %d;" /* 18 */
+			"DELETE FROM xid_uid_map  WHERE xid = %d;" /* 16 */
 			"COMMIT TRANSACTION;",
-			xid, xid, xid, xid, xid, xid, xid, xid, xid,
-			xid, xid, xid, xid, xid, xid, xid, xid, xid);
+			xid, xid, xid, xid, xid, xid, xid, xid,
+			xid, xid, xid, xid, xid, xid, xid, xid);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);

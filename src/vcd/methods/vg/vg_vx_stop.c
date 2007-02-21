@@ -18,12 +18,9 @@
 
 #include "auth.h"
 #include "methods.h"
-#include "validate.h"
-#include "vxdb.h"
 
 #include <lucid/list.h>
 #include <lucid/log.h>
-#include <lucid/str.h>
 
 #include "vg_internal.h"
 
@@ -34,7 +31,6 @@ xmlrpc_value *m_vg_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *group;
-	int rc, gid;
 	vg_list_t _vxs, *vxs = &_vxs, *pos;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, 0);
@@ -45,33 +41,12 @@ xmlrpc_value *m_vg_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"group", &group);
 	method_return_if_fault(env);
 
-	if (!validate_group(group))
-		method_return_faultf(env, MEINVAL,
-				"invalid group value: %s", group);
+	/* get group list */
+	vg_list_init(env, group, vxs);
+	method_return_if_fault(env);
 
-	if (str_equal(group, "all"))
-		rc = vxdb_prepare(&dbr,
-				"SELECT xid,name FROM xid_name_map");
-
-	else {
-		if (!(gid = vxdb_getgid(group)))
-			method_return_fault(env, MENOVG);
-
-		rc = vxdb_prepare(&dbr,
-				"SELECT xid_name_map.xid,xid_name_map.name FROM xid_name_map "
-				"INNER JOIN xid_gid_map "
-				"ON xid_name_map.xid = xid_gid_map.xid "
-				"WHERE xid_gid_map.gid = %d",
-				gid);
-	}
-
-	if (rc != VXDB_OK || vg_list_from_vxdb(dbr, vxs) != VXDB_OK)
-		method_return_vxdb_fault(env);
-
-	vxdb_finalize(dbr);
-
+	/* iterate over vxs and stop running guests */
 	list_for_each_entry(pos, &(vxs->list), list) {
-		/* vserver is running, let's stop it */
 		if (vx_info(pos->xid, NULL) == 0) {
 			params = xmlrpc_build_value(env, "{s:s}", "name", pos->name);
 			m_vx_stop(env, params, METHOD_INTERNAL);

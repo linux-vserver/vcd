@@ -22,7 +22,7 @@
 #include <vserver.h>
 #include <lucid/list.h>
 
-#include "vxdb.h"
+#include "methods.h"
 
 typedef struct {
 	list_t list;
@@ -30,7 +30,7 @@ typedef struct {
 	char *name;
 } vg_list_t;
 
-int vg_list_from_vxdb(vxdb_result *dbr, vg_list_t *vxs);
+xmlrpc_value *vg_list_init(xmlrpc_env *env, const char *group, vg_list_t *vxs);
 void vg_list_free(vg_list_t *vxs);
 
 #endif

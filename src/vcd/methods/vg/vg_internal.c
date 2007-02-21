@@ -19,16 +19,43 @@
 #include <lucid/mem.h>
 #include <lucid/str.h>
 
+#include "validate.h"
+#include "vxdb.h"
+
 #include "vg_internal.h"
 
-int vg_list_from_vxdb(vxdb_result *dbr, vg_list_t *vxs)
+xmlrpc_value *vg_list_init(xmlrpc_env *env, const char *group, vg_list_t *vxs)
 {
-	int rc;
+	int rc, gid;
+	vg_list_t *new;
+
+	if (!validate_group(group))
+		method_return_faultf(env, MEINVAL,
+				"invalid group value: %s", group);
+
+	if (str_equal(group, "all"))
+		rc = vxdb_prepare(&dbr,
+				"SELECT xid,name FROM xid_name_map");
+
+	else {
+		if (!(gid = vxdb_getgid(group)))
+			method_return_fault(env, MENOVG);
+
+		rc = vxdb_prepare(&dbr,
+				"SELECT xid_name_map.xid,xid_name_map.name FROM xid_name_map "
+				"INNER JOIN xid_gid_map "
+				"ON xid_name_map.xid = xid_gid_map.xid "
+				"WHERE xid_gid_map.gid = %d",
+				gid);
+	}
+
+	if (rc != VXDB_OK)
+		method_return_vxdb_fault(env);
 
 	INIT_LIST_HEAD(&(vxs->list));
 
 	vxdb_foreach_step(rc, dbr) {
-		LIST_NODE_ALLOC(vg_list_t, new);
+		LIST_NODE_ALLOC(new);
 
 		new->xid  = vxdb_column_int(dbr, 0);
 		new->name = str_dup(vxdb_column_text(dbr, 1));
@@ -36,7 +63,12 @@ int vg_list_from_vxdb(vxdb_result *dbr, vg_list_t *vxs)
 		list_add(&(new->list), &(vxs->list));
 	}
 
-	return rc;
+	if (rc != VXDB_DONE)
+		method_set_vxdb_fault(env);
+
+	vxdb_finalize(dbr);
+
+	return NULL;
 }
 
 void vg_list_free(vg_list_t *vxs)

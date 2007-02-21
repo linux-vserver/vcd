@@ -114,8 +114,6 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vx.templates", m_vx_templates);
 
 	/* vxdb */
-	MREGISTER("vxdb.dep.add",             m_vxdb_dep_add);
-	MREGISTER("vxdb.dep.remove",          m_vxdb_dep_remove);
 	MREGISTER("vxdb.dx.limit.get",        m_vxdb_dx_limit_get);
 	MREGISTER("vxdb.dx.limit.remove",     m_vxdb_dx_limit_remove);
 	MREGISTER("vxdb.dx.limit.set",        m_vxdb_dx_limit_set);

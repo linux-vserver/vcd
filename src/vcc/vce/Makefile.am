@@ -22,7 +22,6 @@ AM_CPPFLAGS = $(PATH_CPPFLAGS)
 noinst_LIBRARIES = libcmd.a
 
 libcmd_a_SOURCES = cmd.c \
-                   dep.c \
                    dx_limit.c \
                    init.c \
                    list.c \

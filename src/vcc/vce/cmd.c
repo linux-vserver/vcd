@@ -22,8 +22,6 @@
 #include "cmd.h"
 
 cmd_t CMDS[] = {
-	{ "dep.add",             cmd_dep_add },
-	{ "dep.remove",          cmd_dep_remove },
 	{ "dx.limit.get",        cmd_dx_limit_get },
 	{ "dx.limit.remove",     cmd_dx_limit_remove },
 	{ "dx.limit.set",        cmd_dx_limit_set },
@@ -66,9 +64,6 @@ void usage(int rc)
 			"\n"
 			"Available commands:\n"
 			"   list                [<username>]\n"
-			"\n"
-			"   dep.add             <name> <depname>\n"
-			"   dep.remove          <name> <depname>\n"
 			"\n"
 			"   dx.limit.get        <name>\n"
 			"   dx.limit.remove     <name>\n"

@@ -157,8 +157,6 @@ MPROTO(m_vx_stop);
 MPROTO(m_vx_templates);
 
 /* vxdb */
-MPROTO(m_vxdb_dep_add);
-MPROTO(m_vxdb_dep_remove);
 MPROTO(m_vxdb_dx_limit_get);
 MPROTO(m_vxdb_dx_limit_remove);
 MPROTO(m_vxdb_dx_limit_set);
