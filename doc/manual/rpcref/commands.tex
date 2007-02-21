@@ -16,12 +16,12 @@
 	\texttt{#1(#2)}
 	\end{quote}
 
-	\begin{labeling}{00.00.0000}
+	\begin{labeling}{000000000}
 }{
 	\end{labeling}
 }
 
-\newcommand{\rpcparam}[2]{\item [{\texttt{#1}}] #2}
+\newcommand{\rpcparam}[2]{\labelingitem{#1}{#2}}
 
 % access restrictions
 \newenvironment{rpcaccess}[0]{
@@ -58,12 +58,12 @@
 	\texttt{\{#2\}}
 	\end{quote}
 
-	\begin{labeling}{00.00.0000}
+	\begin{labeling}{000000000}
 }{
 	\end{labeling}
 }
 
-\newcommand{\rpcreturnparam}[2]{\item [{\texttt{#1}}] #2}
+\newcommand{\rpcreturnparam}[2]{\labelingitem{#1}{#2}}
 
 % errors
 \newcommand{\rpcnoerrors}[0]{
@@ -78,9 +78,9 @@
 	Beside the generic method errors, this method may return the following
 	specific errors:
 
-	\begin{labeling}{00.00.0000}
+	\begin{labeling}{000000000}
 }{
 	\end{labeling}
 }
 
-\newcommand{\rpcerror}[2]{\item [{\texttt{#1}}] #2}
+\newcommand{\rpcerror}[2]{\labelingitem{#1}{#2}}

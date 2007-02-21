@@ -30,6 +30,10 @@
 \setlength{\cftsecnumwidth}{3em}
 \renewcommand{\cftsecaftersnum}{.}
 
+% provide shortcut for nice labels
+\newcommand{\labelingfont}[1]{\usekomafont{descriptionlabel}#1}
+\newcommand{\labelingitem}[1]{\item[\labelingfont{#1}]}
+
 \title{VServer Control Daemon\\Reference Manual}
 \author{Benedikt Böhm \texttt{<hollow@gentoo.org>}}
 
@@ -45,15 +49,19 @@
 
 \mainmatter
 \part{Introduction}
+\label{pt:intro}
 \input{intro/intro.tex}
 \input{intro/vserver.tex}
 \input{intro/vcd.tex}
 
 \part{Installation}
+\label{pt:install}
 
 \part{Configuration and Maintenance}
+\label{pt:config}
 
 \part{Command Reference}
+\label{pt:cmdref}
 \input{cmdref/vcc.tex}
 \input{cmdref/vcd.tex}
 \input{cmdref/vcdadm.tex}
@@ -61,6 +69,7 @@
 \input{cmdref/vshelper.tex}
 
 \part{XML-RPC Method Reference}
+\label{pt:rpcref}
 \input{rpcref/commands.tex}
 \input{rpcref/intro.tex}
 \input{rpcref/helper.tex}
