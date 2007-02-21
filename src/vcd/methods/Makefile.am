@@ -32,6 +32,8 @@ M_VCD = vcd/vcd_login.c \
         vcd/vcd_user_set.c
 
 M_VG = vg/vg_add.c \
+       vg/vg_internal.c \
+       vg/vg_internal.h \
        vg/vg_list.c \
        vg/vg_remove.c \
        vg/vg_vx_start.c \

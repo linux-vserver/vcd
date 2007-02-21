@@ -1,0 +1,51 @@
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
+//           2007 Benedikt Böhm <hollow@gentoo.org>
+//
+// This program is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with this program; if not, write to the
+// Free Software Foundation, Inc.,
+// 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+
+#include <lucid/mem.h>
+#include <lucid/str.h>
+
+#include "vg_internal.h"
+
+int vg_list_from_vxdb(vxdb_result *dbr, vg_list_t *vxs)
+{
+	int rc;
+
+	INIT_LIST_HEAD(&(vxs->list));
+
+	vxdb_foreach_step(rc, dbr) {
+		LIST_NODE_ALLOC(vg_list_t, new);
+
+		new->xid  = vxdb_column_int(dbr, 0);
+		new->name = str_dup(vxdb_column_text(dbr, 1));
+
+		list_add(&(new->list), &(vxs->list));
+	}
+
+	return rc;
+}
+
+void vg_list_free(vg_list_t *vxs)
+{
+	vg_list_t *p, *tmp;
+
+	list_for_each_entry_safe(p, tmp, &(vxs->list), list) {
+		list_del(&(p->list));
+		mem_free(p->name);
+		mem_free(p);
+	}
+}

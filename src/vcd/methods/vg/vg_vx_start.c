@@ -1,4 +1,5 @@
 // Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
+//           2007 Benedikt Böhm <hollow@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -24,21 +25,17 @@
 #include <lucid/log.h>
 #include <lucid/str.h>
 
+#include "vg_internal.h"
+
 /* vg.vx.start(string groupname) */
 xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	typedef struct {
-		list_t list;
-		xid_t  xid;
-		const char *name;
-	} xn_list_t;
-
 	xmlrpc_value *params;
 	char *group;
 	int rc, gid;
-	xn_list_t _xns, *xns = &_xns, *pos;
+	vg_list_t _vxs, *vxs = &_vxs, *pos;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, 0);
 	method_return_if_fault(env);
@@ -68,26 +65,12 @@ xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				gid);
 	}
 
-	if (rc != VXDB_OK)
-		method_return_vxdb_fault(env);
-
-	INIT_LIST_HEAD(&(xns->list));
-
-	vxdb_foreach_step(rc, dbr) {
-		LIST_NODE_ALLOC(xn_list_t, new);
-
-		new->xid  = vxdb_column_int(dbr, 0);
-		new->name = str_dup(vxdb_column_text(dbr, 1));
-
-		list_add(&(new->list), &(xns->list));
-	}
-
-	if (rc != VXDB_DONE)
+	if (rc != VXDB_OK || vg_list_from_vxdb(dbr, vxs) != VXDB_DONE)
 		method_return_vxdb_fault(env);
 
 	vxdb_finalize(dbr);
 
-	list_for_each_entry(pos, &(xns->list), list) {
+	list_for_each_entry(pos, &(vxs->list), list) {
 		/* vserver is stopped, let's start it */
 		if (vx_info(pos->xid, NULL) == -1) {
 			if (errno == ESRCH) {
@@ -99,6 +82,8 @@ xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				method_return_sys_fault(env, "vx_info");
 		}
 	}
+
+	vg_list_free(vxs);
 
 	return xmlrpc_nil_new(env);
 }
