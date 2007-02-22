@@ -11,15 +11,24 @@
 \setfootwidth{text}
 
 \deftripstyle{vcdmanual}[1pt][.3pt]
-	{\pagemark}{}{\MakeUppercase{\headmark}}
+	{\pagemark}{}{\MakeUppercase{\headmark}~}
 	{}{\small\textsf{This work is licensed under a Creative
 	Commons Attribution-NonCommercial-ShareAlike 2.5 License}}{}
 
-% page style
-\pagestyle{vcdmanual}
-\renewcommand*{\partpagestyle}{empty}
-\renewcommand*{\chapterpagestyle}{vcdmanual}
-\renewcommand*{\chapterformat}{\thechapter\autodot\enskip}
+% code listings
+\usepackage{listings}
+
+\lstnewenvironment{lstverbatim}{
+\lstset{
+	frame=L,
+	xleftmargin=4em,
+	framesep=1em,
+	basicstyle=\small\ttfamily,
+	tabsize=2,
+	columns=fixed,
+	emphstyle=\bold,
+	inputencoding=utf8}
+}{}
 
 % graphics support
 \usepackage{graphicx}
@@ -55,11 +64,16 @@ Luca Longinotti \texttt{<chtekk@gentoo.org>}}
 \maketitle
 
 \frontmatter
+\pagestyle{plain}
 \setcounter{tocdepth}{1}
 \tableofcontents
 \input{preface.tex}
 
 \mainmatter
+\renewcommand*{\partpagestyle}{empty}
+\renewcommand*{\chapterpagestyle}{vcdmanual}
+\pagestyle{vcdmanual}
+
 \part{Introduction}
 \label{pt:intro}
 \input{intro/intro.tex}

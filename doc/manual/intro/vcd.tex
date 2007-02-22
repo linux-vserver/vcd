@@ -340,7 +340,8 @@ are passed without even consulting the owner lists in the database.
 The \emph{XML-RPC Clients} provided in the VServer Control Daemon module
 provide facilities to connect and execute methods on remote servers. Several
 clients exist for different purpose, in most cases they are aligned with the
-method namespaces mentioned above.
+method namespaces mentioned above. Available commands are discussed in detail
+in part~\ref{pt:cmdref} on page~\pageref{pt:cmdref}.
 
 It is important to know that the connection between server and client is not
 persistent, i.e. you send one request, get one answer, and the connection will
@@ -351,7 +352,79 @@ method specific return value.
 
 Refer to part~\ref{pt:rpcref} on page~\pageref{pt:rpcref} for a detailed
 description of the XML-RPC protocol and the request and response format used
-for defined methods asw well as error codes and their meaning.
+for defined methods as well as error codes and their meaning.
+
+
+\subsection{Kernel Helper}
+
+For some purposes, it makes sense to have a user-space tool to act on behalf
+of the kernel, when a process inside a context requests something usually
+available on a real server, but naturally not available inside a context.
+
+The best example for this is the \verb,reboot, system call, when invoked from
+inside a virtual server, the kernel helper on the host system will be called
+to perform the shutdown (and probably startup) procedure for this particular
+virtual server and not for the physical machine.
+
+Previously, the kernel helpers sole purpose was to handle reboot requests. The
+helper implemented for VCD, however, uses the full aspect of the helper
+interface now. This includes creation and disposal of virtual servers and
+keeping track of reboot requests. Figures~\ref{fig:vshelper-startup}
+and~\ref{fig:vshelper-shutdown} illustrate the rather complex assembly of the
+startup and shutdown procedure, respectively.
+
+\begin{figure}[hbt]
+	\center
+	\includegraphics[scale=0.6]{intro/vshelper-startup}
+	\caption{Interaction between vshelper and vcd on startup}
+	\label{fig:vshelper-startup}
+\end{figure}
+
+During startup of virtual servers, i.e. a client has called the \verb,vx.start,
+method, the daemon issues a system call to create the necessary network and
+process context. The kernel then calls the kernel helper using the
+\verb,startup, action, which in turn calls the \verb,helper.startup, method.
+
+The daemon then queries the database for initial configuration, like
+capabilities, network addresses or scheduler values, issues the approriate
+system calls to set these configuration values on the network and process
+context and returns the absolute path to the init binary relative to the
+virtual servers root filesystem to the helper.
+
+Having successfully retreived the path to the init binary the kernel helper is
+now able to fork a new process, migrate it to the network and process context
+created before, and execute the init binary. The parent process then blocks
+until at least one process appeared inside the context. However, this is the
+case as soon as the child process has issued the system call for migration,
+therefore the helper is not able to check if the init command actually
+succeeded.
+
+\begin{figure}[hbt]
+	\center
+	\includegraphics[scale=0.6]{intro/vshelper-shutdown}
+	\caption{Interaction between vshelper and vcd on shutdown}
+	\label{fig:vshelper-shutdown}
+\end{figure}
+
+Disposal and potential restart is even more complicated by the fact that the
+helper is called twice during shutdown. Once a client has called the
+\verb,vx.stop, method or the root user inside the virtual server has called the
+\verb,halt, command, the virtual servers init system shuts down all running
+services and calls \verb,sys_reboot, afterwards, with a special magic to
+distinct halt and reboot.
+
+On a reboot request the kernel then calls the helper using the \verb,reboot,
+action, which in turn calls the \verb,helper.reboot, method to record the
+reboot request in the database as it is neede later. As soon as the helper
+returns the kernel kills the init process -- and possibly other remaining
+processes -- and calls the helper a second time using the \verb,shutdown,
+action.
+
+The shutdown helper in turn waits for the network and process context to
+disappear and calls the \verb,helper.shutdown, method afterwards. As long as no
+reboot request was recorded the daemon does nothing and returns immediately.
+Otherwise, it will call itself using the \verb,vx.start, method to initiate the
+startup sequence again.
 
 
 % FIXME: more info needed here
@@ -361,6 +434,9 @@ The \emph{Template Management} consists of various scripts and XMLRPC methods
 used to build and create new virtual private servers. The \emph{Template Build}
 process assembles a complete root filesystem usable in virtual private servers,
 and stores its content in a single tarball, the \emph{Template Cache.}
+
+
+\section{Command Line Wrappers}
 
 
 % FIXME: more info needed here

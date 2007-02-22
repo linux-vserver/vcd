@@ -21,7 +21,7 @@ is called a format specifier, and in particular a simple format specifier.
 
 The XML-RPC server uses only three native XML-RPC datatypes:
 
-\begin{labeling}{\labelingfont{string}}
+\begin{labeling}{\labelingfont{string~}}
 \labelingitem{int} signed 32-bit integer (-2,147,483,648 to +2,147,483,647)
 \labelingitem{bool} boolean value (true/false)
 \labelingitem{string} character string of arbitrary length
@@ -33,7 +33,7 @@ leading digit characters to 64-bit integer representation.
 
 This chapter uses the following convention to denote these integer datatypes:
 
-\begin{labeling}{\labelingfont{uint64}}
+\begin{labeling}{\labelingfont{uint64~}}
 \labelingitem{int32}  signed 32-bit integer ($-2^{31} \cdots 2^{31}-1$)
 \labelingitem{uint32} unsigned 32-bit integer ($0 \cdots 2^{32}-1$)
 \labelingitem{int64}  signed 64-bit integer ($-2^{63} \cdots 2^{63}-1$)
@@ -44,7 +44,7 @@ The simple datatypes mentioned above are not sufficent to represent data in an
 efficient way. Therefore compound datatypes are defined in XML-RPC. There are
 two compound datatypes:
 
-\begin{labeling}{\labelingfont{struct}}
+\begin{labeling}{\labelingfont{struct~}}
 \labelingitem{array} An array holds a series of data elements. Individual
 	elements are accessed by their position in the array.
 \labelingitem{struct} A structure is a collection of simple datatypes under
@@ -95,7 +95,7 @@ also formatted in XML.
 
 Here is an example of an XML-RPC request:
 
-\begin{verbatim}
+\begin{lstverbatim}
 POST /RPC2 HTTP/1.0
 User-Agent: VCC/1.0
 Host: betty.userland.com
@@ -111,7 +111,7 @@ Content-length: 181
     </param>
   </params>
 </methodCall>
-\end{verbatim}
+\end{lstverbatim}
 
 
 \subsection{Header Requirements}
@@ -160,7 +160,7 @@ A value can also be of type \verb,<struct>,. A structure contains
 \verb,<member>,s and each \verb,<member>, contains a \verb,<name>, and a
 \verb,<value>,. Here is an example of a two-element \verb,<struct>,:
 
-\begin{verbatim}
+\begin{lstverbatim}
 <struct>
   <member>
     <name>lowerBound</name>
@@ -171,7 +171,7 @@ A value can also be of type \verb,<struct>,. A structure contains
     <value><int>139</int></value>
   </member>
 </struct>
-\end{verbatim}
+\end{lstverbatim}
 
 Structures can be recursive, any \verb,<value>, may contain a
 \verb,<struct>, or any other datatype, including an \verb,<array>,,
@@ -184,7 +184,7 @@ A value can also be of type \verb,<array>,. An array contains a single
 \verb,<data>, element, which can contain any number of \verb,<value>,s. Here's
 an example of a four-element array:
 
-\begin{verbatim}
+\begin{lstverbatim}
 <array>
   <data>
     <value><int>12</int></value>
@@ -193,7 +193,7 @@ an example of a four-element array:
     <value><int>-31</int></value>
   </data>
 </array>
-\end{verbatim}
+\end{lstverbatim}
 
 Unlike structures array elements do not have names. In contrary to C arrays you
 can mix datatypes as the example above illustrates.
@@ -226,7 +226,7 @@ chapters for a description of all methods and their parameters.
 
 Here is an example of a valid XML-RPC request to VCD:
 
-\begin{verbatim}
+\begin{lstverbatim}
 <?xml version="1.0" encoding="UTF-8"?>
 <methodCall>
   <methodName>vx.status</methodName>
@@ -253,12 +253,12 @@ Here is an example of a valid XML-RPC request to VCD:
     </param>
   </params>
 </methodCall>
-\end{verbatim}
+\end{lstverbatim}
 
 Once the XML-RPC request has been received by the server it translates the XML
 payload to internal data representation, performs user authentication and calls
-the specified method using the struct in the second \verb,<param>, value as method
-parameters.
+the specified method using the struct in the second \verb,<param>, value as
+method parameters.
 
 
 \subsection{Authentication and Access Restrictions}
@@ -334,7 +334,7 @@ a \verb,<value>, which is a \verb,<struct>, containing two elements, one named
 A \verb,<methodResponse>, can not contain both a \verb,<fault>, and a \verb,<params>,. Here is an
 example of a response to an XML-RPC request:
 
-\begin{verbatim}
+\begin{lstverbatim}
 HTTP/1.1 200 OK
 Connection: close
 Content-Length: 158
@@ -350,11 +350,11 @@ Server: VCD/1.0
     </param>
   </params>
 </methodResponse>
-\end{verbatim}
+\end{lstverbatim}
 
 A fault might look like the following example:
 
-\begin{verbatim}
+\begin{lstverbatim}
 HTTP/1.1 200 OK
 Connection: close
 Content-Length: 426
@@ -377,7 +377,7 @@ Server: VCD/1.0
     </struct></value>
   </fault>
 </methodResponse>
-\end{verbatim}
+\end{lstverbatim}
 
 Please note that even in the case of a fault notification the HTTP status code
 is still 200 OK. Refer to the next section to learn about possible error codes
