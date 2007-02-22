@@ -1,7 +1,25 @@
-\documentclass[a4paper,10pt,oneside]{scrbook}
+\documentclass[10pt,oneside,halfparskip]{scrbook}
+\usepackage[a4paper,includeheadfoot,margin=10em]{geometry}
 
 % input encoding
 \usepackage[utf8]{inputenc}
+
+% header and footer
+\usepackage[footexclude,markuppercase]{scrpage2}
+\automark{section}
+\setheadwidth{text}
+\setfootwidth{text}
+
+\deftripstyle{vcdmanual}[1pt][.3pt]
+	{\pagemark}{}{\MakeUppercase{\headmark}}
+	{}{\small\textsf{This work is licensed under a Creative
+	Commons Attribution-NonCommercial-ShareAlike 2.5 License}}{}
+
+% page style
+\pagestyle{vcdmanual}
+\renewcommand*{\partpagestyle}{empty}
+\renewcommand*{\chapterpagestyle}{vcdmanual}
+\renewcommand*{\chapterformat}{\thechapter\autodot\enskip}
 
 % graphics support
 \usepackage{graphicx}
@@ -14,13 +32,6 @@
 
 % url and hyperref
 \usepackage[plainpages=false,colorlinks=true]{hyperref}
-
-% page style
-\pagestyle{plain}
-
-% no paragraph indention
-\setlength{\parindent}{0pt}
-\setlength{\parskip}{1ex plus 0.5ex minus 0.2ex}
 
 % bibliography
 \bibliographystyle{unsrt}
@@ -35,7 +46,8 @@
 \newcommand{\labelingitem}[1]{\item[\labelingfont{#1}]}
 
 \title{VServer Control Daemon\\Reference Manual}
-\author{Benedikt Böhm \texttt{<hollow@gentoo.org>}}
+\author{Benedikt Böhm \texttt{<hollow@gentoo.org>} \and
+Luca Longinotti \texttt{<chtekk@gentoo.org>}}
 
 \begin{document}
 

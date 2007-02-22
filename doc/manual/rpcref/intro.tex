@@ -4,96 +4,92 @@
 
 \section{XML-RPC Signatures}
 
-The XMLRPC signatures used in this part of the manual define a translation
-between the XMLRPC value and C-friendly data types that represent the same
+The XML-RPC signatures used in this part of the manual define a translation
+between the XML-RPC value and C-friendly data types that represent the same
 information. For example, it might say that a floating point number translates
 to or from a C double value, or that an array of 4 integers translates to or
 from 4 C int values.
 
-A format string usually describes the type of one XMLRPC value. But some types
+A format string usually describes the type of one XML-RPC value. But some types
 (array and structure) are compound types -- they are composed recursively of
-other XMLRPC values. So a single format string might involve multiple XMLRPC
+other XML-RPC values. So a single format string might involve multiple XML-RPC
 values.
 
 But first, lets look at the simple (not compound) format types. These are easy.
 The format string consists of one of the strings in the list below. The string
 is called a format specifier, and in particular a simple format specifier.
 
-The XMLRPC server uses only three native XMLRPC datatypes:
+The XML-RPC server uses only three native XML-RPC datatypes:
 
-\begin{labeling}{00.00.0000}
-\item [{\texttt{int}}] signed 32-bit integer (-2,147,483,648 to +2,147,483,647)
-\item [{\texttt{bool}}] boolean value (true/false)
-\item [{\texttt{string}}] character string of arbitrary length
+\begin{labeling}{\labelingfont{string}}
+\labelingitem{int} signed 32-bit integer (-2,147,483,648 to +2,147,483,647)
+\labelingitem{bool} boolean value (true/false)
+\labelingitem{string} character string of arbitrary length
 \end{labeling}
 
-Unfortunately the XMLRPC protocol does not define 64-bit integer values,
-therefore the XMLRPC server uses the native string datatype and converts all
+Unfortunately the XML-RPC protocol does not define 64-bit integer values,
+therefore the XML-RPC server uses the native string datatype and converts all
 leading digit characters to 64-bit integer representation.
 
 This chapter uses the following convention to denote these integer datatypes:
 
-\begin{labeling}{00.00.0000}
-\item [{\texttt{int32}}] signed 32-bit integer
-	(-2,147,483,648 to +2,147,483,647)
-\item [{\texttt{uint32}}] unsigned 32-bit integer
-	(0 to +4,294,967,295)
-\item [{\texttt{int64}}] signed 64-bit integer
-	(-9,223,372,036,854,775,808 to +9,223,372,036,854,775,807)
-\item [{\texttt{uint64}}] unsigned 64-bit integer
-	(0 to +18,446,744,073,709,551,615)
+\begin{labeling}{\labelingfont{uint64}}
+\labelingitem{int32}  signed 32-bit integer ($-2^{31} \cdots 2^{31}-1$)
+\labelingitem{uint32} unsigned 32-bit integer ($0 \cdots 2^{32}-1$)
+\labelingitem{int64}  signed 64-bit integer ($-2^{63} \cdots 2^{63}-1$)
+\labelingitem{uint64} unsigned 64-bit integer ($0 \cdots 2^{64}-1$)
 \end{labeling}
 
 The simple datatypes mentioned above are not sufficent to represent data in an
-efficient way. Therefore compound datatypes are defined in XMLRPC. There are two
-compound datatypes: array and struct.  The signature denotes arrays using
-normal braces, structs use curly braces.
+efficient way. Therefore compound datatypes are defined in XML-RPC. There are
+two compound datatypes:
 
-\begin{labeling}{00.00.0000}
-\item [{\texttt{array}}] An array holds a series of data elements. Individual
-	elements are accessed by their position array in the array.
-\item [{\texttt{struct}}] A structure is a collection of simple datatypes under
-	a single compund. This collection can be of different types, and each has
+\begin{labeling}{\labelingfont{struct}}
+\labelingitem{array} An array holds a series of data elements. Individual
+	elements are accessed by their position in the array.
+\labelingitem{struct} A structure is a collection of simple datatypes under
+	a single compound. This collection can be of different types, and each has
 	a name which is used to select it from the structure. A structure is a
 	convenient way of grouping several pieces of related information together.
 \end{labeling}
 
-Here are some examples of XMLRPC signatures:
+The signature denotes arrays using normal braces, structures use curly braces.
+Here are some examples of XML-RPC signatures:
 
 \begin{itemize}
-\item A single \texttt{string} datatype named \emph{path}:\\
-	\texttt{string path}
-\item An \texttt{array} of three int datatypes:\\
-	\texttt{(int, int, int)}
-\item An \texttt{array} with one \texttt{bool}, one \texttt{string} and one
-	\texttt{int} datatype:\\
-	\texttt{(bool, string, int)}
-\item A \texttt{struct} with one \texttt{string} and one \texttt{int}
+\item A single \verb,string, datatype named \emph{path}:\\
+	\verb,string path,
+\item An \verb,array, of three int datatypes:\\
+	\verb|(int int, int)|
+\item An \verb,array, with one \verb,bool,, one \verb,string, and one
+	\verb,int, datatype:\\
+	\verb|(bool, string, int)|
+\item A \verb,struct, with one \verb,string, and one \verb,int,
 	datatype:\\
-	\texttt{\{string name, int id\}}
+	\verb|{string name, int id}|
 \end{itemize}
 
 Please note that the next chapters use the following convention to declare
 methods and their parameters, although they do not involve arrays.
 
 \begin{quote}
-\texttt{vx.create(string name, string template, int rebuild)}
+\verb|vx.create(string name, string template, int rebuild)|
 \end{quote}
 
 Instead this convention matches the function declaration in the C language.
-Translated to a XMLRPC signature format string the above would become a struct:
+Translated to a XML-RPC signature format string the above would become a struct:
 
 \begin{quote}
-\texttt{\{string name, string template, int rebuild\}}
+\verb|{string name, string template, int rebuild}|
 \end{quote}
 
 Read on to the next section to learn how method requests are performed and how
-this struct is placed in the request.
+this struct of parameters is placed in the request.
 
 
 \section{Performing XML-RPC Requests}
 
-An XMLRPC method call is an HTTP-POST request. The body of the request is in
+An XML-RPC method call is an HTTP-POST request. The body of the request is in
 XML. The specified method executes on the server and the value it returns is
 also formatted in XML.
 
@@ -108,51 +104,51 @@ Content-length: 181
 
 <?xml version="1.0"?>
 <methodCall>
-<methodName>examples.getStateName</methodName>
-<params>
-<param>
-<value><i4>41</i4></value>
-</param>
-</params>
+  <methodName>examples.getStateName</methodName>
+  <params>
+    <param>
+      <value><int>41</int></value>
+    </param>
+  </params>
 </methodCall>
 \end{verbatim}
 
 
 \subsection{Header Requirements}
 
-The following requirements must be met when sending requests to the XMLRPC
+The following requirements must be met when sending requests to the XML-RPC
 server:
 
 \begin{itemize}
-\item The \texttt{/RPC2} location handler to explicitly denote XMLRPC requests
+\item The \verb,/RPC2, location handler to explicitly denote XML-RPC requests
 \item A User-Agent and Host must be specified
-\item The Content-Type is text/xml
+\item The Content-Type is \verb,text/xml,
 \item The Content-Length must be specified and must be correct
 \end{itemize}
 
 
 \subsection{Payload Format}
 
-The payload is in XML, a single \texttt{<methodCall>} structure.
+The payload is in XML, a single \verb,<methodCall>, structure.
 
-The \texttt{<methodCall>} must contain a \texttt{<methodName>} sub-item, a
+The \verb,<methodCall>, must contain a \verb,<methodName>, sub-item, a
 string, containing the name of the method to be called. The string may only
 contain identifier characters, upper and lower-case A-Z, the numeric
 characters, 0-9, underscore, dot, colon and slash.
 
-If the procedure call has parameters, the <methodCall> must contain a <params>
-sub-item. The <params> sub-item can contain any number of <param>s, each of
-which has a <value>.
+If the procedure call has parameters, the \verb,<methodCall>, must contain a
+\verb,<params>, sub-item. The \verb,<params>, sub-item can contain any
+number of \verb,<param>,s, each of which has a \verb,<value>,.
 
 
 \subsubsection{Simple Datatypes}
 
-The XMLRPC server only uses three native datatypes as mentioned above:
+The XML-RPC server only uses three native datatypes as mentioned above:
 
-\begin{labeling}{00.00.0000}
-\item [{\texttt{<int>}}] signed 32-bit integer
-\item [{\texttt{<boolean>}}] 0 (false) or 1 (true)
-\item [{\texttt{<string>}}] character string of arbitrary length
+\begin{labeling}{\labelingfont{boolean}}
+\labelingitem{int} signed 32-bit integer
+\labelingitem{boolean} 0 (false) or 1 (true)
+\labelingitem{string} character string of arbitrary length
 \end{labeling}
 
 If no type is indicated, the type is string.
@@ -160,14 +156,262 @@ If no type is indicated, the type is string.
 
 \subsubsection{Structures}
 
+A value can also be of type \verb,<struct>,. A structure contains
+\verb,<member>,s and each \verb,<member>, contains a \verb,<name>, and a
+\verb,<value>,. Here is an example of a two-element \verb,<struct>,:
+
+\begin{verbatim}
+<struct>
+  <member>
+    <name>lowerBound</name>
+    <value><int>18</int></value>
+  </member>
+  <member>
+    <name>upperBound</name>
+    <value><int>139</int></value>
+  </member>
+</struct>
+\end{verbatim}
+
+Structures can be recursive, any \verb,<value>, may contain a
+\verb,<struct>, or any other datatype, including an \verb,<array>,,
+described below.
+
+
 \subsubsection{Arrays}
+
+A value can also be of type \verb,<array>,. An array contains a single
+\verb,<data>, element, which can contain any number of \verb,<value>,s. Here's
+an example of a four-element array:
+
+\begin{verbatim}
+<array>
+  <data>
+    <value><int>12</int></value>
+    <value><string>Egypt</string></value>
+    <value><boolean>0</boolean></value>
+    <value><int>-31</int></value>
+  </data>
+</array>
+\end{verbatim}
+
+Unlike structures array elements do not have names. In contrary to C arrays you
+can mix datatypes as the example above illustrates.
+
+Arrays can be recursive, any value may contain an \verb,<array>, or any other
+type, including a \verb,<struct>,, described above.
+
 
 \subsection{Method Initialization}
 
+The XML-RPC server implemented in VCD extends the request format to allow user
+authentication. This extension is fully compatible with the standard XML-RPC
+protocol, since it is implemented using the \verb,<params>, section of the
+XML-RPC request. A client submits username and password as first
+\verb,<param>, in the \verb,<params>, section using the following struct
+signature:
+
+\begin{quote}
+\verb|{string username, string password}|
+\end{quote}
+
+\begin{labeling}{\labelingfont{username}}
+\labelingitem{username} unique username with a maximum of 64 characters
+\labelingitem{password} password for the specified user
+\end{labeling}
+
+The second \verb,<param>, in the \verb,<params>, section is a variable-length
+struct of parameters specific to the requested method. Refer to the next
+chapters for a description of all methods and their parameters.
+
+Here is an example of a valid XML-RPC request to VCD:
+
+\begin{verbatim}
+<?xml version="1.0" encoding="UTF-8"?>
+<methodCall>
+  <methodName>vx.status</methodName>
+  <params>
+    <param>
+      <value><struct>
+        <member>
+          <name>username</name>
+          <value><string>admin</string></value>
+        </member>
+        <member>
+          <name>password</name>
+          <value><string>MySecret</string></value>
+        </member>
+      </struct></value>
+    </param>
+    <param>
+      <value><struct>
+        <member>
+          <name>name</name>
+          <value><string>vx1</string></value>
+        </member>
+      </struct></value>
+    </param>
+  </params>
+</methodCall>
+\end{verbatim}
+
+Once the XML-RPC request has been received by the server it translates the XML
+payload to internal data representation, performs user authentication and calls
+the specified method using the struct in the second \verb,<param>, value as method
+parameters.
+
+
 \subsection{Authentication and Access Restrictions}
+
+As mentioned in section~\ref{sec:intro:vcd:vcd} authentication is based on the
+cryptographic hash function WHIRLPOOL. The server generates a WHIRLPOOL hash
+using the specified password in the authentication struct in the first
+\verb,<param>, value. Afterwards it looks up the specified user in the database
+and compares the stored password hash with the previously generated hash. If
+the hashes do not match the server returns an error.
+
+Additionally the XML-RPC server implements a set of capabilities to enable
+certain functionality for specific users only. If the requested method requires
+capabilities not configured for the authenticated user the server returns an
+error. The server implements the following capabilities:
+
+\begin{labeling}{\labelingfont{HELPER}}
+\labelingitem{AUTH}   User may modify the internal user database
+\labelingitem{DLIM}   User may modify disk limits
+\labelingitem{INIT}   User may start/stop virtual servers
+\labelingitem{MOUNT}  User may modify mount points
+\labelingitem{NET}    User may modify network interfaces
+\labelingitem{BCAP}   User may modify system capabilities
+\labelingitem{CCAP}   User may modify context capabilities
+\labelingitem{CFLAG}  User may modify context flags
+\labelingitem{RLIM}   User may modify resource limits
+\labelingitem{SCHED}  User may modify context schedulers
+\labelingitem{UNAME}  User may modify utsname/virtual host information
+\labelingitem{CREATE} User may create and destruct virtual servers
+\labelingitem{EXEC}   User may execute commands in virtual server
+\labelingitem{INFO}   User may retrieve internal server information
+\labelingitem{HELPER} User may call helper methods
+\end{labeling}
+
+Please refer to the next chapters to learn which method requires which
+capability.
+
+If the user has passed authentication most of the implemented methods in VCD do
+owner checks. In general all methods expecting a string name as first parameter
+do owner checks. A user can pass owner checks in two ways:
+
+\begin{itemize}
+\item He is listed as owner in the owner list of the virtual server specified in name
+\item He has the admin flag enabled in VXDB
+\end{itemize}
+
+Once the user has passed all the authentication steps mentioned above, the
+specified method executes and returns a fault notification or a method specific
+return value.
+
 
 \subsection{Response Format}
 
+An XML-RPC response is a normal HTTP response. The body of the response is in
+XML. The specified method has executed on the server and the value it now
+returns is also formatted in XML.
+
+\begin{itemize}
+\item Unless there is a low-level error, the HTTP server always returns 200 OK.
+\item The Content-Type is \verb,text/xml,.
+\item Content-Length must be present and correct.
+\end{itemize}
+
+The body of the response is a single XML structure, a \verb,<methodResponse>,,
+which can contain a single \verb,<params>, which contains a single
+\verb,<param>, which contains a single \verb,<value>,.
+
+The \verb,<methodResponse>, could also contain a \verb,<fault>, which contains
+a \verb,<value>, which is a \verb,<struct>, containing two elements, one named
+\verb,<faultCode>,, an \verb,<int>, and one named \verb,<faultString>,, a
+\verb,<string>,.
+
+A \verb,<methodResponse>, can not contain both a \verb,<fault>, and a \verb,<params>,. Here is an
+example of a response to an XML-RPC request:
+
+\begin{verbatim}
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 158
+Content-Type: text/xml
+Date: Fri, 17 Jul 1998 19:55:08 GMT
+Server: VCD/1.0
+
+<?xml version="1.0"?>
+<methodResponse>
+  <params>
+    <param>
+      <value><string>South Dakota</string></value>
+    </param>
+  </params>
+</methodResponse>
+\end{verbatim}
+
+A fault might look like the following example:
+
+\begin{verbatim}
+HTTP/1.1 200 OK
+Connection: close
+Content-Length: 426
+Content-Type: text/xml
+Date: Fri, 17 Jul 1998 19:55:02 GMT
+Server: VCD/1.0
+
+<?xml version="1.0"?>
+<methodResponse>
+  <fault>
+    <value><struct>
+      <member>
+        <name>faultCode</name>
+        <value><int>4</int></value>
+      </member>
+      <member>
+        <name>faultString</name>
+        <value><string>Too many parameters.</string></value>
+      </member>
+    </struct></value>
+  </fault>
+</methodResponse>
+\end{verbatim}
+
+Please note that even in the case of a fault notification the HTTP status code
+is still 200 OK. Refer to the next section to learn about possible error codes
+and their meaning.
 
 
 \section{Method Error Codes}
+
+This part of the manual devides error codes in two categories: generic method
+errors and specific method errors. Although they do not differ in their value
+or implementation it is advisable to know that the same error code may have a
+slightly different meaning for a specific method. The following table explains
+all error codes and their generic meaning.
+
+\begin{center}
+\begin{tabular}{l|c|l}
+\labelingfont{Constant} & \labelingfont{Value} & \labelingfont{Description}\\
+\hline
+\labelingfont{MEAUTH}    & 100 & Unauthorized\\
+\labelingfont{MEPERM}    & 101 & Operation not permitted\\
+\labelingfont{MENOUSER}  & 102 & User does not exist\\
+\labelingfont{MEINVAL}   & 200 & Invalid argument\\
+\labelingfont{MEEXIST}   & 201 & An object already exists\\
+\labelingfont{MENOVPS}   & 202 & Virtual server does not exist\\
+\labelingfont{MENOVG}    & 203 & Virtual server group does not exist\\
+\labelingfont{MESTOPPED} & 300 & Virtual server not running\\
+\labelingfont{MERUNNING} & 301 & Virtual server still/already running\\
+\labelingfont{MEBUSY}    & 302 & Operation still in progress\\
+\labelingfont{MEVXDB}    & 400 & Low-level database error\\
+\labelingfont{MECONF}    & 401 & Invalid configuration file\\
+\labelingfont{MESYS}     & 500 & System call or library call failed\\
+\labelingfont{MEEXEC}    & 1000+ & Command execution failed\\
+\end{tabular}
+\end{center}
+
+Please refer to the next chapters to learn which methods apply different meaning
+to these error codes.

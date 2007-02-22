@@ -35,29 +35,29 @@ The complete VServer Control Daemon package consists of four independent
 modules:
 
 \begin{labeling}[~~]{\labelingfont{vwrappers}}
-	\labelingitem{libvserver} The libvserver module contains a library that implements
-		the Linux-VServer system call in the C language. It provides a convenient
-		way to execute Linux-VServer commands in other programs or libraries.
-		Additionally basic low-level command-line tools are provided to work with
-		these commands.
+	\labelingitem{libvserver} The libvserver module contains a library that
+	implements the Linux-VServer system call in the C language. It provides a
+	convenient way to execute Linux-VServer commands in other programs or
+	libraries.  Additionally basic low-level command-line tools are provided to
+	work with these commands.
 
 	\labelingitem{vcd} The VServer Control Daemon module uses -- among other
-		libraries -- libvserver to implement the core of the package. This modules
-		includes the configuration storage backend, the XML-RPC server,
-		command-line clients and the kernel user-space helper.
+	libraries -- libvserver to implement the core of the package. This modules
+	includes the configuration storage backend, the XML-RPC server,
+	command-line clients and the kernel user-space helper.
 
-	\labelingitem{vwrappers} The vwrappers module contains a lot of wrappers for
-		coreutils/util-linux/procps and other system packages. This provides a
-		convenient way to execute commands inside virtual private servers.
-		Additionally, some utilities for the extended filesystem attributes are
-		provided enhancing the versions in libvserver with recursion and various
-		other options.
+	\labelingitem{vwrappers} The vwrappers module contains a lot of wrappers
+	for coreutils/util-linux/procps and other system packages. This provides a
+	convenient way to execute commands inside virtual private servers.
+	Additionally, some utilities for the extended filesystem attributes are
+	provided enhancing the versions in libvserver with recursion and various
+	other options.
 
-	\labelingitem{vstatd} The VServer Statistics Daemon module contains a \emph{very}
-		small daemon that keeps track of resource utilization of virtual private
-		servers. For statistical analysis all collected data is stored in a
-		round-robin database (RRD), the industry standard data logging and graphing
-		application.
+	\labelingitem{vstatd} The VServer Statistics Daemon module contains a
+	\emph{very} small daemon that keeps track of resource utilization of
+	virtual private servers. For statistical analysis all collected data is
+	stored in a round-robin database (RRD), the industry standard data logging
+	and graphing application.
 \end{labeling}
 
 A detailed descriptions of these modules can be found in the next sections.
@@ -76,10 +76,10 @@ between the operating system and the user programs or libraries is known as
 
 For a long time the Linux-VServer project used a few different system calls to
 accomplish different aspects of virtualization and configuration. However, the
-number of commands grew rapidly and a few system calls were simply not enough to
-handle every aspect of virtualization. Therefore, the Linux-VServer system call
-now uses a system call multiplexer based on a command identifier, which has
-similar semantics like the \texttt{ioctl} system call.
+number of commands grew rapidly and a few system calls were simply not enough
+to handle every aspect of virtualization. Therefore, the Linux-VServer system
+call now uses a system call multiplexer based on a command identifier, which
+has similar semantics like the \texttt{ioctl} system call.
 
 The Linux kernel maintainers have reserved a system call number for the
 Linux-VServer project on most architectures meanwhile  and while the opinion on
@@ -110,8 +110,8 @@ divided into 8 bit for the command number and 6 bit for category number, again
 reserving 2 bits for the future.
 
 In theory, there are 64 categories with up to 256 commands in each category,
-allowing for 4096 revisions of each command, which is far more than will ever be
-required.
+allowing for 4096 revisions of each command, which is far more than will ever
+be required.
 
 The following categories and commands are defined in the Linux-VServer 2.2.0
 release:
@@ -150,8 +150,8 @@ SPECIAL|DEBUG  |       |       |       |RLIMIT |SYSCALL| |       |COMPAT |
 \end{verbatim}
 \end{center}
 
-While a single system call is advantageous from the kernel point of view,
-user programs and libraries tend to have a single function per command, although
+While a single system call is advantageous from the kernel point of view, user
+programs and libraries tend to have a single function per command, although
 this is not always the case for multiplexed system calls, as can be seen with
 \texttt{ioctl}. Nevertheless, the libvserver module implements a function for
 each command the Linux-VServer multiplexer knows about.
@@ -169,8 +169,8 @@ website~\cite{libvserver-doc} and is not discussed in further detail here.
 
 The Vserver Control Daemon is the core of the the package and implements all
 aspects of virtual server management using libvserver to issue Linux-VServer
-system calls, xmlrpc-c to implement the XML-RPC protocol and SQLite3 for
-data storage. Figure~\ref{fig:vcd-overview} illustrates the basic relationship
+system calls, xmlrpc-c to implement the XML-RPC protocol and SQLite3 for data
+storage. Figure~\ref{fig:vcd-overview} illustrates the basic relationship
 between libraries, methods and clients.
 
 \begin{figure}[hbt]
@@ -268,8 +268,8 @@ sessions in case of failure or other strange behaviour.
 
 On startup, the server defines a global registry of methods accessible by its
 clients. In order to allow structure for the amount of methods currently
-defined, all methods are devided in logical units -- also known as namespaces --
-and prefixed with the namespace and a dot, like \verb,vx.start, or
+defined, all methods are devided in logical units -- also known as namespaces
+-- and prefixed with the namespace and a dot, like \verb,vx.start, or
 \verb,helper.shutdown, for the start and shutdown methods of the vx and helper
 namespace, respectively.
 
@@ -294,44 +294,45 @@ returns a 512-bit message digest.
 For security reasons the clear-text password is never stored in VXDB. The
 client will send the password as plain-text -- the server then creates a
 WHIRLPOOL hash using the submitted password and compares its result with the
-hash stored in VXDB. It is also possible to create the hash on the client side,
-prefix the result with \verb,WHIRLPOOLENC//, and send the result to the server
-for authentication. The server then compares the hash after the prefix.
+hash stored in VXDB. It is also possible to create the hash digest on the client
+side, prefix the result with the string \texttt{WHIRLPOOLENC//} and send the
+result to the server for authentication. The server then compares the hash after 
+stripping the the prefix again.
 
 Note that an attacker can still authenticate against the server with the hash
-only, he just cannot retreive the original password again. Therefore, the server
-should \emph{never} listen on an untrusted network if no other security measures
-have been setup, like an SSL or VPN tunnel.
+only, he just cannot retreive the original password again. Therefore, the
+server should \emph{never} listen on an untrusted network if no other security
+measures have been setup, like an SSL or VPN tunnel.
 
 
 \subsubsection{Access Restrictions}
 
 For a fine-grained access control the server implements its own set of
 capabilities.  A capability is a lot like a drivers license. As an example,
-consider your car license. It allows you to drive a certain set of
-vehicles (it designates a particular object set, in our case XML-PRC methods),
-and anyone holding a car license is allowed to drive the same set of objects
-(cars).
+consider your car license. It allows you to drive a certain set of vehicles (it
+designates a particular object set, in our case XML-PRC methods), and anyone
+holding a car license is allowed to drive the same set of objects (cars).
 
 Refer to part~\ref{pt:rpcref} on page~\pageref{pt:rpcref} for a detailed
-description of available access restrictions and their usage in defined methods.
+description of available access restrictions and their usage in defined
+methods.
 
 \subsubsection{Owner Checks}
 
 To ensure the distinction between your car and your neighbours Lamborghini
 another access control system has to be implemented. Therefore the server also
-implements owner checks for most of its methods. This results in an extension to
-the capability model explained above. The server implements another object set
-based on the ownership information stored in the database. Instead of allowing
-everyone holding a certain capability to operate on all virtual servers, only
-the intersection of both object sets is permitted for operation.
+implements owner checks for most of its methods. This results in an extension
+to the capability model explained above. The server implements another object
+set based on the ownership information stored in the database. Instead of
+allowing everyone holding a certain capability to operate on all virtual
+servers, only the intersection of both object sets is permitted for operation.
 
 Still, this model has a noticable flaw: Imagine a company has two hundred cars
-and the top management should have access to all cars. Adding all members
-of the management to the owner list of every single car can become a pain in
-the ass very quickly. Therefore the user database in VXDB implements an
-additional configuration option~--~the adminstrator flag. Using this flag all
-owner checks are passed without even consulting the owner lists in the database.
+and the top management should have access to all cars. Adding all members of
+the management to the owner list of every single car can become a pain in the
+ass very quickly. Therefore the user database in VXDB implements an additional
+configuration option~--~the adminstrator flag. Using this flag all owner checks
+are passed without even consulting the owner lists in the database.
 
 
 \subsection{XML-RPC Clients}
@@ -371,4 +372,3 @@ time-series data of running virtual private servers. This data includes memory
 usage, number of processes or cpu usage. The collected data is stored in
 \emph{Round Robin Databases (RRD)} - the industry standard data for logging and
 graphing applications - for later use in reports or graphing processes.
-
