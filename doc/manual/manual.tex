@@ -5,15 +5,14 @@
 \usepackage[utf8]{inputenc}
 
 % header and footer
-\usepackage[footexclude,markuppercase]{scrpage2}
+\usepackage[footexclude]{scrpage2}
 \automark{section}
 \setheadwidth{text}
 \setfootwidth{text}
 
 \deftripstyle{vcdmanual}[1pt][.3pt]
-	{\pagemark}{}{\MakeUppercase{\headmark}~}
-	{}{\small\textsf{This work is licensed under a Creative
-	Commons Attribution-NonCommercial-ShareAlike 2.5 License}}{}
+{\pagemark}{}{\sc\headmark}{}{\small\it\textsf{This work is licensed under a
+Creative Commons Attribution-NonCommercial-ShareAlike 2.5 License}}{}
 
 % code listings
 \usepackage{listings}
@@ -38,6 +37,7 @@
 \usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
+\usepackage{nicefrac}
 
 % url and hyperref
 \usepackage[plainpages=false,colorlinks=true]{hyperref}

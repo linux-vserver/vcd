@@ -291,6 +291,318 @@ Of course this can be accomplished by chroot() alone, but with Linux-VServer
 it's a much more realistic simulation.
 
 
+\section{Features}
+
+Recent Linux Kernels already provide many security features that are utilized
+by Linux-VServer to do its work. Especially features such as the Linux
+Capability System, Resource Limits, File Attributes and the Change Root
+Environment. The following sections will give a short overview about each of
+these and the additional features implemented by the Linux-VServer project.
+
+
+\subsection{Capabilities and Flags}
+
+A capability is a token used by a process to prove that it is allowed to
+perform an operation on an object. The Linux Capability System is based on
+"POSIX Capabilities", a somewhat different concept, designed to split up the
+all powerful root privilege into a set of distinct privileges.
+
+\subsubsection{POSIX Capabilities}
+
+A process has three sets of bitmaps called the inheritable(I), permitted(P),
+and effective(E) capabilities. Each capability is implemented as a bit in each
+of these bitmaps that is either set or unset.
+
+When a process tries to do a privileged operation, the operating system will
+check the appropriate bit in the effective set of the process (instead of
+checking whether the effective uid of the process is 0 as is normally done).
+
+For example, when a process tries to set the clock, the Linux kernel will check
+that the process has the \verb,CAP_SYS_TIME, bit (which is currently bit 25)
+set in its effective set.
+
+The permitted set of the process indicates the capabilities the process can
+use. The process can have capabilities set in the permitted set that are not in
+the effective set.
+
+This indicates that the process has temporarily disabled this capability. A
+process is allowed to set a bit in its effective set only if it is available in
+the permitted set. The distinction between effective and permitted exists so
+that processes can "bracket" operations that need privilege.
+
+The inheritable capabilities are the capabilities of the current process that
+should be inherited by a program executed by the current process. The permitted
+set of a process is masked against the inheritable set during \verb,exec(),.
+Nothing special happens during \verb,fork(), or \verb,clone(),. Child processes
+and threads are given an exact copy of the capabilities of the parent process.
+
+The implementation in Linux stopped at this point, whereas POSIX Capabilities
+require the addition of capability sets to files too, to replace the SUID flag
+(at least for executables).
+
+\subsubsection{Upper Bound for Capabilities}
+
+Because the current Linux Capability system does not implement the filesystem
+related portions of POSIX Capabilities which would make setuid and setgid
+executables secure, and because it is much safer to have a secure upper bound
+for all processes within a context, an additional per-context capability mask
+has been added to limit all processes belonging to that context to this mask.
+The meaning of the individual caps (bits) of the capability bound mask is
+exactly the same as with the permitted capability set. 
+
+\subsubsection{Context Capabilities}
+
+As the Linux capabilities have almost reached the maximum number that is
+possible without heavy modifications to the kernel, it was a natural step to
+add a context-specific capability system.
+
+The Linux-VServer context capability set acts as a mechanism to fine tune
+existing Linux capabilities. It is not visible to the processes within a
+context, as they would not know how to modify or verify it. 
+
+In general there are two ways to use those capabilities: 
+
+\begin{itemize}
+\item Require one or a number of context capabilities to be set in addition to
+	a given Linux capability, each one controlling a distinct part of the
+	functionality. For example the \verb,CAP_NET_ADMIN, could be split into RAW
+	and PACKET sockets, so you could take away each of them separately by not
+	providing the required context capability. 
+
+\item Consider the context capability sufficient for a specified functionality,
+	even if the Linux Capability says something different. For example mount()
+	requires \verb,CAP_SYS_ADMIN, which adds a dozen other things we do not
+	want, so we define \verb,VXC_SECURE_MOUNT, to allow mounts for certain
+	contexts. 
+\end{itemize}
+
+The difference between the context flags and the context capabilities is more
+an abstract logical separation than a functional one, because they are handled
+very similar.
+% TODO: add list of caps/flags to appendix and cross-ref
+
+
+\subsection{Resource Limits}
+
+Most properties related to system resources, might it be the memory
+consumption, the number of processes or file-handles, qualify for imposing
+limits on them. 
+
+The Linux kernel provides the \verb,getrlimit, and \verb,setrlimit, system
+calls to get and set resource limits per process. Each resource has an
+associated soft and hard limit. The soft limit is the value that the kernel
+enforces for the corresponding resource. The hard limit acts as a ceiling for
+the soft limit: an unprivileged process may only set its soft limit to a value
+in the range from 0 up to the hard limit, and (irreversibly) lower its hard
+limit. A privileged process (one with the \verb,CAP_SYS_RESOURCE, capability)
+may make arbitrary changes to either limit value. 
+
+The Linux-VServer kernel extends this system to provide resource limits for
+whole contexts, not just single processes. Additionally a few new limit types
+missing in the vanilla kernel were introduced. 
+
+Additionally the context limit system keeps track of observed maxima and
+resource limit hits, to provide some feedback for the administrator.
+% TODO: add list of limits to appendix and cross-ref
+
+
+\subsection{CPU Scheduler}
+
+It is important to have a decent understanding of both processes and threads
+before learning about schedulers.
+
+\subsubsection{Programs and Processes}
+
+A program is a combination of instructions and data put together to perform a
+task when executed. A process is an instance of a program (what one might call
+a "running" program). An analogy is that programs are like classes in languages
+like C++ and Java, and processes are like objects (instantiated instances of
+classes). Processes are an abstraction created to embody the state of a program
+during its execution. This means keeping track of the data that is associated
+with a thread or threads of execution, which includes variables, hardware state
+(e.g. registers and the program counter, etc...), and the contents of an
+address space.
+
+\subsubsection{Threads}
+
+A process can have multiple threads of execution that work together to
+accomplish its goals. These threads of execution are aptly named threads. A
+kernel must keep track of each thread's stack and hardware state, or whatever
+is necessary to track a single flow of execution within a process. Usually
+threads share address spaces, but they do not have to (often they merely
+overlap). It is important to remember that only one thread may be executing on
+a CPU at any given time, which is basically the reason kernels have CPU
+schedulers. An example of multiple threads within a process can be found in
+most web browsers. Usually at least one thread exists to handle user interface
+events (like stopping a page load), one thread exists to handle network
+transactions, and one thread exists to render web pages.
+
+\subsubsection{Scheduling in Linux}
+
+Multitasking kernels (like Linux) allow more than one process to exist at any
+given time, and furthermore each process is allowed to run as if it were the
+only process on the system. Processes do not need to be aware of any other
+processes unless they are explicitly designed to be. This makes programs easier
+to develop, maintain, and port.
+
+Though each CPU in a system can execute only one thread within a process at a
+time, many threads from many processes appear to be executing at the same time.
+This is because threads are scheduled to run for very short periods of time and
+then other threads are given a chance to run. A kernel's scheduler enforces a
+thread scheduling policy, including when, for how long, and in some cases where
+(on Symmetric Multiprocessing (SMP) systems) threads can execute.
+
+Normally the scheduler runs in its own thread, which is woken up by a timer
+interrupt. Otherwise it is invoked via a system call or another kernel thread
+that wishes to yield the CPU. A thread will be allowed to execute for a certain
+amount of time, then a context switch to the scheduler thread will occur,
+followed by another context switch to a thread of the scheduler's choice. This
+cycle continues, and in this way a certain policy for CPU usage is carried out.
+
+\subsubsection{Token Bucket Extension}
+
+While the basic idea of Linux-VServer is a peaceful coexistence of all
+contexts, sharing the common resources in a respectful way, it is sometimes
+useful to control the resource distribution for resource hungry processes.
+
+The basic principle of a Token Bucket is not very new. It is given here as an
+example for the Hard CPU Limit. The same principle also applies to scheduler
+priorities, network bandwidth limitation and resource control in general.
+
+The Linux-VServer scheduler uses this mechanism in the following way: consider
+a bucket of a certain size $S$ which is filled with a specified amount of
+tokens $R$ every interval $T$, until the bucket is ``full'' -- excess tokens
+are spilled. At each timer tick, a running process (here running means
+actually needing the CPU as opposed to ``running'' as in ``existing'') consumes
+exactly one token from the bucket, unless the bucket is empty, in which case
+the process is put on a hold queue until the bucket has been refilled with a
+minimum $M$ of tokens. The process is then rescheduled.
+
+A major advantage of a Token Bucket is that a certain amount of tokens can be
+accumulated in times of quiescence, which later can be used to burst when
+resources are required.
+
+Where a per-process Token Bucket would allow for a CPU resource limitation
+of a single process, a Context Token Bucket allows to control the CPU usage
+of all confined processes.
+
+Another approach, which is also implemented, is to use the current fill
+level of the bucket to adjust the process priority, thus reducing the
+priority of processes belonging to excessive contexts.
+
+\subsubsection{Hard CPU Limit}
+
+The simplest configuration is to just give every context an upper bound for
+CPU allocation. The important factor is the ratio:
+
+\begin{center}
+$$\frac{R}{T} \cdot 100 = \%\mbox{ CPU allocation}$$
+\end{center}
+
+Note that this is the proportion of a \emph{single} CPU in the system. So, if
+there are four CPUs and a virtual server should get a complete CPU for itself,
+then you would set $R=1, T=4$.
+
+It is advantageous to smooth operation of the algorithm to make the interval as
+small as possible (or much smaller than the bucket size). You can in most cases
+simplify the fraction, such as changing \nicefrac{30}{100} to \nicefrac{3}{10}.
+
+\subsubsection{Burst time}
+
+To penalize processes after a certain amount of \emph{burst time}, i.e. putting
+them on the hold queue, you can use the maximum size $S$ of the bucket and the
+minimum number of tokens $M$ to \emph{hold} processes.
+
+Consider a context with a limit of \nicefrac{1}{2} of CPU time, a bucket of
+15000 tokens and a minimum of 2500 tokens. Given that the kernel timer runs at
+1000Hz processes that have used the CPU for 30 seconds will be put on hold for
+5 seconds. The following formula can be used to calculate $S$ and $M$, using
+$B$ as burst time and $H$ as hold time:
+
+\begin{eqnarray*}
+M &=& H \cdot \mbox{Hz} \cdot \frac{R}{T}\\
+S &=& B \cdot \mbox{Hz} \cdot \left (1 - \frac{R}{T} \right )
+\end{eqnarray*}
+
+\subsubsection{Guarantees}
+
+A guarantee is nearly the same as a pure hard limit, except that you must not
+allocate more than 100\% CPU time to all contexts. In other words, if you have
+$N$ contexts and give each one a guarantee of more than \nicefrac{1}{N} CPU
+time, it would result in more CPU time needed than physically available, which
+cannot work out. The important factor here is the sum of all ratios:
+
+$$\sum_{i=1}^N \frac{R_i}{T_i} \le 1$$
+
+
+\subsubsection{Fair Share}
+
+The fair share configuration is similar to guarantees, except that if the CPU
+is idle a context can allocate more CPU time than its guarantee/limit. The
+scheduler and bucket configuration was extended in Linux-VServer 2.1.1 to allow
+fair share scheduling and is also know as \emph{idle time}.
+
+Consider a configuration with 5 contexts each limited to \nicefrac{1}{5} of CPU
+time, where two of these contexts run CPU intensive processes and the rest is
+idle. Given that each context may only allocate \nicefrac{1}{5} of CPU time,
+\nicefrac{3}{5} of CPU time are wasted since 3 contexts are idle.
+
+To distribute the wasted CPU time \emph{fair} among contexts that could need it,
+you can configure an allocation ratio for \nicefrac{R}{T} during idle times,
+namely \nicefrac{$R^2$}{$T^2$}. To calculate the cpu distribution for context $k$
+the following formula is used:
+
+$$\left ( \frac{C \cdot \frac{R^2_k}{T^2_k}}{\sum_{i=1}^N \frac{R^2_i}{T^2_i}} +
+\frac{R_k}{T_k} \right ) \cdot 100 = \%\mbox{ CPU allocation}$$
+
+where $C$ is the idle CPU time, \nicefrac{3}{5} in our example. Consider a
+\nicefrac{$R^2$}{$T^2$} ratio of \nicefrac{1}{2} for the first guest and
+\nicefrac{1}{4} for the second. This would result in:
+
+$$\left ( \frac{\frac{3}{5} \cdot \frac{1}{2}}{\frac{1}{2} + \frac{1}{4}} +
+\frac{1}{5} \right ) \cdot 100 = 60\%\mbox{ CPU allocation for context 1}$$
+
+$$\left ( \frac{\frac{3}{5} \cdot \frac{1}{4}}{\frac{1}{2} + \frac{1}{4}} +
+\frac{1}{5} \right ) \cdot 100 = 40\%\mbox{ CPU allocation for context 2}$$
+
+If the idle time ratio is the same for all contexts, the formula can be
+simplified:
+
+$$\left ( C \cdot \frac{1}{N} + \frac{R_k}{T_k} \right ) \cdot 100 = \%\mbox{
+CPU allocation}$$
+
+Therefore, if 3 of the above 5 contexts would run, i.e. \nicefrac{2}{5} of the
+CPU are idle, and we have 3 running contexts, it would result in the expted
+33\% split:
+
+$$\left ( \frac{2}{5} \cdot \frac{1}{3} + \frac{1}{5} \right ) \cdot 100
+\approx 33\%\mbox{ CPU allocation}$$
+
+
+\subsection{Virtual Host Information}
+
+
+\subsection{Filesystem Namespace}
+
+
+\subsection{ProcFS Security}
+
+
+\subsection{Chroot Barrier}
+
+
+\subsection{Disk Limits}
+
+
+\subsection{Quotas}
+
+
+\subsection{Copy-on-Write Link Breaking}
+
+
+\subsection{Network Addresses}
+
+
 % TODO: more info needed here
 \section{History}
 \label{sec:intro:vserver:history}
@@ -307,7 +619,7 @@ patches, announcing them on the vserver mailing list and making them available
 for the public.
 
 Additionally, \textbf{Enrico Scholz} decided to reimplement Jack's vserver
-tools in \textbf{C}.  These are now distributed as util-vserver. They are
+tools in \textbf{C}. These are now distributed as util-vserver. They are
 backward compatible to Jack's tools as far as possible, but follow the kernel
 patch development more closely.
 
