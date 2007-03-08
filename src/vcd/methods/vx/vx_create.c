@@ -237,18 +237,31 @@ xmlrpc_value *make_vserver_filesystem(xmlrpc_env *env)
 	/* handle_file uses this to make sure we are in the vdir */
 	vdirfd = open_read(".");
 
-	struct stat vdirsb, tdirsb;
+	/* check if tagxid option is enabled */
+	ix_attr_t attr;
 
-	if (fstat(vdirfd, &vdirsb) == -1)
-		method_return_sys_fault(env, "fstat");
+	if (ix_attr_get(".", &attr) == -1)
+		method_return_sys_fault(env, "ix_attr_get");
 
+	if (!(attr.mask & IATTR_TAG))
+		copy = 1;
+
+	/* check template dir */
 	chdir(tdir);
 
-	if (lstat(".", &tdirsb) == -1)
-		method_return_sys_fault(env, "lstat");
+	if (!copy) {
+		struct stat vdirsb, tdirsb;
 
-	if (vdirsb.st_dev != tdirsb.st_dev)
-		copy = 1;
+		if (fstat(vdirfd, &vdirsb) == -1)
+			method_return_sys_fault(env, "fstat");
+
+		if (lstat(".", &tdirsb) == -1)
+			method_return_sys_fault(env, "lstat");
+
+		/* check if we have different mount points */
+		if (vdirsb.st_dev != tdirsb.st_dev)
+			copy = 1;
+	}
 
 	global_env = env;
 	nftw(".", handle_file, 50, FTW_MOUNT|FTW_PHYS|FTW_ACTIONRETVAL);
