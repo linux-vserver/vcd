@@ -240,8 +240,9 @@ xmlrpc_value *make_vserver_filesystem(xmlrpc_env *env)
 
 	/* check if tagxid option is enabled */
 	ix_attr_t attr;
+	attr.filename = ".";
 
-	if (ix_attr_get(".", &attr) == -1)
+	if (ix_attr_get(&attr) == -1)
 		method_return_sys_fault(env, "ix_attr_get");
 
 	if (attr.mask & IATTR_TAG)
