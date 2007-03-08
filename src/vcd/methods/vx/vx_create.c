@@ -84,6 +84,7 @@ static char *tdir = NULL;
 
 static int force = 0;
 static int copy  = 0;
+static int has_tagxid = 0;
 
 static xmlrpc_env *global_env = NULL;
 
@@ -200,7 +201,7 @@ int handle_file(const char *fpath, const struct stat *sb,
 		return FTW_STOP;
 	}
 
-	if (do_chxid) {
+	if (do_chxid && has_tagxid) {
 		/* we can rely upon vdir and fpath being valid, so we
 		 * don't use str_path_concat to get rid of mem_alloc, but we
 		 * don't use snprintf either, since it has too much overhead
@@ -243,8 +244,8 @@ xmlrpc_value *make_vserver_filesystem(xmlrpc_env *env)
 	if (ix_attr_get(".", &attr) == -1)
 		method_return_sys_fault(env, "ix_attr_get");
 
-	if (!(attr.mask & IATTR_TAG))
-		copy = 1;
+	if (attr.mask & IATTR_TAG)
+		has_tagxid = 1;
 
 	/* check template dir */
 	chdir(tdir);
