@@ -48,7 +48,8 @@ M_VX = vx/vx_create.c \
        vx/vx_restart.c \
        vx/vx_start.c \
        vx/vx_status.c \
-       vx/vx_stop.c
+       vx/vx_stop.c \
+       vx/vx_templates.c
 
 M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_dx_limit_remove.c \
