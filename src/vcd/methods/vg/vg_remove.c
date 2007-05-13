@@ -24,6 +24,7 @@
 #include <lucid/log.h>
 #include <lucid/str.h>
 
+/* vg.remove(string group, string name) */
 xmlrpc_value *m_vg_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

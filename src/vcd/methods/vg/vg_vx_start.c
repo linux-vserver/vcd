@@ -24,7 +24,7 @@
 
 #include "vg_internal.h"
 
-/* vg.vx.start(string groupname) */
+/* vg.vx.start(string group) */
 xmlrpc_value *m_vg_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

@@ -67,7 +67,7 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"INNER JOIN xid_uid_map "
 				"ON xid_name_map.xid = xid_uid_map.xid "
 				"WHERE xid_uid_map.uid = %d "
-				"ORDER BY name ASC",
+				"ORDER BY xid_name_map.name ASC",
 				uid);
 
 	else
