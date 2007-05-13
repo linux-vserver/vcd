@@ -24,6 +24,17 @@
 #include <sys/resource.h>
 
 #include <lucid/log.h>
+#include <lucid/printf.h>
+
+static
+char *pretty_load(int load)
+{
+	char *buf = NULL;
+
+	asprintf(&buf, "%d.%02d", load >> 11, ((load & ((1 << 11) - 1)) * 100) >> 11);
+
+	return buf;
+}
 
 /* vx.status(string name) */
 xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -34,6 +45,7 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	char *name;
 	xid_t xid;
 	int running = 0, nproc = 0, uptime = 0;
+	char *loadavg1m = NULL, *loadavg5m = NULL, *loadavg15m = NULL;
 
 	params = method_init(env, p, c, VCD_CAP_INFO, M_OWNER);
 	method_return_if_fault(env);
@@ -51,6 +63,9 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			running = 0;
 			nproc = 0;
 			uptime = 0;
+			loadavg1m = "0";
+			loadavg5m = "0";
+			loadavg15m = "0";
 		}
 
 		else
@@ -73,13 +88,19 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			running = 1;
 			nproc = (int) limnproc.value;
 			uptime = statb.uptime/1000000000;
+			loadavg1m = pretty_load(statb.load[0]);
+			loadavg5m = pretty_load(statb.load[1]);
+			loadavg15m = pretty_load(statb.load[2]);
 		}
 	}
 
-	response = xmlrpc_build_value(env, "{s:i,s:i,s:i}",
+	response = xmlrpc_build_value(env, "{s:i,s:i,s:i,s:s,s:s,s:s}",
 				"running", running,
 				"nproc", nproc,
-				"uptime", uptime);
+				"uptime", uptime,
+				"load1m", loadavg1m,
+				"load5m", loadavg5m,
+				"load15m", loadavg15m);
 
 	return response;
 }

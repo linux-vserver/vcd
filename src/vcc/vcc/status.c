@@ -50,6 +50,7 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
 	int running, nproc, uptime;
+	char *loadavg1m, *loadavg5m, *loadavg15m;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
@@ -60,10 +61,13 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, result,
-		"{s:i,s:i,s:i,*}",
+		"{s:i,s:i,s:i,s:s,s:s,s:s,*}",
 		"running", &running,
 		"nproc", &nproc,
-		"uptime", &uptime);
+		"uptime", &uptime,
+		"load1m", &loadavg1m,
+		"load5m", &loadavg5m,
+		"load15m", &loadavg15m);
 	return_if_fault(env);
 
 	xmlrpc_DECREF(result);
@@ -75,5 +79,6 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 		printf("running: %d\n", running);
 		printf("nproc: %d\n", nproc);
 		printf("uptime: %s\n", pretty_uptime(uptime));
+		printf("load average: %s, %s, %s\n", loadavg1m, loadavg5m, loadavg15m);
 	}
 }
