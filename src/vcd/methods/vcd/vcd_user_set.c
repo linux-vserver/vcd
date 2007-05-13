@@ -24,6 +24,7 @@
 #include <lucid/str.h>
 #include <lucid/whirlpool.h>
 
+/* vcd.user.set(string username[, string password], bool admin) */
 xmlrpc_value *m_vcd_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
@@ -48,9 +49,7 @@ xmlrpc_value *m_vcd_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		method_return_faultf(env, MEINVAL,
 				"invalid username value: %s", user);
 
-	uid = auth_getuid(user);
-
-	if (uid == 0) {
+	if (!(uid = auth_getuid(user))) {
 		if (!validate_password(pass))
 			method_return_faultf(env, MEINVAL, "%s",
 					"invalid password value");

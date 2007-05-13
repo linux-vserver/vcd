@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vcd.user.caps.remove(string username[, string cap]) */
 xmlrpc_value *m_vcd_user_caps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

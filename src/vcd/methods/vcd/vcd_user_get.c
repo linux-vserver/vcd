@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vcd.user.get([string username]) */
 xmlrpc_value *m_vcd_user_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

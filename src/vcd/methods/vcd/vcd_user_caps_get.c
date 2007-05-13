@@ -23,6 +23,7 @@
 
 #include <lucid/log.h>
 
+/* vcd.user.caps.get(string username) */
 xmlrpc_value *m_vcd_user_caps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

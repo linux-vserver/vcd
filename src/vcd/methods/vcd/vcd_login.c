@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vcd.login() */
 xmlrpc_value *m_vcd_login(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
