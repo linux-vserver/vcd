@@ -41,8 +41,11 @@ void cmd_add(xmlrpc_env *env, int argc, char **argv)
 void cmd_list(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *group;
+	char *group = "";
 	int len, i;
+
+	if (argc > 0)
+		group = argv[0];
 
 	response = client_call("vg.list", "{s:s}", "group", group);
 	return_if_fault(env);
