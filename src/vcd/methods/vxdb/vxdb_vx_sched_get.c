@@ -17,6 +17,7 @@
 
 #include "auth.h"
 #include "methods.h"
+#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
@@ -38,6 +39,10 @@ xmlrpc_value *m_vxdb_vx_sched_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"name", &name,
 			"cpuid", &cpuid);
 	method_return_if_fault(env);
+
+	if (!validate_cpuid(cpuid) && cpuid != -2)
+		method_return_faultf(env, MEINVAL,
+				"cpuid out of range: %d", cpuid);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);

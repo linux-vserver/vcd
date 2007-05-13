@@ -40,9 +40,7 @@ xmlrpc_value *m_vxdb_owner_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"username", &user);
 	method_return_if_fault(env);
 
-	uid = auth_getuid(user);
-
-	if (uid < 1)
+	if (!(uid = auth_getuid(user)))
 		method_return_faultf(env, MENOUSER,
 				"user does not exist: %s", user);
 
