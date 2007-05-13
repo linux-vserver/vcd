@@ -25,7 +25,7 @@
 
 #include <lucid/log.h>
 
-/* helper.shutdown(string name) */
+/* helper.shutdown(int xid) */
 xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
@@ -57,12 +57,10 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_prepare(&dbr, "SELECT timeout FROM init WHERE xid = %d", xid);
 
-	if (rc == VXDB_OK) {
-		if (vxdb_step(dbr) == VXDB_ROW)
-			timeout = vxdb_column_int(dbr, 0);
+	if (rc == VXDB_OK && vxdb_step(dbr) == VXDB_ROW)
+		timeout = vxdb_column_int(dbr, 0);
 
-		vxdb_finalize(dbr);
-	}
+	vxdb_finalize(dbr);
 
 	timeout = timeout < 1 ? 15 : timeout;
 
@@ -98,6 +96,8 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 		n = 0;
 
 		while (n++ < timeout) {
+			sleep(1);
+
 			if (vx_info(xid, NULL) == -1) {
 				if (errno == ESRCH)
 					goto startvx;

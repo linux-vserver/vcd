@@ -21,7 +21,7 @@
 
 #include <lucid/log.h>
 
-/* helper.restart(string name) */
+/* helper.restart(int xid) */
 xmlrpc_value *m_helper_restart(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
