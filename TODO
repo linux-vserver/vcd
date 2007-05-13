@@ -1,14 +1,15 @@
 VCD
 
 BUGS:
+- fastboot file needed for some distributions, suggested fix so far:
+    put before 'switch(fork())' in vshelper_startup:
+    char *fastboot = str_path_concat(vdir, "/fastboot"); close(open_trunc(fastboot));
 
 NEEDED FEATURES:
-- debian/ dir, RPM .spec file, init scripts, distrib make targets, pathprog probably
+- debian/ dir, RPM .spec file, init scripts (done for Gentoo!), distrib make targets, pathprog probably
 
 WANTED FEATURES:
 - add vx.limits and vx.netload methods to get more info
 - vx.move method to also move the VServer around on the disk
 - sysctl support
 - cpuset support
-- owner notifications?
-- contact handles?
