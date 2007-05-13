@@ -63,7 +63,7 @@ const char *template_description(const char *tbasedir, const char *name)
 	if (str_isempty(tconf) || !isfile(tconf))
 		return "(none)";
 
-	cfg_t *tcfg = cfg_init(TEMPLATE_OPTS, CFGF_NOCASE);
+	cfg_t *tcfg = cfg_init(BUILD_OPTS, CFGF_NOCASE);
 
 	switch (cfg_parse(tcfg, tconf)) {
 	case CFG_FILE_ERROR:
