@@ -38,7 +38,7 @@ xmlrpc_value *m_vcd_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"username", &user);
 	method_return_if_fault(env);
 
-	if ((uid = auth_getuid(user)) == 0)
+	if (!(uid = auth_getuid(user)))
 		method_return_fault(env, MENOUSER);
 
 	rc = vxdb_exec(

@@ -45,7 +45,7 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	if (user && (uid = auth_getuid(user)) == 0)
+	if (user && !(uid = auth_getuid(user)))
 		method_return_faultf(env, MENOUSER,
 				"user does not exist: %s", user);
 

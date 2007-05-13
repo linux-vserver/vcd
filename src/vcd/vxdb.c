@@ -156,7 +156,7 @@ void vxdb_create_user(const char *name)
 {
 	log_info("creating user '%s' with empty password", name);
 
-	int rc = VXDB_OK, uid = auth_getnextuid();
+	int rc, uid = auth_getnextuid();
 
 	if (str_equal(name, "admin")) {
 		rc = vxdb_exec(
@@ -187,7 +187,7 @@ void vxdb_create_user(const char *name)
 				"BEGIN EXCLUSIVE TRANSACTION;"
 				"INSERT INTO user (uid, name, password, admin) "
 				"VALUES (%d, 'vshelper', '*', 0);"
-				"INSERT INTO user_caps VALUES(%d, 'HELPER');"
+				"INSERT INTO user_caps VALUES(%d, 'HELPER');" /* 2 */
 				"COMMIT TRANSACTION",
 				uid, uid);
 	}

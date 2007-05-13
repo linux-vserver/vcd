@@ -128,13 +128,13 @@ int auth_isowner(const char *user, const char *name)
 	int uid, rc;
 	xid_t xid;
 
-	if ((uid = auth_getuid(user)) == 0)
+	if (!(uid = auth_getuid(user)))
 		return 0;
 
 	if (auth_isadmin(user))
 		return 1;
 
-	if ((xid = vxdb_getxid(name)) == 0)
+	if (!(xid = vxdb_getxid(name)))
 		return 0;
 
 	rc = vxdb_prepare(&dbr,

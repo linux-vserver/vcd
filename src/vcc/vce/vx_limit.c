@@ -25,8 +25,7 @@
 
 void cmd_vx_limit_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *type;
-	int soft, max;
+	char *type, *soft, *max;
 	xmlrpc_value *response, *result;
 	int len, i;
 
@@ -53,7 +52,7 @@ void cmd_vx_limit_get(xmlrpc_env *env, int argc, char **argv)
 		return_if_fault(env);
 
 		xmlrpc_decompose_value(env, result,
-			"{s:s,s:i,s:i,*}",
+			"{s:s,s:s,s:s,*}",
 			"type", &type,
 			"soft", &soft,
 			"max", &max);
@@ -61,7 +60,7 @@ void cmd_vx_limit_get(xmlrpc_env *env, int argc, char **argv)
 
 		xmlrpc_DECREF(result);
 
-		printf("%s: %d %d\n", type, soft, max);
+		printf("%s: %s %s\n", type, soft, max);
 	}
 
 	xmlrpc_DECREF(response);
@@ -88,22 +87,21 @@ void cmd_vx_limit_remove(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_vx_limit_set(xmlrpc_env *env, int argc, char **argv)
 {
-	char *name, *type;
-	int soft, max;
+	char *name, *type, *soft, *max;
 
 	if (argc < 3)
 		usage(EXIT_FAILURE);
 
 	name = argv[0];
 	type = argv[1];
-	sscanf(argv[2], "%d", &soft);
+	soft = argv[2];
 
 	if (argc > 3)
-		sscanf(argv[3], "%d", &max);
+		max = argv[3];
 	else
 		max = soft;
 
-	client_call("vxdb.vx.limit.set", "{s:s,s:s,s:i,s:i}",
+	client_call("vxdb.vx.limit.set", "{s:s,s:s,s:s,s:s}",
 		"name", name,
 		"type", type,
 		"soft", soft,
