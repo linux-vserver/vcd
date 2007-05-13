@@ -23,7 +23,6 @@
 #include "auth.h"
 #include "cfg.h"
 #include "methods.h"
-#include "validate.h"
 
 #include <lucid/mem.h>
 #include <lucid/misc.h>
