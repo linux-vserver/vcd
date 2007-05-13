@@ -39,8 +39,8 @@ void cmd_user_caps_add(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_user_caps_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *username, *cap;
 	xmlrpc_value *response, *result;
+	char *username, *cap;
 	int len, i;
 
 	if (argc < 1)
@@ -79,10 +79,10 @@ void cmd_user_caps_remove(xmlrpc_env *env, int argc, char **argv)
 
 	username = argv[0];
 
-	if (argc < 2)
-		cap = "";
+	if (argc > 1)
+		cap = argv[1];
 	else
-		cap = argv[0];
+		cap = "";
 
 	client_call("vcd.user.caps.remove", "{s:s,s:s}",
 		"username", username,

@@ -22,20 +22,24 @@
 
 void cmd_vx_start(xmlrpc_env *env, int argc, char **argv)
 {
+	char *group;
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *group = argv[0];
+	group = argv[0];
 
 	client_call("vg.vx.start", "{s:s}", "group", group);
 }
 
 void cmd_vx_stop(xmlrpc_env *env, int argc, char **argv)
 {
+	char *group;
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *group = argv[0];
+	group = argv[0];
 
 	client_call("vg.vx.stop", "{s:s}", "group", group);
 }
