@@ -156,7 +156,7 @@ void vxdb_create_user(const char *name)
 {
 	log_info("creating user '%s' with empty password", name);
 
-	int rc, uid = auth_getnextuid();
+	int rc = VXDB_OK, uid = auth_getnextuid();
 
 	if (str_equal(name, "admin")) {
 		rc = vxdb_exec(
