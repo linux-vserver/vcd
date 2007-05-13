@@ -26,7 +26,6 @@ libcmd_a_SOURCES = cmd.c \
                    exec.c \
                    kill.c \
                    list.c \
-                   load.c \
                    login.c \
                    reboot.c \
                    remove.c \

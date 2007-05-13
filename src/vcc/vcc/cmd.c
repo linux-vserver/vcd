@@ -26,7 +26,6 @@ cmd_t CMDS[] = {
 	{ "exec",      cmd_exec },
 	{ "kill",      cmd_kill },
 	{ "list",      cmd_list },
-	{ "load",      cmd_load },
 	{ "login",     cmd_login },
 	{ "reboot",    cmd_reboot },
 	{ "remove",    cmd_remove },
@@ -48,7 +47,6 @@ void usage(int rc)
 			"   exec      <name> <command> <args>*\n"
 			"   kill      <name> <pid> <sig>\n"
 			"   list      [<username>]\n"
-			"   load      <name>\n"
 			"   login     <name>\n"
 			"   reboot    <name>\n"
 			"   remove    <name>\n"
