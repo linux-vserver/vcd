@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.nx.broadcast.set(string name, string broadcast) */
 xmlrpc_value *m_vxdb_nx_broadcast_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

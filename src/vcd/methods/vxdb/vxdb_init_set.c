@@ -23,6 +23,7 @@
 #include <lucid/log.h>
 #include <lucid/str.h>
 
+/* vxdb.init.set(string name[, string init][, string halt][, string reboot], int timeout) */
 xmlrpc_value *m_vxdb_init_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

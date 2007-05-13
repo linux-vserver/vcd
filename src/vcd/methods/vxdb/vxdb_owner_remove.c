@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.owner.remove(string name[, string username]) */
 xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

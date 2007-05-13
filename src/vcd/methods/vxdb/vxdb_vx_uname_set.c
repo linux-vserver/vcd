@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.vx.uname.set(string name, string type, string value) */
 xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

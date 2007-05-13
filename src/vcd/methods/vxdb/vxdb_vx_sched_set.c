@@ -22,6 +22,10 @@
 
 #include <lucid/log.h>
 
+/* vxdb.vx.sched.set(string name, int cpuid,
+					int fillrate, int interval,
+					int fillrate2, int interval2,
+					int tokensmin, int tokensmax) */
 xmlrpc_value *m_vxdb_vx_sched_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

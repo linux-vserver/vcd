@@ -23,6 +23,7 @@
 #include <lucid/log.h>
 #include <lucid/str.h>
 
+/* vxdb.list([string username]) */
 xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.vx.bcaps.remove(string name[, string bcap]) */
 xmlrpc_value *m_vxdb_vx_bcaps_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

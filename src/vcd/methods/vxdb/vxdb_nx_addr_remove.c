@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.nx.addr.remove(string name[, string addr]) */
 xmlrpc_value *m_vxdb_nx_addr_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

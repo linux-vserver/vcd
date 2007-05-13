@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.owner.get(string name) */
 xmlrpc_value *m_vxdb_owner_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.vx.uname.remove(string name[, string type]) */
 xmlrpc_value *m_vxdb_vx_uname_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

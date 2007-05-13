@@ -21,6 +21,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.nx.broadcast.remove(string name) */
 xmlrpc_value *m_vxdb_nx_broadcast_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

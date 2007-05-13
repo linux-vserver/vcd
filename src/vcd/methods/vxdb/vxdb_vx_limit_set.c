@@ -26,6 +26,7 @@
 #include <lucid/scanf.h>
 #include <lucid/str.h>
 
+/* vxdb.vx.limit.set(string name, string type, string soft, string max) */
 xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

@@ -21,6 +21,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.name.get(int xid) */
 xmlrpc_value *m_vxdb_name_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

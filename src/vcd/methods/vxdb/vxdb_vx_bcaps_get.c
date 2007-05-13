@@ -22,7 +22,7 @@
 
 #include <lucid/log.h>
 
-/* vxdb.vx.bcaps.get([string name]) */
+/* vxdb.vx.bcaps.get(string name) */
 xmlrpc_value *m_vxdb_vx_bcaps_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

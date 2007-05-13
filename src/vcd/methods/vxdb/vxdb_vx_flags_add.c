@@ -22,6 +22,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.vx.flags.add(string name, string flag) */
 xmlrpc_value *m_vxdb_vx_flags_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME

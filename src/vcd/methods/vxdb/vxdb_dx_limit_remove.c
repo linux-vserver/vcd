@@ -21,6 +21,7 @@
 
 #include <lucid/log.h>
 
+/* vxdb.dx.limit.remove(string name) */
 xmlrpc_value *m_vxdb_dx_limit_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
