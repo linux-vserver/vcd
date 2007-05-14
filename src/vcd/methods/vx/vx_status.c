@@ -21,7 +21,6 @@
 #include "vxdb.h"
 
 #include <vserver.h>
-#include <sys/resource.h>
 
 #include <lucid/log.h>
 #include <lucid/printf.h>

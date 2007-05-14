@@ -17,7 +17,6 @@
 
 #include "auth.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>

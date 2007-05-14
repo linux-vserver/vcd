@@ -20,6 +20,7 @@
 #define _VCD_VG_INTERNAL_H
 
 #include <vserver.h>
+
 #include <lucid/list.h>
 
 #include "methods.h"

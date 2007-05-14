@@ -23,7 +23,6 @@
 #include "methods.h"
 #include "vxdb.h"
 
-#include <lucid/list.h>
 #include <lucid/log.h>
 #include <lucid/printf.h>
 #include <lucid/str.h>

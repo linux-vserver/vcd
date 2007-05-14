@@ -16,9 +16,7 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "auth.h"
-#include "lists.h"
 #include "methods.h"
-#include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
