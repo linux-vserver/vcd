@@ -44,8 +44,9 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params, *response = NULL;
 	char *name;
 	xid_t xid;
-	int running = 0, nproc = 0, uptime = 0;
-	char *loadavg1m = NULL, *loadavg5m = NULL, *loadavg15m = NULL;
+	int running = 0, nproc = 0, tasks = 0, thr_total = 0, thr_running = 0;
+	int thr_unintr = 0, thr_onhold = 0, forks_total = 0, uptime = 0;
+	char *load1m = NULL, *load5m = NULL, *load15m = NULL;
 
 	params = method_init(env, p, c, VCD_CAP_INFO, M_OWNER);
 	method_return_if_fault(env);
@@ -60,12 +61,18 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH) {
-			running = 0;
-			nproc = 0;
-			uptime = 0;
-			loadavg1m = "0";
-			loadavg5m = "0";
-			loadavg15m = "0";
+			running     = 0;
+			nproc       = 0;
+			tasks       = 0;
+			thr_total   = 0;
+			thr_running = 0;
+			thr_unintr  = 0;
+			thr_onhold  = 0;
+			forks_total = 0;
+			uptime      = 0;
+			load1m      = "0";
+			load5m      = "0";
+			load15m     = "0";
 		}
 
 		else
@@ -85,22 +92,35 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			log_perror("vx_limit_stat(NPROC, %d)", xid);
 
 		else {
-			running = 1;
-			nproc = (int) limnproc.value;
-			uptime = statb.uptime/1000000000;
-			loadavg1m = pretty_load(statb.load[0]);
-			loadavg5m = pretty_load(statb.load[1]);
-			loadavg15m = pretty_load(statb.load[2]);
+			running     = 1;
+			nproc       = (int) limnproc.value;
+			tasks       = statb.tasks;
+			thr_total   = statb.nr_threads;
+			thr_running = statb.nr_running;
+			thr_unintr  = statb.nr_unintr;
+			thr_onhold  = statb.nr_onhold;
+			forks_total = statb.nr_forks;
+			uptime      = statb.uptime/1000000000;
+			load1m      = pretty_load(statb.load[0]);
+			load5m      = pretty_load(statb.load[1]);
+			load15m     = pretty_load(statb.load[2]);
 		}
 	}
 
-	response = xmlrpc_build_value(env, "{s:i,s:i,s:i,s:s,s:s,s:s}",
-				"running", running,
-				"nproc", nproc,
-				"uptime", uptime,
-				"load1m", loadavg1m,
-				"load5m", loadavg5m,
-				"load15m", loadavg15m);
+	response = xmlrpc_build_value(env,
+		"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:s,s:s,s:s}",
+		"running",     running,
+		"nproc",       nproc,
+		"tasks",       tasks,
+		"thr_total",   thr_total,
+		"thr_running", thr_running,
+		"thr_unintr",  thr_unintr,
+		"thr_onhold",  thr_onhold,
+		"forks_total", forks_total,
+		"uptime",      uptime,
+		"load1m",      load1m,
+		"load5m",      load5m,
+		"load15m",     load15m);
 
 	return response;
 }

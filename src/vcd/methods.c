@@ -105,6 +105,8 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vx.create",    m_vx_create);
 	MREGISTER("vx.exec",      m_vx_exec);
 	MREGISTER("vx.kill",      m_vx_kill);
+	MREGISTER("vx.limstatus", m_vx_limstatus);
+	MREGISTER("vx.netstatus", m_vx_netstatus);
 	MREGISTER("vx.reboot",    m_vx_reboot);
 	MREGISTER("vx.remove",    m_vx_remove);
 	MREGISTER("vx.rename",    m_vx_rename);

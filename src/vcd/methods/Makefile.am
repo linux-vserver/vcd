@@ -44,6 +44,8 @@ M_VG = vg/vg_add.c \
 M_VX = vx/vx_create.c \
        vx/vx_exec.c \
        vx/vx_kill.c \
+       vx/vx_limstatus.c \
+       vx/vx_netstatus.c \
        vx/vx_reboot.c \
        vx/vx_remove.c \
        vx/vx_rename.c \
