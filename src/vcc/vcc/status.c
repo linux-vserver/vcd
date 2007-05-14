@@ -49,9 +49,9 @@ char *pretty_uptime(int sec)
 void cmd_status(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	char *name;
-	int running = 0, nproc = 0, uptime = 0;
-	char *loadavg1m, *loadavg5m, *loadavg15m;
+	char *name, *load1m, *load5m, *load15m;
+	int running = 0, thr_total = 0, thr_running = 0, thr_unintr = 0, thr_onhold = 0;
+    int forks_total = 0, uptime = 0;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
@@ -64,13 +64,17 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, result,
-		"{s:i,s:i,s:i,s:s,s:s,s:s,*}",
-		"running", &running,
-		"nproc", &nproc,
-		"uptime", &uptime,
-		"load1m", &loadavg1m,
-		"load5m", &loadavg5m,
-		"load15m", &loadavg15m);
+		"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:s,s:s,s:s,*}",
+		"running",     &running,
+		"thr_total",   &thr_total,
+		"thr_running", &thr_running,
+		"thr_unintr",  &thr_unintr,
+		"thr_onhold",  &thr_onhold,
+		"forks_total", &forks_total,
+		"uptime",      &uptime,
+		"load1m",      &load1m,
+		"load5m",      &load5m,
+		"load15m",     &load15m);
 	return_if_fault(env);
 
 	xmlrpc_DECREF(result);
@@ -80,8 +84,11 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 	}
 	else {
 		printf("running: %d\n", running);
-		printf("nproc: %d\n", nproc);
+		printf("total threads: %d\n", thr_total);
+		printf("(running: %d, unintr: %d, onhold: %d)\n",
+				thr_running, thr_unintr, thr_onhold);
+		printf("total forks: %d\n", forks_total);
 		printf("uptime: %s\n", pretty_uptime(uptime));
-		printf("load average: %s, %s, %s\n", loadavg1m, loadavg5m, loadavg15m);
+		printf("load average: %s, %s, %s\n", load1m, load5m, load15m);
 	}
 }
