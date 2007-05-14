@@ -44,8 +44,8 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params, *response = NULL;
 	char *name;
 	xid_t xid;
-	int running = 0, nproc = 0, tasks = 0, thr_total = 0, thr_running = 0;
-	int thr_unintr = 0, thr_onhold = 0, forks_total = 0, uptime = 0;
+	int running = 0, thr_total = 0, thr_running = 0, thr_unintr = 0, thr_onhold = 0;
+	int forks_total = 0, uptime = 0;
 	char *load1m = NULL, *load5m = NULL, *load15m = NULL;
 
 	params = method_init(env, p, c, VCD_CAP_INFO, M_OWNER);
@@ -62,8 +62,6 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (vx_info(xid, NULL) == -1) {
 		if (errno == ESRCH) {
 			running     = 0;
-			nproc       = 0;
-			tasks       = 0;
 			thr_total   = 0;
 			thr_running = 0;
 			thr_unintr  = 0;
@@ -81,20 +79,12 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	else {
 		vx_stat_t statb;
-		vx_limit_stat_t limnproc;
-
-		limnproc.id = RLIMIT_NPROC;
 
 		if (vx_stat(xid, &statb) == -1)
 			log_perror("vx_stat(%d)", xid);
 
-		else if (vx_limit_stat(xid, &limnproc) == -1)
-			log_perror("vx_limit_stat(NPROC, %d)", xid);
-
 		else {
 			running     = 1;
-			nproc       = (int) limnproc.value;
-			tasks       = statb.tasks;
 			thr_total   = statb.nr_threads;
 			thr_running = statb.nr_running;
 			thr_unintr  = statb.nr_unintr;
@@ -108,10 +98,8 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	}
 
 	response = xmlrpc_build_value(env,
-		"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:s,s:s,s:s}",
+		"{s:i,s:i,s:i,s:i,s:i,s:i,s:i,s:s,s:s,s:s}",
 		"running",     running,
-		"nproc",       nproc,
-		"tasks",       tasks,
 		"thr_total",   thr_total,
 		"thr_running", thr_running,
 		"thr_unintr",  thr_unintr,
