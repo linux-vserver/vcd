@@ -25,8 +25,10 @@ cmd_t CMDS[] = {
 	{ "create",    cmd_create },
 	{ "exec",      cmd_exec },
 	{ "kill",      cmd_kill },
+	{ "limstatus", cmd_limstatus },
 	{ "list",      cmd_list },
 	{ "login",     cmd_login },
+	{ "netstatus", cmd_netstatus },
 	{ "reboot",    cmd_reboot },
 	{ "remove",    cmd_remove },
 	{ "rename",    cmd_rename },
@@ -46,8 +48,10 @@ void usage(int rc)
 			"   create    <name> <template> [<force> [<copy> [<vdir>]]]\n"
 			"   exec      <name> <command> <args>*\n"
 			"   kill      <name> <pid> <sig>\n"
+			"   limstatus <name>\n"
 			"   list      [<username>]\n"
 			"   login     <name>\n"
+			"   netstatus <name>\n"
 			"   reboot    <name>\n"
 			"   remove    <name>\n"
 			"   rename    <name> <newname>\n"

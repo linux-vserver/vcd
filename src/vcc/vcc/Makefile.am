@@ -25,8 +25,10 @@ libcmd_a_SOURCES = cmd.c \
                    create.c \
                    exec.c \
                    kill.c \
+                   limstatus.c \
                    list.c \
                    login.c \
+                   netstatus.c \
                    reboot.c \
                    remove.c \
                    rename.c \

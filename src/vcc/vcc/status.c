@@ -51,7 +51,7 @@ void cmd_status(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_value *result;
 	char *name, *load1m, *load5m, *load15m;
 	int running = 0, thr_total = 0, thr_running = 0, thr_unintr = 0, thr_onhold = 0;
-    int forks_total = 0, uptime = 0;
+	int forks_total = 0, uptime = 0;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
