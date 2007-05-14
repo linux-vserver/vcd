@@ -20,6 +20,34 @@
 #include "vcc.h"
 #include "cmd.h"
 
+void cmd_vx_reboot(xmlrpc_env *env, int argc, char **argv)
+{
+	char *group;
+
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	group = argv[0];
+
+	client_call("vg.vx.reboot",
+		"{s:s}",
+		"group", group);
+}
+
+void cmd_vx_restart(xmlrpc_env *env, int argc, char **argv)
+{
+	char *group;
+
+	if (argc < 1)
+		usage(EXIT_FAILURE);
+
+	group = argv[0];
+
+	client_call("vg.vx.restart",
+		"{s:s}",
+		"group", group);
+}
+
 void cmd_vx_start(xmlrpc_env *env, int argc, char **argv)
 {
 	char *group;

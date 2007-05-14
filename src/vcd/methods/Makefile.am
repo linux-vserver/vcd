@@ -36,6 +36,8 @@ M_VG = vg/vg_add.c \
        vg/vg_internal.h \
        vg/vg_list.c \
        vg/vg_remove.c \
+       vg/vg_vx_reboot.c \
+       vg/vg_vx_restart.c \
        vg/vg_vx_start.c \
        vg/vg_vx_stop.c
 

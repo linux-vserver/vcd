@@ -93,11 +93,13 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vcd.user.set",         m_vcd_user_set);
 
 	/* vg */
-	MREGISTER("vg.add",       m_vg_add);
-	MREGISTER("vg.list",      m_vg_list);
-	MREGISTER("vg.remove",    m_vg_remove);
-	MREGISTER("vg.vx.start",  m_vg_vx_start);
-	MREGISTER("vg.vx.stop",   m_vg_vx_stop);
+	MREGISTER("vg.add",        m_vg_add);
+	MREGISTER("vg.list",       m_vg_list);
+	MREGISTER("vg.remove",     m_vg_remove);
+	MREGISTER("vg.vx.reboot",  m_vg_vx_reboot);
+	MREGISTER("vg.vx.restart", m_vg_vx_restart);
+	MREGISTER("vg.vx.start",   m_vg_vx_start);
+	MREGISTER("vg.vx.stop",    m_vg_vx_stop);
 
 	/* vx */
 	MREGISTER("vx.create",    m_vx_create);

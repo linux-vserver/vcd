@@ -20,10 +20,12 @@
 
 void usage(int rc);
 
-void cmd_add     (xmlrpc_env *env, int argc, char **argv);
-void cmd_list    (xmlrpc_env *env, int argc, char **argv);
-void cmd_remove  (xmlrpc_env *env, int argc, char **argv);
-void cmd_vx_start(xmlrpc_env *env, int argc, char **argv);
-void cmd_vx_stop (xmlrpc_env *env, int argc, char **argv);
+void cmd_add       (xmlrpc_env *env, int argc, char **argv);
+void cmd_list      (xmlrpc_env *env, int argc, char **argv);
+void cmd_remove    (xmlrpc_env *env, int argc, char **argv);
+void cmd_vx_reboot (xmlrpc_env *env, int argc, char **argv);
+void cmd_vx_restart(xmlrpc_env *env, int argc, char **argv);
+void cmd_vx_start  (xmlrpc_env *env, int argc, char **argv);
+void cmd_vx_stop   (xmlrpc_env *env, int argc, char **argv);
 
 #endif
