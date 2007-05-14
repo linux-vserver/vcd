@@ -96,7 +96,7 @@ xmlrpc_value *m_vx_limstatus(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"type", LIMIT[i].db,
 				"min",  (int) limstat.minimum,
 				"cur",  (int) limstat.value,
-				"max",  (int) limstat.maximum);
+				"max",  (int) limstat.maximum));
 		}
 	}
 

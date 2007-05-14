@@ -89,7 +89,7 @@ xmlrpc_value *m_vx_netstatus(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"sendp", (int) netstat.count[1],
 				"sendb", (int) netstat.total[1],
 				"failp", (int) netstat.count[2],
-				"failb", (int) netstat.total[2]);
+				"failb", (int) netstat.total[2]));
 		}
 	}
 
