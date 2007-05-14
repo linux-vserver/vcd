@@ -47,7 +47,7 @@ char *pretty_uptime(int sec)
 void cmd_status(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	int uptime, requests, nomethod, flogins;
+	int uptime = 0, requests = 0, nomethod = 0, flogins = 0;
 
 	result = client_call0("vcd.status");
 	return_if_fault(env);

@@ -37,7 +37,9 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 
 	name = argv[0];
 
-	result = client_call("vxdb.xid.get", "{s:s}", "name", name);
+	result = client_call("vxdb.xid.get",
+		"{s:s}",
+		"name", name);
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, result, "i", &xid);
@@ -45,7 +47,9 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 
 	xmlrpc_DECREF(result);
 
-	result = client_call("vxdb.vdir.get", "{s:s}", "name", name);
+	result = client_call("vxdb.vdir.get",
+		"{s:s}",
+		"name", name);
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, result, "s", &vdir);
@@ -54,7 +58,7 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 	xmlrpc_DECREF(result);
 
 	if (ns_enter(xid, 0) == -1)
-		log_perror_and_die("vx_enter_namespace");
+		log_perror_and_die("ns_enter");
 
 	if (chroot_secure_chdir(vdir, "/") == -1)
 		log_perror_and_die("chroot_secure_chdir");

@@ -29,7 +29,9 @@ void cmd_vx_start(xmlrpc_env *env, int argc, char **argv)
 
 	group = argv[0];
 
-	client_call("vg.vx.start", "{s:s}", "group", group);
+	client_call("vg.vx.start",
+		"{s:s}",
+		"group", group);
 }
 
 void cmd_vx_stop(xmlrpc_env *env, int argc, char **argv)
@@ -41,5 +43,7 @@ void cmd_vx_stop(xmlrpc_env *env, int argc, char **argv)
 
 	group = argv[0];
 
-	client_call("vg.vx.stop", "{s:s}", "group", group);
+	client_call("vg.vx.stop",
+		"{s:s}",
+		"group", group);
 }

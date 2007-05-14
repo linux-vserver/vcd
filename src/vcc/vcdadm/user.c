@@ -34,7 +34,8 @@ void cmd_user_get(xmlrpc_env *env, int argc, char **argv)
 	else
 		username = "";
 
-	response = client_call("vcd.user.get", "{s:s}",
+	response = client_call("vcd.user.get",
+		"{s:s}",
 		"username", username);
 	return_if_fault(env);
 
@@ -69,20 +70,20 @@ void cmd_user_remove(xmlrpc_env *env, int argc, char **argv)
 
 	username = argv[0];
 
-	client_call("vcd.user.remove", "{s:s}",
+	client_call("vcd.user.remove",
+		"{s:s}",
 		"username", username);
 }
 
 void cmd_user_set(xmlrpc_env *env, int argc, char **argv)
 {
 	char *username, *password;
-	int admin;
+	int admin = 0;
 
 	if (argc < 2)
 		usage(EXIT_FAILURE);
 
 	username = argv[0];
-
 	sscanf(argv[1], "%d", &admin);
 
 	if (argc > 2)
@@ -90,7 +91,8 @@ void cmd_user_set(xmlrpc_env *env, int argc, char **argv)
 	else
 		password = "";
 
-	client_call("vcd.user.set", "{s:s,s:s,s:b}",
+	client_call("vcd.user.set",
+		"{s:s,s:s,s:b}",
 		"username", username,
 		"password", password,
 		"admin", admin);

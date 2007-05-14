@@ -16,15 +16,20 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <stdlib.h>
+
 #include "vcc.h"
 #include "cmd.h"
 
 void cmd_restart(xmlrpc_env *env, int argc, char **argv)
 {
+	char *name;
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	client_call("vx.restart", "{s:s}", "name", name);
+	client_call("vx.restart",
+		"{s:s}",
+		"name", name);
 }

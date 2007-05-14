@@ -30,5 +30,8 @@ void cmd_rename(xmlrpc_env *env, int argc, char **argv)
 	name    = argv[0];
 	newname = argv[1];
 
-	client_call("vx.rename", "{s:s,s:s}", "name", name, "newname", newname);
+	client_call("vx.rename",
+		"{s:s,s:s}",
+		"name", name,
+		"newname", newname);
 }

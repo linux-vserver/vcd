@@ -42,14 +42,16 @@ void cmd_exec(xmlrpc_env *env, int argc, char **argv)
 	if (strtok_tostr(&st, &command, " ") == -1)
 		log_perror_and_die("strtok_tostr");
 
-	result = client_call("vx.exec", "{s:s,s:s}", "name", name,
-			"command", command);
+	result = client_call("vx.exec",
+		"{s:s,s:s}",
+		"name", name,
+		"command", command);
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, result, "s", &output);
 	return_if_fault(env);
 
-	printf("%s", output);
+	printf("%s\n", output);
 
 	xmlrpc_DECREF(result);
 }

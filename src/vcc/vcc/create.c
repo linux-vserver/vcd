@@ -24,7 +24,7 @@
 
 void cmd_create(xmlrpc_env *env, int argc, char **argv)
 {
-	char *name, *template, *vdir = "";
+	char *name, *template, *vdir;
 	int force = 0, copy = 0;
 
 	if (argc < 2)
@@ -41,11 +41,14 @@ void cmd_create(xmlrpc_env *env, int argc, char **argv)
 
 	if (argc > 4)
 		vdir = argv[4];
+	else
+		vdir = "";
 
-	client_call("vx.create", "{s:s,s:s,s:b,s:b,s:s}",
-			"name", name,
-			"template", template,
-			"force", force,
-			"copy", copy,
-			"vdir", vdir);
+	client_call("vx.create",
+		"{s:s,s:s,s:b,s:b,s:s}",
+		"name", name,
+		"template", template,
+		"force", force,
+		"copy", copy,
+		"vdir", vdir);
 }

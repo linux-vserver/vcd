@@ -36,9 +36,10 @@ void cmd_add(xmlrpc_env *env, int argc, char **argv)
 	else
 		name = "";
 
-	client_call("vg.add", "{s:s,s:s}",
-			"group", group,
-			"name", name);
+	client_call("vg.add",
+		"{s:s,s:s}",
+		"group", group,
+		"name", name);
 }
 
 void cmd_list(xmlrpc_env *env, int argc, char **argv)
@@ -52,7 +53,9 @@ void cmd_list(xmlrpc_env *env, int argc, char **argv)
 	else
 		group = "";
 
-	response = client_call("vg.list", "{s:s}", "group", group);
+	response = client_call("vg.list",
+		"{s:s}",
+		"group", group);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -87,7 +90,8 @@ void cmd_remove(xmlrpc_env *env, int argc, char **argv)
 	else
 		name = "";
 
-	client_call("vg.remove", "{s:s,s:s}",
-			"group", group,
-			"name", name);
+	client_call("vg.remove",
+		"{s:s,s:s}",
+		"group", group,
+		"name", name);
 }

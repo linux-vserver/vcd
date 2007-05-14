@@ -25,16 +25,18 @@
 
 void cmd_init_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *init, *halt, *reboot;
-	int timeout;
 	xmlrpc_value *response;
+	char *name, *init, *halt, *reboot;
+	int timeout = 0;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	response = client_call("vxdb.init.get", "{s:s}", "name", name);
+	response = client_call("vxdb.init.get",
+		"{s:s}",
+		"name", name);
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, response,
@@ -55,13 +57,13 @@ void cmd_init_get(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_init_set(xmlrpc_env *env, int argc, char **argv)
 {
-	char *init, *halt, *reboot;
-	int timeout;
+	char *name, *init, *halt, *reboot;
+	int timeout = 0;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
 	if (argc > 1)
 		init = argv[1];
@@ -80,10 +82,9 @@ void cmd_init_set(xmlrpc_env *env, int argc, char **argv)
 
 	if (argc > 4)
 		sscanf(argv[4], "%d", &timeout);
-	else
-		timeout = 0;
 
-	client_call("vxdb.init.set", "{s:s,s:s,s:s,s:s,s:i}",
+	client_call("vxdb.init.set",
+		"{s:s,s:s,s:s,s:s,s:i}",
 		"name", name,
 		"init", init,
 		"halt", halt,

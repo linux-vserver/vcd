@@ -24,21 +24,22 @@
 
 void cmd_mount_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *src, *dst, *type, *opts;
 	xmlrpc_value *response, *result;
+	char *name, *src, *dst, *type, *opts;
 	int len, i;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		dst = "";
-	else
+	if (argc > 1)
 		dst = argv[1];
+	else
+		dst = "";
 
-	response = client_call("vxdb.mount.get", "{s:s,s:s}",
+	response = client_call("vxdb.mount.get",
+		"{s:s,s:s}",
 		"name", name,
 		"dst", dst);
 	return_if_fault(env);
@@ -68,19 +69,20 @@ void cmd_mount_get(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_mount_remove(xmlrpc_env *env, int argc, char **argv)
 {
-	char *dst;
+	char *name, *dst;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		dst = "";
-	else
+	if (argc > 1)
 		dst = argv[1];
+	else
+		dst = "";
 
-	client_call("vxdb.mount.remove", "{s:s,s:s}",
+	client_call("vxdb.mount.remove",
+		"{s:s,s:s}",
 		"name", name,
 		"dst", dst);
 }
@@ -106,7 +108,8 @@ void cmd_mount_set(xmlrpc_env *env, int argc, char **argv)
 	else
 		opts = "";
 
-	client_call("vxdb.mount.set", "{s:s,s:s,s:s,s:s,s:s}",
+	client_call("vxdb.mount.set",
+		"{s:s,s:s,s:s,s:s,s:s}",
 		"name", name,
 		"src", src,
 		"dst", dst,

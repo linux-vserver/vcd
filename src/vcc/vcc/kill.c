@@ -24,18 +24,19 @@
 
 void cmd_kill(xmlrpc_env *env, int argc, char **argv)
 {
+	char *name;
 	int pid = 0, sig = 0;
 
 	if (argc < 3)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
-
+	name = argv[0];
 	sscanf(argv[1], "%d", &pid);
 	sscanf(argv[2], "%d", &sig);
 
-	client_call("vx.kill", "{s:s,s:i,s:i}",
-			"name", name,
-			"pid", pid,
-			"sig", sig);
+	client_call("vx.kill",
+		"{s:s,s:i,s:i}",
+		"name", name,
+		"pid", pid,
+		"sig", sig);
 }

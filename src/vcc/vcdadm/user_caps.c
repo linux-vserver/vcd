@@ -32,9 +32,10 @@ void cmd_user_caps_add(xmlrpc_env *env, int argc, char **argv)
 	username = argv[0];
 	cap = argv[1];
 
-	client_call("vcd.user.caps.add", "{s:s,s:s}",
-			"username", username,
-			"cap", cap);
+	client_call("vcd.user.caps.add",
+		"{s:s,s:s}",
+		"username", username,
+		"cap", cap);
 }
 
 void cmd_user_caps_get(xmlrpc_env *env, int argc, char **argv)
@@ -48,8 +49,9 @@ void cmd_user_caps_get(xmlrpc_env *env, int argc, char **argv)
 
 	username = argv[0];
 
-	response = client_call("vcd.user.caps.get", "{s:s}",
-			"username", username);
+	response = client_call("vcd.user.caps.get",
+		"{s:s}",
+		"username", username);
 	return_if_fault(env);
 
 	len = xmlrpc_array_size(env, response);
@@ -84,7 +86,8 @@ void cmd_user_caps_remove(xmlrpc_env *env, int argc, char **argv)
 	else
 		cap = "";
 
-	client_call("vcd.user.caps.remove", "{s:s,s:s}",
+	client_call("vcd.user.caps.remove",
+		"{s:s,s:s}",
 		"username", username,
 		"cap", cap);
 }

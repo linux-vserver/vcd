@@ -24,21 +24,22 @@
 
 void cmd_nx_addr_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *addr, *netmask;
 	xmlrpc_value *response, *result;
+	char *name, *addr, *netmask;
 	int len, i;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		addr = "";
-	else
+	if (argc > 1)
 		addr = argv[1];
+	else
+		addr = "";
 
-	response = client_call("vxdb.nx.addr.get", "{s:s,s:s}",
+	response = client_call("vxdb.nx.addr.get",
+		"{s:s,s:s}",
 		"name", name,
 		"addr", addr);
 	return_if_fault(env);
@@ -66,27 +67,27 @@ void cmd_nx_addr_get(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_nx_addr_remove(xmlrpc_env *env, int argc, char **argv)
 {
-	char *addr;
+	char *name, *addr;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		addr = "";
-	else
+	if (argc > 1)
 		addr = argv[1];
+	else
+		addr = "";
 
-	client_call("vxdb.nx.addr.remove", "{s:s,s:s}",
+	client_call("vxdb.nx.addr.remove",
+		"{s:s,s:s}",
 		"name", name,
 		"addr", addr);
 }
 
 void cmd_nx_addr_set(xmlrpc_env *env, int argc, char **argv)
 {
-	xmlrpc_value *response, *result;
-	char *name, *addr, *netmask = "255.255.255.255";
+	char *name, *addr, *netmask;
 
 	if (argc < 2)
 		usage(EXIT_FAILURE);
@@ -94,28 +95,13 @@ void cmd_nx_addr_set(xmlrpc_env *env, int argc, char **argv)
 	name = argv[0];
 	addr = argv[1];
 
-	response = client_call("vxdb.nx.addr.get", "{s:s,s:s}",
-		"name", name,
-		"addr", addr);
-	return_if_fault(env);
+	if (argc > 2)
+		netmask = argv[2];
+	else
+		netmask = "";
 
-	if (xmlrpc_array_size(env, response) > 0) {
-		xmlrpc_array_read_item(env, response, 0, &result);
-		return_if_fault(env);
-
-		xmlrpc_decompose_value(env, result,
-			"{s:s,*}",
-			"netmask", &netmask);
-		return_if_fault(env);
-
-		xmlrpc_DECREF(result);
-		xmlrpc_DECREF(response);
-	}
-
-	if (argc > 1)
-		netmask = argv[1];
-
-	client_call("vxdb.nx.addr.set", "{s:s,s:s,s:s}",
+	client_call("vxdb.nx.addr.set",
+		"{s:s,s:s,s:s}",
 		"name", name,
 		"addr", addr,
 		"netmask", netmask);

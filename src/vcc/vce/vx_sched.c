@@ -25,22 +25,24 @@
 
 void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 {
+	xmlrpc_value *response, *result;
+	char *name;
 	int cpuid, interval, fillrate, interval2, fillrate2;
 	int tokensmin, tokensmax;
-	xmlrpc_value *response, *result;
 	int i, len;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		cpuid = -2;
-	else
+	if (argc > 1)
 		sscanf(argv[1], "%d", &cpuid);
+	else
+		cpuid = -2;
 
-	response = client_call("vxdb.vx.sched.get", "{s:s,s:i}",
+	response = client_call("vxdb.vx.sched.get",
+		"{s:s,s:i}",
 		"name", name,
 		"cpuid", cpuid);
 	return_if_fault(env);
@@ -65,8 +67,8 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 
 		xmlrpc_DECREF(result);
 
-		printf("%d: %d %d %d %d %d %d\n", cpuid, interval, fillrate, interval2,
-			fillrate2, tokensmin, tokensmax);
+		printf("%d: %d %d %d %d %d %d\n", cpuid, interval, fillrate,
+			interval2, fillrate2, tokensmin, tokensmax);
 	}
 
 	xmlrpc_DECREF(response);
@@ -74,40 +76,42 @@ void cmd_vx_sched_get(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_vx_sched_remove(xmlrpc_env *env, int argc, char **argv)
 {
+	char *name;
 	int cpuid;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		cpuid = -2;
-	else
+	if (argc > 1)
 		sscanf(argv[1], "%d", &cpuid);
+	else
+		cpuid = -2;
 
-	client_call("vxdb.vx.sched.remove", "{s:s,s:i}",
+	client_call("vxdb.vx.sched.remove",
+		"{s:s,s:i}",
 		"name", name,
 		"cpuid", cpuid);
 }
 
 void cmd_vx_sched_set(xmlrpc_env *env, int argc, char **argv)
 {
+	char *name;
 	int cpuid, interval, fillrate, interval2, fillrate2;
-	int tokensmin, tokensmax, i = 0;
+	int tokensmin, tokensmax;
 
 	if (argc < 8)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[i++];
-
-	sscanf(argv[i++], "%d", &cpuid);
-	sscanf(argv[i++], "%d", &interval);
-	sscanf(argv[i++], "%d", &fillrate);
-	sscanf(argv[i++], "%d", &interval2);
-	sscanf(argv[i++], "%d", &fillrate2);
-	sscanf(argv[i++], "%d", &tokensmin);
-	sscanf(argv[i++], "%d", &tokensmax);
+	name = argv[0];
+	sscanf(argv[1], "%d", &cpuid);
+	sscanf(argv[2], "%d", &interval);
+	sscanf(argv[3], "%d", &fillrate);
+	sscanf(argv[4], "%d", &interval2);
+	sscanf(argv[5], "%d", &fillrate2);
+	sscanf(argv[6], "%d", &tokensmin);
+	sscanf(argv[7], "%d", &tokensmax);
 
 	client_call("vxdb.vx.sched.set",
 		"{s:s,s:i,s:i,s:i,s:i,s:i,s:i,s:i}",

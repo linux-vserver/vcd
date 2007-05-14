@@ -49,15 +49,18 @@ char *pretty_uptime(int sec)
 void cmd_status(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	int running, nproc, uptime;
+	char *name;
+	int running = 0, nproc = 0, uptime = 0;
 	char *loadavg1m, *loadavg5m, *loadavg15m;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	result = client_call("vx.status", "{s:s}", "name", name);
+	result = client_call("vx.status",
+		"{s:s}",
+		"name", name);
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, result,

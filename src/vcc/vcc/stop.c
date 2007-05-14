@@ -22,10 +22,14 @@
 
 void cmd_stop(xmlrpc_env *env, int argc, char **argv)
 {
+	char *name;
+
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	client_call("vx.stop", "{s:s}", "name", name);
+	client_call("vx.stop",
+		"{s:s}",
+		"name", name);
 }

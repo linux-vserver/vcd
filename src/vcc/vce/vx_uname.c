@@ -24,21 +24,22 @@
 
 void cmd_vx_uname_get(xmlrpc_env *env, int argc, char **argv)
 {
-	char *type, *value;
 	xmlrpc_value *response, *result;
+	char *name, *type, *value;
 	int len, i;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		type = "";
-	else
+	if (argc > 1)
 		type = argv[1];
+	else
+		type = "";
 
-	response = client_call("vxdb.vx.uname.get", "{s:s,s:s}",
+	response = client_call("vxdb.vx.uname.get",
+		"{s:s,s:s}",
 		"name", name,
 		"type", type);
 	return_if_fault(env);
@@ -66,19 +67,20 @@ void cmd_vx_uname_get(xmlrpc_env *env, int argc, char **argv)
 
 void cmd_vx_uname_remove(xmlrpc_env *env, int argc, char **argv)
 {
-	char *type;
+	char *name, *type;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
 
-	char *name = argv[0];
+	name = argv[0];
 
-	if (argc < 2)
-		type = "";
-	else
+	if (argc > 1)
 		type = argv[1];
+	else
+		type = "";
 
-	client_call("vxdb.vx.uname.remove", "{s:s,s:s}",
+	client_call("vxdb.vx.uname.remove",
+		"{s:s,s:s}",
 		"name", name,
 		"type", type);
 }
@@ -94,7 +96,8 @@ void cmd_vx_uname_set(xmlrpc_env *env, int argc, char **argv)
 	type = argv[1];
 	value = argv[2];
 
-	client_call("vxdb.vx.uname.set", "{s:s,s:s,s:s}",
+	client_call("vxdb.vx.uname.set",
+		"{s:s,s:s,s:s}",
 		"name", name,
 		"type", type,
 		"value", value);
