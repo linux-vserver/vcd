@@ -39,6 +39,8 @@ void cmd_nx_broadcast_get(xmlrpc_env *env, int argc, char **argv)
 	return_if_fault(env);
 
 	xmlrpc_decompose_value(env, response, "s", &broadcast);
+	return_if_fault(env);
+
 	xmlrpc_DECREF(response);
 
 	if (!str_isempty(broadcast))
