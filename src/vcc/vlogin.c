@@ -28,6 +28,7 @@
 #include <errno.h>
 #include <pty.h>
 #include <vserver.h>
+
 #include <lucid/log.h>
 
 struct terminal {

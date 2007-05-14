@@ -18,7 +18,6 @@
 #include <stdlib.h>
 
 #include <lucid/printf.h>
-#include <lucid/scanf.h>
 
 #include "vcc.h"
 #include "cmd.h"
