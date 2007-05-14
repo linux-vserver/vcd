@@ -20,32 +20,41 @@
 #include "methods.h"
 #include "vxdb.h"
 
+#include <unistd.h>
 #include <vserver.h>
 #include <sys/resource.h>
 
 #include <lucid/log.h>
 
 static
+int pagestobytes(int pages) {
+	int bytes;
+	bytes = (pages * getpagesize()) >> 10;
+	return bytes;
+}
+
+static
 struct limit_data {
 	int id;
 	char *db;
+	int pagestobytes;
 } LIMIT[] = {
-	{ RLIMIT_AS,       "mem_AS"       },
-	{ RLIMIT_LOCKS,    "file_LOCKS"   },
-	{ RLIMIT_MEMLOCK,  "mem_MEMLOCK"  },
-	{ RLIMIT_MSGQUEUE, "ipc_MSGQUEUE" },
-	{ RLIMIT_NOFILE,   "file_NOFILE"  },
-	{ RLIMIT_NPROC,    "sys_NPROC"    },
-	{ RLIMIT_RSS,      "mem_RSS"      },
-	{ VLIMIT_ANON,     "mem_ANON"     },
-	{ VLIMIT_DENTRY,   "file_DENTRY"  },
-	{ VLIMIT_MAPPED,   "sys_MAPPED"   },
-	{ VLIMIT_NSEMS,    "ipc_NSEMS"    },
-	{ VLIMIT_NSOCK,    "file_NSOCK"   },
-	{ VLIMIT_OPENFD,   "file_OPENFD"  },
-	{ VLIMIT_SEMARY,   "ipc_SEMARY"   },
-	{ VLIMIT_SHMEM,    "ipc_SHMEM"    },
-	{ 0,               NULL           }
+	{ RLIMIT_AS,       "mem_AS",       1 },
+	{ RLIMIT_LOCKS,    "file_LOCKS",   0 },
+	{ RLIMIT_MEMLOCK,  "mem_MEMLOCK",  1 },
+	{ RLIMIT_MSGQUEUE, "ipc_MSGQUEUE", 0 },
+	{ RLIMIT_NOFILE,   "file_NOFILE",  0 },
+	{ RLIMIT_NPROC,    "sys_NPROC",    0 },
+	{ RLIMIT_RSS,      "mem_RSS",      1 },
+	{ VLIMIT_ANON,     "mem_ANON",     1 },
+	{ VLIMIT_DENTRY,   "file_DENTRY",  0 },
+	{ VLIMIT_MAPPED,   "sys_MAPPED",   0 },
+	{ VLIMIT_NSEMS,    "ipc_NSEMS",    0 },
+	{ VLIMIT_NSOCK,    "file_NSOCK",   0 },
+	{ VLIMIT_OPENFD,   "file_OPENFD",  0 },
+	{ VLIMIT_SEMARY,   "ipc_SEMARY",   0 },
+	{ VLIMIT_SHMEM,    "ipc_SHMEM",    0 },
+	{ 0,               NULL,           0 }
 };
 
 /* vx.limstatus(string name) */
@@ -91,12 +100,26 @@ xmlrpc_value *m_vx_limstatus(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				log_perror("vx_limit_stat(%s, %d)", LIMIT[i].db, xid);
 			}
 
+			int min = 0, cur = 0, max = 0;
+
+			if (LIMIT[i].pagestobytes == 1) {
+				min = pagestobytes((int) limstat.minimum);
+				cur = pagestobytes((int) limstat.value);
+				max = pagestobytes((int) limstat.maximum);
+			}
+
+			else {
+				min = (int) limstat.minimum;
+				cur = (int) limstat.value;
+				max = (int) limstat.maximum;
+			}
+
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:i,s:i,s:i}",
 				"type", LIMIT[i].db,
-				"min",  (int) limstat.minimum,
-				"cur",  (int) limstat.value,
-				"max",  (int) limstat.maximum));
+				"min",  min,
+				"cur",  cur,
+				"max",  max));
 		}
 	}
 
