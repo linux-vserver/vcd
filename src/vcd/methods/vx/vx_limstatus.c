@@ -39,22 +39,28 @@ struct limit_data {
 	char *db;
 	int pagestobytes;
 } LIMIT[] = {
-	{ RLIMIT_AS,       "mem_AS",       1 },
-	{ RLIMIT_LOCKS,    "file_LOCKS",   0 },
-	{ RLIMIT_MEMLOCK,  "mem_MEMLOCK",  1 },
-	{ RLIMIT_MSGQUEUE, "ipc_MSGQUEUE", 0 },
-	{ RLIMIT_NOFILE,   "file_NOFILE",  0 },
-	{ RLIMIT_NPROC,    "sys_NPROC",    0 },
-	{ RLIMIT_RSS,      "mem_RSS",      1 },
-	{ VLIMIT_ANON,     "mem_ANON",     1 },
-	{ VLIMIT_DENTRY,   "file_DENTRY",  0 },
-	{ VLIMIT_MAPPED,   "sys_MAPPED",   0 },
-	{ VLIMIT_NSEMS,    "ipc_NSEMS",    0 },
-	{ VLIMIT_NSOCK,    "file_NSOCK",   0 },
-	{ VLIMIT_OPENFD,   "file_OPENFD",  0 },
-	{ VLIMIT_SEMARY,   "ipc_SEMARY",   0 },
-	{ VLIMIT_SHMEM,    "ipc_SHMEM",    0 },
-	{ 0,               NULL,           0 }
+	{ RLIMIT_AS,         "mem_AS",         1 },
+	{ RLIMIT_CORE,       "sys_CORE",       0 },
+	{ RLIMIT_CPU,        "sys_CPU",        0 },
+	{ RLIMIT_DATA,       "sys_DATA",       0 },
+	{ RLIMIT_FSIZE,      "file_FSIZE",     0 },
+	{ RLIMIT_LOCKS,      "file_LOCKS",     0 },
+	{ RLIMIT_MEMLOCK,    "mem_MEMLOCK",    1 },
+	{ RLIMIT_MSGQUEUE,   "ipc_MSGQUEUE",   0 },
+	{ RLIMIT_NOFILE,     "file_NOFILE",    0 },
+	{ RLIMIT_NPROC,      "sys_NPROC",      0 },
+	{ RLIMIT_RSS,        "mem_RSS",        1 },
+	{ RLIMIT_SIGPENDING, "ipc_SIGPENDING", 0 },
+	{ RLIMIT_STACK,      "mem_STACK",      0 },
+	{ VLIMIT_ANON,       "mem_ANON",       1 },
+	{ VLIMIT_DENTRY,     "file_DENTRY",    0 },
+	{ VLIMIT_MAPPED,     "sys_MAPPED",     1 },
+	{ VLIMIT_NSEMS,      "ipc_NSEMS",      0 },
+	{ VLIMIT_NSOCK,      "file_NSOCK",     0 },
+	{ VLIMIT_OPENFD,     "file_OPENFD",    0 },
+	{ VLIMIT_SEMARY,     "ipc_SEMARY",     0 },
+	{ VLIMIT_SHMEM,      "ipc_SHMEM",      1 },
+	{ 0,                 NULL,             0 }
 };
 
 /* vx.limstatus(string name) */

@@ -57,7 +57,7 @@ void cmd_limstatus(xmlrpc_env *env, int argc, char **argv)
 
 		xmlrpc_DECREF(result);
 
-		printf("%-12s - cur: %d, min: %d, max: %d\n", type, cur, min, max);
+		printf("%-14s - cur: %d, min: %d, max: %d\n", type, cur, min, max);
 	}
 
 	xmlrpc_DECREF(response);
