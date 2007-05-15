@@ -178,6 +178,9 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 			"init", &init);
 	log_and_return_if_fault(env);
 
+	char *fastboot = str_path_concat(vdir, "/fastboot");
+	close(open_trunc(fastboot));
+
 	switch (fork()) {
 	case -1:
 		log_perror("fork");

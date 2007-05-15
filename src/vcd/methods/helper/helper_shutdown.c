@@ -93,8 +93,6 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"network context %d did not disappear", xid);
 
 		waitvx:
-		n = 0;
-
 		while (n++ < timeout) {
 			sleep(1);
 
