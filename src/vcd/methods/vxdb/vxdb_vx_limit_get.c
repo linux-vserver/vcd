@@ -92,7 +92,7 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	response = xmlrpc_array_new(env);
 
-	vxdb_foreach_step(rc, dbr)
+	vxdb_foreach_step(rc, dbr) {
 		char *typedb  = vxdb_column_text(dbr, 0);
 		uint64_t soft = vxdb_column_uint64(dbr, 1);
 		uint64_t max  = vxdb_column_uint64(dbr, 2);
@@ -104,7 +104,7 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			}
 		}
 
-		char *softs, maxs;
+		char *softs, *maxs;
 		asprintf(&softs, "%" PRIu64, soft);
 		asprintf(&maxs,  "%" PRIu64, max);
 
@@ -113,6 +113,7 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				"type", typedb,
 				"soft", softs,
 				"max",  maxs));
+	}
 
 	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
