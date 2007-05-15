@@ -55,7 +55,7 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_value *params;
 	char *name, *type, *softp, *maxp;
 	xid_t xid;
-	int rc;
+	int i, rc;
 
 	params = method_init(env, p, c, VCD_CAP_RLIM, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
