@@ -29,7 +29,7 @@
 
 static
 uint64_t pagestobytes(uint64_t pages) {
-	int bytes;
+	uint64_t bytes;
 	bytes = (pages * (uint64_t) getpagesize()) / 1024;
 	return bytes;
 }
