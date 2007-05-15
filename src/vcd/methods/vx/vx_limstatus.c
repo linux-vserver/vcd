@@ -29,7 +29,7 @@
 static
 int pagestobytes(int pages) {
 	int bytes;
-	bytes = (pages * getpagesize()) >> 10;
+	bytes = (pages * getpagesize()) / 1024;
 	return bytes;
 }
 

@@ -15,6 +15,7 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <unistd.h>
 #include <inttypes.h>
 
 #include "auth.h"
@@ -25,6 +26,26 @@
 #include <lucid/log.h>
 #include <lucid/scanf.h>
 #include <lucid/str.h>
+
+static
+uint64_t bytestopages(uint64_t bytes) {
+	uint64_t pages;
+	pages = (bytes * 1024) / (uint64_t) getpagesize();
+	return pages;
+}
+
+static
+struct limtype_data {
+	char *type;
+} LIMTYPE[] = {
+	{ "RLIMIT_AS"      },
+	{ "RLIMIT_MEMLOCK" },
+	{ "RLIMIT_RSS"     },
+	{ "VLIMIT_ANON"    },
+	{ "VLIMIT_MAPPED"  },
+	{ "VLIMIT_SHMEM"   },
+	{ NULL             }
+};
 
 /* vxdb.vx.limit.set(string name, string type, string soft, string max) */
 xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -72,6 +93,13 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
+
+	for(i = 0; LIMTYPE[i].type; i++) {
+		if (str_equal(type, LIMTYPE[i].type)) {
+			soft = bytestopages(soft);
+			max = bytestopages(max);
+		}
+	}
 
 	rc = vxdb_exec(
 			"INSERT OR REPLACE INTO vx_limit (xid, type, soft, max) "
