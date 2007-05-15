@@ -28,10 +28,10 @@
 #include <lucid/str.h>
 
 static
-uint64_t bytestopages(uint64_t bytes) {
-	uint64_t pages;
-	pages = (bytes * 1024) / (uint64_t) getpagesize();
-	return pages;
+uint64_t pagestobytes(uint64_t pages) {
+	int bytes;
+	bytes = (pages * (uint64_t) getpagesize()) / 1024;
+	return bytes;
 }
 
 static
@@ -99,8 +99,8 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 		for(i = 0; LIMTYPE[i].type; i++) {
 			if (str_equal(typedb, LIMTYPE[i].type)) {
-				soft = bytestopages(soft);
-				max  = bytestopages(max);
+				soft = pagestobytes(soft);
+				max  = pagestobytes(max);
 			}
 		}
 
