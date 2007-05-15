@@ -38,13 +38,13 @@ static
 struct limtype_data {
 	char *type;
 } LIMTYPE[] = {
-	{ "RLIMIT_AS"      },
-	{ "RLIMIT_MEMLOCK" },
-	{ "RLIMIT_RSS"     },
-	{ "VLIMIT_ANON"    },
-	{ "VLIMIT_MAPPED"  },
-	{ "VLIMIT_SHMEM"   },
-	{ NULL             }
+	{ "ANON"    },
+	{ "AS"      },
+	{ "MAPPED"  },
+	{ "MEMLOCK" },
+	{ "RSS"     },
+	{ "SHMEM"   },
+	{ NULL      }
 };
 
 /* vxdb.vx.limit.set(string name, string type, string soft, string max) */
