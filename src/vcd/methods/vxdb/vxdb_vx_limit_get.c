@@ -24,7 +24,7 @@
 #include "vxdb.h"
 
 #include <lucid/log.h>
-#include <lucid/scanf.h>
+#include <lucid/printf.h>
 #include <lucid/str.h>
 
 static
@@ -93,7 +93,7 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	response = xmlrpc_array_new(env);
 
 	vxdb_foreach_step(rc, dbr) {
-		char *typedb  = vxdb_column_text(dbr, 0);
+		const char *typedb = vxdb_column_text(dbr, 0);
 		uint64_t soft = vxdb_column_uint64(dbr, 1);
 		uint64_t max  = vxdb_column_uint64(dbr, 2);
 
