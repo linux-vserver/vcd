@@ -15,12 +15,37 @@
 // Free Software Foundation, Inc.,
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
+#include <unistd.h>
+#include <inttypes.h>
+
 #include "auth.h"
 #include "methods.h"
 #include "validate.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/scanf.h>
+#include <lucid/str.h>
+
+static
+uint64_t bytestopages(uint64_t bytes) {
+	uint64_t pages;
+	pages = (bytes * 1024) / (uint64_t) getpagesize();
+	return pages;
+}
+
+static
+struct limtype_data {
+	char *type;
+} LIMTYPE[] = {
+	{ "ANON"    },
+	{ "AS"      },
+	{ "MAPPED"  },
+	{ "MEMLOCK" },
+	{ "RSS"     },
+	{ "SHMEM"   },
+	{ NULL      }
+};
 
 /* vxdb.vx.limit.get(string name[, string type]) */
 xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -68,11 +93,26 @@ xmlrpc_value *m_vxdb_vx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	response = xmlrpc_array_new(env);
 
 	vxdb_foreach_step(rc, dbr)
+		char *typedb  = vxdb_column_text(dbr, 0);
+		uint64_t soft = vxdb_column_uint64(dbr, 1);
+		uint64_t max  = vxdb_column_uint64(dbr, 2);
+
+		for(i = 0; LIMTYPE[i].type; i++) {
+			if (str_equal(typedb, LIMTYPE[i].type)) {
+				soft = bytestopages(soft);
+				max  = bytestopages(max);
+			}
+		}
+
+		char *softs, maxs;
+		asprintf(&softs, "%" PRIu64, soft);
+		asprintf(&maxs,  "%" PRIu64, max);
+
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s,s:s}",
-				"type", vxdb_column_text(dbr, 0),
-				"soft", vxdb_column_text(dbr, 1),
-				"max",  vxdb_column_text(dbr, 2)));
+				"type", typedb,
+				"soft", softs,
+				"max",  maxs));
 
 	if (rc != VXDB_DONE)
 		method_set_vxdb_fault(env);
