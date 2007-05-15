@@ -7,10 +7,8 @@ BUGS:
 
 NEEDED FEATURES:
 - debian/ dir, RPM .spec file, init scripts (done for Gentoo!), distrib make targets, pathprog probably
-- support _ and - in vserver names (needs a new string checking function in Lucid)
 
 WANTED FEATURES:
-- add vx.limits and vx.netload methods to get more info
 - vx.move method to also move the VServer around on the disk
-- sysctl support
 - cpuset support
+- sysctl support

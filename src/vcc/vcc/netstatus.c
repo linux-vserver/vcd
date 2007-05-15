@@ -60,7 +60,7 @@ void cmd_netstatus(xmlrpc_env *env, int argc, char **argv)
 
 		xmlrpc_DECREF(result);
 
-		printf("%s - received: %d/%d, sent: %d/%d, failed: %d/%d\n",
+		printf("%-10s - received: %d/%d, sent: %d/%d, failed: %d/%d\n",
 				type, recvp, recvb, sendp, sendb, failp, failb);
 	}
 

@@ -24,11 +24,31 @@
 #include <lucid/log.h>
 #include <lucid/str.h>
 
+static
+int str_isalnumextended(const char *str)
+{
+	int i, n;
+
+	if (!str)
+		return 1;
+
+	n = str_len(str);
+
+	for (i = 0; i < n; i++) {
+		if ((unsigned int)(str[i] - 'a') < 26u || (unsigned int)(str[i] - 'A') < 26u || (unsigned int)(str[i] - '0') < 10u
+			|| str[i] == '-' || str[i] == '_') continue;
+		return 0;
+	}
+
+	return 1;
+}
+
+
 int validate_name(const char *name)
 {
 	LOG_TRACEME
 	return !(str_isempty(name) || str_len(name) < 3 ||
-			str_len(name) > 32 || !str_isalnum(name));
+			str_len(name) > 32 || !str_isalnumextended(name));
 }
 
 int validate_xid(xid_t xid)
