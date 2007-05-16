@@ -27,8 +27,8 @@ xmlrpc_value *m_helper_restart(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	xid_t xid;
 	int rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_HELPER, 0);
 	method_return_if_fault(env);

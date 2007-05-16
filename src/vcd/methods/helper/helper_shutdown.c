@@ -31,10 +31,10 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	xid_t xid;
-	int n, rc, status, timeout = 15;
-	pid_t pid;
 	char *name;
+	int n, rc, status, timeout = 15;
+	xid_t xid;
+	pid_t pid;
 
 	params = method_init(env, p, c, VCD_CAP_HELPER, 0);
 	method_return_if_fault(env);
