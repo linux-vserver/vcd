@@ -30,7 +30,7 @@ xmlrpc_value *m_vxdb_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params, *response = NULL;
 	char *curuser, *user;
-	int uid = 0, rc;
+	int rc, uid = 0;
 
 	method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);

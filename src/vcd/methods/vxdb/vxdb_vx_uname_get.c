@@ -29,8 +29,8 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params, *response = NULL;
 	char *name, *type;
-	xid_t xid;
 	int rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_UNAME, M_OWNER);
 	method_return_if_fault(env);
@@ -69,7 +69,7 @@ xmlrpc_value *m_vxdb_vx_uname_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	vxdb_foreach_step(rc, dbr)
 		xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 				"{s:s,s:s}",
-				"type", vxdb_column_text(dbr, 0),
+				"type",  vxdb_column_text(dbr, 0),
 				"value", vxdb_column_text(dbr, 1)));
 
 	if (rc != VXDB_DONE)

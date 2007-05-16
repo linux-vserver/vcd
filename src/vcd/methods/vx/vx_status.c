@@ -41,11 +41,10 @@ xmlrpc_value *m_vx_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	LOG_TRACEME
 
 	xmlrpc_value *params, *response = NULL;
-	char *name;
-	xid_t xid;
+	char *name, *load1m = NULL, *load5m = NULL, *load15m = NULL;
 	int running = 0, thr_total = 0, thr_running = 0, thr_unintr = 0, thr_onhold = 0;
 	int forks_total = 0, uptime = 0;
-	char *load1m = NULL, *load5m = NULL, *load15m = NULL;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_INFO, M_OWNER);
 	method_return_if_fault(env);

@@ -29,16 +29,16 @@ xmlrpc_value *m_vxdb_vx_uname_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name, *type, *value;
-	xid_t xid;
 	int rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_UNAME, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,s:s,*}",
-			"name", &name,
-			"type", &type,
+			"name",  &name,
+			"type",  &type,
 			"value", &value);
 	method_return_if_fault(env);
 

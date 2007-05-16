@@ -31,8 +31,8 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name, *halt = "/sbin/halt";
-	xid_t xid;
 	int rc, timeout = 15;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
@@ -71,7 +71,7 @@ xmlrpc_value *m_vx_stop(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	params = xmlrpc_build_value(env,
 			"{s:s,s:s}",
-			"name", name,
+			"name",    name,
 			"command", halt);
 
 	m_vx_exec(env, params, METHOD_INTERNAL);

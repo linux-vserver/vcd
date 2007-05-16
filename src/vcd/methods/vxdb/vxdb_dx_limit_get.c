@@ -28,8 +28,8 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params, *response = NULL;
 	char *name;
-	xid_t xid;
 	int rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_DLIM, M_OWNER);
 	method_return_if_fault(env);
@@ -55,15 +55,15 @@ xmlrpc_value *m_vxdb_dx_limit_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (rc == VXDB_ROW)
 		response = xmlrpc_build_value(env,
 				"{s:s,s:s,s:i}",
-				"space",   vxdb_column_text(dbr, 0),
-				"inodes",  vxdb_column_text(dbr, 1),
+				"space",    vxdb_column_text(dbr, 0),
+				"inodes",   vxdb_column_text(dbr, 1),
 				"reserved", vxdb_column_int(dbr, 2));
 
 	else if (rc == VXDB_DONE)
 		response = xmlrpc_build_value(env,
 				"{s:s,s:s,s:i}",
-				"space",   "",
-				"inodes",  "",
+				"space",    "",
+				"inodes",   "",
 				"reserved", 0);
 
 	else

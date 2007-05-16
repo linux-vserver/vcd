@@ -26,10 +26,13 @@ xmlrpc_value *m_vcd_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
+	xmlrpc_value *response = NULL;
+	int rc;
+
 	method_init(env, p, c, VCD_CAP_INFO, 0);
 	method_return_if_fault(env);
 
-	int rc = vxdb_prepare(&dbr,
+	rc = vxdb_prepare(&dbr,
 			"SELECT uptime, requests, flogins, nomethod FROM vcd "
 			"ORDER BY uptime DESC LIMIT 1");
 
@@ -38,11 +41,9 @@ xmlrpc_value *m_vcd_status(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	rc = vxdb_step(dbr);
 
-	xmlrpc_value *response = NULL;
-
 	if (rc == VXDB_ROW)
 		response = xmlrpc_build_value(env, "{s:i,s:i,s:i,s:i}",
-				"uptime", time(NULL) - vxdb_column_int(dbr, 0),
+				"uptime",   time(NULL) - vxdb_column_int(dbr, 0),
 				"requests", vxdb_column_int(dbr, 1),
 				"flogins",  vxdb_column_int(dbr, 2),
 				"nomethod", vxdb_column_int(dbr, 3));

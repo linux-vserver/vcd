@@ -28,8 +28,8 @@ xmlrpc_value *m_vxdb_init_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params, *response = NULL;
 	char *name;
-	xid_t xid;
 	int rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER);
 	method_return_if_fault(env);
@@ -54,17 +54,17 @@ xmlrpc_value *m_vxdb_init_get(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	if (rc == VXDB_ROW)
 		response = xmlrpc_build_value(env,
 				"{s:s,s:s,s:s,s:i}",
-				"init",   vxdb_column_text(dbr, 0),
-				"halt",   vxdb_column_text(dbr, 1),
-				"reboot", vxdb_column_text(dbr, 2),
+				"init",    vxdb_column_text(dbr, 0),
+				"halt",    vxdb_column_text(dbr, 1),
+				"reboot",  vxdb_column_text(dbr, 2),
 				"timeout", vxdb_column_int(dbr, 3));
 
 	else if (rc == VXDB_DONE)
 		response = xmlrpc_build_value(env,
 				"{s:s,s:s,s:s,s:i}",
-				"init",   "/sbin/init",
-				"halt",   "/sbin/halt",
-				"reboot", "/sbin/reboot",
+				"init",    "/sbin/init",
+				"halt",    "/sbin/halt",
+				"reboot",  "/sbin/reboot",
 				"timeout", 15);
 
 	else

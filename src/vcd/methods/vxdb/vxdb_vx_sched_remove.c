@@ -37,7 +37,7 @@ xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:i,*}",
-			"name", &name,
+			"name",  &name,
 			"cpuid", &cpuid);
 	method_return_if_fault(env);
 

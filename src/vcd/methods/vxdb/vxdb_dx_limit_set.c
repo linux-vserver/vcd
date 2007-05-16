@@ -33,7 +33,7 @@ xmlrpc_value *m_vxdb_dx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name, *spacep, *inodesp;
-	int reserved, rc;
+	int rc, reserved = 0;
 	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_DLIM, M_OWNER|M_LOCK);

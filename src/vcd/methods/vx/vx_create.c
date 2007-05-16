@@ -582,8 +582,8 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
-	char *user;
 	xmlrpc_value *params;
+	char *user;
 
 	method_init(env, p, c, VCD_CAP_CREATE, M_LOCK);
 	method_return_if_fault(env);
@@ -596,11 +596,11 @@ xmlrpc_value *m_vx_create(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,s:b,s:b,s:s,*}",
-			"name", &name,
+			"name",     &name,
 			"template", &template,
-			"force", &force,
-			"copy", &copy,
-			"vdir", &vdir);
+			"force",    &force,
+			"copy",     &copy,
+			"vdir",     &vdir);
 	method_return_if_fault(env);
 
 	/* get template dir */

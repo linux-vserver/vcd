@@ -25,8 +25,8 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	xmlrpc_value *params;
 	char *name, *src, *dst, *type, *opts;
-	xid_t xid;
 	int rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_MOUNT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
@@ -34,8 +34,8 @@ xmlrpc_value *m_vxdb_mount_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,s:s,s:s,s:s,*}",
 			"name", &name,
-			"src", &src,
-			"dst", &dst,
+			"src",  &src,
+			"dst",  &dst,
 			"type", &type,
 			"opts", &opts);
 	method_return_if_fault(env);

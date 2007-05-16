@@ -28,15 +28,15 @@ xmlrpc_value *m_vxdb_owner_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name, *user;
+	int rc, uid = 0;
 	xid_t xid;
-	int uid = 0, rc;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
-			"name", &name,
+			"name",     &name,
 			"username", &user);
 	method_return_if_fault(env);
 

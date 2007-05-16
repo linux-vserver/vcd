@@ -31,7 +31,7 @@ xmlrpc_value *m_vcd_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *user, *pass, *whirlpool_pass;
-	int uid, admin, rc;
+	int rc, admin = 0, uid = 0;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -40,7 +40,7 @@ xmlrpc_value *m_vcd_user_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"{s:s,s:s,s:b,*}",
 			"username", &user,
 			"password", &pass,
-			"admin", &admin);
+			"admin",    &admin);
 	method_return_if_fault(env);
 
 	method_empty_params(1, &pass);

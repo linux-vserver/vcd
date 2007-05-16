@@ -39,9 +39,9 @@ xmlrpc_value *m_vx_start(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name;
+	int status;
 	xid_t xid;
 	pid_t pid;
-	int status;
 	nx_flags_t ncf;
 	vx_flags_t vcf;
 

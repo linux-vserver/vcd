@@ -54,8 +54,8 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name, *type, *softp, *maxp;
-	xid_t xid;
 	int i, rc;
+	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_RLIM, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
@@ -65,7 +65,7 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 			"name", &name,
 			"type", &type,
 			"soft", &softp,
-			"max", &maxp);
+			"max",  &maxp);
 	method_return_if_fault(env);
 
 	if (!str_isdigit(softp))
@@ -97,7 +97,7 @@ xmlrpc_value *m_vxdb_vx_limit_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	for(i = 0; LIMTYPE[i].type; i++) {
 		if (str_equal(type, LIMTYPE[i].type)) {
 			soft = bytestopages(soft);
-			max = bytestopages(max);
+			max  = bytestopages(max);
 		}
 	}
 

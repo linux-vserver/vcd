@@ -42,7 +42,7 @@ xmlrpc_value *m_vx_exec(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
-			"name", &name,
+			"name",    &name,
 			"command", &command);
 	method_return_if_fault(env);
 

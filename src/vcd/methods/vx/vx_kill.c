@@ -28,9 +28,9 @@ xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *name;
+	int sig;
 	xid_t xid;
 	pid_t pid;
-	int sig;
 
 	params = method_init(env, p, c, VCD_CAP_INIT, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
@@ -38,8 +38,8 @@ xmlrpc_value *m_vx_kill(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:i,s:i,*}",
 			"name", &name,
-			"pid", &pid,
-			"sig", &sig);
+			"pid",  &pid,
+			"sig",  &sig);
 	method_return_if_fault(env);
 
 	if (!(xid = vxdb_getxid(name)))

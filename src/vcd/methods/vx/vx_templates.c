@@ -124,7 +124,7 @@ xmlrpc_value *m_vx_templates(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
 					"{s:s,s:s}",
-					"name", dent->d_name,
+					"name",        dent->d_name,
 					"description", description));
 		}
 	}

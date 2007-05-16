@@ -26,7 +26,7 @@
 
 xmlrpc_value *vg_list_init(xmlrpc_env *env, const char *group, vg_list_t *vxs)
 {
-	int rc, gid;
+	int rc, gid = 0;
 	vg_list_t *new;
 
 	if (!validate_group(group))

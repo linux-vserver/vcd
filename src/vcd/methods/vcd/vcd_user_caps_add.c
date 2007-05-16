@@ -29,8 +29,7 @@ xmlrpc_value *m_vcd_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *user, *cap;
-	int uid;
-	int rc;
+	int rc, uid = 0;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
@@ -38,7 +37,7 @@ xmlrpc_value *m_vcd_user_caps_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
 			"username", &user,
-			"cap", &cap);
+			"cap",      &cap);
 	method_return_if_fault(env);
 
 	if (!validate_vcd_cap(cap))

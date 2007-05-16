@@ -31,7 +31,7 @@ xmlrpc_value *m_vg_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *group, *name;
-	int gid, rc;
+	int rc, gid = 0;
 	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
@@ -40,7 +40,7 @@ xmlrpc_value *m_vg_add(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	xmlrpc_decompose_value(env, params,
 			"{s:s,s:s,*}",
 			"group", &group,
-			"name", &name);
+			"name",  &name);
 	method_return_if_fault(env);
 
 	if (!validate_group(group))

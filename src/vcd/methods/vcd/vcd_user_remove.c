@@ -29,7 +29,7 @@ xmlrpc_value *m_vcd_user_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params;
 	char *user;
-	int uid, rc;
+	int rc, uid = 0;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);

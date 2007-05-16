@@ -31,7 +31,7 @@ xmlrpc_value *m_vg_list(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	xmlrpc_value *params, *response = NULL;
 	char *group;
-	int rc, gid;
+	int rc, gid = 0;
 
 	params = method_init(env, p, c, VCD_CAP_AUTH, 0);
 	method_return_if_fault(env);
