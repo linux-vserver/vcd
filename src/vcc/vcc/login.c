@@ -21,6 +21,9 @@
 
 #include <lucid/chroot.h>
 #include <lucid/log.h>
+#include <lucid/misc.h>
+#include <lucid/open.h>
+#include <lucid/printf.h>
 
 #include "vcc.h"
 #include "cmd.h"
@@ -28,9 +31,10 @@
 void cmd_login(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *result;
-	xid_t xid;
-	char *name, *vdir;
+	char *name, *vdir, *cpusetpath;
 	char *av[] = { "/bin/sh", NULL };
+	int cpusetfd;
+	xid_t xid;
 
 	if (argc < 1)
 		usage(EXIT_FAILURE);
@@ -56,6 +60,21 @@ void cmd_login(xmlrpc_env *env, int argc, char **argv)
 	return_if_fault(env);
 
 	xmlrpc_DECREF(result);
+
+	/* Add the PID of the current process to the cpuset for this
+	 * vserver, if the cpuset exists, and then fork. */
+	asprintf(&cpusetpath, "/dev/cpuset/xid%d/tasks", xid);
+
+	if (ispath(cpusetpath)) {
+		if ((cpusetfd = open_append(cpusetpath)) == -1) {
+			log_perror_and_die("open_append(%s)", cpusetpath);
+		}
+
+		else {
+			dprintf(cpusetfd, "%d", getpid());
+			close(cpusetfd);
+		}
+	}
 
 	if (ns_enter(xid, 0) == -1)
 		log_perror_and_die("ns_enter");

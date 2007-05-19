@@ -27,6 +27,7 @@
 #include <lucid/chroot.h>
 #include <lucid/exec.h>
 #include <lucid/log.h>
+#include <lucid/misc.h>
 #include <lucid/open.h>
 #include <lucid/printf.h>
 #include <lucid/scanf.h>
@@ -159,7 +160,8 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 {
 	xmlrpc_value *response;
 	char *vdir, *init;
-	int i;
+	char *fastboot, *cpusetpath;
+	int i, cpusetfd;
 
 	vx_flags_t migrate_flags = {
 		.flags = VXM_SET_INIT|VXM_SET_REAPER,
@@ -178,8 +180,24 @@ int vshelper_startup(xmlrpc_env *env, xid_t xid)
 			"init", &init);
 	log_and_return_if_fault(env);
 
-	char *fastboot = str_path_concat(vdir, "/fastboot");
+	/* Write fastboot file to vdir for some distros */
+	fastboot = str_path_concat(vdir, "/fastboot");
 	close(open_trunc(fastboot));
+
+	/* Add the PID of the current process to the cpuset for this
+	 * vserver, if the cpuset exists, and then fork. */
+	asprintf(&cpusetpath, "/dev/cpuset/xid%d/tasks", xid);
+
+	if (ispath(cpusetpath)) {
+		if ((cpusetfd = open_append(cpusetpath)) == -1) {
+			log_perror("open_append(%s)", cpusetpath);
+		}
+
+		else {
+			dprintf(cpusetfd, "%d", getpid());
+			close(cpusetfd);
+		}
+	}
 
 	switch (fork()) {
 	case -1:
