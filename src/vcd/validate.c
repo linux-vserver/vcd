@@ -16,7 +16,6 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
-#include <stdlib.h>
 #include <dirent.h>
 
 #include "lists.h"
@@ -43,7 +42,9 @@ int max_mem_node(void)
 		if (str_cmpn(dent->d_name, "node", 4))
 			continue;
 
-		int node = atoi(dent->d_name+4);
+		int node;
+		sscanf(dent->d_name+4, "%d", &node);
+
 		if (maxmemnode < node)
 			maxmemnode = node;
 	}
