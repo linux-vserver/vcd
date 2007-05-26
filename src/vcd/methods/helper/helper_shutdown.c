@@ -24,6 +24,8 @@
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/misc.h>
+#include <lucid/printf.h>
 
 /* helper.shutdown(int xid) */
 xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
@@ -46,6 +48,16 @@ xmlrpc_value *m_helper_shutdown(xmlrpc_env *env, xmlrpc_value *p, void *c)
 
 	if (!(name = vxdb_getname(xid)))
 		method_return_fault(env, MENOVPS);
+
+	/* Remove the cpuset on shutdown, if it exists */
+	if (ismount("/dev/cpuset")) {
+		char *cpusetpath;
+
+		asprintf(&cpusetpath, "/dev/cpuset/xid%d", xid);
+
+		if (isdir(cpusetpath))
+			rmdir(cpusetpath);
+	}
 
 	rc = vxdb_exec("DELETE FROM restart WHERE xid = %d", xid);
 

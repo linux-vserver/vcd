@@ -44,6 +44,9 @@ cmd_t CMDS[] = {
 	{ "vx.ccaps.add",        cmd_vx_ccaps_add },
 	{ "vx.ccaps.get",        cmd_vx_ccaps_get },
 	{ "vx.ccaps.remove",     cmd_vx_ccaps_remove },
+	{ "vx.cpuset.get",       cmd_vx_cpuset_get },
+	{ "vx.cpuset.remove",    cmd_vx_cpuset_remove },
+	{ "vx.cpuset.set",       cmd_vx_cpuset_set },
 	{ "vx.flags.add",        cmd_vx_flags_add },
 	{ "vx.flags.get",        cmd_vx_flags_get },
 	{ "vx.flags.remove",     cmd_vx_flags_remove },
@@ -102,6 +105,10 @@ void usage(int rc)
 			"   vx.limit.get        <name> [<limit>]\n"
 			"   vx.limit.remove     <name> [<limit>]\n"
 			"   vx.limit.set        <name> <limit> <soft> [<max>]\n"
+			"\n"
+			"   vx.cpuset.get        <name>\n"
+			"   vx.cpuset.remove     <name>\n"
+			"   vx.cpuset.set        <name> <cpus> <mems> [<virtualize>]\n"
 			"\n"
 			"   vx.sched.get        <name> [<cpuid>]\n"
 			"   vx.sched.remove     <name> [<cpuid>]\n"

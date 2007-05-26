@@ -143,6 +143,9 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("vxdb.vx.ccaps.add",        m_vxdb_vx_ccaps_add);
 	MREGISTER("vxdb.vx.ccaps.get",        m_vxdb_vx_ccaps_get);
 	MREGISTER("vxdb.vx.ccaps.remove",     m_vxdb_vx_ccaps_remove);
+	MREGISTER("vxdb.vx.cpuset.get",       m_vxdb_vx_cpuset_get);
+	MREGISTER("vxdb.vx.cpuset.remove",    m_vxdb_vx_cpuset_remove);
+	MREGISTER("vxdb.vx.cpuset.set",       m_vxdb_vx_cpuset_set);
 	MREGISTER("vxdb.vx.flags.add",        m_vxdb_vx_flags_add);
 	MREGISTER("vxdb.vx.flags.get",        m_vxdb_vx_flags_get);
 	MREGISTER("vxdb.vx.flags.remove",     m_vxdb_vx_flags_remove);

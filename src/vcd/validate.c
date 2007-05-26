@@ -16,13 +16,42 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <unistd.h>
+#include <stdlib.h>
+#include <dirent.h>
 
 #include "lists.h"
 #include "validate.h"
 
 #include <lucid/addr.h>
 #include <lucid/log.h>
+#include <lucid/scanf.h>
 #include <lucid/str.h>
+#include <lucid/strtok.h>
+
+static
+int max_mem_node(void)
+{
+	DIR *ndir;
+	struct dirent *dent;
+	int maxmemnode = 0;
+
+	ndir = opendir("/sys/devices/system/node");
+	if (!ndir)
+		return 0;
+
+	while ((dent = readdir(ndir))) {
+		if (str_cmpn(dent->d_name, "node", 4))
+			continue;
+
+		int node = atoi(dent->d_name+4);
+		if (maxmemnode < node)
+			maxmemnode = node;
+	}
+
+	closedir(ndir);
+
+	return maxmemnode;
+}
 
 static
 int str_isalnumextended(const char *str)
@@ -150,6 +179,68 @@ int validate_token_bucket(int fillrate, int interval, int fillrate2,
 			(tokensmax < fillrate || tokensmax < fillrate2) ||
 			(tokensmin > tokensmax)
 	);
+}
+
+int validate_cpuset(const char *cpuset, int type)
+{
+	LOG_TRACEME
+
+	if (str_isempty(cpuset))
+		return 0;
+
+	int cpusetlen = str_len(cpuset)-1;
+
+	if (str_cmpn(cpuset, ",", 1) == 0 || str_cmpn(cpuset+cpusetlen, ",", 1) == 0)
+		return 0;
+
+	strtok_t _st, *st = &_st, *p;
+
+	if (!strtok_init_str(st, cpuset, ",", 0))
+		return 0;
+
+	int maxcpus = 0, maxmems = 0;
+
+	if (type == 0)
+		maxcpus = sysconf(_SC_NPROCESSORS_ONLN);
+	else if (type == 1)
+		maxmems = max_mem_node();
+	else
+		return 0;
+
+	int errorout = 0;
+
+	strtok_for_each(st, p) {
+		if (!str_isdigit(p->token)) {
+			errorout = 1;
+			break;
+		}
+
+		int id;
+		sscanf(p->token, "%d", &id);
+
+		if (type == 0) {
+			if (!(id >= 0 && id < maxcpus)) {
+				errorout = 1;
+				break;
+			}
+		}
+
+		else if (type == 1) {
+			if (!(id >= 0 && id <= maxmems)) {
+				errorout = 1;
+				break;
+			}
+		}
+
+		else {
+			errorout = 1;
+			break;
+		}
+	}
+
+	strtok_free(st);
+
+	return (errorout == 0) ? 1 : 0;
 }
 
 int validate_uname(const char *uname)

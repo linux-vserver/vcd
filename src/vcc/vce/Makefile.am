@@ -30,6 +30,7 @@ libcmd_a_SOURCES = cmd.c \
                    nx_broadcast.c \
                    vx_bcaps.c \
                    vx_ccaps.c \
+                   vx_cpuset.c \
                    vx_flags.c \
                    vx_limit.c \
                    vx_sched.c \

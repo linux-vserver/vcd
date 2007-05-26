@@ -1,4 +1,4 @@
-// Copyright 2006-2007 Benedikt Böhm <hollow@gentoo.org>
+// Copyright 2007 Luca Longinotti <chtekk@gentoo.org>
 //
 // This program is free software; you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
@@ -22,43 +22,43 @@
 
 #include <lucid/log.h>
 
-/* vxdb.vx.sched.remove(string name, int cpuid) */
-xmlrpc_value *m_vxdb_vx_sched_remove(xmlrpc_env *env, xmlrpc_value *p, void *c)
+/* vxdb.vx.cpuset.set(string name, string cpus, string mems, bool virtualize) */
+xmlrpc_value *m_vxdb_vx_cpuset_set(xmlrpc_env *env, xmlrpc_value *p, void *c)
 {
 	LOG_TRACEME
 
 	xmlrpc_value *params;
-	char *name;
-	int cpuid, rc;
+	char *name, *cpus, *mems;
+	int virtualize = 0, rc;
 	xid_t xid;
 
 	params = method_init(env, p, c, VCD_CAP_SCHED, M_OWNER|M_LOCK);
 	method_return_if_fault(env);
 
 	xmlrpc_decompose_value(env, params,
-			"{s:s,s:i,*}",
-			"name",  &name,
-			"cpuid", &cpuid);
+			"{s:s,s:s,s:s,s:b,*}",
+			"name",       &name,
+			"cpus",       &cpus,
+			"mems",       &mems,
+			"virtualize", &virtualize);
 	method_return_if_fault(env);
 
-	if (!validate_cpuid(cpuid) && cpuid != -2)
+	if (!validate_cpuset(cpus, 0))
 		method_return_faultf(env, MEINVAL,
-				"cpuid out of range: %d", cpuid);
+				"invalid cpus specification: %s", cpus);
+
+	if (!validate_cpuset(mems, 1))
+		method_return_faultf(env, MEINVAL,
+				"invalid mems specification: %s", mems);
 
 	if (!(xid = vxdb_getxid(name)))
 		method_return_fault(env, MENOVPS);
 
-	/* -2 is used to get all configured cpus, we can't use -1 here,
-	 * since it has special meaning in helper.startup */
-	if (cpuid == -2)
-		rc = vxdb_exec(
-				"DELETE FROM vx_sched WHERE xid = %d",
-				xid);
-
-	else
-		rc = vxdb_exec(
-				"DELETE FROM vx_sched WHERE xid = %d AND cpuid = %d",
-				xid, cpuid);
+	rc = vxdb_exec(
+			"INSERT OR REPLACE INTO vx_cpuset "
+			"(xid, cpus, mems, virtualize) "
+			"VALUES (%d, '%s', '%s', %d)",
+			xid, cpus, mems, virtualize);
 
 	if (rc != VXDB_OK)
 		method_return_vxdb_fault(env);

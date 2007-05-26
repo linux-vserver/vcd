@@ -34,6 +34,7 @@
 #include <lucid/exec.h>
 #include <lucid/log.h>
 #include <lucid/mem.h>
+#include <lucid/misc.h>
 #include <lucid/open.h>
 #include <lucid/printf.h>
 #include <lucid/scanf.h>
@@ -43,9 +44,10 @@
    1) setup capabilities
    2) setup disk limits
    3) setup resource limits
-   4) setup scheduler
-   5) setup unames
-   6) setup filesystem namespace
+   4) setup cpuset
+   5) setup scheduler
+   6) setup unames
+   7) setup filesystem namespace
 */
 
 static const char *name = NULL;
@@ -312,6 +314,86 @@ xmlrpc_value *context_resource_limits(xmlrpc_env *env)
 }
 
 static
+xmlrpc_value *context_cpuset(xmlrpc_env *env)
+{
+	LOG_TRACEME
+
+	/* We need the cpuset fs mounted */
+	if (ismount("/dev/cpuset")) {
+		char *cpusetpath;
+		int rc;
+
+		asprintf(&cpusetpath, "/dev/cpuset/xid%d", xid);
+
+		/* First remove the cpuset, if it exists */
+		if (isdir(cpusetpath))
+			rmdir(cpusetpath);
+
+		/* Then query the database */
+		rc = vxdb_prepare(&dbr,
+				"SELECT cpus,mems,virtualize "
+				"FROM vx_cpuset WHERE xid = %d",
+				xid);
+
+		if (rc != VXDB_OK)
+			method_return_vxdb_fault(env);
+
+		/* Lastly setup the new cpuset (or do nothing) */
+		rc = vxdb_step(dbr);
+
+		if (rc == VXDB_ROW) {
+			if (!isdir(cpusetpath))
+				mkdir(cpusetpath, 0755);
+
+			int cscpusfd;
+			char *cscpus = str_path_concat(cpusetpath, "/cpus");
+
+			if ((cscpusfd = open_append(cscpus)) == -1) {
+				method_set_sys_faultf(env, "open_append(%s)", cscpus);
+			}
+
+			else {
+				dprintf(cscpusfd, "%s", vxdb_column_text(dbr, 0));
+				close(cscpusfd);
+			}
+
+			int csmemsfd;
+			char *csmems = str_path_concat(cpusetpath, "/mems");
+
+			if ((csmemsfd = open_append(csmems)) == -1) {
+				method_set_sys_faultf(env, "open_append(%s)", csmems);
+			}
+
+			else {
+				dprintf(csmemsfd, "%s", vxdb_column_text(dbr, 1));
+				close(csmemsfd);
+			}
+
+			int csvirtfd;
+			char *csvirt = str_path_concat(cpusetpath, "/virtualize");
+
+			if (ispath(csvirt)) {
+				if ((csvirtfd = open_append(csvirt)) == -1) {
+					method_set_sys_faultf(env, "open_append(%s)", csvirt);
+				}
+
+				else {
+					dprintf(csvirtfd, "%d", vxdb_column_int(dbr, 2));
+					close(csvirtfd);
+				}
+			}
+		}
+
+		else if (rc != VXDB_DONE)
+			method_set_vxdb_fault(env);
+
+		vxdb_finalize(dbr);
+	}
+
+	return NULL;
+}
+
+static
 xmlrpc_value *context_scheduler(xmlrpc_env *env)
 {
 	LOG_TRACEME
@@ -373,6 +455,7 @@ xmlrpc_value *context_scheduler(xmlrpc_env *env)
 		method_set_vxdb_fault(env);
 
 	vxdb_finalize(dbr);
+
 	return NULL;
 }
 
@@ -620,6 +703,9 @@ xmlrpc_value *m_helper_startup(xmlrpc_env *env, xmlrpc_value *p, void *c)
 	method_return_if_fault(env);
 
 	context_resource_limits(env);
+	method_return_if_fault(env);
+
+	context_cpuset(env);
 	method_return_if_fault(env);
 
 	context_scheduler(env);

@@ -81,6 +81,9 @@ M_VXDB = vxdb/vxdb_dx_limit_get.c \
          vxdb/vxdb_vx_ccaps_add.c \
          vxdb/vxdb_vx_ccaps_get.c \
          vxdb/vxdb_vx_ccaps_remove.c \
+         vxdb/vxdb_vx_cpuset_get.c \
+         vxdb/vxdb_vx_cpuset_remove.c \
+         vxdb/vxdb_vx_cpuset_set.c \
          vxdb/vxdb_vx_flags_add.c \
          vxdb/vxdb_vx_flags_get.c \
          vxdb/vxdb_vx_flags_remove.c \

@@ -50,6 +50,8 @@ int validate_token_bucket(int fillrate, int interval,
                           int fillrate2, int interval2,
                           int tokensmin, int tokensmax);
 
+int validate_cpuset(const char *cpuset, int type);
+
 int validate_uname(const char *uname);
 int validate_uname_value(const char *value);
 

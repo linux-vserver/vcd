@@ -7,5 +7,4 @@ NEEDED FEATURES:
 
 WANTED FEATURES:
 - vx.move method to also move the VServer around on the disk
-- cpuset support
 - sysctl support

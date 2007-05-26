@@ -88,6 +88,9 @@ VXDB_UNIQUE_NEW(vx_bcaps, "xid,bcap")
 VXDB_COLUMNS_NEW(vx_ccaps, "xid", "ccap")
 VXDB_UNIQUE_NEW(vx_ccaps, "xid,ccap")
 
+VXDB_COLUMNS_NEW(vx_cpuset, "xid", "cpus", "mems", "virtualize")
+VXDB_UNIQUE_NEW(vx_cpuset, "xid")
+
 VXDB_COLUMNS_NEW(vx_flags, "xid", "flag")
 VXDB_UNIQUE_NEW(vx_flags, "xid,flag")
 
@@ -127,6 +130,7 @@ VXDB_TABLE_NEW(vcd)
 VXDB_TABLE_NEW(vdir)
 VXDB_TABLE_NEW(vx_bcaps)
 VXDB_TABLE_NEW(vx_ccaps)
+VXDB_TABLE_NEW(vx_cpuset)
 VXDB_TABLE_NEW(vx_flags)
 VXDB_TABLE_NEW(vx_limit)
 VXDB_TABLE_NEW(vx_sched)
