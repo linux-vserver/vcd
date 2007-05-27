@@ -20,6 +20,7 @@
 
 void usage(int rc);
 
+void cmd_hostinfo        (xmlrpc_env *env, int argc, char **argv);
 void cmd_status          (xmlrpc_env *env, int argc, char **argv);
 void cmd_user_set        (xmlrpc_env *env, int argc, char **argv);
 void cmd_user_get        (xmlrpc_env *env, int argc, char **argv);

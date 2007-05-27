@@ -22,6 +22,7 @@ AM_CPPFLAGS = $(PATH_CPPFLAGS)
 noinst_LIBRARIES = libcmd.a
 
 libcmd_a_SOURCES = cmd.c \
+                   hostinfo.c \
                    status.c \
                    user.c \
                    user_caps.c

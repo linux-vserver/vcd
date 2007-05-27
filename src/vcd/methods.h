@@ -126,6 +126,7 @@ MPROTO(m_helper_shutdown);
 MPROTO(m_helper_startup);
 
 /* vcd */
+MPROTO(m_vcd_hostinfo);
 MPROTO(m_vcd_login);
 MPROTO(m_vcd_status);
 MPROTO(m_vcd_user_caps_add);

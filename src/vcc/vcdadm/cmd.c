@@ -23,6 +23,7 @@
 #include "cmd.h"
 
 cmd_t CMDS[] = {
+	{ "hostinfo",         cmd_hostinfo },
 	{ "status",           cmd_status },
 	{ "user.set",         cmd_user_set },
 	{ "user.get",         cmd_user_get },
@@ -38,6 +39,8 @@ void usage(int rc)
 	printf("Usage: vcdadm <opts>* <command>\n"
 			"\n"
 			"Available commands:\n"
+			"   hostinfo\n"
+			"\n"
 			"   status\n"
 			"\n"
 			"   user.set         <username> <admin> [<password>]\n"

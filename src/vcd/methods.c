@@ -83,6 +83,7 @@ int method_registry_init(xmlrpc_env *env)
 	MREGISTER("helper.startup",  m_helper_startup);
 
 	/* vcd */
+	MREGISTER("vcd.hostinfo",         m_vcd_hostinfo);
 	MREGISTER("vcd.login",            m_vcd_login);
 	MREGISTER("vcd.status",           m_vcd_status);
 	MREGISTER("vcd.user.caps.add",    m_vcd_user_caps_add);
