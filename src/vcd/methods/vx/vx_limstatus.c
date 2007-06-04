@@ -19,17 +19,19 @@
 #include <unistd.h>
 #include <vserver.h>
 #include <sys/resource.h>
+#include <inttypes.h>
 
 #include "auth.h"
 #include "methods.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/printf.h>
 
 static
-int pagestobytes(int pages) {
-	int bytes;
-	bytes = (pages * getpagesize()) / 1024;
+uint64_t pagestobytes(uint64_t pages) {
+	uint64_t bytes;
+	bytes = (pages * (uint64_t) getpagesize()) / 1024;
 	return bytes;
 }
 
@@ -106,26 +108,31 @@ xmlrpc_value *m_vx_limstatus(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				log_perror("vx_limit_stat(%s, %d)", LIMIT[i].db, xid);
 			}
 
-			int min = 0, cur = 0, max = 0;
+			uint64_t min = 0, cur = 0, max = 0;
 
 			if (LIMIT[i].pagestobytes == 1) {
-				min = pagestobytes((int) limstat.minimum);
-				cur = pagestobytes((int) limstat.value);
-				max = pagestobytes((int) limstat.maximum);
+				min = pagestobytes(limstat.minimum);
+				cur = pagestobytes(limstat.value);
+				max = pagestobytes(limstat.maximum);
 			}
 
 			else {
-				min = (int) limstat.minimum;
-				cur = (int) limstat.value;
-				max = (int) limstat.maximum;
+				min = limstat.minimum;
+				cur = limstat.value;
+				max = limstat.maximum;
 			}
 
+			char *mins, *curs, *maxs;
+			asprintf(&mins, "%" PRIu64, min);
+			asprintf(&curs, "%" PRIu64, cur);
+			asprintf(&maxs, "%" PRIu64, max);
+
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i,s:i,s:i}",
+				"{s:s,s:s,s:s,s:s}",
 				"type", LIMIT[i].db,
-				"min",  min,
-				"cur",  cur,
-				"max",  max));
+				"min",  mins,
+				"cur",  curs,
+				"max",  maxs));
 		}
 	}
 

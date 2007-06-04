@@ -17,12 +17,14 @@
 // 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <vserver.h>
+#include <inttypes.h>
 
 #include "auth.h"
 #include "methods.h"
 #include "vxdb.h"
 
 #include <lucid/log.h>
+#include <lucid/printf.h>
 
 static
 struct net_data {
@@ -81,15 +83,23 @@ xmlrpc_value *m_vx_netstatus(xmlrpc_env *env, xmlrpc_value *p, void *c)
 				log_perror("nx_sock_stat(%s, %d)", NET[i].db, xid);
 			}
 
+			char *recvps, *recvbs, *sendps, *sendbs, *failps, *failbs;
+			asprintf(&recvps, "%" PRIu32, netstat.count[0]);
+			asprintf(&recvbs, "%" PRIu64, netstat.total[0]);
+			asprintf(&sendps, "%" PRIu32, netstat.count[1]);
+			asprintf(&sendbs, "%" PRIu64, netstat.total[1]);
+			asprintf(&failps, "%" PRIu32, netstat.count[2]);
+			asprintf(&failbs, "%" PRIu64, netstat.total[2]);
+
 			xmlrpc_array_append_item(env, response, xmlrpc_build_value(env,
-				"{s:s,s:i,s:i,s:i,s:i,s:i,s:i}",
+				"{s:s,s:s,s:s,s:s,s:s,s:s,s:s}",
 				"type",  NET[i].db,
-				"recvp", (int) netstat.count[0],
-				"recvb", (int) netstat.total[0],
-				"sendp", (int) netstat.count[1],
-				"sendb", (int) netstat.total[1],
-				"failp", (int) netstat.count[2],
-				"failb", (int) netstat.total[2]));
+				"recvp", recvps,
+				"recvb", recvbs,
+				"sendp", sendps,
+				"sendb", sendbs,
+				"failp", failps,
+				"failb", failbs));
 		}
 	}
 

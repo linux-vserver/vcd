@@ -26,8 +26,7 @@
 void cmd_limstatus(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *name, *type;
-	int min = 0, cur = 0, max = 0;
+	char *name, *type, *min, *cur, *max;
 	int len, i;
 
 	if (argc < 1)
@@ -48,7 +47,7 @@ void cmd_limstatus(xmlrpc_env *env, int argc, char **argv)
 		return_if_fault(env);
 
 		xmlrpc_decompose_value(env, result,
-			"{s:s,s:i,s:i,s:i,*}",
+			"{s:s,s:s,s:s,s:s,*}",
 			"type", &type,
 			"min",  &min,
 			"cur",  &cur,
@@ -57,7 +56,7 @@ void cmd_limstatus(xmlrpc_env *env, int argc, char **argv)
 
 		xmlrpc_DECREF(result);
 
-		printf("%-14s - cur: %d, min: %d, max: %d\n", type, cur, min, max);
+		printf("%-14s - cur: %s, min: %s, max: %s\n", type, cur, min, max);
 	}
 
 	xmlrpc_DECREF(response);

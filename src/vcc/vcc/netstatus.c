@@ -26,8 +26,7 @@
 void cmd_netstatus(xmlrpc_env *env, int argc, char **argv)
 {
 	xmlrpc_value *response, *result;
-	char *name, *type;
-	int recvp = 0, recvb = 0, sendp = 0, sendb = 0, failp = 0, failb = 0;
+	char *name, *type, *recvp, *recvb, *sendp, *sendb, *failp, *failb;
 	int len, i;
 
 	if (argc < 1)
@@ -48,7 +47,7 @@ void cmd_netstatus(xmlrpc_env *env, int argc, char **argv)
 		return_if_fault(env);
 
 		xmlrpc_decompose_value(env, result,
-			"{s:s,s:i,s:i,s:i,s:i,s:i,s:i,*}",
+			"{s:s,s:s,s:s,s:s,s:s,s:s,s:s,*}",
 			"type",  &type,
 			"recvp", &recvp,
 			"recvb", &recvb,
@@ -60,7 +59,7 @@ void cmd_netstatus(xmlrpc_env *env, int argc, char **argv)
 
 		xmlrpc_DECREF(result);
 
-		printf("%-10s - received: %d/%d, sent: %d/%d, failed: %d/%d\n",
+		printf("%-10s - received: %s/%s, sent: %s/%s, failed: %s/%s\n",
 				type, recvp, recvb, sendp, sendb, failp, failb);
 	}
 
